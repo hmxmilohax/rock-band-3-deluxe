@@ -1,0 +1,675 @@
+{new
+   UIPanel
+   meta_loading
+   (file meta_loading.milo)
+   (enter
+      {synth stop_all_sfx TRUE})}
+#define kMetaLoading_Inactive
+(0)
+#define kMetaLoading_Entered
+(1)
+#define kMetaLoading_CheckRewardVignettes
+(2)
+#define kMetaLoading_RewardVignettes
+(3)
+#define kMetaLoading_CheckAwards
+(4)
+#define kMetaLoading_Awards
+(5)
+#define kMetaLoading_CheckHints
+(6)
+#define kMetaLoading_Hints
+(7)
+#define kMetaLoading_CheckCredits
+(8)
+#define kMetaLoading_Credits
+(9)
+#define kMetaLoading_AutoSave
+(10)
+#define kMetaLoading_WaitForRemotes
+(11)
+#define kMetaLoading_Leaving
+(12)
+#define kMetaLoading_WaitForSaveloadMgr
+(13)
+#define kMetaLoading_Loading
+(14)
+#define META_LOADING_OUTRO_VIGNETTES
+((tv4_a_panel tv4_b_panel tv4_c_panel tv4_d_panel tv4_e_panel))
+#define FAIL_IF_TV4_IS_UP
+(#ifndef _SHIP
+   {foreach
+      $vignette_panel
+      META_LOADING_OUTRO_VIGNETTES
+      {if
+         {$vignette_panel is_up}
+         {fail
+            "Shouldn't be pushing an award or reward vignette with "
+            $vignette_panel
+            " entered\n"}}}
+   #endif)
+#define META_LOADING_SCREEN_HANDLERS
+((should_show_loaded_vignette FALSE)
+   (panels
+      meta_loading
+      (meta
+         (active TRUE)
+         (always_load FALSE))
+      (tv4_a_panel
+         (active FALSE)
+         (always_load FALSE))
+      (tv4_b_panel
+         (active FALSE)
+         (always_load FALSE))
+      (tv4_c_panel
+         (active FALSE)
+         (always_load FALSE))
+      (tv4_d_panel
+         (active FALSE)
+         (always_load FALSE))
+      (tv4_e_panel
+         (active FALSE)
+         (always_load FALSE))
+      transition_fallback_panel)
+   (block_event
+      ($event)
+      {&&
+         {!=
+            [state]
+            kMetaLoading_WaitForRemotes}
+         {!=
+            [state]
+            kMetaLoading_Leaving}})
+   (state kMetaLoading_Inactive)
+   (loaded_vignette '')
+   (load_panels
+      {overshell set_active_status kOvershellInShell}
+      {set
+         [loaded_vignette]
+         ''}
+      {set
+         [state]
+         kMetaLoading_Loading}
+      {foreach
+         $vignette_panel
+         META_LOADING_OUTRO_VIGNETTES
+         {if
+            {$vignette_panel is_referenced}
+            #ifndef _SHIP
+            {if
+               {!=
+                  [loaded_vignette]
+                  ''}
+               {fail
+                  "Cannot have more than one tv4 loaded in meta_loading\n"}}
+            {if
+               {meta is_up}
+               {fail
+                  "Shouldn't have a loaded tv4 in meta_loading coming from the shell\n"}}
+            #endif
+            {set
+               [loaded_vignette]
+               $vignette_panel}}}
+      {do
+         ($has_loaded_vignette
+            {!=
+               [loaded_vignette]
+               ''})
+         ($has_something_to_show
+            {'||'
+               {acc_mgr has_new_reward_vignettes}
+               {acc_mgr has_new_awards}
+               {campaign has_hints_to_show}
+               {meta_performer are_credits_pending}})
+         ($in_destructive_event
+            {ui_event_mgr has_active_destructive_event})
+         {$this
+            set
+            should_show_loaded_vignette
+            {&&
+               $has_loaded_vignette
+               {! $has_something_to_show}
+               {! $in_destructive_event}}}
+         {meta_loading
+            set_showing
+            {!
+               [should_show_loaded_vignette]}}
+         {foreach
+            $vignette_panel
+            META_LOADING_OUTRO_VIGNETTES
+            {do
+               ($showing_this_vignette
+                  {&&
+                     [should_show_loaded_vignette]
+                     {==
+                        $vignette_panel
+                        [loaded_vignette]}})
+               {$this set_panel_active $vignette_panel $showing_this_vignette}
+               {if
+                  $showing_this_vignette
+                  {$vignette_panel set_showing TRUE}
+                  {$this set_focus_panel $vignette_panel}}}}})
+   (enter
+      {char_cache lock FALSE}
+      {acc_mgr clear_goal_info}
+      {overshell set_song_options_required FALSE}
+      {transition_fallback_panel set_showing FALSE}
+      {{meta_loading find meta_loading_icon}
+         set_showing
+         TRUE}
+      {{meta_loading find waiting.lbl}
+         set_showing
+         FALSE}
+      {{transition_fallback_panel find waiting.lbl}
+         set_showing
+         FALSE}
+      #ifndef _SHIP
+      {cond
+         ({tv4_a_panel is_up}
+            {ui
+               write_to_vignette_overlay
+               "transition vignette: (tv4_a)"})
+         ({tv4_b_panel is_up}
+            {ui
+               write_to_vignette_overlay
+               "transition vignette: (tv4_b)"})
+         ({tv4_c_panel is_up}
+            {ui
+               write_to_vignette_overlay
+               "transition vignette: (tv4_c)"})
+         ({tv4_d_panel is_up}
+            {ui
+               write_to_vignette_overlay
+               "transition vignette: (tv4_d)"})
+         ({tv4_e_panel is_up}
+            {ui
+               write_to_vignette_overlay
+               "transition vignette: (tv4_e)"})}
+      #endif)
+   (transition_camshot_done
+      {[loaded_vignette]
+         set_showing
+         FALSE}
+      {transition_fallback_panel set_showing TRUE}
+      {transition_fallback_panel start_loading_anim}
+      kDataUnhandled)
+   (TRANSITION_COMPLETE_MSG
+      {cond
+         ({==
+               [state]
+               kMetaLoading_Loading}
+            {ui_event_mgr
+               add_sink
+               $this
+               (event_dialog_dismiss)}
+            {net_sync set_ui_state kNetUI_MetaLoadingPreSave}
+            {rnd set_in_game FALSE}
+            {saveload_mgr activate}
+            {set
+               [state]
+               kMetaLoading_WaitForSaveloadMgr})
+         ({==
+               [state]
+               kMetaLoading_RewardVignettes}
+            {if_else
+               {&&
+                  {acc_mgr has_new_reward_vignettes}
+                  {!
+                     [should_show_loaded_vignette]}}
+               {do
+                  ($screen
+                     {acc_mgr get_name_for_first_new_reward_vignette})
+                  FAIL_IF_TV4_IS_UP
+                  {meta_loading set_showing FALSE}
+                  {acc_mgr clear_first_new_reward_vignette}
+                  {ui push_screen $screen}}
+               {do
+                  {overshell set_autohide FALSE}
+                  {meta_loading
+                     set_showing
+                     {!
+                        [should_show_loaded_vignette]}}
+                  {set
+                     [state]
+                     kMetaLoading_CheckAwards}}})
+         ({==
+               [state]
+               kMetaLoading_Awards}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_CheckHints}})
+         ({==
+               [state]
+               kMetaLoading_Hints}
+            {if_else
+               {&&
+                  {campaign has_hints_to_show}
+                  {!
+                     [should_show_loaded_vignette]}}
+               {do
+                  ($screen
+                     {campaign get_next_hint_to_show})
+                  FAIL_IF_TV4_IS_UP
+                  {meta_loading set_showing FALSE}
+                  {show_hint $screen}
+                  {set
+                     [state]
+                     kMetaLoading_Hints}}
+               {do
+                  {meta_loading
+                     set_showing
+                     {!
+                        [should_show_loaded_vignette]}}
+                  {set
+                     [state]
+                     kMetaLoading_CheckCredits}}})
+         ({==
+               [state]
+               kMetaLoading_Credits}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_AutoSave}})})
+   (exit
+      {ui_event_mgr remove_sink $this event_dialog_dismiss}
+      {set
+         [state]
+         kMetaLoading_Inactive})
+   (maybe_show_remote_exit)
+   (check_advance
+      {do
+         ($ready TRUE)
+         {machine_mgr
+            foreach_machine
+            $machine
+            {if
+               {!=
+                  {$machine get_net_ui_state}
+                  kNetUI_MetaLoadingPostSave}
+               {set $ready FALSE}}}
+         {if
+            $ready
+            {set
+               [state]
+               kMetaLoading_Leaving}
+            {ui
+               sync_screen
+               [next_screen]
+               0}}})
+   (poll
+      {if
+         {!
+            {meta is_up}}
+         {meta sync_game_timer}}
+      {if
+         {&&
+            {==
+               [state]
+               kMetaLoading_WaitForSaveloadMgr}
+            {saveload_mgr is_idle}}
+         {content_mgr start_refresh}
+         {set
+            [state]
+            kMetaLoading_Entered}}
+      {if
+         {&&
+            {==
+               [state]
+               kMetaLoading_Entered}
+            {content_mgr refresh_done}}
+         {if
+            {ui_event_mgr has_active_destructive_event}
+            {main_hub_panel set_state kMainHubState_Main}}
+         {if
+            {&&
+               {==
+                  [next_screen]
+                  song_select_screen}
+               {meta_performer has_setlist}}
+            {music_library start_in_setlist_browser}}
+         {if_else
+            [goto_practice_mode]
+            {do
+               ($song
+                  {meta_performer song})
+               {if
+                  {!
+                     {gamemode in_mode practice}}
+                  {gamemode set_mode qp_practice}}
+               {meta_performer set_song $song}}
+            {meta_performer reset_songs}}
+         {if
+            [goto_campaign_mode]
+            {gamemode set_mode campaign}}
+         {if
+            {'||'
+               {==
+                  {ui current_screen}
+                  meta_loading_charactercreator_screen}
+               {==
+                  {ui current_screen}
+                  meta_loading_calibration_screen}
+               {==
+                  {ui current_screen}
+                  meta_loading_audition_screen}}
+            {gamemode set_mode init}}
+         {ui set_disband_status kDisbandsEnabled}
+         {if_else
+            {==
+               {ui_event_mgr current_transition_event}
+               invite_accepted}
+            {ui set_invite_accepted TRUE}
+            {ui set_invite_accepted FALSE}}
+         {training_mgr participate_users}
+         {session_mgr set_active_roster FALSE}
+         {set
+            [state]
+            kMetaLoading_CheckRewardVignettes}}
+      {if
+         {==
+            [state]
+            kMetaLoading_CheckRewardVignettes}
+         {if_else
+            {&&
+               {acc_mgr has_new_reward_vignettes}
+               {!
+                  [should_show_loaded_vignette]}}
+            {do
+               ($screen
+                  {acc_mgr get_name_for_first_new_reward_vignette})
+               FAIL_IF_TV4_IS_UP
+               {meta_loading set_showing FALSE}
+               {overshell set_autohide TRUE}
+               {acc_mgr clear_first_new_reward_vignette}
+               {ui push_screen $screen}
+               {set
+                  [state]
+                  kMetaLoading_RewardVignettes}}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_CheckAwards}}}}
+      {if
+         {==
+            [state]
+            kMetaLoading_CheckAwards}
+         {if_else
+            {&&
+               {acc_mgr has_new_awards}
+               {!
+                  [should_show_loaded_vignette]}}
+            {do
+               FAIL_IF_TV4_IS_UP
+               {meta_loading set_showing FALSE}
+               {ui push_screen accomplishments_newaward_screen}
+               {set
+                  [state]
+                  kMetaLoading_Awards}}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_CheckHints}}}}
+      {if
+         {==
+            [state]
+            kMetaLoading_CheckHints}
+         {if_else
+            {&&
+               {campaign has_hints_to_show}
+               {!
+                  [should_show_loaded_vignette]}}
+            {do
+               ($screen
+                  {campaign get_next_hint_to_show})
+               FAIL_IF_TV4_IS_UP
+               {meta_loading set_showing FALSE}
+               {show_hint $screen}
+               {set
+                  [state]
+                  kMetaLoading_Hints}}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_CheckCredits}}}}
+      {if
+         {==
+            [state]
+            kMetaLoading_CheckCredits}
+         {if_else
+            {&&
+               {meta_performer are_credits_pending}
+               {!
+                  [should_show_loaded_vignette]}}
+            {do
+               FAIL_IF_TV4_IS_UP
+               {meta_loading set_showing FALSE}
+               {meta_performer clear_credits_pending}
+               {ui push_screen credits_movie_screen}
+               {set
+                  [state]
+                  kMetaLoading_Credits}}
+            {do
+               {meta_loading
+                  set_showing
+                  {!
+                     [should_show_loaded_vignette]}}
+               {set
+                  [state]
+                  kMetaLoading_AutoSave}}}}
+      {if
+         {==
+            [state]
+            kMetaLoading_AutoSave}
+         {saveload_mgr autosave}
+         {net_sync set_ui_state kNetUI_MetaLoadingPostSave}
+         {if
+            {!
+               {session_mgr is_local}}
+            {{meta_loading find meta_loading_icon}
+               set_showing
+               FALSE}
+            {{meta_loading find waiting.lbl}
+               set_showing
+               TRUE}
+            {{transition_fallback_panel find waiting.lbl}
+               set_showing
+               TRUE}}
+         {set
+            [state]
+            kMetaLoading_WaitForRemotes}}
+      {if
+         {==
+            [state]
+            kMetaLoading_WaitForRemotes}
+         {$this check_advance}})
+   (is_loaded
+      {cond
+         ({==
+               [state]
+               kMetaLoading_Inactive}
+            FALSE)
+         ({==
+               [loaded_vignette]
+               ''}
+            TRUE)
+         {[loaded_vignette]
+            check_is_loaded}}))
+{new
+   BandScreen
+   meta_loading_continue_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {if_else
+         {gamemode in_mode tour}
+         tour_quest_outro_screen
+         {if_else
+            {gamemode in_mode campaign}
+            accomplishment_screen
+            song_select_screen}})}
+{new
+   BandScreen
+   meta_loading_main_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get main_screen})}
+{new
+   BandScreen
+   meta_loading_main_credits_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get main_screen})}
+{new
+   BandScreen
+   meta_loading_main_pad_lost_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get main_screen})}
+{new
+   BandScreen
+   meta_loading_quit_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get quit_screen})}
+{new
+   BandScreen
+   meta_loading_pause_new_section_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen practice_preloading_screen)}
+{new
+   BandScreen
+   meta_loading_practice_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode TRUE)
+   (goto_campaign_mode FALSE)
+   (next_screen practice_preloading_screen)}
+{new
+   BandScreen
+   meta_loading_campaign_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode TRUE)
+   (next_screen accomplishment_screen)}
+{new
+   BandScreen
+   meta_loading_signout_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get uisink_signout_screen})}
+{new
+   BandScreen
+   meta_loading_join_invite_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen join_invite_screen)}
+{new
+   BandScreen
+   meta_loading_matchmaking_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen main_hub_screen)}
+{new
+   BandScreen
+   meta_loading_uisink_default_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get uisink_default_screen})}
+{new
+   BandScreen
+   meta_loading_uisink_lost_connection_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {gamemode get uisink_lost_connection_screen})}
+{new
+   BandScreen
+   meta_loading_leaderboard_error_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {leaderboards_netwatcher_panel get return_screen_in_progress})}
+{new
+   BandScreen
+   meta_loading_return_to_tour_quests_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen
+      {get_tour_screen})}
+{new
+   BandScreen
+   meta_loading_calibration_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen cal_welcome_screen)}
+{new
+   BandScreen
+   meta_loading_charactercreator_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen charactercreator_screen)}
+{new
+   BandScreen
+   meta_loading_return_to_manage_band_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen manage_band_screen)}
+{new
+   BandScreen
+   meta_loading_audition_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen audition_welcome_screen)}
+#ifndef _SHIP
+{new
+   BandScreen
+   meta_loading_return_to_frame_rate_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen frame_rate_screen)}
+#endif

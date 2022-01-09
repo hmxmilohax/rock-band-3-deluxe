@@ -1,0 +1,854 @@
+#define CHARARACTER_CREATOR_MALE_HAIR
+(none_hair male_hair_generic_resource male_hair_baldeagle_resource male_hair_bedhead_resource male_hair_billyidol_resource male_hair_buzzcut_resource male_hair_dreadpony_resource male_hair_egyptian_resource male_hair_emobuzz_resource male_hair_emover_resource male_hair_fauxhawk_resource male_hair_featheredshort_resource male_hair_maleladyfro_resource male_hair_fropick_resource male_hair_gentleman_resource male_hair_gentleman_rightpart_resource male_hair_glampoof_resource male_hair_greaser_resource male_hair_greaserslick_resource male_hair_long_resource male_hair_longlayered_resource male_hair_longmop_resource male_hair_longwavy_resource male_hair_messymop_resource male_hair_mop_resource male_hair_parkinglot_resource male_hair_powermullet_resource male_hair_prettyboy_resource male_hair_ramones_resource male_hair_receded_resource male_hair_robertplant_resource male_hair_shaggy_resource male_hair_shortcurly_resource male_hair_shortspikes_resource male_hair_younghr_resource male_hair_youngozzy_resource male_hair_ziggymullet_resource male_hair_hanoi_resource male_hair_hanoi2_resource male_hair_lazyhawk_resource male_hair_crazyhawk_resource male_hair_mohawk_resource male_hair_squeebpunk_resource male_hair_libertyspikes_resource male_hair_mandana_resource male_hair_nightcat_resource male_hair_bandanna_resource)
+#define CHARARACTER_CREATOR_FEMALE_HAIR
+(none_hair female_hair_test female_hair_youngozzy_resource female_hair_70sbisset_resource female_hair_bettybangs_resource female_hair_blownback_resource female_hair_bunhead_resource female_hair_buzzcut_resource female_hair_cutepigtails_resource female_hair_emobuzz_resource female_hair_dreadpony_resource female_hair_farah_resource female_hair_feathered_short_resource female_hair_femover_resource female_hair_flapper_resource female_hair_gothdreads_resource female_hair_hippybangs_resource female_hair_japan_resource female_hair_ladyfro_resource female_hair_ladyfrosmall_resource female_hair_ladylayered_resource female_hair_ladypunk_resource female_hair_long_resource female_hair_longstraight_resource female_hair_longwavy_resource female_hair_loosepony_resource female_hair_messyshort_resource female_hair_mulletbob_resource female_hair_oddbob_resource female_hair_pigtails_resource female_hair_pixie_resource female_hair_reverseflip_resource female_hair_shaggy_resource female_hair_short_resource female_hair_shortbangs_resource female_hair_shortspikes_resource female_hair_sideflip_resource female_hair_sidepony_resource female_hair_spikyteased_resource female_hair_visor_resource female_hair_trihawk_resource female_hair_lolita_resource female_hair_pulledback_resource female_hair_50sbandana_resource female_hair_nightcat_resource female_hair_beehive_resource female_hair_hilldreads_resource)
+#define CHARARACTER_CREATOR_MALE_GLASSES
+(none_glasses maleglasses_wireframe_resource maleglasses_rectangle_resource maleglasses_smashed_resource maleglasses_costellos_resource maleglasses_catseye_resource)
+#define CHARARACTER_CREATOR_FEMALE_GLASSES
+(none_glasses femaleglasses_wireframe_resource femaleglasses_rectangle_resource femaleglasses_smashed_resource femaleglasses_costellos_resource femaleglasses_catseye_resource)
+{new
+   CharacterCreatorPanel
+   charactercreator_panel
+   (file
+      "character_creator.milo")
+   (reset_focus TRUE)
+   (enter
+      {input_mgr
+         set_user
+         {closet_mgr get_user}}
+      {closet_mgr
+         add_sink
+         $this
+         (character_finished_loading_msg)}
+      {closet_mgr
+         add_sink
+         $this
+         (finalized_colors_msg)}
+      {$this update_name_label}
+      {set $can_randomize_face TRUE}
+      {$this set_focus_component kCharCreatorState_CharacterOptions name.btn}
+      {$this set_focus_component kCharCreatorState_ModifyHead customize_face.btn}
+      {$this set_focus_component kCharCreatorState_ModifyBody height.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerMenu randomize.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseCheeks options_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseChin options_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyChin done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyJaw done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseEyes options_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyEyes done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerRotateEyes done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseBrows eyebrows_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyBrows done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseNose options_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyNose done.btn}
+      {$this set_focus_component kCharCreatorState_FaceMakerChooseMouth options_grid.lst}
+      {$this set_focus_component kCharCreatorState_FaceMakerModifyMouth done.btn}
+      #ifdef HX_PS3
+      {move_camera_help.trg trigger}
+      #endif)
+   (exit
+      {input_mgr clear_user}
+      {closet_mgr remove_sink $this character_finished_loading_msg}
+      {closet_mgr remove_sink $this finalized_colors_msg})
+   (character_finished_loading_msg
+      {if
+         [gender_changed]
+         {$this update_ui_components}
+         {set
+            [gender_changed]
+            FALSE}}
+      {if
+         {$this is_waiting_to_finalize}
+         {$this finalize_character}
+         {$this set_is_waiting_to_finalize FALSE}
+         {ui
+            goto_screen
+            {closet_mgr get_return_screen}}})
+   (finalized_colors_msg
+      {closet_mgr finalize_char_creator_changes}
+      {switch
+         {$this focus_name}
+         (glasses.lst
+            {customize_salon_panel goto_shot head_1.shot}
+            {hide_glasses_spinner.trg trigger}
+            {$this set_focus glasses.btn})
+         (hair.lst
+            {customize_salon_panel goto_shot head_1.shot}
+            {hide_hair_spinner.trg trigger}
+            {$this set_focus hair.btn})
+         (facehair.lst
+            {customize_salon_panel goto_shot head_1.shot}
+            {hide_facehair_spinner.trg trigger}
+            {$this set_focus facehair.btn})
+         (eyebrows_grid.lst
+            {set $can_randomize_face FALSE}
+            {$this set_state kCharCreatorState_FaceMakerModifyBrows})})
+   (set_providers
+      {gender.lst
+         set_data
+         (male female)}
+      {outfit.lst
+         set_provider
+         {$this outfit_provider}}
+      {glasses.lst
+         set_data
+         (CHARARACTER_CREATOR_MALE_GLASSES)}
+      {hair.lst
+         set_data
+         (CHARARACTER_CREATOR_MALE_HAIR)}
+      {facehair.lst
+         set_provider
+         {$this facehair_provider}}
+      {facetype.lst
+         set_provider
+         {$this facetype_provider}}
+      {$this set_face_options_provider options_grid.lst}
+      {$this set_eyebrows_provider eyebrows_grid.lst}
+      {height.sld set_num_steps 11}
+      {weight.sld set_num_steps 11}
+      {build.sld set_num_steps 11})
+   (modify_states
+      (kCharCreatorState_FaceMakerModifyChin kCharCreatorState_FaceMakerModifyJaw kCharCreatorState_FaceMakerModifyEyes kCharCreatorState_FaceMakerRotateEyes kCharCreatorState_FaceMakerModifyBrows kCharCreatorState_FaceMakerModifyNose kCharCreatorState_FaceMakerModifyMouth))
+   (update_state
+      ($new_state $old_state)
+      {switch
+         $new_state
+         (kCharCreatorState_CharacterOptions
+            {if
+               {== $old_state kCharCreatorState_ModifyBody}
+               {closet_mgr show_clothes}}
+            {customize_salon_panel goto_shot idle_1.shot}
+            {main_menu.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_ModifyHead
+            {customize_salon_panel goto_shot head_1.shot}
+            {modify_head.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_ModifyBody
+            {closet_mgr hide_clothes}
+            {customize_salon_panel goto_shot body_1.shot}
+            {modify_body.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerMenu
+            {customize_salon_panel goto_shot head_1.shot}
+            {face_maker_menu.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseCheeks
+            {customize_salon_panel goto_shot cheeks_1.shot}
+            {face_maker_choose_cheeks.trg trigger}
+            {set
+               $undo_index
+               {$this get_feature_index shape}}
+            {$this set_face_options_selected options_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseChin
+            {customize_salon_panel goto_shot chin_1.shot}
+            {face_maker_choose_chin.trg trigger}
+            {set
+               $undo_index
+               {$this get_feature_index chin}}
+            {$this set_face_options_selected options_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerModifyChin
+            {face_maker_modify_chin.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerModifyJaw
+            {customize_salon_panel goto_shot jaw_1.shot}
+            {face_maker_modify_jaw.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseEyes
+            {customize_salon_panel goto_shot eyes_1.shot}
+            {face_maker_choose_eyes.trg trigger}
+            {set
+               $undo_index
+               {$this get_feature_index eye}}
+            {$this set_face_options_selected options_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerModifyEyes
+            {face_maker_modify_eyes.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerRotateEyes
+            {face_maker_rotate_eyes.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseBrows
+            {customize_salon_panel goto_shot eyebrows_1.shot}
+            {face_maker_choose_eyebrows.trg trigger}
+            {set
+               $undo_index
+               {$this get_eyebrows}}
+            {$this set_eyebrows_selected eyebrows_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}}
+            {closet_mgr set_current_outfit_piece eyebrows})
+         (kCharCreatorState_FaceMakerModifyBrows
+            {face_maker_modify_brows.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseNose
+            {customize_salon_panel goto_shot nose_1.shot}
+            {face_maker_choose_nose.trg trigger}
+            {set
+               $undo_index
+               {$this get_feature_index nose}}
+            {$this set_face_options_selected options_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerModifyNose
+            {face_maker_modify_nose.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerChooseMouth
+            {customize_salon_panel goto_shot mouth_1.shot}
+            {face_maker_choose_mouth.trg trigger}
+            {set
+               $undo_index
+               {$this get_feature_index mouth}}
+            {$this set_face_options_selected options_grid.lst $undo_index}
+            {$this
+               set_focus
+               {$this get_focus_component}})
+         (kCharCreatorState_FaceMakerModifyMouth
+            {face_maker_modify_mouth.trg trigger}
+            {$this
+               set_focus
+               {$this get_focus_component}})})
+   (update_ui_components
+      {set
+         $gender
+         {$this get_gender}}
+      {facetype.lst refresh}
+      {$this refresh_glasses_list $gender}
+      {$this refresh_hair_list $gender}
+      {if_else
+         {== $gender male}
+         {$this show_facehair_options}
+         {$this hide_facehair_options}}
+      {options_grid.lst refresh}
+      {eyebrows_grid.lst refresh}
+      {outfit.lst
+         set_selected
+         {$this get_outfit}}
+      {eye_color.lst
+         set_selected
+         {$this get_eye_color}}
+      {glasses.lst
+         set_selected
+         {$this get_glasses}}
+      {hair.lst
+         set_selected
+         {$this get_hair}}
+      {facehair.lst
+         set_selected
+         {$this get_facehair}}
+      {height.sld
+         set_current
+         {$this get_height}}
+      {weight.sld
+         set_current
+         {$this get_weight}}
+      {build.sld
+         set_current
+         {$this get_build}}
+      {skin_tone.lst
+         set_selected
+         {$this get_skin_tone}}
+      {$this
+         set_eyebrows_selected
+         eyebrows_grid.lst
+         {$this get_eyebrows}})
+   (get_name_label name.lbl)
+   (show_facehair_options
+      {$this enable facehair.btn}
+      {show_facehair.trg trigger})
+   (hide_facehair_options
+      {$this disable facehair.btn}
+      {hide_facehair.trg trigger})
+   (update_outfit_list
+      {outfit.lst
+         set_selected
+         {$this get_outfit}})
+   (refresh_glasses_list
+      ($gender)
+      {if_else
+         {== $gender male}
+         {glasses.lst
+            set_data
+            (CHARARACTER_CREATOR_MALE_GLASSES)}
+         {glasses.lst
+            set_data
+            (CHARARACTER_CREATOR_FEMALE_GLASSES)}}
+      {glasses.lst refresh})
+   (refresh_hair_list
+      ($gender)
+      {if_else
+         {== $gender male}
+         {hair.lst
+            set_data
+            (CHARARACTER_CREATOR_MALE_HAIR)}
+         {hair.lst
+            set_data
+            (CHARARACTER_CREATOR_FEMALE_HAIR)}}
+      {hair.lst refresh})
+   (refresh_face_options_list
+      {options_grid.lst refresh})
+   (choose_colors
+      {if
+         {==
+            {closet_mgr is_character_loading}
+            FALSE}
+         {ui push_screen choose_color_screen}})
+   (handle_sound_back
+      {play_instr_sfx
+         {closet_mgr get_user}
+         button_back})
+   (SCROLL_MSG
+      {cond
+         ({== $component gender.lst}
+            {set
+               $gender
+               {gender.lst selected_sym}}
+            {$this set_gender $gender}
+            {$this handle_gender_changed})
+         ({== $component outfit.lst}
+            {$this
+               set_outfit
+               {outfit.lst selected_sym}})
+         ({== $component facetype.lst}
+            {$this
+               set_facetype
+               {facetype.lst selected_sym}})
+         ({== $component eye_color.lst}
+            {$this
+               set_eye_color
+               {eye_color.lst selected_pos}})
+         ({== $component glasses.lst}
+            {$this
+               set_glasses
+               {glasses.lst selected_sym}})
+         ({== $component hair.lst}
+            {$this
+               set_hair
+               {hair.lst selected_sym}})
+         ({== $component facehair.lst}
+            {$this
+               set_facehair
+               {facehair.lst selected_sym}})
+         ({== $component height.sld}
+            {$this
+               set_height
+               {height.sld current}})
+         ({== $component weight.sld}
+            {$this
+               set_weight
+               {weight.sld current}})
+         ({== $component build.sld}
+            {$this
+               set_build
+               {build.sld current}})
+         ({== $component skin_tone.lst}
+            {$this
+               set_skin_tone
+               {skin_tone.lst selected_pos}})
+         ({'||'
+               {== $component options_grid.lst}
+               {==
+                  {$component parent_list}
+                  options_grid.lst}}
+            {$this
+               set_face_option
+               {$this get_face_options_selected options_grid.lst}})
+         ({'||'
+               {== $component eyebrows_grid.lst}
+               {==
+                  {$component parent_list}
+                  eyebrows_grid.lst}}
+            {$this
+               set_eyebrows
+               {$this get_eyebrows_selected eyebrows_grid.lst}})})
+   (SELECT_MSG
+      {switch
+         $component
+         (name.btn
+            {virtual_keyboard
+               show_keyboard
+               {$this get_user}
+               kCharNameLength
+               {localize create_char_vk_title}
+               {localize create_char_vk_desc}
+               {$this get_default_vk_name}
+               $this})
+         (gender.btn
+            {show_gender_spinner.trg trigger}
+            {gender.lst store}
+            {$this set_focus gender.lst})
+         (outfit.btn
+            {show_outfit_spinner.trg trigger}
+            {outfit.lst store}
+            {$this set_focus outfit.lst})
+         (modify_body.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_ModifyBody})
+         (modify_head.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_ModifyHead})
+         (create.btn
+            {do
+               ($name
+                  {$this get_name})
+               {if_else
+                  {!=
+                     $name
+                     ""}
+                  {ui push_screen charactercreator_create_screen}
+                  {ui push_screen charactercreator_noname_screen}}})
+         (customize_face.btn
+            {$this store_focus_component}
+            {$this set_focus_component kCharCreatorState_FaceMakerMenu randomize.btn}
+            {$this set_state kCharCreatorState_FaceMakerMenu})
+         (eye_color.btn
+            {customize_salon_panel goto_shot eyes_1.shot}
+            {show_eye_color_spinner.trg trigger}
+            {eye_color.lst store}
+            {$this set_focus eye_color.lst})
+         (glasses.btn
+            {customize_salon_panel goto_shot nose_1.shot}
+            {show_glasses_spinner.trg trigger}
+            {glasses.lst store}
+            {$this set_focus glasses.lst}
+            {closet_mgr set_current_outfit_piece glasses})
+         (hair.btn
+            {customize_salon_panel goto_shot hair_1.shot}
+            {show_hair_spinner.trg trigger}
+            {hair.lst store}
+            {$this set_focus hair.lst}
+            {closet_mgr set_current_outfit_piece hair})
+         (facehair.btn
+            {customize_salon_panel goto_shot hair_1.shot}
+            {show_facehair_spinner.trg trigger}
+            {facehair.lst store}
+            {$this set_focus facehair.lst}
+            {closet_mgr set_current_outfit_piece facehair})
+         (face_return.btn
+            {$this set_state kCharCreatorState_CharacterOptions})
+         (height.btn
+            {height.sld store}
+            {$this set_focus height.sld})
+         (weight.btn
+            {weight.sld store}
+            {$this set_focus weight.sld})
+         (build.btn
+            {build.sld store}
+            {$this set_focus build.sld})
+         (skin_tone.btn
+            {show_skin_tone_spinner.trg trigger}
+            {skin_tone.lst store}
+            {$this set_focus skin_tone.lst})
+         (body_return.btn
+            {$this set_state kCharCreatorState_CharacterOptions})
+         (randomize.btn
+            {if_else
+               $can_randomize_face
+               {do
+                  {$this randomize_face}
+                  {$this
+                     set_eyebrows_selected
+                     eyebrows_grid.lst
+                     {$this get_eyebrows}}}
+               {ui push_screen charactercreator_confirm_randomize_face_screen}})
+         (face_type.btn
+            {show_facetype_spinner.trg trigger}
+            {facetype.lst store}
+            {$this set_focus facetype.lst}
+            {$this
+               set_facetype
+               {facetype.lst selected_sym}})
+         (cheeks.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseCheeks})
+         (chin.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseChin})
+         (jaw.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerModifyJaw})
+         (eyes.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseEyes})
+         (brows.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseBrows})
+         (nose.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseNose})
+         (mouth.btn
+            {$this store_focus_component}
+            {$this set_state kCharCreatorState_FaceMakerChooseMouth})
+         (done.btn
+            {closet_mgr finalize_char_creator_changes}
+            {if_else
+               {==
+                  {$this get_state}
+                  kCharCreatorState_FaceMakerModifyEyes}
+               {$this set_state kCharCreatorState_FaceMakerRotateEyes}
+               {$this set_state kCharCreatorState_FaceMakerMenu}})
+         (finished.btn
+            {$this set_state kCharCreatorState_ModifyHead})})
+   (BUTTON_DOWN_MSG
+      {set
+         $state
+         {$this get_state}}
+      {if
+         {contains
+            [modify_states]
+            $state}
+         {switch
+            $action
+            (kAction_Up
+               {play_instr_sfx $user button_toggle}
+               {arrow_up.mnm set_frame 1})
+            (kAction_Down
+               {play_instr_sfx $user button_toggle}
+               {arrow_down.mnm set_frame 1})
+            (kAction_Left
+               {if
+                  {!= $state kCharCreatorState_FaceMakerRotateEyes}
+                  {play_instr_sfx $user button_toggle}
+                  {arrow_left.mnm set_frame 1}})
+            (kAction_Right
+               {if
+                  {!= $state kCharCreatorState_FaceMakerRotateEyes}
+                  {play_instr_sfx $user button_toggle}
+                  {arrow_right.mnm set_frame 1}})
+            kDataUnhandled}}
+      {switch
+         $action
+         (kAction_Confirm
+            {switch
+               {$this focus_name}
+               (gender.lst
+                  {hide_gender_spinner.trg trigger}
+                  {gender.lst confirm}
+                  {closet_mgr finalize_char_creator_changes}
+                  {$this set_focus gender.btn})
+               (outfit.lst
+                  {hide_outfit_spinner.trg trigger}
+                  {outfit.lst confirm}
+                  {closet_mgr finalize_char_creator_changes}
+                  {$this set_focus outfit.btn})
+               (eye_color.lst
+                  {customize_salon_panel goto_shot head_1.shot}
+                  {hide_eye_color_spinner.trg trigger}
+                  {eye_color.lst confirm}
+                  {closet_mgr finalize_char_creator_changes}
+                  {$this set_focus eye_color.btn})
+               (glasses.lst
+                  {set
+                     $name
+                     {glasses.lst selected_sym}}
+                  {if_else
+                     {== $name none_glasses}
+                     {do
+                        {customize_salon_panel goto_shot head_1.shot}
+                        {hide_glasses_spinner.trg trigger}
+                        {glasses.lst confirm}
+                        {closet_mgr finalize_char_creator_changes}
+                        {$this set_focus glasses.btn}}
+                     {if
+                        {!
+                           {glasses.lst is_scrolling}}
+                        {$this choose_colors}}})
+               (hair.lst
+                  {set
+                     $name
+                     {hair.lst selected_sym}}
+                  {if_else
+                     {== $name none_hair}
+                     {do
+                        {customize_salon_panel goto_shot head_1.shot}
+                        {hide_hair_spinner.trg trigger}
+                        {hair.lst confirm}
+                        {closet_mgr finalize_char_creator_changes}
+                        {$this set_focus hair.btn}}
+                     {if
+                        {!
+                           {hair.lst is_scrolling}}
+                        {$this choose_colors}}})
+               (facehair.lst
+                  {set
+                     $name
+                     {facehair.lst selected_sym}}
+                  {if_else
+                     {== $name none_facehair}
+                     {do
+                        {customize_salon_panel goto_shot head_1.shot}
+                        {hide_facehair_spinner.trg trigger}
+                        {facehair.lst confirm}
+                        {closet_mgr finalize_char_creator_changes}
+                        {$this set_focus facehair.btn}}
+                     {if
+                        {!
+                           {facehair.lst is_scrolling}}
+                        {$this choose_colors}}})
+               (height.sld
+                  {height.sld confirm}
+                  {closet_mgr finalize_body_changes height}
+                  {$this set_focus height.btn})
+               (weight.sld
+                  {weight.sld confirm}
+                  {closet_mgr finalize_body_changes weight}
+                  {$this set_focus weight.btn})
+               (build.sld
+                  {build.sld confirm}
+                  {closet_mgr finalize_body_changes muscle}
+                  {$this set_focus build.btn})
+               (skin_tone.lst
+                  {hide_skin_tone_spinner.trg trigger}
+                  {skin_tone.lst confirm}
+                  {closet_mgr finalize_body_changes skin_color}
+                  {$this set_focus skin_tone.btn})
+               (facetype.lst
+                  {closet_mgr finalize_char_creator_changes}
+                  {hide_facetype_spinner.trg trigger}
+                  {facetype.lst confirm}
+                  {$this
+                     set_eyebrows_selected
+                     eyebrows_grid.lst
+                     {$this get_eyebrows}}
+                  {$this set_focus face_type.btn})
+               (options_grid.lst
+                  {set $can_randomize_face FALSE}
+                  {closet_mgr finalize_char_creator_changes}
+                  {switch
+                     {$this get_state}
+                     (kCharCreatorState_FaceMakerChooseChin
+                        {$this set_state kCharCreatorState_FaceMakerModifyChin})
+                     (kCharCreatorState_FaceMakerChooseEyes
+                        {$this set_state kCharCreatorState_FaceMakerModifyEyes})
+                     (kCharCreatorState_FaceMakerChooseNose
+                        {$this set_state kCharCreatorState_FaceMakerModifyNose})
+                     (kCharCreatorState_FaceMakerChooseMouth
+                        {$this set_state kCharCreatorState_FaceMakerModifyMouth})
+                     {$this set_state kCharCreatorState_FaceMakerMenu}})
+               (eyebrows_grid.lst
+                  {set
+                     $name
+                     {$this get_eyebrows_selected eyebrows_grid.lst}}
+                  {if_else
+                     {== $name none_eyebrows}
+                     {do
+                        {closet_mgr finalize_char_creator_changes}
+                        {set $can_randomize_face FALSE}
+                        {$this set_state kCharCreatorState_FaceMakerMenu}}
+                     {if
+                        {!
+                           {eyebrows_grid.lst is_scrolling}}
+                        {$this choose_colors}}})
+               kDataUnhandled})
+         (kAction_Cancel
+            {switch
+               {$this focus_name}
+               (gender.lst
+                  {hide_gender_spinner.trg trigger}
+                  {gender.lst undo $user}
+                  {$this set_focus gender.btn})
+               (outfit.lst
+                  {hide_outfit_spinner.trg trigger}
+                  {outfit.lst undo $user}
+                  {$this set_focus outfit.btn})
+               (facetype.lst
+                  {hide_facetype_spinner.trg trigger}
+                  {facetype.lst undo $user}
+                  {closet_mgr reset_character_preview}
+                  {$this set_focus face_type.btn})
+               (eye_color.lst
+                  {customize_salon_panel goto_shot head_1.shot}
+                  {hide_eye_color_spinner.trg trigger}
+                  {eye_color.lst undo $user}
+                  {$this set_focus eye_color.btn})
+               (glasses.lst
+                  {customize_salon_panel goto_shot head_1.shot}
+                  {hide_glasses_spinner.trg trigger}
+                  {glasses.lst undo $user}
+                  {closet_mgr reset_character_preview}
+                  {$this set_focus glasses.btn})
+               (hair.lst
+                  {customize_salon_panel goto_shot head_1.shot}
+                  {hide_hair_spinner.trg trigger}
+                  {hair.lst undo $user}
+                  {closet_mgr reset_character_preview}
+                  {$this set_focus hair.btn})
+               (facehair.lst
+                  {customize_salon_panel goto_shot head_1.shot}
+                  {hide_facehair_spinner.trg trigger}
+                  {facehair.lst undo $user}
+                  {closet_mgr reset_character_preview}
+                  {$this set_focus facehair.btn})
+               (height.sld
+                  {height.sld undo $user}
+                  {$this set_focus height.btn})
+               (weight.sld
+                  {weight.sld undo $user}
+                  {$this set_focus weight.btn})
+               (build.sld
+                  {build.sld undo $user}
+                  {$this set_focus build.btn})
+               (skin_tone.lst
+                  {hide_skin_tone_spinner.trg trigger}
+                  {skin_tone.lst undo $user}
+                  {$this set_focus skin_tone.btn})
+               (options_grid.lst
+                  {$this set_face_option $undo_index}
+                  {$this leave_state})
+               (eyebrows_grid.lst
+                  {$this set_eyebrows $undo_index}
+                  {$this leave_state})
+               {if_else
+                  {==
+                     {$this get_state}
+                     kCharCreatorState_CharacterOptions}
+                  {ui push_screen charactercreator_leave_screen}
+                  {$this leave_state}}})
+         (kAction_ViewModify
+            {closet_mgr cycle_camera})
+         kDataUnhandled})
+   (BUTTON_UP_MSG
+      {cond
+         ({contains
+               [modify_states]
+               {$this get_state}}
+            {switch
+               $action
+               (kAction_Up
+                  {arrow_up.mnm set_frame 0})
+               (kAction_Down
+                  {arrow_down.mnm set_frame 0})
+               (kAction_Left
+                  {arrow_left.mnm set_frame 0})
+               (kAction_Right
+                  {arrow_right.mnm set_frame 0})
+               kDataUnhandled})
+         kDataUnhandled})
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if
+         {&&
+            $ok
+            $this
+            {ui focus_panel}
+            {==
+               {ui focus_panel}
+               $this}
+            {!
+               {==
+                  $text
+                  ""}}}
+         {$this set_name $text}})}
+{new
+   BandScreen
+   charactercreator_screen
+   (panels meta customize_salon_panel charactercreator_panel)
+   (focus charactercreator_panel)
+   (return_screen '')
+   (should_go_back FALSE)
+   (enter
+      {set
+         [should_go_back]
+         FALSE})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         [should_go_back]
+         {set
+            [should_go_back]
+            FALSE}
+         {ui
+            go_back_screen
+            {closet_mgr get_return_screen}
+            {closet_mgr get_user}}})}
+{new
+   BandScreen
+   charactercreator_confirm_randomize_face_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel set_yesno confirm_randomize_face no.btn})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {set $can_randomize_face TRUE}
+            {charactercreator_screen randomize_face}
+            {ui pop_screen})
+         (no.btn
+            {ui pop_screen})})}
+{new
+   BandScreen
+   charactercreator_leave_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel set_yesno charactercreator_leave no.btn})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {charactercreator_screen set should_go_back TRUE}
+            {ui pop_screen})
+         (no.btn
+            {ui pop_screen})})}
+{new
+   BandScreen
+   charactercreator_noname_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel set_ok shell_charcreator_no_name})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   charactercreator_create_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel set_yesno charactercreator_create no.btn})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {if_else
+               {closet_mgr is_character_loading}
+               {do
+                  {charactercreator_panel set_is_waiting_to_finalize TRUE}
+                  {ui pop_screen}}
+               {do
+                  {charactercreator_panel finalize_character}
+                  {ui
+                     pop_screen
+                     {closet_mgr get_return_screen}}}})
+         (no.btn
+            {ui pop_screen})})}

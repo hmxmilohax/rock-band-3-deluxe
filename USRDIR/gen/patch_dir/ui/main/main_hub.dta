@@ -1,0 +1,880 @@
+{new
+   MainHubPanel
+   main_hub_panel
+   (file
+      "main_hub.milo")
+   (focus
+      "mb_playnow.btn")
+   (first_user
+      "")
+   (last_focused_button
+      "mb_playnow.btn")
+   (message_rotation_ms 5000)
+   (band_provider 0)
+   (message_area_expanded FALSE)
+   (waiting_for_store_entry FALSE)
+   (waiting_for_token_entry FALSE)
+   (waiting_for_leaderboard_entry FALSE)
+   (update_messages
+      ($user $messages_received)
+      {set
+         $messages
+         ()}
+      {resize $messages 0}
+      {push_back $messages motd}
+      {if
+         {&&
+            $messages_received
+            {$this check_profile_for_message_ticker}
+            {!=
+               {$this get_dlcmotd}
+               ""}}
+         {push_back $messages dlc_motd}}
+      {if
+         {&&
+            $messages_received
+            {$this has_unlinked_motd}}
+         {push_back $messages unlinked_motd}}
+      {if
+         $user
+         {do
+            ($current_level $next_level)
+            {set
+               $current_level
+               {campaign get_campaign_level $user}}
+            {if
+               {!
+                  {campaign is_last_campaign_level $current_level}}
+               {set
+                  $next_level
+                  {campaign get_next_campaign_level $current_level}}
+               {push_back
+                  $messages
+                  {campaign get_campaign_level_advertisement $next_level}}}}}
+      {if
+         {&&
+            $messages_received
+            {$this check_profile_for_message_ticker}}
+         {if
+            {$this has_role_info}
+            {push_back $messages leaderboard_summary}}
+         {if
+            {$this has_band_info}
+            {push_back $messages leaderboard_band_summary}}
+         {if
+            {$this has_battles_info}
+            {push_back $messages battles_summary}}}
+      $messages)
+   (motd
+      {$this get_motd})
+   (dlc_motd
+      {$this get_dlcmotd})
+   (is_loaded
+      {saveload_mgr is_initial_load_done})
+   (enter
+      {if
+         [first_user]
+         {profile_mgr
+            set_primary_profile_by_user
+            [first_user]}
+         {$this
+            set
+            first_user
+            ""}}
+      {unless
+         {ui_event_mgr has_transition_event go_to_charactercreator}
+         {input_mgr clear_user}
+         {closet_mgr clear_user}
+         {critical_user_listener clear_critical_user}}
+      {gamemode set_mode init}
+      {net_sync set_ui_state kNetUI_MainMenu}
+      {set
+         [waiting_for_store_entry]
+         FALSE}
+      {set
+         [waiting_for_token_entry]
+         FALSE}
+      {set
+         [waiting_for_leaderboard_entry]
+         FALSE}
+      {platform_mgr add_sink $this}
+      {input_mgr set_auto_vocals_confirm_allowed}
+      {input_mgr check_trigger_auto_vocals_confirm}
+      {overshell set_allow_real_guitar_flow TRUE}
+      {overshell update_all}
+      {content_mgr start_refresh}
+      {campaign clear_current_goal})
+   (exit
+      {platform_mgr remove_sink $this})
+   (SELECT_MSG
+      {switch
+         $component
+         (mb_playnow.btn
+            {$this set_state kMainHubState_PlayNow})
+         (mb_career.btn
+            {$this set_state kMainHubState_Career})
+         (mb_trainers.btn
+            {if_else
+               {session_mgr is_local}
+               {$this set_state kMainHubState_Training}
+               {push_basic_confirm_dialog no_trainers_when_online}})
+         (mb_shop.btn
+            {$this set_state kMainHubState_Customize})
+         (customize_band.btn
+            {if_else
+               {profile_mgr has_primary_profile}
+               {do
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {manage_band_panel
+                     set_profile
+                     {profile_mgr get_primary_profile}}
+                  {manage_band_screen set back_override main_hub_screen}
+                  {ui goto_screen manage_band_screen}}
+               {push_signin_needed_dialog manage_band_no_profile}})
+         (customize_character.btn
+            {if_else
+               {$user is_char_customizable}
+               {do
+                  {critical_user_listener set_critical_user $user}
+                  {closet_mgr set_user $user}
+                  {ui goto_screen customize_clothing_enter_screen}}
+               {do
+                  ($profile
+                     {profile_mgr get_profile $user})
+                  {if_else
+                     {&&
+                        $profile
+                        {==
+                           {$profile get_num_chars}
+                           0}
+                        {session_mgr is_local}}
+                     {do
+                        {input_mgr set_user $user}
+                        {critical_user_listener set_critical_user $user}
+                        {ui push_screen customize_create_character_screen}}
+                     {ui push_screen customize_no_prefabs_screen}}}})
+         (create_character.btn
+            {if_else
+               {!
+                  {profile_mgr get_profile $user}}
+               {push_signin_needed_dialog create_character_must_signin}
+               {do
+                  {if_else
+                     {session_mgr is_local}
+                     {do
+                        ($profile
+                           {profile_mgr get_profile $user})
+                        {if_else
+                           {<
+                              {$profile get_num_chars}
+                              {$profile max_chars}}
+                           {do
+                              {critical_user_listener set_critical_user $user}
+                              {closet_mgr set_user $user}
+                              {closet_mgr set_return_screen main_hub_screen}
+                              {net_sync disable}
+                              {ui goto_screen charactercreator_screen}}
+                           {ui push_screen create_character_maxed_screen}}}
+                     {ui push_screen create_character_notonline_screen}}}})
+         (mb_musicstore.btn
+            {$this set_state kMainHubState_Store})
+         (pn_quickplay.btn
+            {$this set_state kMainHubState_Quickplay})
+         (pn_tour.btn
+            {$this set_state kMainHubState_Tour})
+         (qp_quickplay.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {net_sync set_ui_state kNetUI_WaitingChooseSong}
+            {$this set_override kMainHubOverride_Waiting})
+         (qp_setlist.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {net_sync set_ui_state kNetUI_WaitingChooseSetlist}
+            {$this set_override kMainHubOverride_Waiting})
+         (qp_fmp.btn
+            {if_else
+               {overshell is_full}
+               {push_basic_confirm_dialog no_fmp_when_full}
+               {do
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {net_sync set_ui_state kNetUI_WaitingQpFindPlayers}
+                  {$this set_override kMainHubOverride_Waiting}}})
+         (tour_new.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {$this handle_tournew_chosen})
+         (tour_fmp.btn
+            {if_else
+               {overshell is_full}
+               {push_basic_confirm_dialog no_fmp_when_full}
+               {do
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {$this handle_tourfmp_chosen}}})
+         (career_progress.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {$this handle_campaign_chosen})
+         (career_songs.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {$this handle_campaign_songs_chosen})
+         (career_leaderboard.btn
+            {profile_mgr set_primary_profile_by_user $user}
+            {$this handle_campaign_lb_chosen})
+         (training_band_practice.btn
+            {if_else
+               {session_mgr is_local}
+               {do
+                  {gamemode set_mode practice}
+                  {ui abstract_wipe}
+                  {input_mgr set_user $user}
+                  {critical_user_listener set_critical_user $user}
+                  {training_mgr set_return_info song_select_screen pause_quit}
+                  {training_mgr set_user $user}
+                  {ui goto_screen song_select_enter_screen}}
+               {push_basic_confirm_dialog no_trainers_when_online}})
+         (training_trainers.btn
+            {cond
+               ({!
+                     {session_mgr is_local}}
+                  {push_basic_confirm_dialog no_trainers_when_online})
+               ({!
+                     {profile_mgr has_primary_profile}}
+                  {push_signin_needed_dialog trainer_must_signin})
+               {gamemode set_mode trainer}
+               {profile_mgr set_primary_profile_by_user $user}
+               {ui goto_screen training_screen}})
+         (training_pro_song_lessons.btn
+            {cond
+               ({!
+                     {session_mgr is_local}}
+                  {push_basic_confirm_dialog no_trainers_when_online})
+               ({!
+                     {profile_mgr get_profile $user}}
+                  {push_signin_needed_dialog trainer_must_signin})
+               ({==
+                     {$user get_controller_type}
+                     kControllerKeys}
+                  {gamemode set_mode pro_song_lessons_keyboard}
+                  {input_mgr set_user $user}
+                  {critical_user_listener set_critical_user $user}
+                  {training_mgr set_user $user}
+                  {training_mgr set_minimum_difficulty kDifficultyEasy}
+                  {training_mgr set_return_info song_select_screen pause_quit}
+                  {song_select_panel set trainer_from_main_menu kControllerKeys}
+                  {ui abstract_wipe}
+                  {ui goto_screen song_select_enter_screen})
+               ({==
+                     {$user get_controller_type}
+                     kControllerRealGuitar}
+                  {gamemode set_mode trainer_real_guitar}
+                  {input_mgr set_user $user}
+                  {critical_user_listener set_critical_user $user}
+                  {training_mgr set_user $user}
+                  {training_mgr set_minimum_difficulty kDifficultyEasy}
+                  {training_mgr set_return_info song_select_screen pause_quit}
+                  {song_select_panel set trainer_from_main_menu kControllerRealGuitar}
+                  {ui abstract_wipe}
+                  {ui goto_screen song_select_enter_screen})
+               {push_basic_confirm_dialog pro_song_lessons_wrong_controller}})
+         (training_drum_freestyle.btn
+            {cond
+               ({!
+                     {session_mgr is_local}}
+                  {push_basic_confirm_dialog no_trainers_when_online})
+               ({==
+                     {$user get_controller_type}
+                     kControllerDrum}
+                  {gamemode set_mode drum_freestyle}
+                  {input_mgr set_user $user}
+                  {critical_user_listener set_critical_user $user}
+                  {training_mgr set_user $user}
+                  {training_mgr set_return_info main_hub_screen overshell_quit_freestyle}
+                  {ui goto_screen drum_freestyle_screen})
+               {push_basic_confirm_dialog drum_freestyle_wrong_controller}})
+         ((dlc_store.btn redeem_token.btn)
+            {store_real_loading_screen
+               set
+               store_mode
+               {switch
+                  $component
+                  (dlc_store.btn dlc)
+                  (redeem_token.btn token)}}
+            {input_mgr set_user $user}
+            #ifdef HX_XBOX
+            {if_else
+               {'||'
+                  {!
+                     {platform_mgr is_user_signed_into_live $user}}
+                  {platform_mgr is_user_a_guest $user}}
+               {ui push_screen main_store_signin_screen}
+               {do
+                  {ui abstract_wipe}
+                  {ui goto_screen store_loading_screen}}}
+            #endif
+            #ifdef HX_PS3
+            {if_else
+               {== $component dlc_store.btn}
+               {set
+                  [waiting_for_store_entry]
+                  TRUE}
+               {set
+                  [waiting_for_token_entry]
+                  TRUE}}
+            {platform_mgr run_net_start_utility}
+            #endif
+            #ifdef HX_PC
+            {ui goto_screen store_loading_screen}
+            #endif)})
+   (handle_goto_tour
+      {net_sync set_ui_state kNetUI_WaitingTour}
+      {$this set_override kMainHubOverride_Waiting})
+   (handle_goto_tourfmp
+      {net_sync set_ui_state kNetUI_WaitingTourFindPlayers}
+      {$this set_override kMainHubOverride_Waiting})
+   (handle_tournew_chosen
+      {$this handle_goto_tour})
+   (handle_tourfmp_chosen
+      {if_else
+         {profile_mgr has_primary_profile}
+         {$this handle_goto_tourfmp}
+         {push_signin_needed_dialog tour_need_signed_in_user}})
+   (handle_goto_campaign
+      {gamemode set_mode campaign}
+      {accomplishment_panel clear_career_state}
+      {ui goto_screen accomplishment_screen})
+   (handle_goto_campaign_songs
+      {gamemode set_mode qp_career_songinfo}
+      {ui goto_screen accomplishment_songs_screen})
+   (handle_goto_campaign_lb
+      #ifdef HX_PS3
+      {set
+         [waiting_for_leaderboard_entry]
+         TRUE}
+      {platform_mgr run_net_start_utility}
+      #else
+      {gamemode set_mode campaign}
+      {campaign_leaderboard_hub_panel set return_screen main_hub_screen}
+      {ui goto_screen campaign_leaderboard_hub_screen}
+      #endif)
+   (handle_campaign_chosen
+      {if_else
+         {profile_mgr has_primary_profile}
+         {$this handle_goto_campaign}
+         {push_signin_needed_dialog campaign_need_signed_in_user}})
+   (handle_campaign_songs_chosen
+      {if_else
+         {profile_mgr has_primary_profile}
+         {$this handle_goto_campaign_songs}
+         {push_signin_needed_dialog campaign_need_signed_in_user}})
+   (handle_campaign_lb_chosen
+      {if_else
+         {profile_mgr has_primary_profile}
+         {$this handle_goto_campaign_lb}
+         {push_signin_needed_dialog campaign_need_signed_in_user}})
+   (advance
+      ($waiting_state)
+      {switch
+         $waiting_state
+         (kNetUI_WaitingPartyShuffle
+            {gamemode set_mode party_shuffle}
+            {ui sync_screen part_difficulty_screen 0})
+         (kNetUI_WaitingChooseSong
+            {gamemode set_mode qp_coop}
+            {ui abstract_wipe}
+            {ui sync_screen song_select_enter_screen 0})
+         (kNetUI_WaitingChooseSetlist
+            {gamemode set_mode qp_coop}
+            {music_library start_in_setlist_browser}
+            {ui abstract_wipe}
+            {ui sync_screen song_select_enter_screen 0})
+         (kNetUI_WaitingTour
+            {if_else
+               {profile_mgr has_primary_profile}
+               {do
+                  {gamemode set_mode tour}
+                  {if
+                     {session_mgr is_leader_local}
+                     {ui sync_screen tour_customize_screen 0}}}
+               {do
+                  {net_sync set_ui_state kNetUI_MainMenu}
+                  {$this set_override kMainHubOverride_None}
+                  {push_signin_needed_dialog tour_need_signed_in_user}}})
+         (kNetUI_WaitingQpFindPlayers
+            {net_sync set_ui_state kNetUI_FindPlayersQp}
+            {$this set_state kMainHubState_Quickplay}
+            {$this set_override kMainHubOverride_Finding})
+         (kNetUI_WaitingTourFindPlayers
+            {net_sync set_ui_state kNetUI_FindPlayersTour}
+            {$this set_state kMainHubState_Tour}
+            {$this set_override kMainHubOverride_Finding})})
+   (cancel_find_override
+      {unless
+         {session_mgr is_local}
+         {session_mgr disconnect}}
+      {net_sync set_ui_state kNetUI_MainMenu}
+      {$this set_override kMainHubOverride_None})
+   (cancel_waiting_override
+      {net_sync set_ui_state kNetUI_MainMenu}
+      {$this set_override kMainHubOverride_None})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({$this in_waiting_lock}
+            TRUE)
+         ({== $action kAction_Cancel}
+            {cond
+               ({==
+                     {$this get_override}
+                     kMainHubOverride_Waiting}
+                  {$this cancel_waiting_override}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_override}
+                     kMainHubOverride_Finding}
+                  {if_else
+                     {session_mgr is_local}
+                     {$this cancel_find_override}
+                     {ui push_screen disconnect_find_players_confirm_screen}}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_PlayNow}
+                  {$this set_focus mb_playnow.btn}
+                  {$this set_state kMainHubState_Main}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Quickplay}
+                  {$this set_focus pn_quickplay.btn}
+                  {$this set_state kMainHubState_PlayNow}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Tour}
+                  {$this set_focus pn_tour.btn}
+                  {$this set_state kMainHubState_PlayNow}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Career}
+                  {$this set_focus mb_career.btn}
+                  {$this set_state kMainHubState_Main}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Training}
+                  {$this set_focus mb_trainers.btn}
+                  {$this set_state kMainHubState_Main}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Customize}
+                  {$this set_focus mb_shop.btn}
+                  {$this set_state kMainHubState_Main}
+                  {play_instr_sfx $user button_back})
+               ({==
+                     {$this get_state}
+                     kMainHubState_Store}
+                  {$this set_focus mb_musicstore.btn}
+                  {$this set_state kMainHubState_Main}
+                  {play_instr_sfx $user button_back})
+               (TRUE kDataUnhandled)})
+         ({==
+               {$this get_override}
+               kMainHubOverride_Waiting}
+            TRUE)
+         ({==
+               {$this get_override}
+               kMainHubOverride_Finding}
+            {if
+               {&&
+                  {== $action kAction_Confirm}
+                  {session_mgr is_leader_local}}
+               {if_else
+                  {machine_mgr all_machines_have_same_net_ui_state}
+                  {$this advance_from_finding}
+                  {ui_event_mgr trigger_event remote_not_ready}}})
+         ({&&
+               {== $action kAction_Option}}
+            {$this cycle_next_message})
+         ({== $action kAction_ViewModify}
+            {profile_mgr set_primary_profile_by_user $user}
+            {$this check_rewards_and_hints})
+         kDataUnhandled})
+   (refresh_message_provider
+      {message_area.lst
+         set_provider
+         {$this get_message_provider}})
+   (update_message_counter
+      ($current $max)
+      {expand_message_area.ihp
+         set_action_token
+         kAction_Option
+         (main_hub_next_message $current $max)})
+   (update_state_view
+      ($state $old_state $override $old_override)
+      {switch
+         {$this get_override}
+         (kMainHubOverride_None
+            {override_none.trg trigger})
+         (kMainHubOverride_Waiting
+            {override_waiting.trg trigger})
+         (kMainHubOverride_Finding
+            {override_finding.trg trigger}
+            {$this update_finding_help})}
+      {cond
+         ({== $state $old_state}
+            TRUE)
+         ({== $state kMainHubState_Main}
+            {if
+               {== $old_state kMainHubState_None}
+               {$this set_focus mb_playnow.btn}}
+            {switch
+               $old_state
+               (kMainHubState_None
+                  {none_to_main.trg trigger})
+               (kMainHubState_PlayNow
+                  {playnow_to_main.trg trigger})
+               (kMainHubState_Career
+                  {career_to_main.trg trigger})
+               (kMainHubState_Training
+                  {training_to_main.trg trigger})
+               (kMainHubState_Customize
+                  {customize_to_main.trg trigger})
+               (kMainHubState_Store
+                  {store_to_main.trg trigger})})
+         ({== $state kMainHubState_PlayNow}
+            {if
+               {== $old_state kMainHubState_Main}
+               {$this set_focus pn_quickplay.btn}}
+            {switch
+               $old_state
+               (kMainHubState_Main
+                  {main_to_playnow.trg trigger})
+               (kMainHubState_Quickplay
+                  {quickplay_to_playnow.trg trigger})
+               (kMainHubState_Tour
+                  {tour_to_playnow.trg trigger})})
+         ({== $state kMainHubState_Quickplay}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus qp_quickplay.btn}}
+            {if
+               {!= $state $old_state}
+               {playnow_to_quickplay.trg trigger}})
+         ({== $state kMainHubState_Tour}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus tour_new.btn}}
+            {if
+               {!= $state $old_state}
+               {playnow_to_tour.trg trigger}})
+         ({== $state kMainHubState_Training}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus training_band_practice.btn}}
+            {if
+               {!= $state $old_state}
+               {main_to_training.trg trigger}})
+         ({== $state kMainHubState_Career}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus career_progress.btn}}
+            {if
+               {!= $state $old_state}
+               {main_to_career.trg trigger}})
+         ({== $state kMainHubState_Customize}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus customize_band.btn}}
+            {if
+               {!= $state $old_state}
+               {main_to_customize.trg trigger}})
+         ({== $state kMainHubState_Store}
+            {if
+               {!= $old_state kMainHubState_None}
+               {$this set_focus dlc_store.btn}}
+            {if
+               {!= $state $old_state}
+               {main_to_store.trg trigger}})}
+      {if
+         {&&
+            {!=
+               [last_focused_button]
+               ""}
+            {== $old_state kMainHubState_None}}
+         {$this
+            set_focus
+            [last_focused_button]}})
+   (FOCUS_MSG
+      {if
+         {== $panel_dir main_hub}
+         {$this set last_focused_button $new_focus}})
+   (update_pool_info
+      ($has_stats $rating0 $rating1 $rating2 $rating3)
+      {foreach
+         $pair
+         ((pool_info0 $rating0)
+            (pool_info1 $rating1)
+            (pool_info2 $rating2)
+            (pool_info3 $rating3))
+         {do
+            ($widget
+               {elem $pair 0})
+            ($rating
+               {eval
+                  {elem $pair 1}})
+            {with
+               $widget
+               {cond
+                  ({! $has_stats}
+                     {unknown.trg trigger})
+                  ({== $rating 0}
+                     {red.trg trigger})
+                  ({== $rating 1}
+                     {yellow.trg trigger})
+                  ({== $rating 2}
+                     {green.trg trigger})}}}})
+   (net_start_utility_finished
+      ($success)
+      {cond
+         ([waiting_for_store_entry]
+            {if
+               $success
+               {ui goto_screen store_loading_screen}}
+            {set
+               [waiting_for_store_entry]
+               FALSE})
+         ([waiting_for_token_entry]
+            {if
+               $success
+               {ui goto_screen token_redemption_screen}}
+            {set
+               [waiting_for_token_entry]
+               FALSE})
+         ([waiting_for_leaderboard_entry]
+            {if
+               $success
+               {gamemode set_mode campaign}
+               {campaign_leaderboard_hub_panel set return_screen main_hub_screen}
+               {ui goto_screen campaign_leaderboard_hub_screen}}
+            {set
+               [waiting_for_leaderboard_entry]
+               FALSE})})
+   (unlock_gamestop_award
+      ($pad_num)
+      {if
+         {!
+            {ui in_transition}}
+         {do
+            ($user
+               {user_mgr get_user_from_pad_num $pad_num})
+            ($profile
+               {profile_mgr get_profile $user})
+            {if
+               $profile
+               {{$profile access_accomplishment_progress}
+                  add_award
+                  award_gamestop
+                  campaign_award_reason_preorder}
+               {$this check_rewards_and_hints}}}})
+   (unlock_x79_award
+      ($pad_num)
+      {if
+         {!
+            {ui in_transition}}
+         {do
+            ($user
+               {user_mgr get_user_from_pad_num $pad_num})
+            ($profile
+               {profile_mgr get_profile $user})
+            {if
+               $profile
+               {{$profile access_accomplishment_progress}
+                  add_award
+                  award_bonus_x79
+                  campaign_award_reason_preorder}
+               {$this check_rewards_and_hints}}}})
+   (unlock_d2010_award
+      ($pad_num)
+      {if
+         {!
+            {ui in_transition}}
+         {do
+            ($user
+               {user_mgr get_user_from_pad_num $pad_num})
+            ($profile
+               {profile_mgr get_profile $user})
+            {if
+               $profile
+               {{$profile access_accomplishment_progress}
+                  add_award
+                  award_bonus_d2010
+                  campaign_award_reason_preorder}
+               {$this check_rewards_and_hints}}}})
+   (check_rewards_and_hints
+      {if
+         {session_mgr is_local}
+         {if_else
+            {'||'
+               {acc_mgr has_new_reward_vignettes}
+               {acc_mgr has_new_awards}
+               {campaign has_hints_to_show}
+               {meta_performer are_credits_pending}}
+            {ui goto_screen meta_loading_main_screen}
+            {show_hint hint_rb3_welcome_screen}}})
+   (TRANSITION_COMPLETE_MSG
+      {$this check_rewards_and_hints}
+      {saveload_mgr autosave})
+   (update_finding_help
+      {finding_continue.ihp
+         set_showing
+         {session_mgr is_leader_local}}
+      {do
+         ($leader_user
+            {session_mgr get_leader_user})
+         ($show_waiting
+            {&&
+               $leader_user
+               {!
+                  {$leader_user is_local}}})
+         {waiting_on_leader.lbl set_showing $show_waiting}
+         {if
+            $show_waiting
+            {waiting_on_leader.lbl
+               set_token_fmt
+               main_menu_waiting_on_leader
+               {$leader_user get_player_name}}}})}
+{new
+   BandScreen
+   main_hub_screen
+   (panels meta sv3_panel main_hub_panel accomplishments_status_panel)
+   (focus main_hub_panel)}
+{new
+   BandScreen
+   song_select_enter_screen
+   (panels meta sv4_panel)
+   (block_wipe_in TRUE)
+   (enter
+      {sv4_panel set_showing FALSE})
+   (TRANSITION_COMPLETE_MSG
+      {ui abstract_wipe_in}
+      {ui goto_screen song_select_screen})}
+{new
+   BandScreen
+   customize_clothing_enter_screen
+   (panels meta customize_clothing_panel)
+   (enter
+      {customize_clothing_panel set_showing FALSE}
+      {customize_panel set_showing FALSE})
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen customize_clothing_screen})}
+{new
+   BandScreen
+   create_character_maxed_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok accomplishment_cant_launch_character_creator})
+   (SELECT_MSG
+      {ui pop_screen main_hub_screen})}
+{new
+   BandScreen
+   create_character_notonline_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok overshell_char_creator_denial_remote_players})
+   (SELECT_MSG
+      {ui pop_screen main_hub_screen})}
+{new
+   BandScreen
+   customize_no_prefabs_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok customize_no_prefabs})
+   (SELECT_MSG
+      {ui pop_screen main_hub_screen})}
+{new
+   BandScreen
+   disconnect_find_players_confirm_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_yesno disconnect_find_players_confirm no.btn})
+   (SELECT_MSG
+      {if
+         {== $component yes.btn}
+         {main_hub_screen cancel_find_override}}
+      {ui pop_screen main_hub_screen})}
+{new
+   BandScreen
+   customize_create_character_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {platform_mgr
+         add_sink
+         $this
+         (signin_changed)}
+      {session
+         add_sink
+         $this
+         (local_user_left)}
+      {session
+         add_sink
+         $this
+         (new_remote_user)}
+      {dialog_panel set_custom customize_create_character customize_create_character_now customize_create_character_later opt2.btn})
+   (exit
+      {platform_mgr remove_sink $this signin_changed}
+      {session remove_sink $this local_user_left}
+      {session remove_sink $this new_remote_user})
+   (new_remote_user
+      {ui pop_screen main_hub_screen})
+   (local_user_left
+      {ui pop_screen main_hub_screen})
+   (signin_changed
+      {ui pop_screen main_hub_screen})
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {closet_mgr set_user $user}
+            {closet_mgr set_return_screen main_hub_screen}
+            {net_sync disable}
+            {ui pop_screen charactercreator_screen})
+         (opt2.btn
+            {input_mgr clear_user}
+            {critical_user_listener clear_critical_user}
+            {ui pop_screen main_hub_screen})})}
+{new
+   BandScreen
+   dialog_need_signin_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (signin_msg '')
+   (enter
+      {dialog_panel
+         set_custom
+         [signin_msg]
+         mm_need_a_profile_signin
+         cancel
+         opt1.btn}
+      {platform_mgr
+         add_sink
+         $this
+         (signin_changed)})
+   (exit
+      {platform_mgr remove_sink $this signin_changed})
+   (signin_changed
+      {ui pop_screen})
+   (SELECT_MSG
+      {cond
+         ({== $component opt1.btn}
+            {platform_mgr signin 1 FALSE}
+            {ui pop_screen})
+         ({== $component opt2.btn}
+            {ui pop_screen})})}
+{func
+   push_signin_needed_dialog
+   ($dialog_text)
+   {dialog_need_signin_screen set signin_msg $dialog_text}
+   {ui push_screen dialog_need_signin_screen}}

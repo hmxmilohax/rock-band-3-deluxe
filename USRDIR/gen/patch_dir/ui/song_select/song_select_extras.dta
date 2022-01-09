@@ -1,0 +1,869 @@
+{new
+   UIPanel
+   song_select_shortcut_panel
+   (file
+      "song_select_shortcut.milo")
+   (old_user none)
+   (focus shortcut.lst)
+   (enter
+      {shortcut.grp set_showing FALSE}
+      {recoil.trg trigger})
+   (exit
+      {$this shortcut_exit}
+      {shortcut.grp set_showing FALSE})
+   (shortcut_period 1.5)
+   (shortcut_selected '')
+   (shortcut_mode none)
+   (shortcut_enter
+      ($mode $user $highlight_index)
+      {if
+         {==
+            none
+            [shortcut_mode]}
+         {set
+            [shortcut_mode]
+            $mode}
+         {{ui current_screen}
+            set_focus_panel
+            $this}
+         {shortcut.grp set_showing TRUE}
+         {start.trg trigger}
+         {help.ihp set_override_user $user}
+         {with
+            song_select_panel
+            {song.lst set_state kComponentNormal}}
+         {if
+            {==
+               [shortcut_mode]
+               groups}
+            {shortcut.lst
+               set_provider
+               {music_library get_shortcut_provider}}
+            {shortcut.lst set_selected $highlight_index}}
+         {set
+            [shortcut_selected]
+            {shortcut.lst selected_pos}}
+         {if_else
+            {input_mgr has_user}
+            {set
+               [old_user]
+               {input_mgr get_user}}
+            {set
+               [old_user]
+               none}}
+         {unless
+            {== $user none}
+            {play_instr_sfx $user button_toggle}
+            {input_mgr set_user $user}}
+         {overshell
+            add_sink
+            $this
+            (overshell_allowing_input_changed_msg)}})
+   (shortcut_exit
+      {if
+         {!=
+            [shortcut_mode]
+            none}
+         {{ui current_screen}
+            set_focus_panel
+            song_select_panel}
+         {with
+            song_select_panel
+            {song.lst set_state kComponentFocused}}
+         {recoil.trg trigger}
+         {set
+            [shortcut_mode]
+            none}
+         {if_else
+            {==
+               [old_user]
+               none}
+            {input_mgr clear_user}
+            {input_mgr
+               set_user
+               [old_user]}}
+         {overshell remove_sink $this}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {do
+            {play_instr_sfx $user button_back}
+            {$this shortcut_exit}}
+         kDataUnhandled})
+   (overshell_allowing_input_changed_msg
+      ($user)
+      {if
+         {&&
+            {input_mgr has_user}
+            {==
+               {input_mgr get_user}
+               $user}}
+         {$this shortcut_exit}})
+   (BUTTON_UP_MSG
+      {if_else
+         {'||'
+            {&&
+               {==
+                  groups
+                  [shortcut_mode]}
+               {'||'
+                  {== $action kAction_PageUp}
+                  {== $action kAction_PageDown}}}
+            {&&
+               {==
+                  sorts
+                  [shortcut_mode]}
+               {== $action kAction_ViewModify}}}
+         {$this on_select}
+         kDataUnhandled})
+   (SELECT_MSG
+      {$this on_select})
+   (on_select
+      {if
+         {==
+            [shortcut_mode]
+            groups}
+         {$this shortcut_exit}
+         {music_library
+            skip_to_shortcut
+            {shortcut.lst selected_pos}}})
+   (SCROLL_MSG
+      {set
+         [shortcut_selected]
+         {shortcut.lst selected_pos}})
+   (JOYPAD_CONNECT_MSG
+      {if
+         {! $connected}
+         {$this shortcut_exit}})}
+{new
+   UIPanel
+   song_select_filter_panel
+   (file
+      "song_select_filter.milo")
+   (focus settings.lst)
+   (filter_mode FALSE)
+   (enter
+      {all.grp set_showing FALSE}
+      {recoil.trg trigger}
+      {do
+         ($main_provider
+            {music_library get view_settings_provider})
+         {settings.lst set_provider $main_provider}
+         {$main_provider
+            select_setting
+            {settings.lst selected_data}}
+         {$main_provider set_to_setting_options options.lst}})
+   (exit
+      {$this filter_exit})
+   (status_changed
+      {settings.lst refresh}
+      {options.lst refresh})
+   (filter_enter
+      {if
+         {!
+            [filter_mode]}
+         {set
+            [filter_mode]
+            TRUE}
+         {{ui current_screen}
+            set_focus_panel
+            $this}
+         {all.grp set_showing TRUE}
+         {start.trg trigger}
+         {settings.trg trigger}
+         {$this set_focus settings.lst}
+         {settings.lst refresh}
+         {with
+            song_select_panel
+            {song.lst set_state kComponentNormal}}})
+   (filter_exit
+      {if
+         [filter_mode]
+         {set
+            [filter_mode]
+            FALSE}
+         {{ui current_screen}
+            set_focus_panel
+            song_select_panel}
+         {with
+            song_select_panel
+            {song.lst set_state kComponentFocused}}
+         {recoil.trg trigger}
+         {music_library report_sort_and_filters}})
+   (BUTTON_DOWN_MSG
+      {switch
+         $action
+         (kAction_Cancel
+            {play_instr_sfx $user button_back}
+            {if_else
+               {==
+                  {$this focus_name}
+                  "settings.lst"}
+               {$this filter_exit}
+               {do
+                  {settings.trg trigger}
+                  {$this set_focus settings.lst}}})
+         (kAction_ViewModify
+            {play_instr_sfx $user button_back}
+            {$this filter_exit})
+         (kAction_Option
+            {if_else
+               {==
+                  {$this focus_name}
+                  "settings.lst"}
+               {filter_reset_confirm_screen set reset_all TRUE}
+               {filter_reset_confirm_screen set reset_all FALSE}}
+            {play_instr_sfx $user button_select}
+            {ui push_screen filter_reset_confirm_screen})
+         kDataUnhandled})
+   (SELECT_MSG
+      {if_else
+         {== $component settings.lst}
+         {do
+            ($main_provider
+               {music_library get view_settings_provider})
+            {if_else
+               {$main_provider
+                  select_setting
+                  {settings.lst selected_data}}
+               {do
+                  {$main_provider set_to_setting_options options.lst}
+                  {options.trg trigger}
+                  {options.lst refresh}
+                  {$this set_focus options.lst}
+                  {options.lst
+                     set_selected_simulate_scroll
+                     {$main_provider starting_option}
+                     $user}}
+               {do
+                  {push_basic_confirm_dialog tour_filter_locked}}}}
+         {do
+            ($main_provider
+               {music_library get view_settings_provider})
+            {$main_provider
+               select_setting_option
+               {options.lst selected_data}}
+            {$this status_changed}
+            {unless
+               {$main_provider can_select_multiple_options}
+               {settings.trg trigger}
+               {$this set_focus settings.lst}}}})}
+{new
+   BandScreen
+   filter_reset_confirm_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (reset_all FALSE)
+   (enter
+      {dialog_panel set_yesno confirm_reset_settings no.btn})
+   (SELECT_MSG
+      {if
+         {==
+            $component
+            {dialog_panel find yes.btn}}
+         {if_else
+            [reset_all]
+            {{music_library get view_settings_provider}
+               reset_all_settings}
+            {{music_library get view_settings_provider}
+               reset_active_setting}}
+         {song_select_filter_panel status_changed}}
+      {ui pop_screen})}
+{new
+   BandScreen
+   invalid_selection_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok invalid_song})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   invalid_version_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok invalid_version})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   no_valid_songs_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok no_songs_apply})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   demo_mode_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok ugc_demo_mode_warning})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   demo_setlist_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok ugc_demo_setlist_warning})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   demo_online_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok ugc_demo_online_warning})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   full_setlist_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {if_else
+         {is_leader_local}
+         {dialog_panel set_ok full_setlist_warning}
+         {dialog_panel set_ok full_setlist_client_warning}})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   leader_setlist_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok leader_setlist_warning})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   leader_party_shuffle_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok leader_party_shuffle_warning})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   setlist_save_screen
+   (panels dialog_panel)
+   (share_setlist FALSE)
+   (enter
+      {dialog_panel set_custom_4btn save_setlist_before_playing setlist_save_unsaved setlist_save_local setlist_save_share setlist_save_battle opt1.btn}
+      {$this update_online_buttons}
+      {session_mgr
+         add_sink
+         $this
+         (new_remote_user signin_changed)}
+      {platform_mgr
+         add_sink
+         $this
+         (connection_status_changed)})
+   (update_online_buttons
+      {if_else
+         {&&
+            {rock_central is_online}
+            {profile_mgr has_primary_profile}
+            {platform_mgr
+               is_user_signed_into_live
+               {{profile_mgr get_primary_profile}
+                  get_associated_user}}}
+         {do
+            {dialog_panel
+               enable
+               {dialog_panel find opt3.btn}}
+            {dialog_panel
+               enable
+               {dialog_panel find opt4.btn}}}
+         {do
+            {dialog_panel
+               disable
+               {dialog_panel find opt3.btn}}
+            {dialog_panel
+               disable
+               {dialog_panel find opt4.btn}}}})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         {!
+            {session_mgr is_local}}
+         {ui pop_screen}})
+   (NEW_REMOTE_USER_MSG
+      {ui pop_screen})
+   (SIGNIN_CHANGED_MSG
+      {ui pop_screen})
+   (connection_status_changed
+      {$this update_online_buttons})
+   (exit
+      {platform_mgr remove_sink $this}
+      {session_mgr remove_sink $this})
+   (SELECT_MSG
+      {switch
+         {$component name}
+         ("opt1.btn"
+            {if_else
+               {machine_mgr all_machines_have_same_net_ui_state}
+               {do
+                  {music_library make_sure_setlist_is_valid}
+                  {if_else
+                     {music_library setlist_size}
+                     {do
+                        {music_library send_setlist_to_metaperformer}
+                        {song_select_panel move_on_quickplay}}
+                     {ui pop_screen}}}
+               {ui_event_mgr trigger_event remote_not_ready}})
+         ("opt2.btn"
+            {if
+               {edit_setlist_panel create_setlist FALSE}
+               {ui goto_screen edit_setlist_screen}})
+         ("opt3.btn"
+            {if
+               {edit_setlist_panel create_setlist TRUE}
+               {ui goto_screen edit_setlist_screen}})
+         ("opt4.btn"
+            {if
+               {edit_setlist_panel create_battle}
+               {ui goto_screen edit_setlist_screen}})})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {!
+            {content_mgr refresh_done}}
+         {do
+            {content_loading_panel set_blocking TRUE}
+            TRUE}
+         {if_else
+            {== $action kAction_Cancel}
+            {ui pop_screen}
+            kDataUnhandled}})}
+{new
+   EditSetlistPanel
+   edit_setlist_panel
+   (file
+      "edit_setlist.milo")
+   (focus edit_name.btn)
+   (current_edit
+      "")
+   (available_score_types
+      (ORDERED_SCORE_TYPE_SYMBOLS))
+   (expiration_data
+      ((days_1 1)
+         (days_3 3)
+         (days_7 7)
+         (days_14 14)))
+   (enter
+      {title.lbl
+         set
+         text_token
+         {$this get_title_token}}
+      {edit_expiration.lst
+         set_data
+         {$this get expiration_data}}
+      {$this filter_available_score_types}
+      {edit_instrument.lst
+         set_data
+         [available_score_types]}
+      {session_mgr
+         add_sink
+         $this
+         (new_remote_user signin_changed)})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         {!
+            {session_mgr is_local}}
+         {ui pop_screen}})
+   (NEW_REMOTE_USER_MSG
+      {ui pop_screen})
+   (SIGNIN_CHANGED_MSG
+      {ui pop_screen})
+   (exit
+      {session_mgr remove_sink $this}
+      {virtual_keyboard clear_callback})
+   (filter_available_score_types
+      {resize
+         [available_score_types]
+         0}
+      {foreach
+         $st
+         (ORDERED_SCORE_TYPE_SYMBOLS)
+         {if
+            {music_library all_setlist_songs_have_score_type $st}
+            {push_back
+               [available_score_types]
+               $st}}})
+   (set_edit_state
+      ($is_battle)
+      {if_else
+         $is_battle
+         {battle.trg trigger}
+         {setlist.trg trigger}}
+      {$this refresh_fields}
+      {if_else
+         $is_battle
+         {do
+            {$this enable edit_instrument.btn}
+            {$this enable edit_expiration.btn}}
+         {do
+            {$this disable edit_instrument.btn}
+            {$this disable edit_expiration.btn}}}
+      {edit_instrument.btn set_showing $is_battle}
+      {edit_expiration.btn set_showing $is_battle}
+      {setlist_instrument.lbl set_showing $is_battle}
+      {setlist_expiration.lbl set_showing $is_battle}
+      {$this set_focus edit_name.btn})
+   (set_wait_state
+      {waiting.trg trigger}
+      {$this
+         set_focus
+         ""})
+   (set_message_state
+      {message.trg trigger}
+      {message.lbl
+         set
+         text_token
+         {$this get_message_token}}
+      {$this set_focus message_ok.btn})
+   (refresh_fields
+      {setlist_name.lbl set_edit_setlist_name $this}
+      {setlist_desc.lbl set_edit_setlist_desc $this}
+      {setlist_instrument.lbl
+         set_battle_instrument
+         [setlist_inst]}
+      {setlist_expiration.lbl
+         set_battle_time_left
+         [setlist_seconds]}
+      {if_else
+         {$this get_art_tex}
+         {do
+            {art.mat set diffuse_tex canvas.tex}
+            {art_overlay.mat
+               set
+               diffuse_tex
+               {$this get_art_tex}}
+            {art_overlay.mesh set_showing TRUE}}
+         {do
+            {art.mat set diffuse_tex default_art.tex}
+            {art_overlay.mesh set_showing FALSE}}})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({&&
+               {== $action kAction_Cancel}
+               {==
+                  {$this focus_name}
+                  "edit_instrument.lst"}}
+            {edit_reset.trg trigger}
+            {$this set_focus edit_instrument.btn})
+         ({&&
+               {== $action kAction_Cancel}
+               {==
+                  {$this focus_name}
+                  "edit_expiration.lst"}}
+            {edit_reset.trg trigger}
+            {$this set_focus edit_expiration.btn})
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (edit_name.btn
+            {set
+               [current_edit]
+               name}
+            {virtual_keyboard
+               show_keyboard
+               $user
+               50
+               {localize new_setlist_vk_title}
+               {localize new_setlist_vk_desc}
+               [setlist_name]
+               $this})
+         (edit_desc.btn
+            {set
+               [current_edit]
+               desc}
+            {virtual_keyboard
+               show_keyboard
+               $user
+               120
+               {localize new_setlist_vk_title}
+               {localize setlist_desc_vk_desc}
+               [setlist_desc]
+               $this})
+         (edit_art.btn
+            {do
+               ($profile
+                  {profile_mgr get_primary_profile})
+               {if
+                  $profile
+                  {closet_mgr set_no_user_mode TRUE}
+                  {patch_select_panel setup_for_setlist_art $this $profile}
+                  {patch_select_panel set patch_return_screen song_select_screen}
+                  {song_select_panel set should_go_to_art_maker TRUE}
+                  {ui pop_screen}}})
+         (edit_instrument.btn
+            {edit_instrument.trg trigger}
+            {$this set_focus edit_instrument.lst}
+            {edit_instrument.lst
+               set_selected
+               {$this get_instrument_list_sym}})
+         (edit_expiration.btn
+            {edit_expiration.trg trigger}
+            {$this set_focus edit_expiration.lst}
+            {edit_expiration.lst
+               set_selected
+               {$this get_expiration_list_sym}})
+         (edit_instrument.lst
+            {edit_reset.trg trigger}
+            {$this set_focus edit_instrument.btn})
+         (edit_expiration.lst
+            {edit_reset.trg trigger}
+            {$this set_focus edit_expiration.btn})
+         (ok.btn
+            {$this done_editing})
+         (message_ok.btn
+            {$this message_ok})})
+   (SCROLL_MSG
+      {switch
+         $component
+         (edit_instrument.lst
+            {$this
+               set_instrument_to_list_sym
+               {edit_instrument.lst selected_sym}}
+            {$this refresh_fields})
+         (edit_expiration.lst
+            {$this
+               set_expiration_to_list_sym
+               {edit_expiration.lst selected_sym}}
+            {$this refresh_fields})})
+   (virtual_keyboard_result_msg
+      ($ok $str)
+      {if
+         $ok
+         {if_else
+            {==
+               [current_edit]
+               name}
+            {set
+               [setlist_name]
+               $str}
+            {set
+               [setlist_desc]
+               $str}}
+         {$this refresh_fields}})
+   (leave_setlist
+      {ui pop_screen})
+   (goto_create_dialog
+      {ui goto_screen setlist_save_screen})}
+{new
+   BandScreen
+   edit_setlist_screen
+   (panels edit_setlist_panel)
+   (back setlist_save_screen)
+   (BUTTON_DOWN_MSG
+      {if_else
+         {&&
+            {== $action kAction_Cancel}
+            {edit_setlist_panel editing_setlist}}
+         {ui pop_screen}
+         kDataUnhandled})}
+{new
+   BandScreen
+   delete_setlist_confirm_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_yesno confirm_delete_setlist no.btn}
+      {session_mgr
+         add_sink
+         $this
+         (signin_changed)})
+   (SELECT_MSG
+      {if
+         {==
+            $component
+            {dialog_panel find yes.btn}}
+         {music_library delete_highlighted_setlist}
+         {song_select_panel hide_details}}
+      {ui pop_screen})
+   (SIGNIN_CHANGED_MSG
+      {ui pop_screen})
+   (exit
+      {session_mgr remove_sink $this})}
+{new
+   BandScreen
+   delete_content_confirm_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (content
+      "")
+   (enter
+      {do
+         ($num_songs
+            {song_mgr
+               num_songs_in_content
+               [content]})
+         {dialog_panel
+            set_custom
+            {if_else
+               {== $num_songs 1}
+               (about_to_delete_songs $num_songs)
+               (about_to_delete_songs $num_songs)}
+            shell_char_delete
+            cancel
+            opt2.btn}}
+      {session_mgr
+         add_sink
+         $this
+         (signin_changed)}
+      {platform_mgr
+         add_sink
+         $this
+         (storage_changed)})
+   (SELECT_MSG
+      {if_else
+         {==
+            $component
+            {dialog_panel find opt1.btn}}
+         {do
+            {song_select_panel hide_details}
+            {deleting_content_panel
+               setup_deletion
+               [content]
+               TRUE}
+            {ui goto_screen deleting_content_screen}}
+         {ui pop_screen}})
+   (SIGNIN_CHANGED_MSG
+      {ui pop_screen})
+   (storage_changed
+      {ui pop_screen})
+   (exit
+      {session_mgr remove_sink $this}
+      {platform_mgr remove_sink $this})}
+{new
+   ContentDeletePanel
+   deleting_content_panel
+   (file
+      "deleting_content.milo")
+   (enter
+      {deleting_text.lbl
+         set_token_fmt
+         deleting_content_fmt
+         {song_mgr
+            num_songs_in_content
+            [content]}})
+   (refresh_started
+      {content_loading_panel set_blocking TRUE})
+   (refresh_done
+      {unless
+         {ui in_transition}
+         {ui pop_screen}})}
+{new
+   BandScreen
+   deleting_content_screen
+   (panels deleting_content_panel)
+   (focus deleting_content_panel)}
+{new
+   BandScreen
+   missing_setlist_songs_screen
+   (panels dialog_panel)
+   (num_songs 0)
+   (enter
+      {if_else
+         {&&
+            {session_mgr is_local}
+            {platform_mgr is_connected}}
+         {dialog_panel
+            set_yesno
+            (missing_setlist_songs_store
+               {missing_setlist_songs_screen get num_songs})
+            yes.btn}
+         {dialog_panel
+            set_ok
+            (missing_setlist_songs
+               {missing_setlist_songs_screen get num_songs})}}
+      {session_mgr
+         add_sink
+         $this
+         (new_remote_user signin_changed)}
+      {platform_mgr
+         add_sink
+         $this
+         (connection_status_changed)})
+   (NEW_REMOTE_USER_MSG
+      {ui pop_screen})
+   (SIGNIN_CHANGED_MSG
+      {ui pop_screen})
+   (connection_status_changed
+      ($connected)
+      {ui pop_screen})
+   (exit
+      {session_mgr remove_sink $this}
+      {platform_mgr remove_sink $this})
+   (SELECT_MSG
+      {if_else
+         {== $component yes.btn}
+         {if
+            {$user is_signed_in_online}
+            {input_mgr set_user $user}
+            {setlist_to_store_panel get_songs_from_music_library}
+            {ui pop_screen setlist_to_store_screen}}
+         {ui pop_screen}})}
+#ifdef HX_XBOX
+{new
+   ParentalControlPanel
+   parental_control_panel
+   (done
+      {if
+         {content_mgr refresh_done}
+         {music_library rebuild_restricted_data}}
+      {ui pop_screen})}
+{new
+   BandScreen
+   parental_control_screen
+   (panels parental_control_panel)
+   (focus parental_control_panel)}
+#else
+{new
+   BandScreen
+   parental_control_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok content_restricted})
+   (SELECT_MSG
+      {ui pop_screen})}
+#endif
+{new
+   BandScreen
+   content_restricted_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok content_restricted})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   setlist_content_restricted_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok setlist_content_restricted})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   ugc_not_allowed_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok ugc_not_allowed_in_trainers})
+   (SELECT_MSG
+      {ui pop_screen})}

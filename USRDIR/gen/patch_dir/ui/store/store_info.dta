@@ -1,0 +1,399 @@
+{new
+   StoreInfoPanel
+   store_info_panel
+   (file
+      "store_info.milo")
+   (focus buttons.lst)
+   (force_exit TRUE)
+   (purchase_allowed
+      ($offer)
+      {&&
+         {$offer is_available}
+         {!
+            {{store_panel offer_provider}
+               show_browser_purchased
+               $offer}}})
+   (refresh_buttons
+      ($init)
+      {do
+         ($offer
+            [cur_offer])
+         ($is_song
+            {==
+               {$offer offer_type}
+               song})
+         ($buttons
+            ())
+         {resize $buttons 0}
+         {insert_elem $buttons 0 exit}
+         {if
+            $is_song
+            {if
+               {&&
+                  {$offer has_available_demo}
+                  {$this purchase_allowed $offer}}
+               {insert_elem $buttons 0 store_download_demo}}
+            {if
+               {$offer has_available_pack}
+               {insert_elem
+                  $buttons
+                  0
+                  (store_view_pack
+                     {$offer
+                        get_data
+                        (pack_name)})}}
+            {if
+               {$offer has_available_album}
+               {insert_elem
+                  $buttons
+                  0
+                  (store_view_album
+                     {$offer
+                        get_data
+                        (offer_album_name)})}}}
+         {if
+            {$offer has_available_upgrade}
+            {if_else
+               {$offer upgrade_purchased}
+               {insert_elem $buttons 0 store_download_upgrade_again}
+               {insert_elem $buttons 0 store_buy_upgrade}}}
+         {if_else
+            {$offer is_purchased}
+            {insert_elem $buttons 0 store_download_again}
+            {if
+               {$this purchase_allowed $offer}
+               {insert_elem $buttons 0 store_buy_now}}}
+         {if
+            {&&
+               $is_song
+               {$offer has_data preview_audio}
+               {is_allowed_to_preview_offer $offer}
+               {store_preview_mgr
+                  allow_preview_download
+                  {sprintf
+                     "%s%s"
+                     {store_panel get_request_prefix}
+                     {$offer
+                        get_data
+                        (preview_audio)}}}}
+            {insert_elem $buttons 0 store_preview_audio}}
+         {if_else
+            $init
+            {buttons.lst set_data $buttons 0 FALSE TRUE}
+            {do
+               ($sym
+                  {buttons.lst selected_sym})
+               {buttons.lst set_data $buttons 0 FALSE TRUE}
+               {buttons.lst set_selected $sym FALSE}}}
+         {if_else
+            {'||'
+               {$offer in_library}
+               {{store_panel offer_provider}
+                  show_browser_purchased
+                  $offer}}
+            {buttons.lst undim_data store_buy_upgrade}
+            {buttons.lst dim_data store_buy_upgrade}}})
+   (enter
+      {$this refresh_panel})
+   (refresh_panel
+      {do
+         ($offer
+            [cur_offer])
+         ($offer_type
+            {$offer offer_type})
+         {song.lbl set_offer_name $offer}
+         {$this refresh_buttons TRUE}
+         {cost_ps3.lbl set_showing FALSE}
+         {cost.lbl set_showing FALSE}
+         {if
+            {$this purchase_allowed $offer}
+            #ifdef HX_PS3
+            {cost_ps3.lbl set_offer_cost $offer}
+            {cost_ps3.lbl set_showing TRUE}
+            #else
+            {cost.lbl set_offer_cost $offer}
+            {cost.lbl set_showing TRUE}
+            #endif}
+         {if_else
+            {[cur_offer]
+               has_data
+               rating}
+            {do
+               {rating.lbl
+                  set_rating_icon
+                  {[cur_offer]
+                     get_data
+                     (rating)}}
+               {rating_description.lbl
+                  set
+                  text_token
+                  {sprintf
+                     "rating_%i"
+                     {[cur_offer]
+                        get_data
+                        (rating)}}}
+               {rating.grp set_showing TRUE}}
+            {rating.grp set_showing FALSE}}
+         {if
+            {'||'
+               {== $offer_type pack}
+               {== $offer_type album}}
+            {drm.lbl set_offer_description $offer}}
+         {recommended.grp set_showing FALSE}
+         {recommended_wait.grp set_showing TRUE}
+         {art_cycle.anim set_frame 10}
+         {$this fetch_recommendations}
+         {store_details_panel refresh $offer}
+         {if_else
+            {&&
+               {$offer has_data preview_audio}
+               {is_allowed_to_preview_offer $offer}}
+            {store_preview_mgr
+               set_current_preview_file
+               {sprintf
+                  "%s%s"
+                  {store_panel get_request_prefix}
+                  {$offer
+                     get_data
+                     (preview_audio)}}}
+            {store_preview_mgr clear_current_preview}}})
+   (no_recommendations
+      {recommended_wait.grp set_showing FALSE})
+   (recommendations_ready
+      {$this refresh_recommendations}
+      {recommended.grp set_showing TRUE}
+      {recommended_wait.grp set_showing FALSE})
+   (refresh_recommendations
+      {recommended.lbl set_recommendation $this}
+      {foreach_int
+         $i
+         0
+         6
+         {{object
+               {sprintf
+                  "r%02i.mat"
+                  {'+' $i 1}}}
+            set
+            diffuse_tex
+            {do
+               ($tex
+                  {$this get_recommendation_tex $i})
+               {if_else $tex $tex default.tex}}}})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({!
+               {store_panel user_can_do_input}}
+            TRUE)
+         ({== $action kAction_Cancel}
+            {play_instr_sfx $user button_back}
+            {$this go_back})
+         ({== $action kAction_ShellOption}
+            {if
+               {&&
+                  {recommended.grp showing}
+                  {rotate_art.trg is_done}}
+               {$this rotate_recommendation}
+               {$this refresh_recommendations}
+               {rotate_art.trg trigger}})
+         ({== $action kAction_Option}
+            {if
+               {recommended.grp showing}
+               {do
+                  ($path
+                     {$this recommendation_path})
+                  {if
+                     $path
+                     {store_panel
+                        set_source
+                        {symbol
+                           {sprintf
+                              "similar_recommendation_%s"
+                              {[cur_offer]
+                                 short_name}}}
+                        FALSE}
+                     {store_panel request $path FALSE}}}})
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (store_preview_audio
+            {do
+               ($offer
+                  [cur_offer])
+               {if_else
+                  {$offer has_data preview_audio}
+                  {do
+                     {store_preview_mgr
+                        download_preview_file
+                        {sprintf
+                           "%s%s"
+                           {store_panel get_request_prefix}
+                           {$offer
+                              get_data
+                              (preview_audio)}}}
+                     {store_details_panel refresh $offer}}
+                  {notify
+                     "No preview audio file in store_index\n"}}
+               {$this refresh_buttons FALSE}})
+         (store_buy_now
+            {if_else
+               {[cur_offer]
+                  in_library}
+               {ui push_screen store_library_warning_screen}
+               {store_panel
+                  check_out
+                  [cur_offer]}})
+         (store_download_again
+            {store_panel
+               re_download
+               [cur_offer]})
+         (store_buy_upgrade
+            {if_else
+               {'||'
+                  {[cur_offer]
+                     in_library}
+                  {{store_panel offer_provider}
+                     show_browser_purchased
+                     [cur_offer]}}
+               {if_else
+                  {[cur_offer]
+                     upgrade_in_library}
+                  {ui push_screen store_library_upgrade_warning_screen}
+                  {store_panel
+                     check_out
+                     {[cur_offer]
+                        upgrade}}}
+               {push_basic_confirm_dialog store_prevent_upgrade_purchase}})
+         (store_download_upgrade_again
+            {store_panel
+               re_download
+               {[cur_offer]
+                  upgrade}})
+         (store_view_album
+            {store_panel
+               set_source
+               {symbol
+                  {sprintf
+                     "album_jump_%s"
+                     {[cur_offer]
+                        short_name}}}
+               FALSE}
+            {store_panel
+               request
+               {[cur_offer]
+                  get_data
+                  (album_link)}
+               FALSE})
+         (store_view_pack
+            {store_panel
+               set_source
+               {symbol
+                  {sprintf
+                     "pack_jump_%s"
+                     {[cur_offer]
+                        short_name}}}
+               FALSE}
+            {store_panel
+               request
+               {[cur_offer]
+                  get_data
+                  (pack_link)}
+               FALSE})
+         (store_download_demo
+            {store_panel
+               check_out
+               {[cur_offer]
+                  demo}})
+         (exit
+            {$this go_back})})
+   (go_back
+      {ui
+         goto_screen
+         {store_info_screen get back_screen}
+         FALSE
+         TRUE})
+   (enum_finished
+      {if
+         {store_panel is_up}
+         {do
+            ($offer
+               [cur_offer])
+            {$this refresh_buttons FALSE}
+            #ifdef HX_PS3
+            {cost_ps3.lbl
+               set_showing
+               {$this purchase_allowed $offer}}
+            #else
+            {cost.lbl
+               set_showing
+               {$this purchase_allowed $offer}}
+            #endif}})}
+{new
+   BandScreen
+   store_info_screen
+   (panels
+      meta
+      sv2_panel
+      (store_banner_panel
+         (active FALSE)
+         (always_load FALSE))
+      (store_menu_panel
+         (active FALSE)
+         (always_load FALSE))
+      store_info_panel
+      store_panel
+      store_details_panel
+      connection_status_panel)
+   (focus store_info_panel)
+   (back_screen store_browser_screen)
+   (enter
+      {store_panel set_select_help})}
+{new
+   BandScreen
+   store_library_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($offer
+            {store_info_panel get cur_offer})
+         {dialog_panel
+            set_custom
+            ({sprintf
+                  "store_library_%s_warning"
+                  {$offer offer_type}}
+               {$offer offer_name})
+            continue
+            cancel
+            opt2.btn}})
+   (SELECT_MSG
+      {if
+         {== $component opt1.btn}
+         {store_panel
+            check_out
+            {store_info_panel get cur_offer}}}
+      {ui pop_screen})}
+{new
+   BandScreen
+   store_library_upgrade_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($offer
+            {store_info_panel get cur_offer})
+         {dialog_panel
+            set_custom
+            (store_library_upgrade_warning
+               {$offer offer_name})
+            continue
+            cancel
+            opt2.btn}})
+   (SELECT_MSG
+      {if
+         {== $component opt1.btn}
+         {store_panel
+            check_out
+            {{store_info_panel get cur_offer}
+               upgrade}}}
+      {ui pop_screen})}

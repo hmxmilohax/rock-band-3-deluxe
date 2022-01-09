@@ -1,0 +1,5304 @@
+#include band_macros.dta
+#define EXCLUDED_SONG_POSTPROCS
+((all_deploy.pp failed.pp failing.pp intro_contrast_flame.pp intro_contrast_grey.pp intro_contrast_ice.pp intro_posterize_a.pp intro_test.pp override_blender.pp placeholder.pp savior.pp world.pp))
+(BandLabel
+   (description
+      "Label with color presets")
+   (allowed_dirs PanelDir)
+   (superclasses UILabel)
+   (ext lbl)
+   (init
+      {set
+         [resource_name]
+         "default"})
+   (editor
+      (in_anim
+         object
+         (class Anim)
+         (help
+            "anim used before label change"))
+      (out_anim
+         object
+         (class Anim)
+         (help
+            "anim used after label change")))
+   (types
+      (dev
+         (resource_file
+            "../ui/label.milo")
+         (allow_edit_text TRUE)))
+   (resources_path
+      "../ui/resource/fonts/"))
+(BandButton
+   (description
+      "Button with app-specific features")
+   (allowed_dirs)
+   (superclasses UIButton)
+   (init
+      {set
+         [resource_name]
+         "default"})
+   (types
+      (default
+         (resource_file
+            "../ui/button.milo")))
+   (focus_anim_duration 0.1)
+   (ext btn)
+   (editor)
+   (resources_path
+      "../ui/resource/fonts/"))
+(BandHighlight
+   (description
+      "Special highlight bar that chases the focus component")
+   (allowed_dirs PanelDir)
+   (superclasses UIComponent)
+   (ext hlit)
+   (init
+      {$this set_type default})
+   (types
+      (default
+         (resource_file
+            "highlight.milo")
+         (anim_duration 0.1)
+         (meshes
+            ("highlight.mesh"
+               (normal
+                  "normal.mat")
+               (focused
+                  "normal.mat")
+               (disabled
+                  "disabled.mat"))))))
+(BandRetargetVignette
+   (description
+      "Handles Retargetting IK in a vignette")
+   (allowed_dirs ObjectDir)
+   (superclasses Poll)
+   (ext brv)
+   (editor
+      (effectors
+         (array string)
+         (help
+            "All the effectors needed by the scene")
+         (read_only TRUE))
+      (player
+         symbol
+         (list
+            (player0 player1 player2 player3))
+         (help
+            "Player to create effector for"))
+      (bone
+         symbol
+         (list
+            (bone_pelvis bone_L-ankle bone_R-ankle bone_L-foreArm bone_L-hand bone_R-foreArm bone_R-hand bone_prop0 bone_prop1 bone_prop2 bone_prop3 bone_head))
+         (help
+            "bone on player to create/edit effector for"))
+      (create_player_ik
+         script
+         (script
+            {do
+               ($name
+                  {sprint
+                     [player]
+                     "_"
+                     [bone]
+                     ".ikf"})
+               ($obj
+                  {find_obj
+                     {$this dir}
+                     $name})
+               {unless
+                  $obj
+                  {set
+                     $obj
+                     {new BandIKEffector}}
+                  {$obj
+                     set_name
+                     $name
+                     {$this dir}}}
+               {unless
+                  {$obj
+                     size
+                     (constraints)}
+                  {$obj
+                     insert
+                     (constraints 0)
+                     0}}
+               {milo update_objects}
+               {milo
+                  edit
+                  $obj
+                  "BandIKEffector"}})
+         (help
+            "Create/edit the effector for [player] and [bone]")
+         (refresh effectors))
+      (prop
+         object
+         (class Trans)
+         (help
+            "prop object/bone in scene to constrain"))
+      (create_prop_ik
+         script
+         (script
+            {if_else
+               [prop]
+               {do
+                  ($name
+                     {sprint
+                        {file_get_base
+                           {[prop]
+                              name}}
+                        ".ikf"})
+                  ($obj
+                     {find_obj
+                        {$this dir}
+                        $name})
+                  {unless
+                     $obj
+                     {set
+                        $obj
+                        {new BandIKEffector}}
+                     {$obj
+                        set_name
+                        $name
+                        {$this dir}}}
+                  {unless
+                     {$obj
+                        size
+                        (constraints)}
+                     {$obj
+                        insert
+                        (constraints 0)
+                        0}}
+                  {$obj
+                     set
+                     (constraints 0 weight)
+                     0}
+                  {$obj
+                     set
+                     effector
+                     [prop]}
+                  {milo update_objects}
+                  {milo
+                     edit
+                     $obj
+                     "BandIKEffector"}}
+               {notify
+                  "Can not create a prop BandIKEffector with no [prop] set!"}})
+         (help
+            "Create/edit the effector for [prop]")
+         (refresh effectors)))
+   (types))
+(BandIKEffector
+   (description
+      "Does IK on end effectors and props")
+   (allowed_dirs ObjectDir)
+   (superclasses CharPollable CharWeightable)
+   (ext ikf)
+   (editor
+      (effector
+         object
+         (class Trans)
+         (help
+            "The character end effector or prop to be constrained."))
+      (constraints
+         (array
+            (struct
+               (target
+                  object
+                  (class Trans)
+                  (help
+                     "The thing the [effector] will keep relative xfm to, or absolute xfm if weight <= 0."))
+               (weight
+                  float
+                  (help
+                     "Relative weight for this constraint, is same as radius in feet of full effect.  If zero or negative [effector] will be constrained directly to the [target]")))))
+      (ground
+         object
+         (class Trans)
+         (help
+            "for pelvis/feet specifies a ground plane height"))
+      (elbow
+         object
+         (class BandIKEffector)
+         (help
+            "If hand, pointer to elbow object"))
+      (more
+         object
+         (class BandIKEffector)
+         (help
+            "More constraints to evaluate")))
+   (types))
+(PlayerDiffIcon
+   (description
+      "Overloaded player/difficulty display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext pdiff)
+   (editor
+      (num_players
+         int
+         (range 0 4)
+         (help
+            "Number of players"))
+      (diff
+         int
+         (range 0 3)
+         (help
+            "Difficulty")))
+   (types))
+(InstrumentDifficultyDisplay
+   (description
+      "Song Instrument Difficulty Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext idd)
+   (editor
+      (has_part
+         bool
+         (help
+            "whether or not instrument has a part to play"))
+      (instrument_state
+         int
+         (list
+            (IDD_INSTRUMENT_STATES))
+         (help
+            "how the instrument should be shown"))
+      (difficulty
+         int
+         (range 0 6)
+         (help
+            "Difficulty"))
+      (num_vocal_parts
+         int
+         (range 0 3)
+         (help
+            "Number of vocal parts"))
+      (instrument_type
+         symbol
+         (list
+            (drum bass guitar vocals harmony keys real_guitar real_bass real_drum real_keys band))
+         (help
+            "Type of instrument"))
+      (instrument_color_override
+         object
+         (class UIColor)
+         (help
+            "Instrument color override for this instance")))
+   (types))
+(StarDisplay
+   (description
+      "Star Display (used for showing stars in different formats)")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext sd)
+   (editor
+      (force_mixed_mode
+         bool
+         (help
+            "whether or not to force mixed mode (X/Y *)"))
+      (show_empty_stars
+         bool
+         (help
+            "whether or not to show empty stars"))
+      (show_denominator
+         bool
+         (help
+            "whether or not to denominator (when applicable)"))
+      (stars
+         int
+         (help
+            "Current Stars"))
+      (total_stars
+         int
+         (help
+            "Total Stars"))
+      (alignment
+         int
+         (list
+            (TEXT_ALIGNMENTS))
+         (help
+            "star alignment"))
+      (icon_override
+         symbol
+         (help
+            "Single-character icon symbol in place of star"))
+      (empty_icon_override
+         symbol
+         (help
+            "Single-character icon symbol in place of empty star")))
+   (anim_props
+      (float_stars
+         float
+         (help
+            "Float Stars"))
+      (float_total_stars
+         float
+         (help
+            "Float Total Stars")))
+   (types))
+(ScoreDisplay
+   (description
+      "Score Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext scr)
+   (editor
+      (score
+         int
+         (help
+            "Score"))
+      (rank
+         int
+         (help
+            "Rank"))
+      (globally
+         bool
+         (help
+            "Globally? (vs Friends)"))
+      (text_color
+         object
+         (class UIColor)))
+   (types))
+(ReviewDisplay
+   (description
+      "Review Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext rvw)
+   (editor
+      (score
+         int
+         (help
+            "Score")))
+   (types))
+(ScrollbarDisplay
+   (description
+      "Scrollbar Display (used for showing a scrollbar associated with a list)")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext sbd)
+   (editor
+      (scrollbar_list
+         object
+         (class UIList)
+         (help
+            "list used to control scrollbar")
+         (refresh scrollbar_height))
+      (scrollbar_height
+         float
+         (help
+            "Height of scrollbar (ignored if list attached)")
+         (read_only
+            [list_attached]))
+      (always_show
+         bool
+         (help
+            "whether or not to show when there is no scrolling"))
+      (list_attached
+         bool
+         (help
+            "whether or not to attach to the list")
+         (no_test)
+         (refresh scrollbar_height list_x_offset list_y_offset))
+      (list_x_offset
+         float
+         (help
+            "X Offset from list (ignored if list not attached)")
+         (read_only
+            {!
+               [list_attached]}))
+      (list_y_offset
+         float
+         (help
+            "Y Offset from list (ignored if list not attached)")
+         (read_only
+            {!
+               [list_attached]}))
+      (min_thumb_height
+         float
+         (help
+            "Minimum height for thumb")))
+   (types))
+(DialogDisplay
+   (description
+      "Dialog Display (controls bones associated with a label)")
+   (allowed_dirs RndDir)
+   (superclasses Poll)
+   (ext dd)
+   (editor
+      (dialog_label
+         object
+         (class UILabel)
+         (help
+            "label used to control dialog bones"))
+      (top_bone
+         object
+         (class Mesh)
+         (help
+            "top bone used to adjust dialog size"))
+      (bottom_bone
+         object
+         (class Mesh)
+         (help
+            "bottom bone used to adjust dialog size")))
+   (types))
+(CheckboxDisplay
+   (description
+      "Checkbox Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext chk)
+   (editor
+      (checked
+         bool
+         (help
+            "If box is checked or not")))
+   (types))
+(MeterDisplay
+   (description
+      "Meter Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext md)
+   (editor
+      (show_text
+         bool
+         (help
+            "whether or not to show text"))
+      (percentage_text
+         bool
+         (help
+            "whether or not to show text in percentage form")
+         (refresh hide_denominator))
+      (hide_denominator
+         bool
+         (help
+            "whether or not to hide denominator")
+         (read_only
+            [percentage_text]))
+      (wrapper_text
+         symbol
+         (help
+            "Localization token to use for wrapper"))
+      (current_value
+         int
+         (help
+            "current value of meter"))
+      (max_value
+         int
+         (help
+            "max value of meter"))
+      (anim_period
+         float
+         (help
+            "length of value change animation, in seconds")))
+   (types))
+(MiniLeaderboardDisplay
+   (description
+      "Mini Leaderboard Display")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext mld)
+   (editor
+      (allow_solo_scores
+         bool
+         (help
+            "whether or not solo scores should be displayed when appropriate")))
+   (types))
+(P9TexMesh
+   (description
+      "Dynamic Texture Mesh")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext ptm)
+   (editor
+      (tex_file
+         file
+         (help
+            "The default tex, and the one for previewing in Milo.")))
+   (types))
+(MicInputArrow
+   (description
+      "Mic Input Arrow")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext mia)
+   (editor
+      (test_connect
+         script
+         (script
+            {$this set_mic_connected TRUE 0}
+            {$this set_mic_connected TRUE 1}
+            {$this set_mic_connected TRUE 2}))
+      (test_disconnect
+         script
+         (script
+            {$this set_mic_connected FALSE 0}
+            {$this set_mic_connected FALSE 1}
+            {$this set_mic_connected FALSE 2}))
+      (test_hidden
+         script
+         (script
+            {$this set_mic_hidden 0}
+            {$this set_mic_hidden 1}
+            {$this set_mic_hidden 2}))
+      (test_preview
+         script
+         (script
+            {$this set_mic_preview 0}
+            {$this set_mic_preview 1}
+            {$this set_mic_preview 2}))
+      (test_extended
+         script
+         (script
+            {$this set_mic_extended 0}
+            {$this set_mic_extended 1}
+            {$this set_mic_extended 2})))
+   (types))
+#define JOYPAD_ACTIONS
+("kAction_None"
+   "kAction_Confirm"
+   "kAction_Cancel"
+   "kAction_Option"
+   "kAction_Start"
+   "kAction_ViewModify"
+   "kAction_Up"
+   "kAction_Right"
+   "kAction_Down"
+   "kAction_Left"
+   "kAction_PageUp"
+   "kAction_PageDown"
+   "kAction_ExtendedOption1"
+   "kAction_ExtendedOption2"
+   "kAction_ShellOption"
+   "kAction_WiiHomeMenu")
+(InlineHelp
+   (description
+      "Inline Help")
+   (allowed_dirs)
+   (superclasses UIComponent)
+   (ext ihp)
+   (editor
+      (horizontal bool)
+      (spacing float)
+      (config
+         (array
+            (struct
+               (action
+                  int
+                  (list
+                     (JOYPAD_ACTIONS)))
+               (text_token symbol)
+               (secondary_token symbol))))
+      (text_color
+         object
+         (class UIColor))
+      (use_connected_controllers
+         bool
+         (help
+            "Use all connected controllers for button icon, rather than just joined (rare)")))
+   (types))
+(BandList
+   (description
+      "Band specific UIList")
+   (allowed_dirs)
+   (superclasses UIList)
+   (init
+      {$this set_type default})
+   (ext lst)
+   (editor
+      (focus_anim
+         object
+         (class TransAnim)
+         (help
+            "Animation to play on a selected entry to transition into and out of focus"))
+      (pulse_anim
+         object
+         (class TransAnim)
+         (help
+            "Animation to play on a selected entry after focus is played - focus anim must exist"))
+      (reveal_anim
+         object
+         (class TransAnim)
+         (help
+            "animation to play on each entry when list is revealed"))
+      (reveal_start_delay
+         float
+         (help
+            "delay before playing reveal animation"))
+      (reveal_entry_delay
+         float
+         (help
+            "delay between list entries playing reveal animation"))
+      (reveal_scale
+         float
+         (help
+            "amount to scale reveal animation"))
+      (reveal_sound
+         object
+         (class Sequence)
+         (help
+            "sound to play on each entry when list is revealed"))
+      (reveal_sound_delay
+         float
+         (help
+            "delay for sound to play on each entry when list is revealed"))
+      (conceal_anim
+         object
+         (class TransAnim)
+         (help
+            "animation to play on each entry when list is concealed"))
+      (conceal_start_delay
+         float
+         (help
+            "delay before playing conceal animation"))
+      (conceal_entry_delay
+         float
+         (help
+            "delay between list entries playing conceal animation"))
+      (conceal_scale
+         float
+         (help
+            "amount to scale conceal animation"))
+      (conceal_sound
+         object
+         (class Sequence)
+         (help
+            "sound to play on each entry when list is concealed"))
+      (conceal_sound_delay
+         float
+         (help
+            "delay for sound to play on each entry when list is concealed"))
+      (reveal
+         script
+         (script
+            {$this reveal}))
+      (conceal
+         script
+         (script
+            {$this conceal}))
+      (auto_reveal
+         bool
+         (help
+            "Whether or not to start revealed"))
+      (highlight_objects
+         (array
+            (struct
+               (target_object
+                  object
+                  (class Trans)
+                  (help
+                     "The object to attach to the highlight"))
+               (x_offset
+                  float
+                  (help
+                     "x offset from list position"))
+               (y_offset
+                  float
+                  (help
+                     "y offset from list position"))
+               (z_offset
+                  float
+                  (help
+                     "z offset from list position"))))))
+   (types
+      (default
+         (resource_file
+            "../ui/list.milo"))))
+(BandSwatch
+   (description
+      "Special list for selecting colors")
+   (allowed_dirs PanelDir)
+   (superclasses UIList)
+   (init
+      {$this set_type default})
+   (ext lst)
+   (editor
+      (color_palette
+         object
+         (class ColorPalette)
+         (help
+            "Palette containing our color options")))
+   (types
+      (default
+         (resource_file
+            "swatch.milo"))))
+(Label3d
+   (description
+      "3d label")
+   (superclasses Trans Draw)
+   (ext lbl3d)
+   (editor
+      (text
+         string
+         (help
+            "string to turn into 3d text"))
+      (localize
+         bool
+         (help
+            "Try to localize text"))
+      (resource
+         file
+         (help
+            "milo file with letter objects"))
+      (max_width
+         float
+         (help
+            "when length is greater than this value, start scaling the phrase"))
+      (all_caps
+         bool
+         (help
+            "You know you make me want to SHOUT!"))
+      (jitter
+         (indent
+            (jitter_depth
+               float
+               (help
+                  "jitter each letter in depth"))
+            (jitter_height
+               float
+               (help
+                  "jitter each letter in height")))))
+   (types))
+(BandCamShot
+   (description
+      "Band specific camera shot")
+   (superclasses CamShot)
+   (allowed_dirs WorldDir)
+   (ext shot)
+   (editor
+      (targets
+         (array
+            (struct
+               (target
+                  symbol
+                  (list
+                     {$this list_targets})
+                  (refresh targets)
+                  (help
+                     "Symbolic name of target")
+                  (no_cdb))
+               (target_ptr
+                  object
+                  (class Trans)
+                  (read_only TRUE)
+                  (help
+                     "pointer to target")
+                  (no_cdb))
+               (anim_group
+                  symbol
+                  (list
+                     {$this
+                        list_anim_groups
+                        [targets
+                           {elem $milo_prop_path 1}
+                           target]})
+                  (help
+                     "CharClipGroup to play on character")
+                  (no_test))
+               (teleport
+                  bool
+                  (help
+                     "do we teleport this character?"))
+               (to
+                  TRANSFORM
+                  (help
+                     "the transform to teleport the character to"))
+               (return
+                  bool
+                  (help
+                     "return to original position after shot?"))
+               (force_lod
+                  int
+                  (list
+                     ("kLODPerFrame"
+                        "kLOD0"
+                        "kLOD1"
+                        "kLOD2"))
+                  (help
+                     "Forces LOD, kLODPerFrame is normal behavior of picking per frame, the others force the lod (0 is highest res lod, 2 is lowest res lod)"))
+               (self_shadow
+                  bool
+                  (help
+                     "should character cast a self shadow"))
+               (hide
+                  bool
+                  (help
+                     "should the target be hidden"))
+               (fast_forward
+                  float
+                  (help
+                     "Fast forward chosen animation by this time, in camera units"))
+               (forward_event
+                  symbol
+                  (help
+                     "Event to fastforward relative to")
+                  (list
+                     ('' freeze)))
+               (env_override
+                  object
+                  (class Environ)
+                  (help
+                     "environment override for this target during this shot")))
+            (header
+               {sprint
+                  [targets
+                     {elem $milo_prop_path 1}
+                     target]
+                  " - "
+                  [targets
+                     {elem $milo_prop_path 1}
+                     anim_group]})))
+      (zero_time
+         float
+         (help
+            "synchronization time for this camshot"))
+      (min_time
+         int
+         (help
+            "30fps reg: minimum time this shot can last, DCuts: time past zero time in which the shot can be interupted"))
+      (max_time
+         int
+         (help
+            "30fps maximum duration for this shot, 0 is infinite"))
+      (anims_during_nextshots
+         bool
+         (help
+            "if checked, anims hooked into this shot will continue to update during its next_shots.\nThis allows you to author an animation that spans the current and all next shots"))
+      (next_shots
+         (array
+            object
+            (list
+               {$this allowable_next_shots}))
+         (help
+            "Next camshots, in order"))
+      (total_duration
+         float
+         (help
+            "total duration of this camera plus all next shots")
+         (read_only TRUE))
+      (store
+         script
+         (script
+            {$this store}))
+      (view
+         script
+         (script
+            {$this view})
+         (help
+            "teleports all the targets and starts playing their animations again"))
+      (view_freeze
+         script
+         (script
+            {$this view_freeze})
+         (help
+            "teleports all the targets and freezes on the first frame"))
+      (freeze
+         script
+         (script
+            {if
+               {exists milo}
+               {milo set_anim_paused TRUE}}
+            {$this freeze})
+         (help
+            "Freezes any characters in their current state")))
+   (types)
+   (views
+      (flags
+         ("Category"
+            [category])
+         ("Platform Only"
+            [platform_only])
+         ("DoF"
+            [use_depth_of_field])
+         ("Target 0"
+            [keyframes 0 targets 0])
+         ("Target 1"
+            [keyframes 1 targets 0])
+         ("Total Duration"
+            {$this duration_seconds})
+         ("Blur Depth"
+            [keyframes 0 blur_depth])
+         ("Max Blur"
+            [keyframes 0 max_blur])
+         ("Focus Blur Mult"
+            [keyframes 0 focus_blur_multiplier])
+         ("Shake Freq"
+            [keyframes 0 shake_noisefreq])
+         ("Shake Amp"
+            [keyframes 0 shake_noiseamp])
+         ("Shake Max x"
+            [keyframes 0 shake_maxangle x])
+         ("Shake Max y"
+            [keyframes 0 shake_maxangle y])
+         ("PS3 Per Pixel"
+            [ps3_per_pixel]))
+      (Shadows
+         ("Category"
+            [category])
+         ("Bass Shadow"
+            [targets 0 self_shadow])
+         ("Drum Shadow"
+            [targets 1 self_shadow])
+         ("Guitar Shadow"
+            [targets 2 self_shadow])
+         ("Vocal Shadow"
+            [targets 3 self_shadow]))))
+#define PLAYER_SETTINGS
+(("kPlayer1"
+      "kPlayer2"
+      "kPlayerNone"
+      "kPlayerShared"))
+(BandCrowdMeterDir
+   (description
+      "Crowd meter hud element, has a needle")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (peak_value
+         float
+         (help
+            "Peak state value"))
+      (value
+         float
+         (range 0 1)
+         (help
+            "Band health. Animates crowd_meter.grp")
+         (no_test))
+      (icon_0_val
+         float
+         (range -1 1)
+         (no_test))
+      (icon_1_val
+         float
+         (range -1 1)
+         (no_test))
+      (icon_2_val
+         float
+         (range -1 1)
+         (no_test))
+      (icon_3_val
+         float
+         (range -1 1)
+         (no_test))
+      (icon_4_val
+         float
+         (range -1 1)
+         (no_test))
+      (reset
+         script
+         (script
+            {$this reset}))
+      (level_colors
+         (array color))
+      (maxed
+         bool
+         (help
+            "Turned on when in the 'meter maxed' state. Animates maxed.tnm")
+         (no_test))
+      (worst_case
+         script
+         (script
+            {$this worst_case}))))
+(CrowdMeterIcon
+   (description
+      "Individual player icon for crowd meter")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset}))
+      (arrow_hide
+         script
+         (script
+            {$this arrow_hide}))
+      (arrow_show
+         script
+         (script
+            {$this arrow_show}))
+      (deploy
+         script
+         (script
+            {$this deploy}))
+      (stop_deploy
+         script
+         (script
+            {$this stop_deploy}))
+      (glow
+         script
+         (script
+            {$this set_glowing 1}))
+      (glow_stop
+         script
+         (script
+            {$this set_glowing 0}))
+      (state_normal
+         script
+         (script
+            {$this set_state 0}))
+      (state_warning
+         script
+         (script
+            {$this set_state 1}))
+      (state_failed
+         script
+         (script
+            {$this set_state 2}))))
+(BandScoreboard
+   (description
+      "Scoreboard HUD element including stars")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (score
+         int
+         (help
+            "Test value for scoreboard")
+         (no_test))
+      (num_stars
+         float
+         (help
+            "Test value for number of stars")
+         (no_test))
+      (reset
+         script
+         (help
+            "Reset the score and star values")
+         (script
+            {$this reset}))
+      (star_display
+         object
+         (class BandStarDisplay)
+         (help
+            "Star display proxy object.")
+         HIDE_IN_PROXY)))
+(BandStarDisplay
+   (description
+      "HUD element which displays up to 5 stars")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (num_stars
+         float
+         (help
+            "Test value for number of stars")
+         (no_test))
+      (star_type
+         symbol
+         (list
+            (normal tour))
+         (help
+            "The type of star to display")
+         (no_test))
+      (reset
+         script
+         (help
+            "Reset the star values")
+         (script
+            {$this reset}))))
+(BandFaceDeform
+   (description
+      "Band Face Deformation object for face creator, basically a compact MeshAnim with position deltas")
+   (ext fdm)
+   (editor
+      (frames
+         (array
+            (struct
+               (verts
+                  int
+                  (help
+                     "number of vertices with non-zero deltas in this keyframe")
+                  (read_only TRUE))))
+         (help
+            "the keyframes")
+         (read_only TRUE))
+      (size
+         int
+         (help
+            "Size in bytes this takes up")
+         (read_only TRUE)))
+   (types))
+(BandStreakDisplay
+   (description
+      "Streak displaying hud element")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (color_anim
+         object
+         (class MatAnim)
+         (help
+            "mat anim specifying the color for each state")
+         HIDE_IN_PROXY)
+      (shake_anim
+         object
+         (class Anim)
+         (help
+            "anim that is fired when achieving a new streak")
+         HIDE_IN_PROXY)
+      (frame_mat
+         object
+         (class Mat)
+         (help
+            "material for the frame (has color applied to it)")
+         HIDE_IN_PROXY)
+      (mult_glow_mesh
+         object
+         (class Mesh)
+         (help
+            "glow mesh; hidden when no streak, color of its material is changed to match the streak color")
+         HIDE_IN_PROXY)
+      (mult_frame_mat
+         object
+         (class Mat)
+         (help
+            "material for multiplier frame")
+         HIDE_IN_PROXY)
+      (led_mats
+         (array
+            object
+            (class Mat))
+         (help
+            "material for LED's; one material per color.")
+         HIDE_IN_PROXY)
+      (led_meshs
+         (array
+            object
+            (class Mesh))
+         (help
+            "meshes for the LED streak indicators")
+         HIDE_IN_PROXY)
+      (digit_mats
+         (array
+            object
+            (class Mat))
+         (help
+            "one material per digit")
+         HIDE_IN_PROXY)
+      (mult_digit_mesh
+         object
+         (class Mesh)
+         (help
+            "mesh for the multiplier digit")
+         HIDE_IN_PROXY)
+      (x_digit_mesh
+         object
+         (class Mesh)
+         (help
+            "mesh for the X")
+         HIDE_IN_PROXY)
+      (blank_digit_mat
+         object
+         (class Mat)
+         (help
+            "material for a blank digit")
+         HIDE_IN_PROXY)
+      (x_digit_mat
+         object
+         (class Mat)
+         (help
+            "material for the X")
+         HIDE_IN_PROXY)
+      (blown_mesh_1
+         object
+         (class Mesh)
+         (help
+            "mesh to indicate when player 1 blows a streak")
+         HIDE_IN_PROXY)
+      (blown_mesh_2
+         object
+         (class Mesh)
+         (help
+            "mesh to indicate when player 2 blows a streak")
+         HIDE_IN_PROXY)
+      (blown_mat
+         object
+         (class Mat)
+         (help
+            "material used for the indicators when the streak is blown")
+         HIDE_IN_PROXY)
+      (blown_display_time
+         float
+         (range 0 5)
+         (no_test serialize)
+         (help
+            "length of time the blown streak indicator should light up for")
+         HIDE_IN_PROXY)
+      (player_1_blows
+         script
+         (script
+            {$this blow_streak 0}))
+      (player_2_blows
+         script
+         (script
+            {$this blow_streak 1}))
+      (multiplier
+         int
+         (range 1 9)
+         (help
+            "multiplier value for testing"))
+      (star_mode
+         bool
+         (help
+            "toggle star power for testing"))
+      (partial_streak
+         int
+         (range 0 20)
+         (help
+            "partial streak for testing"))
+      (player
+         int
+         (list PLAYER_SETTINGS)
+         (help
+            "which player to track"))
+      (refresh
+         script
+         (script
+            {$this refresh}))))
+(BandLeadMeter
+   (description
+      "Multiplayer lead meter hud element, shows which player is in the lead")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (needle_anim
+         object
+         (class Anim)
+         (help
+            "anim to drive the needle")
+         HIDE_IN_PROXY)
+      (logo_glow_anim
+         object
+         (class Anim)
+         (help
+            "anim to make the logo glow different colors")
+         HIDE_IN_PROXY)
+      (glow_mesh_1
+         object
+         (class Mesh)
+         (help
+            "mesh that is shown when player 1 is ahead")
+         HIDE_IN_PROXY)
+      (glow_mesh_2
+         object
+         (class Mesh)
+         (help
+            "mesh that is shown when player 2 is ahead")
+         HIDE_IN_PROXY)
+      (pegged_anim_1
+         object
+         (class Anim)
+         (help
+            "animation to play when player 1 has a huge lead")
+         HIDE_IN_PROXY)
+      (pegged_anim_2
+         object
+         (class Anim)
+         (help
+            "animation to play when player 2 has a huge lead")
+         HIDE_IN_PROXY)
+      (lens_mesh
+         object
+         (class Mesh)
+         (help
+            "lens mesh")
+         HIDE_IN_PROXY)
+      (lens_mat_neutral
+         object
+         (class Mat)
+         (help
+            "lens mat to use when the score is tied")
+         HIDE_IN_PROXY)
+      (lens_mat_1
+         object
+         (class Mat)
+         (help
+            "lens mat to use when player 1 is winning")
+         HIDE_IN_PROXY)
+      (lens_mat_2
+         object
+         (class Mat)
+         (help
+            "lens mat to use when player 2 is winning")
+         HIDE_IN_PROXY)
+      (score_diff
+         int
+         (help
+            "difference in scores for testing. a positive number means the first player is ahead."))
+      (refresh
+         script
+         (script
+            {$this refresh}))))
+(BandMeshLauncher
+   (description
+      "A MeshLauncher object emits meshes along a path.")
+   (superclasses Poll)
+   (ext ml)
+   (types
+      (basic_launcher
+         (editor
+            (launch_mesh
+               script
+               (script
+                  {$this launch_mesh}))
+            (trans_anim
+               object
+               (class TransAnim))
+            (parent_trans
+               object
+               (class Trans)))
+         (trans_anim
+            "")
+         (parent_trans
+            "")
+         (launch_mesh
+            {if
+               {!=
+                  [trans_anim]
+                  ""}
+               {$this
+                  launch
+                  [trans_anim]
+                  [parent_trans]}}))
+      (particle_launcher
+         (editor
+            (launch
+               script
+               (script
+                  {$this launch_particles}))
+            (part
+               object
+               (class ParticleSys))
+            (trans
+               object
+               (class Trans))
+            (num_parts
+               int
+               (range 0 1000))
+            (use_life
+               bool
+               (refresh life)
+               (post_sync
+                  {if
+                     {!
+                        [use_life]}
+                     {set
+                        [life]
+                        0}}))
+            (life
+               float
+               (read_only
+                  {!
+                     [use_life]}))
+            (use_speed
+               bool
+               (refresh speed)
+               (post_sync
+                  {if
+                     {!
+                        [use_speed]}
+                     {set
+                        [speed]
+                        0}}))
+            (speed
+               float
+               (read_only
+                  {!
+                     [use_speed]}))
+            (use_size
+               bool
+               (refresh size)
+               (post_sync
+                  {if
+                     {!
+                        [use_size]}
+                     {set
+                        [size]
+                        0}}))
+            (size
+               float
+               (read_only
+                  {!
+                     [use_size]}))
+            (use_delta_size
+               bool
+               (refresh delta_size)
+               (post_sync
+                  {if
+                     {!
+                        [use_delta_size]}
+                     {set
+                        [delta_size]
+                        0}}))
+            (delta_size
+               float
+               (read_only
+                  {!
+                     [use_delta_size]}))
+            (use_start_color
+               bool
+               (refresh start_color start_alpha)
+               (post_sync
+                  {if
+                     {!
+                        [use_start_color]}
+                     {set
+                        [start_color]
+                        0}
+                     {set
+                        [start_alpha]
+                        0}}))
+            (start_color
+               color
+               (read_only
+                  {!
+                     [use_start_color]}))
+            (start_alpha
+               float
+               (read_only
+                  {!
+                     [use_start_color]})
+               (range 0 1))
+            (use_mid_color
+               bool
+               (refresh mid_color mid_alpha)
+               (post_sync
+                  {if
+                     {!
+                        [use_mid_color]}
+                     {set
+                        [mid_color]
+                        0}
+                     {set
+                        [mid_alpha]
+                        0}}))
+            (mid_color
+               color
+               (read_only
+                  {!
+                     [use_mid_color]}))
+            (mid_alpha
+               float
+               (read_only
+                  {!
+                     [use_mid_color]})
+               (range 0 1))
+            (use_end_color
+               bool
+               (refresh end_color end_alpha)
+               (post_sync
+                  {if
+                     {!
+                        [use_end_color]}
+                     {set
+                        [end_color]
+                        0}
+                     {set
+                        [end_alpha]
+                        0}}))
+            (end_color
+               color
+               (read_only
+                  {!
+                     [use_end_color]}))
+            (end_alpha
+               float
+               (read_only
+                  {!
+                     [use_end_color]})
+               (range 0 1))
+            (use_emit_direction
+               bool
+               (refresh pitch_low pitch_high yaw_low yaw_high)
+               (post_sync
+                  {if
+                     {!
+                        [use_end_color]}
+                     {set
+                        [pitch_low]
+                        0}
+                     {set
+                        [pitch_high]
+                        0}
+                     {set
+                        [yaw_low]
+                        0}
+                     {set
+                        [yaw_high]
+                        0}}))
+            (pitch_low
+               float
+               (read_only
+                  {!
+                     [use_emit_direction]}))
+            (pitch_high
+               float
+               (read_only
+                  {!
+                     [use_emit_direction]}))
+            (yaw_low
+               float
+               (read_only
+                  {!
+                     [use_emit_direction]}))
+            (yaw_high
+               float
+               (read_only
+                  {!
+                     [use_emit_direction]})))))
+   (editor
+      (multi_mesh
+         object
+         (class MultiMesh)
+         (help
+            "Controlled MultiMesh to emit from."))))
+(LayerDir
+   (description
+      "Draws configurable layer planes from an orthographic camera")
+   (types)
+   (superclasses RndDir)
+   (editor
+      (layers
+         (array
+            (struct
+               (name
+                  string
+                  (hide
+                     {$this is_proxy})
+                  (refresh layers))
+               (active
+                  bool
+                  (help
+                     "is this layer active?")
+                  (hide
+                     {!
+                        [layers
+                           {elem $milo_prop_path 1}
+                           layer_optional]}))
+               (color
+                  color
+                  (help
+                     {if_else
+                        {$this is_proxy}
+                        "layers preview color value to apply (not saved)"
+                        "layers default color value to apply (saved)"})
+                  (hide
+                     {!
+                        [layers
+                           {elem $milo_prop_path 1}
+                           allow_color]}))
+               (color_idx
+                  int
+                  (help
+                     {if_else
+                        {$this is_proxy}
+                        "layers preview color value to apply from palette (not saved)"
+                        "layers default color value to apply from palette (saved)"})
+                  (hide
+                     {'||'
+                        {!
+                           [layers
+                              {elem $milo_prop_path 1}
+                              allow_color]}
+                        {!
+                           [layers
+                              {elem $milo_prop_path 1}
+                              color_palette]}}))
+               (alpha
+                  float
+                  (help
+                     {if_else
+                        {$this is_proxy}
+                        "layers preview alpha value to apply (not saved)"
+                        "layers default alpha value to apply (saved)"})
+                  (range 0 1)
+                  (hide
+                     {!
+                        [layers
+                           {elem $milo_prop_path 1}
+                           allow_alpha]}))
+               (bitmap
+                  string
+                  (list
+                     {$this get_bitmap_list})
+                  (help
+                     {if_else
+                        {$this is_proxy}
+                        "preview bitmap to apply (not saved)"
+                        "default bitmap to apply (saved)"})
+                  (hide
+                     {<
+                        {size
+                           [layers
+                              {elem $milo_prop_path 1}
+                              bitmap_list]}
+                        2}))
+               (setup
+                  (indent
+                     (mat
+                        object
+                        (class Mat)
+                        (help
+                           "Material this layer controls"))
+                     (proxy
+                        object
+                        (class RndDir)
+                        (help
+                           "set the proxy file to use if this is a user-created patch layer"))
+                     (layer_optional
+                        bool
+                        (help
+                           "can this layer can be turned off?")
+                        (refresh layers))
+                     (bitmap_list
+                        (array file)
+                        (help
+                           "list of available bitmaps")
+                        (refresh layers))
+                     (allow_color
+                        bool
+                        (help
+                           "allow users to change color")
+                        (refresh layers))
+                     (color_palette
+                        object
+                        (class Object color_palette)
+                        (help
+                           "select a palette object to get colors from")
+                        (hide
+                           {'||'
+                              {!
+                                 [layers
+                                    {elem $milo_prop_path 1}
+                                    allow_color]}
+                              {$this is_proxy}}))
+                     (allow_alpha
+                        bool
+                        (help
+                           "allow users to change alpha as slider")
+                        (refresh layers))
+                     (alpha_min
+                        float
+                        (read_only
+                           {!
+                              [layers
+                                 {elem $milo_prop_path 1}
+                                 allow_alpha]})
+                        (refresh layers)
+                        (help
+                           "minimum alpha value allowed"))
+                     (alpha_max
+                        float
+                        (read_only
+                           {!
+                              [layers
+                                 {elem $milo_prop_path 1}
+                                 allow_alpha]})
+                        (refresh layers)
+                        (help
+                           "maximum alpha value allowed")))
+                  (hide
+                     {$this is_proxy})))
+            (header
+               [layers
+                  {elem $milo_prop_path 1}
+                  name])))
+      (randomize_colors
+         script
+         (script
+            {$this randomize_colors}))
+      (use_free_cam
+         bool
+         (help
+            "allows dir to have it's own camera instead of using the preset fixed camera")
+         (hide
+            {$this is_proxy}))))
+#define kPrimaryColor
+(0)
+#define kSecondaryColor
+(1)
+#define kTertiaryColor
+(2)
+#define OUTFITCONFIG_COLORS
+((("kPrimaryColor"
+         "uses primary_color")
+      ("kSecondaryColor"
+         "uses secondary_color")
+      ("kTertiaryColor"
+         "uses tertiary_color")))
+(OutfitConfig
+   (description
+      "Configurable options for outfits")
+   (superclasses Draw)
+   (allowed_dirs Character)
+   (types)
+   (ext cfg)
+   (editor
+      (primary_color
+         int
+         (help
+            "Index of primary color option")
+         (range 0 256)
+         (hide
+            {<
+               {$this num_color_options}
+               1}))
+      (secondary_color
+         int
+         (help
+            "Index of secondary color option")
+         (range 0 256)
+         (hide
+            {<
+               {$this num_color_options}
+               2}))
+      (tertiary_color
+         int
+         (help
+            "Index of tertiary color option")
+         (range 0 256)
+         (hide
+            {<
+               {$this num_color_options}
+               3}))
+      (mats
+         (array
+            (struct
+               (mat
+                  object
+                  (class Mat)
+                  (help
+                     "The material to be colored by palettes"))
+               (resource_mat
+                  object
+                  (class Mat)
+                  (help
+                     "optional resource material to be replaced with by [mat]"))
+               (two_color_diffuse
+                  object
+                  (class Tex)
+                  (help
+                     "Diffuse texture for two color, mat must have render to texture"))
+               (two_color_interp
+                  object
+                  (class Tex)
+                  (help
+                     "Two color interpolation, transparent means use color1, opaque means color2, blends"))
+               (two_color_mask
+                  object
+                  (class Tex)
+                  (help
+                     "Two color mask, transparent means do no color modulation, opaque means do full color modulation"))
+               (color1_palette
+                  object
+                  (class ColorPalette)
+                  (help
+                     "Palette to use for mat color1"))
+               (color1_option
+                  int
+                  (list OUTFITCONFIG_COLORS)
+                  (help
+                     "which color option to use in palette1"))
+               (color2_palette
+                  object
+                  (class ColorPalette)
+                  (help
+                     "Palette to use for mat color2, if NULL, assumes white"))
+               (color2_option
+                  int
+                  (list OUTFITCONFIG_COLORS)
+                  (help
+                     "which color option to use in palette2"))
+               (textures
+                  (array
+                     object
+                     (class Tex))
+                  (help
+                     "Textures to use instead of colors, uses color1_option"))
+               (two_color
+                  bool
+                  (help
+                     "is this a two color system")
+                  (read_only TRUE)
+                  (no_test))))
+         (help
+            "Material swaps from resource file, and two color information"))
+      (patches
+         (array
+            (struct
+               (meshes
+                  (array
+                     (struct
+                        (mesh
+                           object
+                           (class Mesh)
+                           (help
+                              "Mesh to project patch onto, must have a 2 color mat to work in render_to mode"))
+                        (patches
+                           (array
+                              (struct
+                                 (patch
+                                    object
+                                    (class Mesh)
+                                    (help
+                                       "constructed patch")
+                                    (read_only TRUE))
+                                 (tex
+                                    object
+                                    (class Tex)
+                                    (help
+                                       "source texture")
+                                    (read_only TRUE))))
+                           (read_only TRUE))))
+                  (help
+                     "All the meshes that patches with [category] will be projected onto.  All must have mats with the same diffuse renderable output texture."))
+               (src
+                  object
+                  (class Trans)
+                  (help
+                     "If set, indicates a permanent patch, whose mesh is saved out in the dir.  Transformable whose x axis is U, y axis in V, and will be projected onto mesh along its -z axis"))
+               (render_to
+                  bool
+                  (help
+                     "if true, renders patch to the mesh diffuse texture"))
+               (category
+                  int
+                  (list
+                     (PATCH_CATEGORIES))
+                  (help
+                     "Category of this patch, all matching BandCharDesc patches and Overlays will be projected onto these meshes")))))
+      (meshao
+         (array
+            (struct
+               (meshname
+                  string
+                  (help
+                     "name of the mesh"))
+               (coeffs
+                  (array int)
+                  (help
+                     "old colors, packed"))
+               (seams
+                  (array
+                     (struct
+                        (index
+                           int
+                           (help
+                              "vertex index of a seam"))
+                        (coeff
+                           int
+                           (help
+                              "cached ao value before seam blend"))))))
+            (help
+               "Array of mesh ao objects"))
+         (read_only TRUE))
+      (perma_project
+         bool
+         (help
+            "Project patches every frame, good for composing")
+         (no_test))
+      (piercings
+         (array
+            (struct
+               (piercing
+                  object
+                  (class Trans)
+                  (help
+                     "The piercing mesh, or a piercing bone Trans"))
+               (reskin
+                  bool
+                  (help
+                     "When facial hair, reskins the [piercing] mesh to the face, only use for very close fitting facial hair"))
+               (pieces
+                  (array
+                     (struct
+                        (attachment
+                           object
+                           (class Trans)
+                           (help
+                              "Where piece attaches to skin, NULL for facial hair, suggest name spot_<x>_<y> where <x> is p for piercing, e for earring, etc."))
+                        (highlight
+                           bool
+                           (help
+                              "When object is hilit, shows this piece")
+                           (no_test))
+                        (vert
+                           int
+                           (help
+                              "index of closest vert in the head mesh")
+                           (read_only TRUE))))
+                  (help
+                     "discontinuous regions ofpolygons, for facial hair, only make one.")))))
+      (overlays
+         (array
+            (struct
+               (category
+                  int
+                  (list
+                     (("kPatchTorsoOverlay"
+                           "torso overlays, goes on the torso skin")
+                        ("kPatchLegOverlay"
+                           "leg overlay, goes on the leg skin")))
+                  (help
+                     "Where this overlay will go")
+                  BANDCHARDESC_POSTSYNC)
+               (texture
+                  object
+                  (class Tex)
+                  (help
+                     "The overlay texture"))))
+         (help
+            "System for overlaying translucent textures on top of existing patch areas, such as skin, must match the UV mappings for each one."))
+      (band_logo
+         object
+         (class Mat)
+         (help
+            "Mat that will get the band logo as diffuse texture"))
+      (tex_blender
+         object
+         (class TexBlender)
+         (help
+            "Optional tex blender, will recompose and compress output like our own"))
+      (wrinkle_blender
+         object
+         (class TexBlender)
+         (help
+            "Optional per frame wrinkle blender"))
+      (port_patches
+         script
+         (script
+            {$this port_patches}
+            {{$this dir}
+               sync_objects}
+            {milo update_objects})
+         (help
+            "Port old patches to new system")
+         (refresh))
+      (randomize_colors
+         script
+         (script
+            {$this randomize_colors})
+         (help
+            "Set random color indices")
+         (refresh))
+      (recompose
+         script
+         (script
+            {$this recompose})
+         (help
+            "Apply color choices to the outfit and recompose the textures"))
+      (compress_textures
+         script
+         (script
+            {$this compress_textures})
+         (help
+            "Compress all the textures and delete superflous textures, will be no longer modifyable after that, so don't do it.")
+         (refresh))
+      (compute_ao
+         bool
+         (help
+            "should this outfit config compute AO")
+         (refresh calculate_ao))
+      (calculate_ao
+         script
+         (script
+            {$this calculate_ao})
+         (help
+            "calculates AO for this file, remember to save afterwards!")
+         (hide
+            {!
+               [compute_ao]}))))
+(PatchRenderer
+   (description
+      "Special texture renderer for character patches")
+   (allowed_dirs)
+   (superclasses TexRenderer)
+   (types)
+   (ext patch)
+   (editor
+      (test_mode
+         symbol
+         (list
+            (blank test))
+         (help
+            "Blank/test modes for milo"))
+      (position
+         symbol
+         (list
+            (front back left right))
+         (help
+            "Position of patch, controls which cam shot we use"))
+      (back_mat
+         object
+         (class Mat)
+         (help
+            "background material for patch"))
+      (overlay_mat
+         object
+         (class Mat)
+         (help
+            "Overlay material for patch"))))
+(WorldMapDir
+   (description
+      "A panel dir for the world tour map.")
+   (allowed_dirs)
+   (superclasses PanelDir)
+   (editor
+      SHELL_EDITOR
+      (focal_distance
+         float
+         (help
+            "Focal distance."))
+      (blur_depth
+         float
+         (help
+            "Blur depth."))
+      (min_blur
+         float
+         (help
+            "The min blur."))
+      (max_blur
+         float
+         (help
+            "The max blur."))
+      (do_culling
+         bool
+         (help
+            "Should hidden towns be culled?"))
+      (town
+         symbol
+         (list
+            {$this get_town_list})
+         (help
+            "Select a town to rotate the world to it.")
+         (no_test))
+      (zoom_in
+         script
+         (script
+            {$this zoom_in_impl})
+         (help
+            "Zoom in to a town."))
+      (zoom_out
+         script
+         (script
+            {$this zoom_out_impl})
+         (help
+            "Zoom out from a town.")))
+   SHELL_TYPE
+   (types))
+#define COMMON_BANDTRACK_EDITOR
+((instrument
+      symbol
+      (list
+         ('' bass drum guitar vocals real_keys real_guitar))
+      (post_sync
+         {$this setup_instrument}))
+   (player_intro
+      object
+      (class RndDir))
+   (star_power_meter
+      object
+      (class RndDir))
+   (streak_meter
+      object
+      (class StreakMeterDir))
+   (popup_object
+      object
+      (class RndDir))
+   (player_feedback
+      object
+      (class RndDir))
+   (failed_feedback
+      object
+      (class RndDir))
+   (endgame_feedback
+      object
+      (class RndDir))
+   (retract_trig
+      object
+      (class EventTrigger))
+   (reset_trig
+      object
+      (class EventTrigger))
+   (deploy_trig
+      object
+      (class EventTrigger))
+   (stop_deploy_trig
+      object
+      (class EventTrigger))
+   (intro_trig
+      object
+      (class EventTrigger))
+   (disable_player
+      script
+      (script
+         {$this disable_player 1}))
+   (save_player
+      script
+      (script
+         {$this save_player}
+         {script_task
+            kTaskSeconds
+            (delay 1.5)
+            (script
+               {$this enable_player})})))
+#define COMMON_BANDTRACK_DATA
+((min_finale_help_time 5.0))
+(GemTrackDir
+   (description
+      "band 2 TrackDir for gem tracks")
+   (superclasses TrackDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset}))
+      (deploy
+         script
+         (script
+            {$this deploy}))
+      (stop_deploy
+         script
+         (script
+            {$this stop_deploy}))
+      (mash
+         script
+         (script
+            {$this mash 0}))
+      (effect_selector
+         object
+         (class RndDir))
+      (practice_reset
+         script
+         (script
+            {$this practice_reset}))
+      (streak_meter_offset
+         float
+         (help
+            "The projected distance between the now bar and the streak meter")
+         (post_sync
+            {$this
+               set_pitch
+               [track_pitch]}))
+      (streak_meter_tilt
+         float
+         (help
+            "The tilt of the streak meter relative to game.cam, in degrees")
+         (post_sync
+            {$this
+               set_pitch
+               [track_pitch]}))
+      COMMON_BANDTRACK_EDITOR
+      (rotater
+         object
+         (class Group))
+      (surface_objects
+         (indent
+            (surface_mesh
+               object
+               (class Mesh))
+            (surface_texture
+               object
+               (class Tex))
+            (surface_mat
+               object
+               (class Mat))))
+      (track_env
+         object
+         (class Environ))
+      (game_cam
+         object
+         (class Cam))
+      (peak_state_triggers
+         (indent
+            (peak_state_on_trig
+               object
+               (class EventTrigger))
+            (peak_state_off_trig
+               object
+               (class EventTrigger)))
+         (help
+            "Peak state on/off triggers for all instrument types"))
+      (bass_super_streak_triggers
+         (indent
+            (bass_super_streak_on_trig
+               object
+               (class EventTrigger))
+            (bass_super_streak_off_trig
+               object
+               (class EventTrigger)))
+         (help
+            "Bass super streak on/off triggers"))
+      (spotlight_phrase_success_trig
+         object
+         (class EventTrigger))
+      (gem_mash_anims
+         (indent
+            (gem_mash_0_anim
+               object
+               (class PropAnim))
+            (gem_mash_1_anim
+               object
+               (class PropAnim))
+            (gem_mash_2_anim
+               object
+               (class PropAnim))
+            (gem_mash_3_anim
+               object
+               (class PropAnim))
+            (gem_mash_4_anim
+               object
+               (class PropAnim))))
+      (drum_mash_anims
+         (indent
+            (drum_mash_1_anim
+               object
+               (class PropAnim))
+            (drum_mash_2_anim
+               object
+               (class PropAnim))
+            (drum_mash_3_anim
+               object
+               (class PropAnim))
+            (drum_mash_4_anim
+               object
+               (class PropAnim))))
+      (real_guitar_mash_anims
+         (indent
+            (real_guitar_mash_0_anim
+               object
+               (class PropAnim))
+            (real_guitar_mash_1_anim
+               object
+               (class PropAnim))
+            (real_guitar_mash_2_anim
+               object
+               (class PropAnim))
+            (real_guitar_mash_3_anim
+               object
+               (class PropAnim))
+            (real_guitar_mash_4_anim
+               object
+               (class PropAnim))
+            (real_guitar_mash_5_anim
+               object
+               (class PropAnim))))
+      (fill_lane_anims
+         (indent
+            (fill_lane_1_anim
+               object
+               (class PropAnim))
+            (fill_lane_2_anim
+               object
+               (class PropAnim))
+            (fill_lane_3_anim
+               object
+               (class PropAnim))
+            (fill_lane_4_anim
+               object
+               (class PropAnim))))
+      (fill_hit_trigs
+         (indent
+            (fill_hit_1_trig
+               object
+               (class EventTrigger))
+            (fill_hit_2_trig
+               object
+               (class EventTrigger))
+            (fill_hit_3_trig
+               object
+               (class EventTrigger))))
+      (drummer_objects
+         (indent
+            (kick_drummer_trig
+               object
+               (class EventTrigger))
+            (kick_drummer_reset_trig
+               object
+               (class EventTrigger))
+            (drum_fill_reset_trig
+               object
+               (class EventTrigger))
+            (drum_mash_2nd_pass_activate_anim
+               object
+               (class PropAnim))
+            (drum_mash_hit_anim_grp
+               object
+               (class Group))))
+      (fill_colors_grp
+         object
+         (class Group))
+      (lod_anim
+         object
+         (class PropAnim))
+      (glow_widgets
+         (array
+            object
+            (class TrackWidget)))
+      (smasher_plate
+         object
+         (class RndDir)
+         (hide TRUE)
+         (no_test))
+      (fret_number_positioning
+         (indent
+            (fret_pos_offset_0 float)
+            (fret_pos_offset_1 float)
+            (fret_pos_offset_2 float)
+            (fret_pos_offset_3 float)
+            (fret_pos_offset_4 float))
+         (help
+            "the x offset from the center of an RG gem mesh where the fret number should go"))
+      (chord_label_pos_offset
+         float
+         (help
+            "the x offset from the center of the track where the chord label should go")))
+   (types
+      (test
+         (editor
+            (spew_gems
+               script
+               (script
+                  {$this spew_gems}))
+            (clear_gems
+               script
+               (script
+                  {$this clear_gems}))
+            (fit_meshes
+               (array
+                  object
+                  (class Mesh))
+               (help
+                  "Meshes which need to be fit to the cross section of the track surface."))
+            (dump
+               script
+               (script
+                  {$this dump})))
+         (black_key_style 0)
+         (screen_aspect regular)
+         (total_slots 1)
+         (track_slot 0)
+         (track_extended FALSE)
+         (fit_meshes
+            ())
+         (object_type_list
+            ($obj_type)
+            {do
+               ($array
+                  {array 0})
+               {push_back $array none}
+               {$this
+                  iterate
+                  $obj_type
+                  $obj
+                  {push_back
+                     $array
+                     {symbol
+                        {$obj name}}}}
+               {sort $array}
+               $array})
+         (spew_gems
+            {if
+               {!
+                  {exists spew_gems_test}}
+               {$this toggle_running}
+               {thread_task
+                  kTaskBeats
+                  (name spew_gems_test)
+                  (script
+                     {set $lane 0}
+                     {switch
+                        $beat
+                        (0
+                           {$this
+                              add_test_widget
+                              "bar_measure.wid"
+                              2}
+                           {set $beat 1})
+                        (1
+                           {$this
+                              add_test_widget
+                              "bar_half_beat.wid"
+                              2}
+                           {set $beat 2})
+                        (2
+                           {$this
+                              add_test_widget
+                              "bar_beat.wid"
+                              2}
+                           {set $beat 3})
+                        (3
+                           {$this
+                              add_test_widget
+                              "bar_half_beat.wid"
+                              2}
+                           {set $beat 4})
+                        (4
+                           {$this
+                              add_test_widget
+                              "bar_beat.wid"
+                              2}
+                           {set $beat 5})
+                        (5
+                           {$this
+                              add_test_widget
+                              "bar_half_beat.wid"
+                              2}
+                           {set $beat 6})
+                        (6
+                           {$this
+                              add_test_widget
+                              "bar_beat.wid"
+                              2}
+                           {set $beat 7})
+                        (7
+                           {$this
+                              add_test_widget
+                              "bar_half_beat.wid"
+                              2}
+                           {set $beat 0})}
+                     {set
+                        $num_gems
+                        {random_int 3 4}}
+                     {if
+                        {== $num_gems 1}
+                        {set
+                           $hopo
+                           {random_int 0 2}}}
+                     {foreach_int
+                        $gem
+                        0
+                        $num_gems
+                        {set
+                           $lane
+                           {random_int 0 5}}
+                        {if_else
+                           {==
+                              [instrument]
+                              drum}
+                           {switch
+                              $lane
+                              (0
+                                 {$this
+                                    add_test_widget
+                                    "drum_red.wid"
+                                    $lane})
+                              (1
+                                 {$this
+                                    add_test_widget
+                                    "drum_yellow.wid"
+                                    $lane})
+                              (2
+                                 {$this
+                                    add_test_widget
+                                    "gem_kick.wid"
+                                    $lane})
+                              (3
+                                 {$this
+                                    add_test_widget
+                                    "drum_blue.wid"
+                                    $lane})
+                              (4
+                                 {$this
+                                    add_test_widget
+                                    "drum_green.wid"
+                                    $lane})}
+                           {switch
+                              $lane
+                              (0
+                                 {if_else
+                                    $hopo
+                                    {$this
+                                       add_test_widget
+                                       "gem_green_hopo.wid"
+                                       $lane}
+                                    {$this
+                                       add_test_widget
+                                       "gem_green.wid"
+                                       $lane}})
+                              (1
+                                 {if_else
+                                    $hopo
+                                    {$this
+                                       add_test_widget
+                                       "gem_red_hopo.wid"
+                                       $lane}
+                                    {$this
+                                       add_test_widget
+                                       "gem_red.wid"
+                                       $lane}})
+                              (2
+                                 {if_else
+                                    $hopo
+                                    {$this
+                                       add_test_widget
+                                       "gem_yellow_hopo.wid"
+                                       $lane}
+                                    {$this
+                                       add_test_widget
+                                       "gem_yellow.wid"
+                                       $lane}})
+                              (3
+                                 {if_else
+                                    $hopo
+                                    {$this
+                                       add_test_widget
+                                       "gem_blue_hopo.wid"
+                                       $lane}
+                                    {$this
+                                       add_test_widget
+                                       "gem_blue.wid"
+                                       $lane}})
+                              (4
+                                 {if_else
+                                    $hopo
+                                    {$this
+                                       add_test_widget
+                                       "gem_orange_hopo.wid"
+                                       $lane}
+                                    {$this
+                                       add_test_widget
+                                       "gem_orange.wid"
+                                       $lane}})}}}
+                     {$task sleep 1}
+                     {$task loop})}})
+         (clear_gems
+            {if
+               {exists spew_gems_test}
+               {delete spew_gems_test}
+               {$this toggle_running}})
+         (dump
+            {print
+               "surface_texture: "
+               [surface_texture]
+               "\n"}
+            {print
+               "surface_mesh: "
+               [surface_mesh]
+               "\n"}
+            {print
+               "effect_selector: "
+               [effect_selector]
+               "\n"}
+            {print
+               "gem_track_index: "
+               [gem_track_index]
+               "\n"}
+            {print
+               "num_tracks: "
+               [num_tracks]
+               "\n"}
+            {print
+               "multiplier: "
+               [multiplier]
+               "\n"}
+            {print
+               "kick_pass_counter: "
+               [kick_pass_counter]
+               "\n"})
+         (cycle_black_key_style
+            {'++'
+               [black_key_style]}
+            {if
+               {>
+                  [black_key_style]
+                  3}
+               {set
+                  [black_key_style]
+                  0}}
+            {switch
+               [black_key_style]
+               (0
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_blue.mesh}
+                     {object gem_black_blue_glow.mesh}}
+                  {key_black_green.wid
+                     set_meshes
+                     {object kbgem_black_green.mesh}
+                     {object gem_black_green_glow.mesh}}
+                  {key_black_red.wid
+                     set_meshes
+                     {object kbgem_black_red.mesh}
+                     {object gem_black_red_glow.mesh}}
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_yellow.mesh}
+                     {object gem_black_yellow_glow.mesh}}
+                  {black_gem_tex.anim set frame 0})
+               (1
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_blue_7c.mesh}
+                     {object gem_black_blue_glow_7c.mesh}}
+                  {key_black_green.wid
+                     set_meshes
+                     {object kbgem_black_green_7c.mesh}
+                     {object gem_black_green_glow_7c.mesh}}
+                  {key_black_red.wid
+                     set_meshes
+                     {object kbgem_black_red_7c.mesh}
+                     {object gem_black_red_glow_7c.mesh}}
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_yellow_7c.mesh}
+                     {object gem_black_yellow_glow_7c.mesh}}
+                  {black_gem_tex.anim set frame 0})
+               (2
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_blue.mesh}
+                     {object gem_black_blue_glow.mesh}}
+                  {key_black_green.wid
+                     set_meshes
+                     {object kbgem_black_green.mesh}
+                     {object gem_black_green_glow.mesh}}
+                  {key_black_red.wid
+                     set_meshes
+                     {object kbgem_black_red.mesh}
+                     {object gem_black_red_glow.mesh}}
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_yellow.mesh}
+                     {object gem_black_yellow_glow.mesh}}
+                  {black_gem_tex.anim set frame 1})
+               (3
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_blue_7c.mesh}
+                     {object gem_black_blue_glow_7c.mesh}}
+                  {key_black_green.wid
+                     set_meshes
+                     {object kbgem_black_green_7c.mesh}
+                     {object gem_black_green_glow_7c.mesh}}
+                  {key_black_red.wid
+                     set_meshes
+                     {object kbgem_black_red_7c.mesh}
+                     {object gem_black_red_glow_7c.mesh}}
+                  {key_black_blue.wid
+                     set_meshes
+                     {object kbgem_black_yellow_7c.mesh}
+                     {object gem_black_yellow_glow_7c.mesh}}
+                  {black_gem_tex.anim set frame 1})}
+            [black_key_style])
+         (update_screen_position
+            ($animate $size_frame $shift_frame $cam_rect_frame)
+            {if_else
+               {<
+                  [track_slot]
+                  [total_slots]}
+               {do
+                  {if_else
+                     $animate
+                     {do
+                        {track_size.anim
+                           animate
+                           (dest $size_frame)
+                           (period 1)
+                           (units kTaskUISeconds)}
+                        {track_shift.anim
+                           animate
+                           (dest $shift_frame)
+                           (period 1)
+                           (units kTaskUISeconds)}
+                        {track_cam_rect.anim
+                           animate
+                           (dest $cam_rect_frame)
+                           (period 1)
+                           (units kTaskUISeconds)}}
+                     {do
+                        {track_size.anim
+                           animate
+                           (range $size_frame $size_frame)
+                           (units kTaskUISeconds)}
+                        {track_shift.anim
+                           animate
+                           (range $shift_frame $shift_frame)
+                           (units kTaskUISeconds)}
+                        {track_cam_rect.anim
+                           animate
+                           (range $cam_rect_frame $cam_rect_frame)
+                           (units kTaskUISeconds)}}}
+                  {$this set_used TRUE}}
+               {$this set_used FALSE}})
+         (set_used
+            ($val)
+            {unless
+               {==
+                  $val
+                  [track_extended]}
+               {if_else
+                  $val
+                  {do
+                     {if
+                        {&&
+                           {!
+                              [disabled]}
+                           {'||'
+                              {exists milo}
+                              {{get_track_panel my_track_panel_dir}
+                                 tracks_extended}}}
+                        {if_else
+                           {>
+                              [total_slots]
+                              1}
+                           {track_in_delayed.trig trigger}
+                           {track_in.trig trigger}}}
+                     {set
+                        [track_extended]
+                        TRUE}}
+                  {do
+                     {track_out.trig trigger}
+                     {set
+                        [track_extended]
+                        FALSE}}}})))
+   COMMON_BANDTRACK_DATA)
+(VocalTrackDir
+   (description
+      "band 2 dir for vocal track")
+   (superclasses RndDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset}))
+      (deploy
+         script
+         (script
+            {$this deploy}))
+      (stop_deploy
+         script
+         (script
+            {$this stop_deploy}))
+      (pitch_panel
+         (indent
+            (pitch_window
+               bool
+               (help
+                  "are we displaying the note tube panel?")
+               (post_sync
+                  {$this reset}))
+            (pitch_window_height
+               float
+               (help
+                  "height of the note tube panel")
+               (post_sync
+                  {$this reset}))
+            (pitch_window_mesh
+               object
+               (class Mesh)
+               (help
+                  "the pitch window mesh")
+               (post_sync
+                  {$this reset}))
+            (pitch_window_overlay
+               object
+               (class Mesh)
+               (help
+                  "the pitch window overlay mesh")
+               (post_sync
+                  {$this reset}))))
+      (lead_panel
+         (indent
+            (lead_lyrics
+               bool
+               (help
+                  "are we showing the lead lyric panel?")
+               (post_sync
+                  {$this reset}))
+            (lead_lyric_height
+               float
+               (hide
+                  {!
+                     [lead_lyrics]})
+               (help
+                  "controls the height of the lead lyric bar")
+               (post_sync
+                  {$this reset}))
+            (lead_lyric_mesh
+               object
+               (class Mesh)
+               (hide
+                  {!
+                     [lead_lyrics]})
+               (help
+                  "the lead lyric bar mesh")
+               (post_sync
+                  {$this reset}))))
+      (harmony_panel
+         (indent
+            (harmony_lyrics
+               bool
+               (help
+                  "are we showing the harmony lyric panel?")
+               (post_sync
+                  {$this reset}))
+            (harmony_lyric_height
+               float
+               (hide
+                  {!
+                     [harmony_lyrics]})
+               (help
+                  "controls the height of the harmony lyric bar")
+               (post_sync
+                  {$this reset}))
+            (harmony_lyric_mesh
+               object
+               (class Mesh)
+               (hide
+                  {!
+                     [harmony_lyrics]})
+               (help
+                  "the harmony lyric bar mesh")
+               (post_sync
+                  {$this reset}))))
+      (lyric_colors
+         (indent
+            (scrolling
+               (indent
+                  (lead
+                     (indent
+                        (lead_coming
+                           color
+                           (help
+                              "Color of the approaching lead lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_coming]
+                                 lead
+                                 [scrolling_coming_alpha]}))
+                        (lead_now
+                           color
+                           (help
+                              "Color of the current lead lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_now]
+                                 lead
+                                 [scrolling_now_alpha]}))
+                        (lead_past
+                           color
+                           (help
+                              "Color of the lead lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_past]
+                                 lead
+                                 [scrolling_past_alpha]}))
+                        (lead_od_coming
+                           color
+                           (help
+                              "Color of the approaching lead overdrive lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_od_coming]
+                                 lead
+                                 [scrolling_coming_alpha]}))
+                        (lead_od_now
+                           color
+                           (help
+                              "Color of the current lead overdrive lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_od_now]
+                                 lead
+                                 [scrolling_now_alpha]}))
+                        (lead_od_past
+                           color
+                           (help
+                              "Color of the lead overdrive lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_od_past]
+                                 lead
+                                 [scrolling_past_alpha]}))))
+                  (harmony
+                     (indent
+                        (harmony_coming
+                           color
+                           (help
+                              "Color of the approaching harmony lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_coming]
+                                 harmony
+                                 [scrolling_coming_alpha]}))
+                        (harmony_now
+                           color
+                           (help
+                              "Color of the current harmony lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_now]
+                                 harmony
+                                 [scrolling_now_alpha]}))
+                        (harmony_past
+                           color
+                           (help
+                              "Color of the harmony lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_past]
+                                 harmony
+                                 [scrolling_past_alpha]}))
+                        (harmony_od_coming
+                           color
+                           (help
+                              "Color of the approaching harmony overdrive lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_od_coming]
+                                 harmony
+                                 [scrolling_coming_alpha]}))
+                        (harmony_od_now
+                           color
+                           (help
+                              "Color of the current harmony overdrive lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_od_now]
+                                 harmony
+                                 [scrolling_now_alpha]}))
+                        (harmony_od_past
+                           color
+                           (help
+                              "Color of the harmony overdrive lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_od_past]
+                                 harmony
+                                 [scrolling_past_alpha]}))))
+                  (alpha
+                     (indent
+                        (scrolling_coming_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for coming lyrics."))
+                        (scrolling_now_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for active lyric."))
+                        (scrolling_past_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for past lyrics."))))))
+            (static
+               (indent
+                  (lead
+                     (indent
+                        (lead_static_preview
+                           color
+                           (help
+                              "Color of the preview lead lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_preview]
+                                 lead
+                                 [static_preview_alpha]}))
+                        (lead_static_coming
+                           color
+                           (help
+                              "Color of the approaching lead lyrics in the current phrase.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_coming]
+                                 lead
+                                 [static_coming_alpha]}))
+                        (lead_static_now
+                           color
+                           (help
+                              "Color of the current lead lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_now]
+                                 lead
+                                 [static_now_alpha]}))
+                        (lead_static_past
+                           color
+                           (help
+                              "Color of the lead lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_past]
+                                 lead
+                                 [static_past_alpha]}))
+                        (lead_static_od_preview
+                           color
+                           (help
+                              "Color of the preview lead lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_od_preview]
+                                 lead
+                                 [static_preview_alpha]}))
+                        (lead_static_od_coming
+                           color
+                           (help
+                              "Color of the approaching lead overdrive lyrics in the current phrase.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_od_coming]
+                                 lead
+                                 [static_coming_alpha]}))
+                        (lead_static_od_now
+                           color
+                           (help
+                              "Color of the current lead overdrive lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_od_now]
+                                 lead
+                                 [static_now_alpha]}))
+                        (lead_static_od_past
+                           color
+                           (help
+                              "Color of the lead overdrive lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [lead_static_od_past]
+                                 lead
+                                 [static_past_alpha]}))))
+                  (harmony
+                     (indent
+                        (harmony_static_preview
+                           color
+                           (help
+                              "Color of the preview harmony lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_preview]
+                                 harmony
+                                 [static_preview_alpha]}))
+                        (harmony_static_coming
+                           color
+                           (help
+                              "Color of the approaching harmony lyrics in the current phrase.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_coming]
+                                 harmony
+                                 [static_coming_alpha]}))
+                        (harmony_static_now
+                           color
+                           (help
+                              "Color of the current harmony lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_now]
+                                 harmony
+                                 [static_now_alpha]}))
+                        (harmony_static_past
+                           color
+                           (help
+                              "Color of the harmony lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_past]
+                                 harmony
+                                 [static_past_alpha]}))
+                        (harmony_static_od_preview
+                           color
+                           (help
+                              "Color of the preview harmony overdrive lyrics.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_od_preview]
+                                 harmony
+                                 [static_preview_alpha]}))
+                        (harmony_static_od_coming
+                           color
+                           (help
+                              "Color of the approaching harmony overdrive lyrics in the current phrase.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_od_coming]
+                                 harmony
+                                 [static_coming_alpha]}))
+                        (harmony_static_od_now
+                           color
+                           (help
+                              "Color of the current harmony overdrive lyric.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_od_now]
+                                 harmony
+                                 [static_now_alpha]}))
+                        (harmony_static_od_past
+                           color
+                           (help
+                              "Color of the harmony overdrive lyrics after they have been read.")
+                           (post_sync
+                              {$this
+                                 set_lyric_color
+                                 [harmony_static_od_past]
+                                 harmony
+                                 [static_past_alpha]}))))
+                  (alpha
+                     (indent
+                        (static_preview_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for static preview lyrics."))
+                        (static_coming_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for static current phrase lyrics."))
+                        (static_now_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for static active lyric."))
+                        (static_past_alpha
+                           float
+                           (range 0 1)
+                           (help
+                              "Alpha for static past lyrics."))))))))
+      (track_decoration
+         (indent
+            (left_deco_mesh
+               object
+               (class Mesh)
+               (post_sync
+                  {$this reset}))
+            (right_deco_mesh
+               object
+               (class Mesh)
+               (post_sync
+                  {$this reset}))))
+      (now_bar
+         (indent
+            (now_bar_width
+               float
+               (help
+                  "the width of the now bar mesh")
+               (post_sync
+                  {$this reset}))
+            (now_bar_mesh
+               object
+               (class Mesh)
+               (post_sync
+                  {$this reset}))))
+      (pitch_guides
+         symbol
+         (list
+            (none evenly_spaced harmonic staff keyboard))
+         (post_sync
+            {$this reset}))
+      (tube_style
+         object
+         (class Object tube_style))
+      (arrow_style
+         object
+         (class Object arrow_style)
+         (post_sync
+            {$this
+               apply_arrow_style
+               [arrow_style]}))
+      (font_style
+         object
+         (class Object font_style)
+         (post_sync
+            {$this
+               apply_font_style
+               [font_style]}))
+      (deploy_sections
+         (indent
+            (lead_deploy_mat
+               object
+               (class Mat)
+               (post_sync
+                  {{$this find lead_deploy.mesh}
+                     set
+                     mat
+                     [lead_deploy_mat]}))
+            (harmony_deploy_mat
+               object
+               (class Mat)
+               (post_sync
+                  {{$this find harmony_deploy.mesh}
+                     set
+                     mat
+                     [harmony_deploy_mat]}))))
+      (phrase_feedback
+         (indent
+            (feedback_state_lead
+               int
+               (range -1 4)
+               (post_sync
+                  {$this
+                     set_feedback_state
+                     [feedback_state_lead]
+                     [feedback_state_harm_1]
+                     [feedback_state_harm_2]})
+               (help
+                  "Rating after a phrase 0 - Lousy 1 - Poor 2 - Ok 3 - Good 4 - Great -1 - Empty Phrase.")
+               (no_test))
+            (feedback_state_harm_1
+               int
+               (range -1 4)
+               (post_sync
+                  {$this
+                     set_feedback_state
+                     [feedback_state_lead]
+                     [feedback_state_harm_1]
+                     [feedback_state_harm_2]})
+               (help
+                  "Rating after a phrase 0 - Lousy 1 - Poor 2 - Ok 3 - Good 4 - Great -1 - Empty Phrase.")
+               (no_test))
+            (feedback_state_harm_2
+               int
+               (range -1 4)
+               (post_sync
+                  {$this
+                     set_feedback_state
+                     [feedback_state_lead]
+                     [feedback_state_harm_1]
+                     [feedback_state_harm_2]})
+               (help
+                  "Rating after a phrase 0 - Lousy 1 - Poor 2 - Ok 3 - Good 4 - Great -1 - Empty Phrase.")
+               (no_test))
+            (phrase_feedback_trig
+               object
+               (class EventTrigger))))
+      (vocalist_volume
+         object
+         (class RndDir))
+      (configurable_objects
+         (array
+            object
+            (class Trans))
+         (help
+            "Objects which can change transform or showing per configuration."))
+      (vox_configuration
+         object
+         (class Object vocals_configuration)
+         (post_sync
+            {$this reset}))
+      (spotlight_success_objects
+         (indent
+            (spotlight_sparkles_only_trig
+               object
+               (class EventTrigger))
+            (spotlight_phrase_success_trig
+               object
+               (class EventTrigger))))
+      COMMON_BANDTRACK_EDITOR)
+   (types
+      (test
+         (editor
+            (text_lyrics
+               script
+               (script
+                  {$this test_lyrics})))
+         (test_lyrics
+            {word.txt
+               set_text
+               "Current Line"})))
+   COMMON_BANDTRACK_DATA)
+#define COMMON_TRACKPANELDIR_EDITOR
+((view_time_easy
+      float
+      (post_sync
+         {$this configure_tracks}))
+   (view_time_expert
+      float
+      (post_sync
+         {$this configure_tracks}))
+   (net_track_alpha
+      float
+      (post_sync
+         {$this configure_tracks}))
+   (configuration
+      object
+      (class Object)
+      (post_sync
+         {$this
+            set_configuration
+            [configuration]})
+      (help
+         "current configuration")
+      (no_test))
+   (configurable_objects
+      (array
+         object
+         (class Trans))
+      (help
+         "Objects which can change transform or showing per configuration.")))
+#define H2H_INSTRUMENT_TYPES
+("kInstGuitar"
+   "kInstDrum"
+   "kInstBass"
+   "kInstVocals"
+   "kInstRealGuitar")
+(H2HTrackPanelDir
+   (description
+      "panel dir that handles tracks & hud in head-to-head mode")
+   (superclasses PanelDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this configure_tracks}
+            {$this reset}))
+      (instrument
+         int
+         (list
+            (H2H_INSTRUMENT_TYPES))
+         (refresh configuration)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}
+            {$this play_intro}))
+      (track_0_net
+         bool
+         (post_sync
+            {$this configure_tracks})
+         (no_test))
+      (track_1_net
+         bool
+         (post_sync
+            {$this configure_tracks})
+         (no_test))
+      (test_score
+         int
+         (post_sync
+            {$this
+               set_score_diff
+               [test_score]})
+         (no_test))
+      COMMON_TRACKPANELDIR_EDITOR)
+   (types))
+#define GEM_INSTRUMENT_TYPES
+("kInstNone"
+   "kInstGuitar"
+   "kInstDrum"
+   "kInstBass"
+   "kInstKeys"
+   "kInstRealGuitar")
+(TrackPanelDir
+   (description
+      "panel dir that handles tracks & hud")
+   (superclasses PanelDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset}
+            {$this configure_tracks}))
+      (vocals
+         bool
+         (refresh vocals_net)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (vocals_net
+         bool
+         (hide
+            {!
+               [vocals]})
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (instrument_A
+         int
+         (list
+            (GEM_INSTRUMENT_TYPES))
+         (refresh inst_A_net configuration)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (inst_A_net
+         bool
+         (hide
+            {==
+               [instrument_A]
+               kInstNone})
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (instrument_B
+         int
+         (list
+            (GEM_INSTRUMENT_TYPES))
+         (refresh inst_B_net configuration)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (inst_B_net
+         bool
+         (hide
+            {==
+               [instrument_B]
+               kInstNone})
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (instrument_C
+         int
+         (list
+            (GEM_INSTRUMENT_TYPES))
+         (refresh inst_C_net configuration)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (inst_C_net
+         bool
+         (hide
+            {==
+               [instrument_C]
+               kInstNone})
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (instrument_D
+         int
+         (list
+            (GEM_INSTRUMENT_TYPES))
+         (refresh inst_D_net configuration)
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (inst_D_net
+         bool
+         (hide
+            {==
+               [instrument_D]
+               kInstNone})
+         (no_test)
+         (post_sync
+            {$this configure_tracks}))
+      (test_multiplier
+         int
+         (post_sync
+            {$this
+               set_multiplier
+               [test_multiplier]})
+         (no_test))
+      COMMON_TRACKPANELDIR_EDITOR
+      (turn_everything_on
+         script
+         (script
+            {player_intro_00 icon_show}
+            {player_intro_01 icon_show}
+            {player_intro_02 icon_show}
+            {player_intro_03 icon_show}
+            {player_intro_00 set_talking TRUE}
+            {player_intro_01 set_talking TRUE}
+            {player_intro_02 set_talking TRUE}
+            {player_intro_03 set_talking TRUE}
+            {player_feedback_00 start_solo}
+            {player_feedback_00 set_percent 75}
+            {player_feedback_01 start_solo}
+            {player_feedback_01 set_percent 25}
+            {player_feedback_02 start_solo}
+            {player_feedback_02 set_percent 100}
+            {player_feedback_03 start_solo}
+            {player_feedback_03 set_percent 50}
+            {failed_feedback_00 failed 3}
+            {failed_feedback_01 failed 3}
+            {failed_feedback_02 failed 3}
+            {failed_feedback_03 failed 3}
+            {popup_help_00 drum_fill}
+            {popup_help_01 drum_fill}
+            {popup_help_02 drum_fill}
+            {popup_help_03 drum_fill}
+            {scoreboard set_score_milo 1234567}
+            {crowd_meter worst_case}
+            {$this set_multiplier 4}
+            {mtv_overlay set_showing TRUE}
+            {do
+               ($obj)
+               {set
+                  $obj
+                  {vocals get popup_object}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj scream}}
+               {set
+                  $obj
+                  {vocals get player_feedback}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj start_solo}
+                  {$obj set_percent 35}}
+               {set
+                  $obj
+                  {vocals get player_intro}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj icon_show}
+                  {$obj set_talking TRUE}}}))
+      (turn_everything_off
+         script
+         (script
+            {player_intro_00 reset}
+            {player_intro_01 reset}
+            {player_intro_02 reset}
+            {player_intro_03 reset}
+            {player_intro_00 set_talking FALSE}
+            {player_intro_01 set_talking FALSE}
+            {player_intro_02 set_talking FALSE}
+            {player_intro_03 set_talking FALSE}
+            {player_feedback_00 reset}
+            {player_feedback_01 reset}
+            {player_feedback_02 reset}
+            {player_feedback_03 reset}
+            {failed_feedback_00 reset}
+            {failed_feedback_01 reset}
+            {failed_feedback_02 reset}
+            {failed_feedback_03 reset}
+            {popup_help_00 reset}
+            {popup_help_01 reset}
+            {popup_help_02 reset}
+            {popup_help_03 reset}
+            {scoreboard set_score_milo 0}
+            {crowd_meter reset}
+            {$this set_multiplier 1}
+            {mtv_overlay set_showing FALSE}
+            {do
+               ($obj)
+               {set
+                  $obj
+                  {vocals get popup_object}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj reset}}
+               {set
+                  $obj
+                  {vocals get player_feedback}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj reset}}
+               {set
+                  $obj
+                  {vocals get player_intro}}
+               {if
+                  {!=
+                     $obj
+                     ""}
+                  {$obj reset}}}))
+      (game_won
+         script
+         (script
+            {$this game_won}))
+      (game_lost
+         script
+         (script
+            {$this game_lost}))
+      (everyone_deploy
+         script
+         (script
+            {track_0 deploy}
+            {track_1 deploy}
+            {track_2 deploy}
+            {track_3 deploy}
+            {vocals deploy}
+            {keys deploy}))
+      (everyone_stop_deploy
+         script
+         (script
+            {track_0 stop_deploy}
+            {track_1 stop_deploy}
+            {track_2 stop_deploy}
+            {track_3 stop_deploy}
+            {vocals stop_deploy}
+            {keys stop_deploy})))
+   (types))
+(StreakMeterDir
+   (description
+      "streak meter for band tracks")
+   (superclasses RndDir))
+(OverdriveMeterDir
+   (description
+      "overdrive meter for band tracks")
+   (superclasses RndDir)
+   (editor
+      (initialize
+         script
+         (script
+            {$this initialize}))
+      (test_energy
+         float
+         (no_test))
+      (energy_ready
+         script
+         (script
+            {$this energy_ready}))
+      (stop_deploy
+         script
+         (script
+            {$this stop_deploy}))
+      (disable_overdrive
+         script
+         (script
+            {$this set_no_overdrive})))
+   (types))
+(EndingBonusDir
+   (description
+      "BRE/unison phrase popup")
+   (superclasses RndDir)
+   (editor
+      (start
+         script
+         (script
+            {$this start})
+         (help
+            "Start the ending bonus."))
+      (reset
+         script
+         (script
+            {$this reset})
+         (help
+            "Reset the ending bonus."))
+      (success
+         script
+         (script
+            {$this success})
+         (help
+            "Plays success.trig at the end of the bonus."))
+      (failure
+         script
+         (script
+            {$this coda_end})
+         (help
+            "Plays failure.trig at the end of the bonus."))
+      (score
+         int
+         (post_sync
+            {$this
+               set_score
+               [score]})
+         (help
+            "Ending bonus score.")
+         (no_test))
+      (unison_start
+         script
+         (script
+            {$this unison_start}))
+      (unison_end
+         script
+         (script
+            {$this unison_end}))
+      (unison_succeed
+         script
+         (script
+            {$this unison_succeed})))
+   (types))
+(PitchArrowDir
+   (description
+      "singer's vocal HUD pitch guide arrow")
+   (superclasses RndDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset})
+         (help
+            "reset to the current param values"))
+      (arrow_style int)
+      (toggle_pitched
+         script
+         (script
+            {$this toggle_pitched})
+         (refresh pitched))
+      (pitched
+         bool
+         (read_only TRUE))
+      (toggle_spotlight
+         script
+         (script
+            {$this toggle_spotlight})
+         (refresh spotlight))
+      (spotlight
+         bool
+         (read_only TRUE))
+      (toggle_deploying
+         script
+         (script
+            {$this toggle_deploying})
+         (refresh deploying))
+      (deploying
+         bool
+         (read_only TRUE))
+      (volume
+         float
+         (range 0 1)
+         (help
+            "arrow alpha driven by the mic volume in the current frame, normalized between 0 and 1")
+         (post_sync
+            {$this sync_volume}))
+      (tilt
+         float
+         (range -90 90)
+         (post_sync
+            {$this sync_tilt})
+         (help
+            "the tilt of the arrow direction in degrees"))
+      (score
+         float
+         (range 0 1)
+         (help
+            "the score for the current frame, normalized between 0 and 1")
+         (post_sync
+            {$this sync_score}))
+      (harmony_fx
+         float
+         (range 0 2)
+         (help
+            "extra bonus fx that play when nailing harmony with another part")
+         (post_sync
+            {$this sync_harm_score}))
+      (test_color
+         symbol
+         (list
+            (green yellow orange brown purple blue white))
+         (post_sync
+            {$this sync_color}))
+      (color_fade
+         float
+         (range 0 1)
+         (help
+            "controls the saturation of the arrow color: 0 = max saturation, 1 = no saturation")
+         (post_sync
+            {$this sync_color_fade}))
+      (helix_fx_spin_control
+         (indent
+            (spin_speed
+               float
+               (help
+                  "controls the spin speed for helix particle effects.  Can be animated"))
+            (spin_anim
+               object
+               (class Anim)
+               (help
+                  "this anim will loop its loop range according to the value of spin_speed"))
+            (spin_begin_frame
+               float
+               (help
+                  "loop start frame for spin_anim"))
+            (spin_end_frame
+               float
+               (help
+                  "loop end frame for spin_anim"))
+            (spin_rest_frame
+               float
+               (help
+                  "frame where spin_anim should be when spin_speed is zero")))))
+   (types))
+#define kMomentNone
+(0)
+#define kMomentSuccess
+(1)
+#define kMomentFail
+(2)
+(EventCompleteDir
+   (description
+      "PanelDir for tour event complete screens")
+   (superclasses PanelDir)
+   (editor
+      (enabled
+         bool
+         (no_test))
+      (play
+         script
+         (script
+            {$this play})
+         (help
+            "Play animations"))
+      (skip
+         script
+         (script
+            {$this skip})
+         (help
+            "Skip to end of animations"))
+      (items
+         (array
+            (struct
+               (anim
+                  object
+                  (class Anim))
+               (icon_label
+                  object
+                  (class BandLabel))
+               (icon_label_str string)
+               (text_label
+                  object
+                  (class BandLabel))
+               (text_label_str string)
+               (text_label_start int)
+               (text_label_end int)
+               (sfx
+                  object
+                  (class Sequence))
+               (active bool)
+               (moment_success_group
+                  object
+                  (class Group))
+               (moment_fail_group
+                  object
+                  (class Group))
+               (moment_name symbol)
+               (moment_success_label
+                  object
+                  (class BandLabel))
+               (moment_fail_label
+                  object
+                  (class BandLabel))
+               (moment_str string)
+               (moment_end int)
+               (moment_sfx
+                  object
+                  (class Sequence))
+               (moment_state
+                  int
+                  (list
+                     ("kMomentNone"
+                        "kMomentSuccess"
+                        "kMomentFail"))))))
+      (initial_delay
+         float
+         range
+         (0 5.0))
+      (anim_time
+         float
+         range
+         (0 5.0))
+      (count_time
+         float
+         range
+         (0 5.0))
+      (moment_time
+         float
+         range
+         (0 5.0))
+      (challenge_list
+         object
+         (class BandList)))
+   (types))
+#define BANDCHARDESC_POSTSYNC
+((post_sync
+      {$this milo_reload}))
+#define BANDCHARDESC_OUTFITPIECE
+((struct
+      (name
+         symbol
+         (list
+            {$this
+               list_outfits
+               {elem
+                  $milo_prop_path
+                  {-
+                     {size $milo_prop_path}
+                     2}}})
+         BANDCHARDESC_POSTSYNC)
+      (color0
+         int
+         BANDCHARDESC_POSTSYNC
+         (help
+            "color0, set -1 to load from outfitconfig"))
+      (color1
+         int
+         BANDCHARDESC_POSTSYNC
+         (help
+            "color1, set -1 to load from outfitconfig"))
+      (color2
+         int
+         BANDCHARDESC_POSTSYNC
+         (help
+            "color2, set -1 to load from outfitconfig")))
+   (header
+      {do
+         ($arr
+            {array $milo_prop_path})
+         {push_back $arr name}
+         {localize
+            {symbol
+               {$this get $arr}}}}))
+(BandCharDesc
+   (description
+      "Band Character Description, contains all physical appearance attributes.")
+   (superclasses)
+   (editor
+      (prefab
+         symbol
+         (list
+            {$this list_outfits prefab})
+         (help
+            "Prefab name if this is a non-editable prefab"))
+      (gender
+         symbol
+         (list
+            (male female))
+         (help
+            "take a wild guess")
+         BANDCHARDESC_POSTSYNC)
+      (skin_color
+         int
+         (help
+            "skin color, taken from skin.pal")
+         BANDCHARDESC_POSTSYNC)
+      (head
+         (struct
+            (eye_color
+               int
+               (help
+                  "eye color index")
+               BANDCHARDESC_POSTSYNC)
+            (shape
+               int
+               (help
+                  "shape of the head index")
+               (range
+                  0
+                  {-
+                     {$this shape_num}
+                     1})
+               BANDCHARDESC_POSTSYNC)
+            (chin
+               int
+               (help
+                  "chin index 0-2")
+               (range
+                  0
+                  {-
+                     {$this chin_num}
+                     1})
+               BANDCHARDESC_POSTSYNC)
+            (chin_width
+               float
+               (help
+                  "chin length 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (chin_height
+               float
+               (help
+                  "chin height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (jaw_width
+               float
+               (help
+                  "jaw length 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (jaw_height
+               float
+               (help
+                  "jaw height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (nose
+               int
+               (help
+                  "nose index")
+               (range
+                  0
+                  {-
+                     {$this nose_num}
+                     1})
+               BANDCHARDESC_POSTSYNC)
+            (nose_width
+               float
+               (help
+                  "nose width 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (nose_height
+               float
+               (help
+                  "nose height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (eye
+               int
+               (help
+                  "eye index")
+               (range
+                  0
+                  {-
+                     {$this eye_num}
+                     1})
+               BANDCHARDESC_POSTSYNC)
+            (eye_separation
+               float
+               (help
+                  "eye separation 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (eye_height
+               float
+               (help
+                  "eye height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (eye_rotation
+               float
+               (help
+                  "eye rotation 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (mouth
+               int
+               (help
+                  "mouth index")
+               (range
+                  0
+                  {-
+                     {$this mouth_num}
+                     1})
+               BANDCHARDESC_POSTSYNC)
+            (mouth_width
+               float
+               (help
+                  "mouth width 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (mouth_height
+               float
+               (help
+                  "mouth height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (brow_separation
+               float
+               (help
+                  "eyebrow separation 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (brow_height
+               float
+               (help
+                  "eyebrow height 0-1")
+               (range 0 1)
+               BANDCHARDESC_POSTSYNC)
+            (hide
+               bool
+               (help
+                  "if true, loads no head, for development")
+               BANDCHARDESC_POSTSYNC)))
+      (instruments
+         (struct
+            (guitar BANDCHARDESC_OUTFITPIECE)
+            (bass BANDCHARDESC_OUTFITPIECE)
+            (drum BANDCHARDESC_OUTFITPIECE)
+            (mic BANDCHARDESC_OUTFITPIECE)
+            (keyboard BANDCHARDESC_OUTFITPIECE))
+         (help
+            "instruments"))
+      (outfit
+         (struct
+            (eyebrows BANDCHARDESC_OUTFITPIECE)
+            (facehair BANDCHARDESC_OUTFITPIECE)
+            (earrings BANDCHARDESC_OUTFITPIECE)
+            (glasses BANDCHARDESC_OUTFITPIECE)
+            (hair BANDCHARDESC_OUTFITPIECE)
+            (piercings BANDCHARDESC_OUTFITPIECE)
+            (feet BANDCHARDESC_OUTFITPIECE)
+            (hands BANDCHARDESC_OUTFITPIECE)
+            (legs BANDCHARDESC_OUTFITPIECE)
+            (rings BANDCHARDESC_OUTFITPIECE)
+            (torso BANDCHARDESC_OUTFITPIECE)
+            (wrist BANDCHARDESC_OUTFITPIECE))
+         (help
+            "clothing"))
+      (patches
+         (array
+            (struct
+               (texture
+                  int
+                  (help
+                     "texture index of profile, -1 means to interpret mesh_name as the actual patch mesh, which would live in color_palettes.milo")
+                  BANDCHARDESC_POSTSYNC)
+               (category
+                  int
+                  (list
+                     (PATCH_CATEGORIES))
+                  (help
+                     "Category of this patch")
+                  BANDCHARDESC_POSTSYNC)
+               (mesh_name
+                  string
+                  (help
+                     "name of placement mesh or mapping mesh. Valid placement meshes:\nplacement_legs_L-back.mesh placement_legs_L-front.mesh placement_legs_R-back.mesh placement_legs_R-front.mesh placement_torso_back.mesh placement_torso_front.mesh placement_torso_L-lowerArm.mesh placement_torso_L-shoulder.mesh placement_torso_R-lowerArm.mesh placement_torso_R-shoulder.mesh")
+                  BANDCHARDESC_POSTSYNC)
+               (rotation
+                  float
+                  (help
+                     "in radians, about the uv space z axis.")
+                  BANDCHARDESC_POSTSYNC)
+               (uv
+                  VECTOR2
+                  (help
+                     "UV in the mesh, u == -1 means mesh is mapping mesh.")
+                  BANDCHARDESC_POSTSYNC)
+               (scale
+                  VECTOR2
+                  (help
+                     "local x and y scale factors.")
+                  BANDCHARDESC_POSTSYNC))))
+      (height
+         float
+         (help
+            "Height of character, 0 - 1")
+         (range 0 1)
+         (no_test)
+         BANDCHARDESC_POSTSYNC)
+      (weight
+         float
+         (help
+            "Weight of character, 0 - 1")
+         (range 0 1)
+         (no_test)
+         BANDCHARDESC_POSTSYNC)
+      (muscle
+         float
+         (help
+            "Muscle of character, 0 - 1")
+         (range 0 1)
+         (no_test)
+         BANDCHARDESC_POSTSYNC))
+   (types))
+(BandCharacter
+   (description
+      "Band Character")
+   (superclasses Character BandCharDesc)
+   (editor
+      (tempo
+         symbol
+         (help
+            "song tempo")
+         (list
+            (slow medium fast)))
+      (drum_venue
+         symbol
+         (help
+            "venue type for drums")
+         (list
+            {$this list_drum_venues}))
+      (instrument_type
+         symbol
+         (list
+            (none guitar bass drum mic keyboard))
+         (help
+            "character's current instrument")
+         BANDCHARDESC_POSTSYNC)
+      (in_closet
+         bool
+         (help
+            "when in closet, colors + outfits can be changed")
+         (read_only TRUE)
+         (no_test))
+      (enter_closet
+         script
+         (help
+            "sets in_closet TRUE")
+         (script
+            {set
+               [in_closet]
+               TRUE})
+         (refresh in_closet))
+      (exit_closet
+         script
+         (help
+            "sets in_closet FALSE")
+         (script
+            {set
+               [in_closet]
+               FALSE})
+         (refresh in_closet))
+      (start_load
+         script
+         (help
+            "loads clips + outfits according to current settings")
+         (script
+            {$this start_load FALSE}))
+      (head_lookat_weight
+         float
+         (help
+            "What fraction to drive the head lookat")
+         (no_test))
+      (test_prefab
+         object
+         (class BandCharDesc)
+         (dir
+            {bandchardesc_prefabs})
+         (help
+            "prefab to copy from or to"))
+      (load_prefab
+         script
+         (script
+            {$this copy_prefab}
+            {$this start_load FALSE})
+         (help
+            "make the char look like this prefab"))
+      (save_prefab
+         script
+         (script
+            {$this save_prefab})
+         (help
+            "make the prefab look like the char AND save to disk"))
+      (reload_prefabs
+         script
+         (script
+            {bandchardesc_reload_prefabs})
+         (help
+            "Reloads all prefabs off of disk, use if you just deleted or added a prefab"))
+      (group_name
+         string
+         (list
+            {object_list
+               {if_else
+                  [driver]
+                  {[driver]
+                     get
+                     clips}
+                  {object ''}}
+               CharClipGroup
+               TRUE})
+         (help
+            "the group name to use for animating")
+         (no_test)))
+   (types))
+(CharKeyHandMidi
+   (description
+      "Keyboard hookups to a midi parser, calculates finger destinations.")
+   (allowed_dirs Character)
+   (superclasses CharPollable CharWeightable)
+   (ext keyhand)
+   (editor
+      (first_spot
+         object
+         (class Trans)
+         (help
+            "Spot at 0%"))
+      (second_spot
+         object
+         (class Trans)
+         (help
+            "Spot at 100%"))
+      (ik_object
+         object
+         (class CharIKFingers)
+         (help
+            "CharIKFingers object"))
+      (is_right_hand
+         bool
+         (help
+            "Does this run the right or left hand?"))
+      (run_test
+         script
+         (script
+            {$this run_test}))
+      (end_test
+         script
+         (script
+            {$this end_test})))
+   (types
+      (musician
+         (parser_up keyboard_rh_fingers_up)
+         (parser_down keyboard_rh_fingers_down)
+         (editor
+            (parser_up
+               symbol
+               (help
+                  "Name of the midi parser for finger up events"))
+            (parser_down
+               symbol
+               (help
+                  "Name of the midi parser for finger down events")))
+         (enter
+            {if
+               {exists
+                  [parser_up]}
+               {[parser_up]
+                  add_sink
+                  $this}}
+            {if
+               {exists
+                  [parser_down]}
+               {[parser_down]
+                  add_sink
+                  $this}})
+         (exit
+            {handle
+               ([parser_up]
+                  remove_sink
+                  $this)}
+            {handle
+               ([parser_down]
+                  remove_sink
+                  $this)})
+         (game_over
+            {handle
+               ([parser_up]
+                  remove_sink
+                  $this)}
+            {handle
+               ([parser_down]
+                  remove_sink
+                  $this)}))))
+(BandWardrobe
+   (description
+      "Manager class that clothes characters and loads animations under different conditions")
+   (test_singleton)
+   (editor
+      (play_mode
+         symbol
+         (list
+            (BAND_PLAY_MODES))
+         (help
+            "Which play mode to use, will reload characters + re-pick directed cuts")
+         (no_test TRUE))
+      (shot_set_play_mode
+         bool
+         (help
+            "When true, the play_mode will be automatically set based on the name of the camshot you are editting or placed in the anim bar")
+         (no_test TRUE))
+      (play_shot_5
+         bool
+         (help
+            "Will play the shot_5 camera track, remapping invalid shot categories on the fly")
+         (no_test TRUE))
+      (genre
+         symbol
+         (list
+            (rocker banger dramatic spazz))
+         (help
+            "default genres to load in Milo")
+         (no_test TRUE))
+      (tempo
+         symbol
+         (list
+            (slow medium fast))
+         (help
+            "default tempo to load in Milo")
+         (no_test TRUE))
+      (vocal_gender
+         symbol
+         (list
+            ('' male female))
+         (help
+            "vocalist gender for this song, set to nothing if in Milo and want whatever you've selected")
+         (no_test TRUE))
+      (demand_load
+         symbol
+         (list
+            (''
+               (budget_cpu_male
+                  "worst on budget cpu")
+               (budget_cpu_female
+                  "worst on budget cpu")
+               (budget_gs_male
+                  "worst on budget gs")
+               (budget_gs_female
+                  "worst on budget gs")
+               (budget_male
+                  "worst on budget combined")
+               (budget_female
+                  "worst on budget combined")
+               (expensive_cpu_male
+                  "absolute worst cpu")
+               (expensive_cpu_female
+                  "absolute worst cpu")
+               (expensive_gs_male
+                  "absolute worst gs")
+               (expensive_gs_female
+                  "absolute worst gs")
+               (expensive_male
+                  "absolute worst combined")
+               (expensive_female
+                  "absolute worst combined")))
+         (no_test TRUE)
+         (help
+            "Used for framerate mode, set to force prefabs to be these, automatically prepends platform.  Make sure you force to the most expensive of the two (male + female)")))
+   (anim_props
+      (player0_forced_focus
+         symbol
+         (list
+            {$this list_interest_objects 0})
+         (no_test TRUE)
+         (propanim_selected
+            (on
+               {$this enable_debug_interests 0 TRUE})
+            (off
+               {$this enable_debug_interests 0 FALSE}))
+         (help
+            "for propanim, the name of the interest object to force on player0 in vignettes"))
+      (player0_enable_blinks bool)
+      (player0_force_blink
+         bool
+         (propanim_blockview FALSE))
+      (player1_forced_focus
+         symbol
+         (list
+            {$this list_interest_objects 1})
+         (no_test TRUE)
+         (propanim_selected
+            (on
+               {$this enable_debug_interests 1 TRUE})
+            (off
+               {$this enable_debug_interests 1 FALSE}))
+         (help
+            "for propanim, the name of the interest object to force on player1 in vignettes"))
+      (player1_enable_blinks bool)
+      (player1_force_blink
+         bool
+         (propanim_blockview FALSE))
+      (player2_forced_focus
+         symbol
+         (list
+            {$this list_interest_objects 2})
+         (no_test TRUE)
+         (propanim_selected
+            (on
+               {$this enable_debug_interests 2 TRUE})
+            (off
+               {$this enable_debug_interests 2 FALSE}))
+         (help
+            "for propanim, the name of the interest object to force on player2 in vignettes"))
+      (player2_enable_blinks bool)
+      (player2_force_blink
+         bool
+         (propanim_blockview FALSE))
+      (player3_forced_focus
+         symbol
+         (list
+            {$this list_interest_objects 3})
+         (no_test TRUE)
+         (propanim_selected
+            (on
+               {$this enable_debug_interests 3 TRUE})
+            (off
+               {$this enable_debug_interests 3 FALSE}))
+         (help
+            "for propanim, the name of the interest object to force on player3 in vignettes"))
+      (player3_enable_blinks bool)
+      (player3_force_blink
+         bool
+         (propanim_blockview FALSE)))
+   (types))
+(CrowdAudio
+   (description
+      "Crowd Audio, makes the crowd cheer and such")
+   (superclasses Poll)
+   (editor)
+   (types))
+(BandSongPref
+   (description
+      "Band Song Preferences, per song file settable properties")
+   (editor
+      (part2_inst
+         symbol
+         (list
+            (guitar bass drum))
+         (help
+            "Who should sing the vocal part2?"))
+      (part3_inst
+         symbol
+         (list
+            (guitar bass drum))
+         (help
+            "Who should sing the vocal part3?"))
+      (part4_inst
+         symbol
+         (list
+            (guitar bass drum))
+         (help
+            "Who should sing the vocal part4?"))
+      (animation_genre
+         symbol
+         (list
+            (banger dramatic rocker spazz))
+         (help
+            "Animation genre for the song")))
+   (types))
+(BandDirector
+   (description
+      "Band Director, sits in each song file and manages camera + scene changes")
+   (superclasses Poll Draw)
+   (init
+      {set
+         [scenetrigger]
+         ''})
+   (cam_cat_priorities
+      (CAM_CAT_PRIORITIES))
+   (generic_cam_cats
+      (GENERIC_CAM_CATS))
+   (editor
+      (debug_char_interests
+         script
+         (script
+            {$this debug_char_interests})
+         (help
+            "Cycles through each character, enabling debug rendering of its interest objects"))
+      (toggle_interests_overlay
+         script
+         (script
+            {$this toggle_interests_overlay})
+         (help
+            "Toggles display of debug overlay for interest objects"))
+      (song_properties
+         (indent
+            (bass_intensity
+               symbol
+               (list
+                  (BAND_BASS_EVENTS))
+               (help
+                  "bass play intensity")
+               (no_test TRUE)
+               (read_only TRUE))
+            (drum_intensity
+               symbol
+               (list
+                  (BAND_DRUM_EVENTS))
+               (help
+                  "drum play intensity")
+               (no_test TRUE)
+               (read_only TRUE))
+            (guitar_intensity
+               symbol
+               (list
+                  (BAND_GUITAR_EVENTS))
+               (help
+                  "guitar play intensity")
+               (no_test TRUE)
+               (read_only TRUE))
+            (mic_intensity
+               symbol
+               (list
+                  (BAND_MIC_EVENTS))
+               (help
+                  "mic play intensity")
+               (no_test TRUE)
+               (read_only TRUE))
+            (keyboard_intensity
+               symbol
+               (list
+                  (BAND_KEYBOARD_EVENTS))
+               (help
+                  "keyboard play intensity")
+               (no_test TRUE)
+               (read_only TRUE))
+            (crowd
+               symbol
+               (list
+                  (BAND_CROWD_EVENTS))
+               (help
+                  "Crowd commands")
+               (no_test TRUE))
+            (part2_sing
+               symbol
+               (list
+                  (BAND_SINGALONG_EVENTS))
+               (help
+                  "sing on/off for second vocal part")
+               (no_test TRUE))
+            (part3_sing
+               symbol
+               (list
+                  (BAND_SINGALONG_EVENTS))
+               (help
+                  "sing on/off for third vocal part")
+               (no_test TRUE))
+            (part4_sing
+               symbol
+               (list
+                  (BAND_SINGALONG_EVENTS))
+               (help
+                  "sing on/off for fourth vocal part")
+               (no_test TRUE))
+            (shot_5
+               symbol
+               (list
+                  ('' COOP_CAM_CATS DIRECTED_CAM_CATS))
+               (help
+                  "Five instrument authored BandCamShot categories")
+               (no_test)
+               (propanim_annotate shot_annotate))
+            (shot_bg
+               symbol
+               (list
+                  {$this
+                     get_cat_list
+                     coop_bg
+                     ('' COOP_CAM_CATS DIRECTED_CAM_CATS)})
+               (help
+                  "Bass + Guitar BandCamShot categories")
+               (no_test)
+               (propanim_annotate shot_annotate))
+            (shot_bk
+               symbol
+               (list
+                  {$this
+                     get_cat_list
+                     coop_bk
+                     ('' COOP_CAM_CATS DIRECTED_CAM_CATS)})
+               (help
+                  "Bass + Keyboard BandCamShot category")
+               (no_test)
+               (propanim_annotate shot_annotate))
+            (shot_gk
+               symbol
+               (list
+                  {$this
+                     get_cat_list
+                     coop_gk
+                     ('' COOP_CAM_CATS DIRECTED_CAM_CATS)})
+               (help
+                  "Guitar + Keyboard BandCamShot categories")
+               (no_test)
+               (propanim_annotate shot_annotate))
+            (cur_shot
+               object
+               (class CamShot)
+               (help
+                  "currently shown camshot, nice for debugging.")
+               (read_only TRUE)
+               (no_test))
+            (cur_world
+               object
+               (class WorldDir)
+               (help
+                  "currently shown world, nice for debugging.")
+               (read_only TRUE)
+               (no_test))
+            (excitement
+               int
+               (help
+                  "excitement level")
+               (read_only TRUE)
+               (no_test))
+            (num_players_failed
+               int
+               (help
+                  "how many have failed")
+               (read_only TRUE)
+               (no_test))
+            (postproc
+               object
+               (list
+                  {do
+                     ($dir
+                        {milo cur_dir})
+                     ($array
+                        {array 0})
+                     {$dir
+                        iterate
+                        PostProc
+                        $obj
+                        {if
+                           {!
+                              {find_elem
+                                 EXCLUDED_SONG_POSTPROCS
+                                 {$obj name}}}
+                           {push_back $array $obj}}}
+                     {push_back $array ''}
+                     $array})
+               (interp_handlers postproc_interp)
+               (propanim_blockview TRUE)
+               (help
+                  "the current venue postproc.")
+               (no_test))
+            (cam_postproc
+               object
+               (class PostProc)
+               (help
+                  "camera postproc override.  If set, does no postproc blends")
+               (read_only TRUE)
+               (no_test))
+            (lightpreset
+               symbol
+               (list
+                  (SONG_LIGHTING_CATEGORIES))
+               (interp_handlers lightpreset_interp)
+               (help
+                  "the current light preset")
+               (no_test))
+            (lightpreset_keyframe
+               symbol
+               (list
+                  (PRESET_KEYFRAMES))
+               (interp_handlers lightpreset_keyframe_interp)
+               (help
+                  "author next/prev/first keyframe commands for manual presets: strobes, etc.")
+               (no_test))
+            (world_event
+               symbol
+               (list
+                  (none bonusfx))
+               (help
+                  "author bonusfx")
+               (no_test))
+            (spot_bass
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author character-specific spotlights")
+               (no_test))
+            (spot_drums
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author character-specific spotlights")
+               (no_test))
+            (spot_guitar
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author character-specific spotlights")
+               (no_test))
+            (spot_keyboard
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author character-specific spotlights")
+               (no_test))
+            (spot_vocal
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author character-specific spotlights")
+               (no_test))
+            (stagekit_fog
+               symbol
+               (list
+                  (on off))
+               (help
+                  "author Stage Kit fog machine start/stop events")
+               (no_test)))
+         (help
+            "These are the properties animated by the song, displayed here for debugging")))
+   (types))
+(ChordShapeGenerator
+   (description
+      "a tool for generating arbitrary real guitar chord shape gems from sample geometry")
+   (editor
+      (chord_source_mesh
+         object
+         (class Mesh)
+         (help
+            "sample mesh from which to create chord meshes"))
+      (finger_source_mesh
+         object
+         (class Mesh)
+         (help
+            "sample mesh from which to create finger shape meshes"))
+      (geometric_guides
+         (indent
+            (base_cross_section
+               object
+               (class Trans)
+               (help
+                  "determines where the cross section will be taken to generate the open-string parts of the chord shape"))
+            (contour_cross_section
+               object
+               (class Trans)
+               (help
+                  "determines where the cross section will be taken to generate the fretted parts of the chord shape"))
+            (base_height
+               object
+               (class Trans)
+               (help
+                  "indicated where the top of the base is - everything above this height will be scaled according to the fret position."))))
+      (num_slots
+         int
+         (range 4 6)
+         (help
+            "how many strings the instrument has")
+         (refresh frets smasher_positions string_4_fret string_5_fret string_4 string_5))
+      (frets
+         (indent
+            (string_0_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the low E string"))
+            (string_1_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the A string"))
+            (string_2_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the D string"))
+            (string_3_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the G string"))
+            (string_4_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the B string")
+               (hide
+                  {<
+                     [num_slots]
+                     5}))
+            (string_5_fret
+               int
+               (range -1 6)
+               (help
+                  "the fret value for the high E string")
+               (hide
+                  {<
+                     [num_slots]
+                     6})))
+         (help
+            "the fret position on each string for this chord"))
+      (smasher_positions
+         (indent
+            (string_0
+               object
+               (class Trans)
+               (help
+                  "position of the low E smasher"))
+            (string_1
+               object
+               (class Trans)
+               (help
+                  "position of the A smasher"))
+            (string_2
+               object
+               (class Trans)
+               (help
+                  "position of the D smasher"))
+            (string_3
+               object
+               (class Trans)
+               (help
+                  "position of the G smasher"))
+            (string_4
+               object
+               (class Trans)
+               (help
+                  "position of the B smasher")
+               (hide
+                  {<
+                     [num_slots]
+                     5}))
+            (string_5
+               object
+               (class Trans)
+               (help
+                  "position of the high E smasher")
+               (hide
+                  {<
+                     [num_slots]
+                     6})))
+         (help
+            "list of smashers from left to right - determines where we consider each string to be"))
+      (fret_heights
+         (indent
+            (fret_height_1
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 1"))
+            (fret_height_2
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 2"))
+            (fret_height_3
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 3"))
+            (fret_height_4
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 4"))
+            (fret_height_5
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 5"))
+            (fret_height_6
+               float
+               (range 0 5)
+               (help
+                  "height when fret = 6")))
+         (help
+            "determines the height of the chord shape at a string according to the fret"))
+      (grade_distances
+         (indent
+            (grade_distance_1
+               float
+               (range 0 1)
+               (help
+                  "how much space the slant takes as a proportion of the width of a smasher when transitioning between fret numbers that differ by 1"))
+            (grade_distance_2
+               float
+               (range 0 1)
+               (help
+                  "how much space the slant takes as a proportion of the width of a smasher when transitioning between fret numbers that differ by 2"))
+            (grade_distance_3
+               float
+               (range 0 1)
+               (help
+                  "how much space the slant takes as a proportion of the width of a smasher when transitioning between fret numbers that differ by 3"))
+            (grade_distance_4
+               float
+               (range 0 1)
+               (help
+                  "how much space the slant takes as a proportion of the width of a smasher when transitioning between fret numbers that differ by 4"))
+            (grade_distance_5
+               float
+               (range 0 1)
+               (help
+                  "how much space the slant takes as a proportion of the width of a smasher when transitioning between fret numbers that differ by 5")))
+         (help
+            "this value controls how steep the slant is between different fret numbers"))
+      (BUILD
+         script
+         (script
+            {$this generate_chord_shape})))
+   (types))
+(UnisonIcon
+   (description
+      "player feedback in a unison phrase")
+   (superclasses RndDir)
+   (editor
+      (reset
+         script
+         (script
+            {$this reset}))
+      (start
+         script
+         (script
+            {$this start}))
+      (end
+         script
+         (script
+            {$this end}))
+      (succeed
+         script
+         (script
+            {$this succeed}))
+      (fail
+         script
+         (script
+            {$this fail}))
+      (progress
+         float
+         (range 0 1)
+         (no_test)))
+   (types))
+(BandConfiguration
+   (description
+      "Band Configuration, sits in each venue and stores xfms per target per play mode")
+   (editor
+      (store
+         script
+         (script
+            {$this store_configuration})
+         (help
+            "store the current character locations into this configuration"))
+      (release
+         script
+         (script
+            {$this release_configuration})
+         (help
+            "releases the characters from their waypoints, so they can be moved around in preparation for storing."))
+      (view
+         script
+         (script
+            {$this sync_play_mode})
+         (help
+            "Re-teleports the characters to their waypoint positions.")))
+   (types))
+(OvershellDir
+   (description
+      "panel dir that handles the overshell")
+   (superclasses PanelDir)
+   (types))
+#define SONG_POOL_CATEGORIES
+(intro verse verse_1 verse_2 verse_3 prechorus chorus chorus_1 chorus_2 chorus_3 solo bridge break bre outro custom1 custom2 custom3)
+#define POOL_TRIGGER_ORDER
+(("kPoolTriggerSequence"
+      "trigger in sequence, sticking on the last one if the pool is activated more times")
+   ("kPoolTriggerRandom"
+      "randomly pick a pool each time the pool is newly activated")
+   ("kPoolTriggerLoop"
+      "same as sequence, but we loop back to the beginning if we activate more times"))
+(SongSectionController
+   (description
+      "Syncronizes effects to structural song elements like verse, derived from practice sections")
+   (superclasses Poll)
+   (allowed_dirs WorldDir)
+   (ext ssctrl)
+   (editor
+      (mappings_owner
+         object
+         (class SongSectionController)
+         (alias section_owner)
+         (refresh section_mappings)
+         (help
+            "Set this to get your section mappings from another SongSectionController.  Useful for moving this logic into a common subdir"))
+      (section_mappings
+         (array
+            (struct
+               (pool_category
+                  symbol
+                  (list
+                     ('' SONG_POOL_CATEGORIES))
+                  (help
+                     "the name of the content pool category we are mapping practice section names to"))
+               (valid_practice_sections
+                  (array string)
+                  (help
+                     "a list of valid practice section names.\n  Can use expressions like '*verse*' to mean all sections with 'verse' in the name."))
+               (invalid_practice_sections
+                  (array string)
+                  (help
+                     "Any practice section appearing in this list will cause a failed match.\n  Can use expressions like '*intro_verse*' if you like"))))
+         (read_only
+            {!=
+               [mappings_owner]
+               ''})
+         (help
+            "Define how practice section names map to content pool categories (i.e. verse_1d  -> verse)"))
+      (wait_for_event
+         symbol
+         (list
+            ('' cam_cut))
+         (help
+            "An optional event to wait for before swapping in a new pool"))
+      (trigger_mappings
+         (array
+            (struct
+               (pool_category
+                  symbol
+                  (list
+                     ('' SONG_POOL_CATEGORIES CATCH_ALL))
+                  (help
+                     "the name of the content pool category we are mapping practice section names to"))
+               (trigger_pools
+                  (array
+                     object
+                     (list
+                        {$this find_pools}))
+                  (help
+                     "Pools of content associate with this pool category - they should be EventTriggers of type 'trigger_pool'.  \nIf you add more than one, then each time the category is newly activated, we go to another one in the list using the trigger_order rule below."))
+               (trigger_order
+                  int
+                  (list
+                     (POOL_TRIGGER_ORDER))
+                  (alias next_pool_order)
+                  (help
+                     "when a category is newly activated, this rule determines how we choose which trigger_pool is next."))))
+         (help
+            "Define which triggers get activated for each content pool category"))
+      (testing
+         (indent
+            (pratice_section_debug
+               symbol
+               (help
+                  "Type in a pratice section name here, and pool_debug will show you which pool we'd activate")
+               (refresh pool_debug))
+            (pool_debug
+               symbol
+               (read_only TRUE)
+               (no_test)
+               (help
+                  "the pool that would be activate for the pratice_section_debug"))
+            (pool_to_activate
+               symbol
+               (list
+                  ('' SONG_POOL_CATEGORIES CATCH_ALL))
+               (help
+                  "Select a pool here and hit the 'activate' button to test it out"))
+            (activate
+               script
+               (script
+                  {unless
+                     {==
+                        [pool_to_activate]
+                        ''}
+                     {$this trigger_debug_pool}
+                     {milo invalidate_listers_and_trees}
+                     {milo update_objects}})
+               (help
+                  "activate the pool of content associated with pool_to_activate"))
+            (reset
+               script
+               (script
+                  {$this reset_all}
+                  {milo invalidate_listers_and_trees}
+                  {milo update_objects})
+               (help
+                  "reset the system")))
+         (help
+            "facilities to test practice section mappings and activate specific pools"))
+      (create_objects
+         (indent
+            (pool_to_createfor
+               symbol
+               (list
+                  ('' SONG_POOL_CATEGORIES CATCH_ALL))
+               (alias pool_category)
+               (refresh create_pool)
+               (help
+                  "Will create assets for the pool selected here."))
+            (create_pool
+               script
+               (script
+                  {set
+                     $poolName
+                     {next_name
+                        {sprint
+                           "pool_"
+                           [pool_to_createfor]
+                           ".trig"}}}
+                  {set
+                     $newPool
+                     {new EventTrigger}}
+                  {$newPool
+                     set_name
+                     $poolName
+                     {$this dir}}
+                  {$newPool set_type trigger_pool}
+                  {$newPool
+                     insert
+                     (trigger_events 0)
+                     cam_cut}
+                  {$this
+                     add_trigger_pool
+                     $newPool
+                     [pool_to_createfor]}
+                  {milo invalidate_listers_and_trees}
+                  {milo update_objects}
+                  {milo edit $newPool})
+               (read_only
+                  {==
+                     [pool_to_createfor]
+                     ''})
+               (help
+                  "create a new trigger pool for the selected category"))
+            (triggerpool_to_createfor
+               object
+               (list
+                  {$this find_pools})
+               (alias trigger_pool)
+               (refresh create_content_for_pool)
+               (help
+                  "select a trigger pool to create a content for"))
+            (create_content_for_pool
+               script
+               (script
+                  {set
+                     $poolName
+                     {[triggerpool_to_createfor]
+                        name}}
+                  {search_replace
+                     $poolName
+                     "pool_"
+                     ""
+                     $poolName}
+                  {search_replace
+                     $poolName
+                     ".trig"
+                     "_content.trig"
+                     $poolName}
+                  {set
+                     $poolName
+                     {next_name $poolName}}
+                  {set
+                     $newTrig
+                     {new EventTrigger}}
+                  {$newTrig
+                     set_name
+                     $poolName
+                     {$this dir}}
+                  {print
+                     "new name: "
+                     $poolName
+                     "\n"}
+                  {[triggerpool_to_createfor]
+                     insert
+                     (triggers 0)
+                     $newTrig}
+                  {milo invalidate_listers_and_trees}
+                  {milo update_objects}
+                  {milo edit $newTrig})
+               (read_only
+                  {==
+                     [triggerpool_to_createfor]
+                     ''})
+               (help
+                  "create a trigger that represents a single piece of content and add it to the selected pool")))
+         (help
+            "utilities to create new pool objects and pieces of content for pools"))
+      (toggle_debug
+         script
+         (script
+            {$this toggle_overlay})
+         (help
+            "toggles on/off the debug overlay that shows information like which pool is currently active")))
+   (init
+      {$this set_type band})
+   (types
+      (band
+         (enter
+            {if
+               {exists events_parser}
+               {events_parser add_sink $this}})
+         (section
+            ($secName)
+            {set
+               [midi_section]
+               $secName}))))
