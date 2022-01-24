@@ -89,6 +89,7 @@
                   $ex}}}}
       kDataUnhandled)
    (game_over
+      {{{{gamemode get track_panel} find mtv_overlay} find fade.anim} set_frame 0} ;disable mtv overlay when track disappears
       {stagekit_reset}
       {beatmatch
          foreach_active_player
@@ -191,6 +192,8 @@
 ((disable_screen_saver TRUE)
    PAUSE_ON_MIC_DISCONNECT
    (enter
+      {if_else {modifier_mgr is_modifier_active mod_auto_play}  {do {beatmatch foreach_active_player $player {$player set_auto_play 1}}}
+      {do {beatmatch foreach_active_player $player {$player set_auto_play 0}}}}
       {$this set_showing TRUE}
       {set
          [delayed_mic_check]
@@ -217,6 +220,7 @@
       {handle
          ($this my_enter)})
    (exit
+      {set $speedmod $leaderspeed}
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -316,6 +320,9 @@
    restart_sync_audio_net_screen
    (panels)
    (enter
+;send to network leaders song speed
+      {if {is_leader_local} {session send_msg_to_all {` (set $speedmod {, $leaderspeed}) kNetReliable}}}
+	  {if {is_leader_local} {set $speedmod $leaderspeed}}
       {overshell set_active_status kOvershellInactive}
       {{gamemode get game_screen}
          set_showing
