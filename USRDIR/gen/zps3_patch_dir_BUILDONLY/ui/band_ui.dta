@@ -1,0 +1,442 @@
+#define COMMON_ERROR_HANDLERS
+(COMMON_DIALOG_PANEL_HANDLERS)
+(INVITE_ACCEPTED_MSG
+   {cond
+      ($expired
+         {passive_messages_panel queue_message error_invite_expired})
+      (TRUE
+         #ifndef HX_PS3
+         {join_invite_panel
+            set_joining_user
+            {user_mgr get_user_from_pad_num $pad_num}}
+         #endif
+         {ui_event_mgr trigger_event invite_accepted})})
+(ui_flows
+   (kUIFlowType_Main
+      (join_entry_point main_hub_screen))
+   (kUIFlowType_MusicLibrary
+      (join_entry_point song_select_screen))
+   (kUIFlowType_FindPlayersQp
+      (join_entry_point main_hub_screen)
+      (on_finished_join
+         {main_hub_panel advance kNetUI_WaitingQpFindPlayers}))
+   (kUIFlowType_FindPlayersTour
+      (join_entry_point main_hub_screen)
+      (on_finished_join
+         {main_hub_panel advance kNetUI_WaitingTourFindPlayers}))
+   (kUIFlowType_InGame)
+   (kUIFlowType_None))
+(ui_event_mgr
+   (dialog_events
+      (error_message
+         COMMON_ERROR_HANDLERS
+         (init
+            ($token)
+            {$this set_ok $token})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (disband_error
+         COMMON_ERROR_HANDLERS
+         (init
+            ($error)
+            {$this
+               set_ok
+               {switch
+                  $error
+                  (kNoLeader error_no_leader)
+                  (kKicked error_kicked)
+                  (kBadConfiguration error_bad_configuration)}})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (remote_not_ready
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_ok remote_not_ready})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (kicked
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_ok error_kicked})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (error_find_players_with_auto_vocals
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_ok error_find_players_with_auto_vocals})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (remote_exit
+         COMMON_ERROR_HANDLERS
+         (enter
+            {play_common_seq button_back})
+         (init
+            {$this set_yesno error_confirm_remote_exit no.btn})
+         (SELECT_MSG
+            {if
+               {== $component yes.btn}
+               {ui_event_mgr dismiss_dialog_event}
+               {session_mgr disconnect}})
+         (SELECT_DONE_MSG
+            {if
+               {!= $component yes.btn}
+               {ui_event_mgr dismiss_dialog_event}}))
+      (zero_players
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_msg error_zero_players})
+         (BUTTON_DOWN_MSG
+            {if
+               {'||'
+                  {== $action kAction_Start}
+                  {== $action kAction_Confirm}}
+               {overshell attempt_to_add_user $user}}))
+      (auto_vocals_confirm
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_yesno overshell_auto_vocals_confirm no.btn})
+         (SELECT_MSG
+            {if
+               {== $component yes.btn}
+               {overshell enable_auto_vocals}})
+         (SELECT_DONE_MSG
+            {if
+               {'||'
+                  {== $component yes.btn}
+                  {== $component no.btn}}
+               {ui_event_mgr dismiss_dialog_event}}))
+      (sign_in
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this set_custom mm_need_a_profile_net_msg overshell_sign_in cancel opt1.btn})
+         (SELECT_MSG
+            {if
+               {== $component opt1.btn}
+               {platform_mgr signin 1 TRUE}})
+         (SELECT_DONE_MSG
+            {if
+               {'||'
+                  {== $component opt1.btn}
+                  {== $component opt2.btn}}
+               {ui_event_mgr dismiss_dialog_event}}))
+      (band_upload_event
+         COMMON_ERROR_HANDLERS
+         (init
+            ($error $label_name)
+            {$this
+               set_ok
+               ($error $label_name)})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event}))
+      (pad_lost
+         COMMON_ERROR_HANDLERS
+         (allows_override FALSE)
+         (init_text
+            ($user $none_token $controller_token $quit_token)
+            {do
+               ($pad_num
+                  {$user get_pad_num})
+               ($name
+                  {$user get_player_name})
+               ($controller
+                  {$user get_controller_sym})
+               {unless
+                  {== $controller none}
+                  {set
+                     $controller
+                     {sprint
+                        $controller
+                        "_pad_lost"}}}
+               {$this
+                  set_custom
+                  {if_else
+                     {== $controller none}
+                     ($none_token
+                        $name
+                        {'+' $pad_num 1})
+                     ($controller_token
+                        {if_else
+                           {'||'
+                              {==
+                                 {system_language}
+                                 eng}
+                              {==
+                                 {system_language}
+                                 fre}}
+                           $name
+                           {localize $controller}}
+                        {if_else
+                           {'||'
+                              {==
+                                 {system_language}
+                                 eng}
+                              {==
+                                 {system_language}
+                                 fre}}
+                           {localize $controller}
+                           $name}
+                        {'+' $pad_num 1})}
+                  error_reconnect_controller
+                  $quit_token
+                  opt1.btn}})
+         (lost_pad_user
+            "")
+         (init
+            ($user)
+            {$this init_text $user error_pad_lost_none error_pad_lost error_return_to_main}
+            {set
+               [lost_pad_user]
+               $user})
+         (SELECT_MSG
+            {switch
+               $component
+               (opt2.btn
+                  {{overshell
+                        get_slot
+                        [lost_pad_user]}
+                     remove_user}
+                  {ui_event_mgr trigger_event quit_to_main_from_pad_lost}
+                  {ui_event_mgr dismiss_dialog_event}
+                  {overshell update_all})})
+         (SELECT_DONE_MSG
+            {switch
+               $component
+               (opt1.btn
+                  {ui_event_mgr dismiss_dialog_event}
+                  {overshell update_all})}))
+      (saveload_dialog_event
+         COMMON_ERROR_HANDLERS
+         (allows_override FALSE)
+         (init
+            {do
+               ($dialog_msg
+                  {saveload_mgr get_dialog_msg})
+               ($opt1
+                  {saveload_mgr get_dialog_opt1})
+               ($opt2
+                  {saveload_mgr get_dialog_opt2})
+               ($opt3
+                  {saveload_mgr get_dialog_opt3})
+               ($focus_index
+                  {saveload_mgr get_dialog_focus_option})
+               ($focus opt1.btn)
+               {set
+                  $focus
+                  {switch
+                     $focus_index
+                     (1 opt1.btn)
+                     (2 opt2.btn)
+                     (3 opt3.btn)}}
+               {cond
+                  ({!= $opt3 ''}
+                     {$this set_custom_3btn $dialog_msg $opt1 $opt2 $opt3 $focus})
+                  ({!= $opt2 ''}
+                     {$this set_custom $dialog_msg $opt1 $opt2 $focus})
+                  {$this set_ok $dialog_msg}}})
+         (SELECT_MSG
+            {do
+               ($choice
+                  {switch
+                     $component
+                     (opt1.btn 1)
+                     (ok.btn 1)
+                     (yes.btn 1)
+                     (opt2.btn 2)
+                     (no.btn 2)
+                     (opt3.btn 3)
+                     1})
+               {saveload_mgr handle_eventresponse_start $choice}})
+         (SELECT_DONE_MSG
+            {do
+               ($choice
+                  {switch
+                     $component
+                     (opt1.btn 1)
+                     (ok.btn 1)
+                     (yes.btn 1)
+                     (opt2.btn 2)
+                     (no.btn 2)
+                     (opt3.btn 3)
+                     1})
+               {ui_event_mgr dismiss_dialog_event}
+               {saveload_mgr handle_eventresponse $user $choice}}))
+      (song_mgr_full
+         COMMON_ERROR_HANDLERS
+         (init
+            {$this
+               set_ok
+               (#ifdef HX_XBOX
+                  song_mgr_full_warning_fmt_xbox
+                  #else
+                  song_mgr_full_warning_fmt
+                  #endif
+                  {song_mgr get_max_song_count})})
+         (SELECT_DONE_MSG
+            {ui_event_mgr dismiss_dialog_event})))
+   (destructive_transition_events
+      (disband
+         (next_screen meta_loading_uisink_default_screen)
+         (on_dismiss
+            ($error_reason)
+            {unless
+               {== $error_reason kAbandoned}
+               {ui_event_mgr
+                  trigger_event
+                  disband_error
+                  (dummy init $error_reason)}}))
+      (leaderboard_error
+         (next_screen meta_loading_leaderboard_error_screen)
+         (on_dismiss
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init error_lost_leaderboards)}))
+      (invite_accepted
+         (next_screen meta_loading_join_invite_screen)
+         (init
+            {forfeit_ranked_game}))
+      (storage_changed
+         (next_screen meta_loading_uisink_default_screen)
+         (on_dismiss
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init error_storage_devices_changed)}))
+      (data_error
+         (next_screen meta_loading_uisink_default_screen)
+         (on_dismiss
+            ($corrupt $info_str)
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy
+                  init
+                  {if_else
+                     $corrupt
+                     (error_corrupt_song_data $info_str)
+                     error_lost_song_data})}))
+      (lost_connection
+         (next_screen meta_loading_uisink_lost_connection_screen)
+         (init
+            ($reason)
+            {forfeit_ranked_game})
+         (on_dismiss
+            ($reason)
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy
+                  init
+                  {switch
+                     $reason
+                     (kLostConnection error_lost_connection)
+                     (kLostServer error_lost_server)
+                     (kEthernetUnplugged error_ethernet_unplugged)})}))
+      (no_online_privileges
+         (next_screen meta_loading_uisink_lost_connection_screen)
+         (init
+            ($reason)
+            {forfeit_ranked_game})
+         (on_dismiss
+            ($reason)
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init store_error_no_content)}))
+      (sign_out
+         (next_screen meta_loading_signout_screen)
+         (init
+            ($reason)
+            {forfeit_ranked_game})
+         (on_dismiss
+            ($reason)
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy
+                  init
+                  {switch
+                     $reason
+                     (kLocalUserSignedOut error_local_user_signed_out)
+                     (kBandOwnerSignedOut error_band_owner_signed_out)
+                     (kTourProgressOwnerSignedOut error_tourprogress_owner_signed_out)
+                     (kCampaignOwnerSignedOut error_career_nobody_signedin)
+                     (kProfileOwnerSignedOut error_profile_owner_signed_out)
+                     (kRBNMemberSignedOut error_club_member_signed_out)})}))
+      (patch_profile_exit
+         (next_screen
+            {if_else
+               {==
+                  {patch_select_panel get patch_return_screen}
+                  song_select_screen}
+               meta_loading_continue_screen
+               meta_loading_signout_screen})
+         (on_dismiss
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init error_local_user_signed_out)}))
+      (critical_user_drop_out
+         (next_screen meta_loading_signout_screen)
+         (on_dismiss
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init critical_user_drop_out)}))
+      (disc_error
+         (next_screen meta_loading_uisink_lost_connection_screen)
+         (init
+            {forfeit_ranked_game})
+         (on_dismiss
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy init error_disc)}))
+      (store_load_failed
+         (next_screen meta_loading_uisink_default_screen)
+         (on_dismiss
+            ($error)
+            {ui_event_mgr
+               trigger_event
+               error_message
+               (dummy
+                  init
+                  {switch
+                     $error
+                     (kStoreErrorNoContent store_error_no_content)
+                     (kStoreErrorLiveServer store_error_live_server)
+                     (kStoreErrorStoreServer store_error_store_server)
+                     #ifdef HX_XBOX
+                     (kStoreErrorSignedOut store_error_signed_out)
+                     #else
+                     (kStoreErrorSignedOut store_error_live_server)
+                     #endif
+                     (kStoreErrorDroppedOut critical_user_drop_out)
+                     (kStoreErrorNoMetadata store_error_no_metadata)
+                     (kStoreErrorNoEthernetCable error_ethernet_unplugged)})}))
+      (quit_early
+         (next_screen meta_loading_quit_screen)
+         (init
+            {forfeit_ranked_game}))
+      (forfeit
+         (next_screen meta_loading_matchmaking_screen)
+         (init
+            {forfeit_ranked_game}))
+      (quit_to_main
+         (next_screen meta_loading_main_screen))
+      (quit_to_main_from_pad_lost
+         (next_screen meta_loading_main_pad_lost_screen))
+      (quit_to_main_credits
+         (next_screen meta_loading_main_credits_screen))
+      (find_new_opponent
+         (next_screen meta_loading_join_invite_screen))
+      (go_to_calibration
+         (next_screen meta_loading_calibration_screen))
+      (go_to_charactercreator
+         (next_screen meta_loading_charactercreator_screen))
+      (go_to_practice_screen
+         (next_screen meta_loading_practice_screen))
+      (go_to_campaign
+         (next_screen meta_loading_campaign_screen))
+      (go_to_audition
+         (next_screen meta_loading_audition_screen))))

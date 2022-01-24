@@ -1,0 +1,995 @@
+(OvershellDir
+   (editor
+      (platform
+         symbol
+         (list
+            (xbox ps3 wii))
+         (post_sync
+            {$this
+               set_platform
+               [platform]})
+         (no_test))
+      (controller_type
+         symbol
+         (list
+            (guitar bass drum vocals))
+         (post_sync
+            {switch
+               [controller_type]
+               (guitar
+                  {$this
+                     update_controller_type
+                     kControllerGuitar
+                     "G"
+                     ""})
+               (bass
+                  {$this
+                     update_controller_type
+                     kControllerGuitar
+                     "B"
+                     ""})
+               (drum
+                  {$this
+                     update_controller_type
+                     kControllerDrum
+                     "D"
+                     ""})
+               (vocals
+                  {$this
+                     update_controller_type
+                     kControllerVocals
+                     "V"
+                     ""})})
+         (no_test))
+      (online_enabled
+         bool
+         (post_sync
+            {$this
+               update_online_enabled
+               [online_enabled]})
+         (no_test))
+      (is_local
+         bool
+         (post_sync
+            {$this
+               update_local_status
+               [is_local]})
+         (no_test))
+      (pad_num
+         int
+         (post_sync
+            {$this
+               update_pad_num
+               [pad_num]})
+         (no_test))
+      (in_track_mode
+         bool
+         (no_test))
+      (slot_view
+         symbol
+         (list
+            (no_instrument sign_in finding join connect_mic no_join_in_game options options_in_game choose_profile choose_char choose_char_edit online_options joined_default choose_part_guitar choose_part_vocals choose_part_drum choose_part_real_guitar choose_part_keys choose_diff cancel_song ready_to_play confirm_action remote_status options_drum auto_sign_in_rock_central sign_in_to_register sign_in_wait registering_online hidden block_all_input game_options options_av_settings options_audio options_vocal options_extras modifiers options_end_game linking_code reconnect_controller kick_users mute_users gamercard_users invite_friends)
+            sort)
+         (no_test))
+      (button_pulse_joined
+         script
+         (script
+            {$this button_pulse_joined}))
+      (button_pulse_unjoined
+         script
+         (script
+            {$this button_pulse_unjoined})))
+   (types
+      (overshell_slot
+         (get_native_platform
+            #ifdef HX_XBOX
+            xbox
+            #endif
+            #ifdef HX_PS3
+            ps3
+            #endif
+            #ifdef HX_PC
+            xbox
+            #endif
+            #ifdef HX_WII
+            wii
+            #endif)
+         (init
+            {$this setup_static_lists}
+            {$this setup_game_options_list kControllerNone TRUE TRUE FALSE FALSE}
+            {$this setup_sign_in_to_register_list TRUE}
+            {$this setup_options_list FALSE}
+            {$this cache_lists}
+            {$this
+               set_platform
+               {$this get_native_platform}})
+         (enter
+            {$this init})
+         (setup_providers
+            ($char_provider $profiles_provider $invite_provider $part_select_provider $cymbal_provider $modifier_provider)
+            {chars.lst set_provider $char_provider}
+            {profiles.lst set_provider $profiles_provider}
+            {invite_friends.lst set_provider $invite_provider}
+            {choose_part.lst set_provider $part_select_provider}
+            {options_drum.lst set_provider $cymbal_provider}
+            {modifiers.lst set_provider $modifier_provider})
+         (setup_static_lists
+            {choose_diff.lst
+               set_data
+               (overshell_easy overshell_medium overshell_hard overshell_expert)}
+            {confirm_action.lst
+               set_data
+               (overshell_confirm_yes overshell_confirm_no)}
+            {cancel_song.lst
+               set_data
+               (overshell_confirm_yes overshell_confirm_no overshell_leave)}
+            {profile_options.lst
+               set_data
+               (overshell_continue_without_profile overshell_sign_in)}
+            {auto_sign_in_rock_central.lst
+               set_data
+               (overshell_sign_in_cancel)}
+            {options_av_settings.lst
+               set_data
+               (overshell_dolby overshell_bass_boost overshell_overscan overshell_calibration overshell_autosave_enabled overshell_audio_options)}
+            {options_audio.lst
+               set_data
+               (overshell_audio_instruments
+                  overshell_audio_bg_music
+                  overshell_audio_crowd
+                  overshell_audio_sfx
+                  #ifdef HX_PS3
+                  overshell_audio_voice_chat
+                  #endif)}
+            {options_vocal.lst
+               set_data
+               (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
+            {options_extras.lst
+               set_data
+               (overshell_credits
+                  overshell_linking_code
+                  #ifdef HX_XBOX
+                  overshell_audition
+                  #endif)}
+            {choose_char_edit.lst
+               set_data
+               (overshell_rename_character overshell_delete_character)})
+         (setup_online_options_list
+            ($platform)
+            {do
+               ($options
+                  {array 0})
+               {push_back $options overshell_invite}
+               {if
+                  {== $platform xbox}
+                  {push_back $options overshell_invite_xbox_party}}
+               {if
+                  {== $platform ps3}
+                  {push_back $options overshell_check_invites}}
+               {push_back $options overshell_kick}
+               {push_back
+                  $options
+                  {if_else
+                     {== $platform xbox}
+                     overshell_gamercard
+                     overshell_mute}}
+               {push_back $options overshell_disconnect}
+               {online_options.lst set_data $options}})
+         (setup_options_list
+            ($online_enabled)
+            {do
+               ($options
+                  {array 0})
+               {push_back $options overshell_return}
+               {if_else
+                  $online_enabled
+                  {push_back $options overshell_online_options}
+                  {push_back $options overshell_register_online}}
+               {push_back $options overshell_change_character}
+               {push_back $options overshell_game_options}
+               {push_back $options overshell_leave}
+               {options.lst set_data $options}})
+         (setup_sign_in_to_register_list
+            ($show_continue)
+            {do
+               ($options
+                  {array 0})
+               {if
+                  $show_continue
+                  {push_back $options overshell_sign_in_continue}}
+               {push_back $options overshell_sign_in}
+               {push_back $options overshell_sign_in_cancel}
+               {sign_in_to_register.lst set_data $options}})
+         (setup_game_options_list
+            ($controller_type $online_options $online_enabled $in_game $solo)
+            {do
+               ($options
+                  {array 0})
+               {push_back $options mod_auto_vocals}
+               {push_back $options mod_no_fail_band}
+               {switch
+                  $controller_type
+                  ((kControllerGuitar kControllerRealGuitar)
+                     {push_back $options overshell_lefty_flip})
+                  (kControllerVocals
+                     {push_back $options overshell_vocal_options})
+                  (kControllerDrum
+                     {push_back $options overshell_drum_options})
+                  {if
+                     $edit_mode
+                     {push_back $options milo_lefty_static}}}
+               {if
+                  {&& $online_options $online_enabled}
+                  {push_back $options overshell_online_options}}
+               {push_back $options overshell_av_settings}
+               {push_back $options overshell_extras}
+               {push_back $options overshell_modifiers}
+               {game_options.lst set_data $options}})
+         (set_platform
+            ($platform)
+            {$this setup_online_options_list $platform}
+            {switch
+               $platform
+               (xbox
+                  {xbox.trg trigger})
+               (ps3
+                  {ps3.trg trigger})
+               (wii
+                  {wii.trg trigger})})
+         (show_view
+            ($view $in_track_mode $default_option $default_option_index)
+            {do
+               ($trigger
+                  {sprint
+                     "view_"
+                     $view
+                     ".trg"})
+               ($initial_focus
+                  {$trigger get initial_focus})
+               {if
+                  {! $in_track_mode}
+                  {shell_mode.trg trigger}
+                  {$this refresh_list_types_in_nav_chain $initial_focus $in_track_mode}}
+               {view_default.trg trigger}
+               {view_default.trg set_view_pos $this $in_track_mode}
+               {$this
+                  conceal_all_lists
+                  {$trigger get hidden}}
+               {$trigger trigger}
+               {$trigger set_view_pos $this $in_track_mode}
+               {$this set_focus $initial_focus}
+               {if
+                  $initial_focus
+                  {$this
+                     reset_selected_pos_in_nav_chain
+                     {$initial_focus get nav_down}}
+                  {cond
+                     ({!=
+                           $default_option
+                           ""}
+                        {$initial_focus set_selected $default_option FALSE})
+                     ({!= $default_option_index -1}
+                        {$initial_focus set_selected $default_option_index})}}
+               {if
+                  $in_track_mode
+                  {track_mode.trg trigger}
+                  {$this refresh_list_types_in_nav_chain $initial_focus $in_track_mode}}})
+         (refresh_list_types_in_nav_chain
+            ($list $in_track_mode)
+            {if
+               $list
+               {do
+                  ($list_type
+                     {$list get_type})
+                  {cond
+                     ({'||'
+                           {== $list_type overshell_menu}
+                           {== $list_type overshell_menu_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_menu_ingame}
+                           {$list set_type overshell_menu}})
+                     ({'||'
+                           {== $list_type overshell_menu_keep_highlight}
+                           {== $list_type overshell_menu_keep_highlight_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_menu_keep_highlight_ingame}
+                           {$list set_type overshell_menu_keep_highlight}})
+                     ({'||'
+                           {== $list_type overshell_menubig}
+                           {== $list_type overshell_menubig_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_menubig_ingame}
+                           {$list set_type overshell_menubig}})
+                     ({'||'
+                           {== $list_type overshell_part_select}
+                           {== $list_type overshell_part_select_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_part_select_ingame}
+                           {$list set_type overshell_part_select}})
+                     ({'||'
+                           {== $list_type overshell_users}
+                           {== $list_type overshell_users_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_users_ingame}
+                           {$list set_type overshell_users}})
+                     ({'||'
+                           {== $list_type overshell_friends}
+                           {== $list_type overshell_friends_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_friends_ingame}
+                           {$list set_type overshell_friends}})
+                     ({'||'
+                           {== $list_type overshell_modifiers}
+                           {== $list_type overshell_modifiers_ingame}}
+                        {if_else
+                           $in_track_mode
+                           {$list set_type overshell_modifiers_ingame}
+                           {$list set_type overshell_modifiers}})}}
+               {$list restart_highlight_matanim}
+               {$list refresh}
+               {$this
+                  refresh_list_types_in_nav_chain
+                  {$list get nav_down}
+                  $in_track_mode}})
+         (reset_selected_pos_in_nav_chain
+            ($list)
+            {if
+               $list
+               {$list set_selected 0}
+               {$this
+                  reset_selected_pos_in_nav_chain
+                  {$list get nav_down}}})
+         (update_controller_type
+            ($controller_type $controller_font_char)
+            {slot_instrument_icon.lbl set icon $controller_font_char}
+            {mic_arrows.grp
+               set_showing
+               {== $controller_type kControllerVocals}}
+            {if_else
+               {== $controller_type kControllerVocals}
+               {difficulty_pos_vocals.trg trigger}
+               {difficulty_pos_non_vocals.trg trigger}})
+         (update_sign_in_continue
+            ($can_continue)
+            {if_else
+               $can_continue
+               {sign_in_to_register.lst enable_data overshell_sign_in_continue}
+               {sign_in_to_register.lst disable_data overshell_sign_in_continue}})
+         (update_kick_allowed
+            ($can_kick)
+            {if_else
+               $can_kick
+               {online_options.lst enable_data overshell_kick}
+               {online_options.lst disable_data overshell_kick}})
+         (update_mute_allowed
+            ($can_mute)
+            {if_else
+               $can_mute
+               {online_options.lst enable_data overshell_mute}
+               {online_options.lst disable_data overshell_mute}})
+         (update_invites_allowed
+            ($can_invite)
+            {if_else
+               $can_invite
+               {online_options.lst enable_data overshell_invite}
+               {online_options.lst disable_data overshell_invite}})
+         (update_online_options_allowed
+            ($allowed)
+            {if_else
+               $allowed
+               {do
+                  {options.lst enable_data overshell_online_options}
+                  {options.lst enable_data overshell_register_online}}
+               {do
+                  {options.lst disable_data overshell_online_options}
+                  {options.lst disable_data overshell_register_online}}})
+         (update_restart_allowed
+            ($can_restart)
+            {if_else
+               $can_restart
+               {do
+                  {options.lst enable_data overshell_restart}
+                  {confirm_action.lst enable_data overshell_restart}}
+               {do
+                  {options.lst disable_data overshell_restart}
+                  {confirm_action.lst disable_data overshell_restart}}})
+         (update_online_enabled
+            ($enabled)
+            {if_else
+               $enabled
+               {online_enable.trg trigger}
+               {online_disable.trg trigger}})
+         (update_show_vocal_bg
+            ($vocals)
+            {if_else
+               $vocals
+               {track_mode_vocal.trg trigger}
+               {track_mode_normal.trg trigger}})
+         #ifdef HX_XBOX
+         (update_in_xbox_party
+            ($is_in_party)
+            {if_else
+               $is_in_party
+               {online_options.lst enable_data overshell_invite_xbox_party}
+               {online_options.lst disable_data overshell_invite_xbox_party}})
+         #endif
+         (update_local_status
+            ($is_local)
+            {pad_num.lbl set_showing $is_local})
+         (update_pad_num
+            ($pad_num)
+            {pad_num.lbl set_int $pad_num})
+         (button_pulse_joined
+            {button_pulse_joined.trig trigger})
+         (button_pulse_unjoined
+            {button_pulse_unjoined.trig trigger})
+         (update_user_name
+            ($user)
+            {user_name.lbl set_user_name $user})
+         (update_char_provider
+            ($provider)
+            {chars.lst refresh})
+         (update_users_provider
+            ($provider)
+            {users.lst set_provider $provider})
+         (update_remote_status
+            ($status_token_fmt)
+            {remote_status.lbl set_token_fmt $status_token_fmt})
+         (refresh_cymbal_provider
+            {$this refresh_cymbal_provider}
+            {options_drum.lst refresh})
+         (update_profiles_provider
+            ($provider)
+            {profiles.lst refresh}
+            {if_else
+               {$provider num_data}
+               {$this enable profiles.lst}
+               {$this disable profiles.lst}})
+         (update_friends_provider
+            ($provider)
+            {invite_friends.lst refresh})
+         (update_autosave_enabled
+            ($is_busy $is_checked)
+            {autosave_spinner.grp set_showing $is_busy}
+            {autosave_enabled.chk
+               set_showing
+               {! $is_busy}}
+            {autosave_enabled.chk set checked $is_checked})
+         (update_modifiers_list
+            {modifiers.lst refresh})
+         (update_part_select_provider
+            ($provider $controllerType)
+            {choose_part.lst set_provider $provider})
+         (update_song_difficulty_ranking
+            ($has_random_setlist $has_part $has_multiple_songs $difficulty $num_vocal_parts $track_sym)
+            {song_difficulty_ranking.idd set_showing TRUE}
+            {song_difficulty_ranking.idd set_values $track_sym $difficulty $num_vocal_parts $has_part}
+            {song_difficulty.lbl set_showing TRUE}
+            {if_else
+               $has_multiple_songs
+               {song_difficulty.lbl set text_token overshell_setlist_difficulty}
+               {song_difficulty.lbl set text_token overshell_song_difficulty}})
+         (update_lefty_and_static_toggle
+            ($options $controller)
+            {lefty_and_static_icon.lbl
+               set_showing
+               {!= $controller kControllerKeys}}
+            {lefty_and_static_toggle.lbl
+               set_showing
+               {!= $controller kControllerKeys}}
+            {switch
+               $controller
+               (kControllerVocals
+                  {switch
+                     {$options get_vocal_style}
+                     (kVocalStyleStatic
+                        {lefty_and_static_toggle.lbl set text_token overshell_vocals_mode_static})
+                     (kVocalStyleScrolling
+                        {lefty_and_static_toggle.lbl set text_token overshell_vocals_mode_scrolling})})
+               (kControllerKeys TRUE)
+               {if_else
+                  {$options get_lefty}
+                  {lefty_and_static_toggle.lbl set text_token overshell_lefty_flip}
+                  {lefty_and_static_toggle.lbl set text_token overshell_righty_flip}}})
+         (update_auto_vocals_enabled
+            ($enabled)
+            {auto_vocals.chk set checked $enabled})
+         (update_no_fail_enabled
+            ($enabled)
+            {no_fail.chk set checked $enabled})
+         (update_in_game_options
+            ($quit_token $can_skip $restart $change_diff $metronome $practice $can_quit)
+            {do
+               ($options
+                  {array 0})
+               {push_back $options overshell_return}
+               {if
+                  $restart
+                  {push_back $options overshell_restart}}
+               {if_else
+                  $metronome
+                  {do
+                     {push_back $options overshell_metronome}
+                     {push_back $options overshell_metronome_volume}}
+                  {do
+                     {metronome_vol.sld set_showing FALSE}
+                     {metronome_vol_freestyle.sld set_showing FALSE}}}
+               {if
+                  $practice
+                  {push_back $options overshell_practice_new_section}}
+               {if
+                  $change_diff
+                  {push_back $options overshell_change_diff}}
+               {push_back $options overshell_game_options}
+               {if_else
+                  $can_skip
+                  {do
+                     ($quit_options
+                        {array 0})
+                     {push_back $quit_options overshell_skip_song}
+                     {push_back $quit_options $quit_token}
+                     {options_end_game.lst set_data $quit_options}
+                     {push_back $options overshell_end_game}}
+                  {push_back $options $quit_token}}
+               {unless
+                  $practice
+                  {push_back $options overshell_leave}}
+               {options.lst set_data $options}
+               {if_else
+                  $can_quit
+                  {options.lst enable_data $quit_token}
+                  {options.lst disable_data $quit_token}}})
+         (update_can_access_song_options_in_game
+            ($enabled)
+            {if_else
+               $enabled
+               {options.lst enable_data overshell_song_options_in_game}
+               {options.lst disable_data overshell_song_options_in_game}})
+         (update_character_portrait
+            ($tex)
+            {choose_character.mat
+               set
+               diffuse_tex
+               {if_else $tex $tex choose_character.tex}})
+         (update_char_more_options
+            ($show_char_more_options $override_user)
+            {char_more_options.ihp set_showing $show_char_more_options}
+            {char_more_options.ihp set_override_user $override_user})
+         (update_options_check
+            ($options)
+            {if
+               {instr_option.chk showing}
+               {instr_option.chk
+                  set
+                  checked
+                  {$options get_lefty}}})
+         (update_drum_lefty_check
+            ($options)
+            {drum_lefty.chk
+               set
+               checked
+               {$options get_lefty}})
+         (update_enable_hihat_check
+            {enable_hihat.chk
+               set
+               checked
+               {profile_mgr get_second_pedal_hihat}})
+         (update_metronome_check
+            ($showing)
+            {metronome.chk set_showing $showing}
+            {if
+               {&&
+                  $showing
+                  {gamemode get game_panel FALSE}}
+               {metronome.chk
+                  set
+                  checked
+                  {{gamemode get game_panel}
+                     metronome_enabled}}})
+         (update_dolby_check
+            {dolby.chk
+               set
+               checked
+               {profile_mgr get_dolby}})
+         (update_bass_boost_check
+            {bass_boost.chk
+               set
+               checked
+               {profile_mgr get_bass_boost}})
+         (update_overscan_check
+            {overscan.chk
+               set
+               checked
+               {profile_mgr get_overscan}})
+         (update_synapse_check
+            ($synapse_enabled)
+            {synapse.chk set checked $synapse_enabled})
+         (set_can_change_synapse
+            ($can_change)
+            {if_else
+               $can_change
+               {options_vocal.lst enable_data overshell_synapse}
+               {options_vocal.lst disable_data overshell_synapse}})
+         (update_static_check
+            ($static_enabled)
+            {static_vocals.chk set checked $static_enabled})
+         (update_linking_code
+            ($waiting $success $code $profile)
+            {linking_code_wait.grp set_showing $waiting}
+            {linking_code_success.grp
+               set_showing
+               {&&
+                  {! $waiting}
+                  $success}}
+            {linking_code_failure.grp
+               set_showing
+               {&&
+                  {! $waiting}
+                  {! $success}}}
+            {if
+               $success
+               {linking_code_success.lbl
+                  set_token_fmt
+                  linking_code_success
+                  {$profile get_name}}
+               {linking_code.lbl set_linking_code $code}})
+         (set_options_signed_in
+            ($val)
+            {if_else
+               $val
+               {options_av_settings.lst enable_data overshell_autosave_enabled}
+               {options_av_settings.lst disable_data overshell_autosave_enabled}})
+         (update_mics
+            ($mgr $showing $extended $mic0_connected $mic1_connected $mic2_connected $is_vocal_slot)
+            {mic_arrows.grp set_showing $is_vocal_slot}
+            {if
+               $is_vocal_slot
+               {foreach_int
+                  $mic_index
+                  0
+                  3
+                  {do
+                     ($connected
+                        {eval
+                           {elem
+                              ($mic0_connected $mic1_connected $mic2_connected)
+                              $mic_index}})
+                     {cond
+                        ({! $showing}
+                           {mics.mia set_mic_hidden $mic_index}
+                           {mics.mia set_mic_connected FALSE $mic_index})
+                        ({&& $extended $connected}
+                           {mics.mia set_mic_extended $mic_index}
+                           {mics.mia set_mic_connected $connected $mic_index})
+                        {mics.mia set_mic_preview $mic_index}
+                        {mics.mia set_mic_connected $connected $mic_index}}}}
+               {mics.mia set_mic_mgr $mgr}})
+         (update_slider
+            ($component $options)
+            {switch
+               $component
+               (instruments.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_foreground_volume}})
+               (bg_music.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_background_volume}})
+               (crowd.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_crowd_volume}})
+               (sfx.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_fx_volume}})
+               (voice_chat.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_voice_chat_volume}})
+               (vocal_track.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_vocal_cue_volume}})
+               (vocal_mic.sld)
+               (vocal_sens1.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_mic_vol 0}})
+               (vocal_sens2.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_mic_vol 1}})
+               (vocal_sens3.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_mic_vol 2}})
+               ((metronome_vol.sld metronome_vol_freestyle.sld)
+                  {if
+                     {gamemode get game_panel FALSE}
+                     {$component
+                        set_current
+                        {{gamemode get game_panel}
+                           get_metronome_volume
+                           12}}})})
+         (on_slider_change
+            ($component $user)
+            {switch
+               $component
+               (instruments.sld
+                  {profile_mgr
+                     set_foreground_volume
+                     {$component current}})
+               (bg_music.sld
+                  {profile_mgr
+                     set_background_volume
+                     {$component current}})
+               (crowd.sld
+                  {profile_mgr
+                     set_crowd_volume
+                     {$component current}})
+               (sfx.sld
+                  {profile_mgr
+                     set_fx_volume
+                     {$component current}})
+               (voice_chat.sld
+                  {profile_mgr
+                     set_voice_chat_volume
+                     {$component current}})
+               (vocal_track.sld
+                  {profile_mgr
+                     set_vocal_cue_volume
+                     {$component current}})
+               (vocal_mic.sld)
+               (vocal_sens1.sld
+                  {profile_mgr
+                     set_mic_vol
+                     0
+                     {$component current}}
+                  {profile_mgr update_mic_levels 0})
+               (vocal_sens2.sld
+                  {profile_mgr
+                     set_mic_vol
+                     1
+                     {$component current}}
+                  {profile_mgr update_mic_levels 1})
+               (vocal_sens3.sld
+                  {profile_mgr
+                     set_mic_vol
+                     2
+                     {$component current}}
+                  {profile_mgr update_mic_levels 2})
+               ((metronome_vol.sld metronome_vol_freestyle.sld)
+                  {if
+                     {gamemode get game_panel FALSE}
+                     {{gamemode get game_panel}
+                        set_metronome_volume
+                        {$component current}
+                        12}})})
+         (update_cancel_song
+            ($party_shuffle $is_leader_local)
+            {cond
+               ({! $is_leader_local}
+                  {cancel_song.lbl set text_token overshell_cancel_song_disconnect})
+               ($party_shuffle
+                  {cancel_song.lbl set text_token overshell_cancel_song_party_shuffle})
+               {cancel_song.lbl set text_token overshell_cancel_song}})
+         (set_confirm_actions
+            ($msg $options)
+            {confirm_question.lbl set text_token $msg}
+            {confirm_action.lst set_data $options})
+         (set_confirm_message
+            ($token)
+            {confirm_question.lbl set text_token $token}
+            {confirm_action.lst
+               set_data
+               (overshell_confirm_ok)})
+         (set_confirm_message_fmt
+            ($arg)
+            {confirm_question.lbl set_token_fmt $arg}
+            {confirm_action.lst
+               set_data
+               (overshell_confirm_ok)})
+         (set_difficulty_restriction
+            ($difficulty)
+            {cond
+               ({== $difficulty kDifficultyEasy}
+                  {choose_diff.lst enable_data overshell_easy}
+                  {choose_diff.lst enable_data overshell_medium}
+                  {choose_diff.lst enable_data overshell_hard}
+                  {choose_diff.lst enable_data overshell_expert})
+               ({== $difficulty kDifficultyMedium}
+                  {choose_diff.lst disable_data overshell_easy}
+                  {choose_diff.lst enable_data overshell_medium}
+                  {choose_diff.lst enable_data overshell_hard}
+                  {choose_diff.lst enable_data overshell_expert})
+               ({== $difficulty kDifficultyHard}
+                  {choose_diff.lst disable_data overshell_easy}
+                  {choose_diff.lst disable_data overshell_medium}
+                  {choose_diff.lst enable_data overshell_hard}
+                  {choose_diff.lst enable_data overshell_expert})
+               ({== $difficulty kDifficultyExpert}
+                  {choose_diff.lst disable_data overshell_easy}
+                  {choose_diff.lst disable_data overshell_medium}
+                  {choose_diff.lst disable_data overshell_hard}
+                  {choose_diff.lst enable_data overshell_expert})})
+         (clear_difficulty_restriction
+            {choose_diff.lst enable_data overshell_easy}
+            {choose_diff.lst enable_data overshell_medium}
+            {choose_diff.lst enable_data overshell_hard}
+            {choose_diff.lst enable_data overshell_expert})
+         (reset_cam
+            {track_size.anim stop_animation}
+            {track_shift.anim stop_animation}
+            {track_cam_rect.anim stop_animation}
+            {track_size.anim set_frame 0}
+            {track_shift.anim set_frame -2}
+            {track_cam_rect.anim set_frame 0})
+         (animate_with_track
+            ($animate $size_frame $shift_frame $cam_rect_frame)
+            {if_else
+               $animate
+               {do
+                  {track_size.anim
+                     animate
+                     (dest $size_frame)
+                     (period 1)
+                     (units kTaskUISeconds)}
+                  {track_shift.anim
+                     animate
+                     (dest $shift_frame)
+                     (period 1)
+                     (units kTaskUISeconds)}
+                  {track_cam_rect.anim
+                     animate
+                     (dest $cam_rect_frame)
+                     (period 1)
+                     (units kTaskUISeconds)}}
+               {do
+                  {track_size.anim
+                     animate
+                     (range $size_frame $size_frame)
+                     (units kTaskUISeconds)}
+                  {track_shift.anim
+                     animate
+                     (range $shift_frame $shift_frame)
+                     (units kTaskUISeconds)}
+                  {track_cam_rect.anim
+                     animate
+                     (range $cam_rect_frame $cam_rect_frame)
+                     (units kTaskUISeconds)}}}))))
+(UITrigger
+   (types
+      (overshell_view
+         (editor
+            (initial_focus
+               object
+               (class UIComponent)
+               (help
+                  "Component to receive focus when we first reach this state"))
+            (pos_anim
+               object
+               (class PropAnim)
+               (help
+                  "pos_anim's target's position will be moved to the destination frame."))
+            (hidden
+               bool
+               (help
+                  "Hides the dir once pos_anim finishes.")))
+         (initial_focus
+            "")
+         (pos_anim
+            "")
+         (proto_anim
+            "proto_view_do_not_touch.anim")
+         (track_anim
+            "pos_in_game.anim")
+         (hidden FALSE)
+         (set_view_pos
+            ($dir $in_track_mode)
+            {if_else
+               $in_track_mode
+               {set
+                  $anim
+                  [track_anim]}
+               {set
+                  $anim
+                  [pos_anim]}}
+            {if
+               $anim
+               {do
+                  ($target
+                     "")
+                  ($end_frame
+                     {$anim end_frame})
+                  ($end_pos
+                     (0 0 0))
+                  {$anim
+                     forall_keyframes
+                     $out_target
+                     $out_path
+                     $out_frame
+                     $out_val
+                     {if
+                        {== $end_frame $out_frame}
+                        {set $target $out_target}
+                        {set $end_pos $out_val}}}
+                  {[proto_anim]
+                     stop_animation}
+                  {[proto_anim]
+                     remove_keys
+                     $target
+                     (position)}
+                  {[proto_anim]
+                     remove_keys
+                     $dir
+                     (showing)}
+                  {[proto_anim]
+                     add_keys
+                     $target
+                     (position)
+                     kPropVector3}
+                  {[proto_anim]
+                     set_key
+                     $target
+                     (position)
+                     0}
+                  {[proto_anim]
+                     set_key_val
+                     $target
+                     (position)
+                     $end_frame
+                     $end_pos}
+                  {[proto_anim]
+                     set_interp_type
+                     $target
+                     (position)
+                     kPropHermite}
+                  {[proto_anim]
+                     add_keys
+                     $dir
+                     (showing)
+                     kPropBool}
+                  {[proto_anim]
+                     set_key_val
+                     $dir
+                     (showing)
+                     0
+                     {'||'
+                        {$dir showing}
+                        {!
+                           [hidden]}}}
+                  {if
+                     [hidden]
+                     {[proto_anim]
+                        set_key_val
+                        $dir
+                        (showing)
+                        $end_frame
+                        FALSE}}
+                  {[proto_anim]
+                     set_frame
+                     0}
+                  {[proto_anim]
+                     animate}}})
+         (trigger
+            {$this
+               reveal_lists_in_nav_chain
+               [initial_focus]})
+         (reveal_lists_in_nav_chain
+            ($component)
+            {if
+               $component
+               {if
+                  {$component is_a BandList}
+                  {$component reveal}}
+               {$this
+                  reveal_lists_in_nav_chain
+                  {$component get nav_down}}}))))

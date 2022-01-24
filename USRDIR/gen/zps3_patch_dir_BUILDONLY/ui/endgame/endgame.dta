@@ -1,0 +1,302 @@
+#include endgame_helpers.dta
+{new
+   NextSongPanel
+   coop_endgame_panel
+   (file
+      "coop_endgame.milo")
+   (details_showing
+      (FALSE FALSE FALSE FALSE))
+   (network_mic_setup TRUE)
+   (allowed_transition_actions
+      (kAction_ViewModify))
+   (min_time 5.0)
+   ENDGAME_PANEL_HANDLERS
+   (enter
+      {platform_mgr set_notify_ui_location kOSNotifyBottomCenter}
+      {$this set_results}
+      {overshell set_use_extended_mic_arrows TRUE}
+      {if_else
+         {>
+            {meta_performer num_songs}
+            1}
+         {songs.lbl
+            set_token_fmt
+            tour_event_songs
+            {meta_performer num_completed}
+            {meta_performer num_songs}}
+         {songs.lbl
+            set
+            text_token
+            ""}}
+      {if
+         {&&
+            {gamemode get loop_setlist}
+            {meta_performer is_set_complete}}
+         {meta_performer restart}}
+      {if_else
+         {meta_performer is_set_complete}
+         {end_setlist.trg trigger}
+         {mid_setlist.trg trigger}}
+      {tour_stuff.grp
+         set_showing
+         {gamemode in_mode tour}}
+      {foreach_int
+         $slot
+         0
+         {players.set
+            size
+            (objects)}
+         {$this
+            set_tour_results_showing
+            $slot
+            {gamemode in_mode tour}}}
+      {foreach_int
+         $slot
+         0
+         {players.set
+            size
+            (objects)}
+         {$this initialize_song_review_display $slot}}
+      {$this update_help}
+      {overshell set_active_status kOvershellInGameShell}
+      {meta_performer add_sink $this}
+      {session_mgr
+         add_sink
+         $this
+         (remote_leader_left_msg)}
+      {if_else
+         {gamemode in_mode audition}
+         {do
+            ($slot0
+               {$this find slot0})
+            ($slot1
+               {$this find slot0})
+            ($slot2
+               {$this find slot0})
+            ($slot3
+               {$this find slot0})
+            {{slot0 find song_review.rvw}
+               set_showing
+               FALSE}
+            {{slot0 find review.ihp}
+               set_showing
+               FALSE}
+            {{slot1 find song_review.rvw}
+               set_showing
+               FALSE}
+            {{slot1 find review.ihp}
+               set_showing
+               FALSE}
+            {{slot2 find song_review.rvw}
+               set_showing
+               FALSE}
+            {{slot2 find review.ihp}
+               set_showing
+               FALSE}
+            {{slot3 find song_review.rvw}
+               set_showing
+               FALSE}
+            {{slot3 find review.ihp}
+               set_showing
+               FALSE}}
+         {saveload_mgr autosave}})
+   (update_help
+      {help.ihp
+         set_config
+         ()}
+      {if
+         {is_leader_local}
+         {help.ihp
+            set_config
+            {if_else
+               {$this can_restart}
+               ((kAction_Option restart)
+                  (kAction_Confirm help_continue))
+               ((kAction_Confirm help_continue))}}})
+   (update_meta_performer)
+   (remote_leader_left_msg
+      {$this update_help})
+   (exit
+      {overshell set_use_extended_mic_arrows FALSE}
+      {unless
+         {'||'
+            {meta_performer is_set_complete}
+            {ui_event_mgr has_active_destructive_event}
+            {==
+               {ui current_screen}
+               meta_loading_continue_screen}
+            {==
+               {ui transition_screen}
+               meta_loading_continue_screen}}
+         {overshell set_active_status kOvershellInactive}}
+      {song_highscore.cue stop}
+      {platform_mgr set_notify_ui_location kOSNotifyTopRight}
+      {meta_performer remove_sink $this}
+      {session_mgr remove_sink $this remote_leader_left_msg})
+   (exit_complete
+      {unless
+         {'||'
+            {meta_performer is_set_complete}
+            {ui_event_mgr has_active_destructive_event}
+            {==
+               {ui current_screen}
+               meta_loading_continue_screen}}
+         {net_sync set_ui_state kNetUI_InGame}
+         {overshell set_active_status kOvershellInSong}})
+   (set_tour_results_showing
+      ($slot $val)
+      {with
+         {players.set
+            get
+            (objects $slot)}
+         {if_else
+            $val
+            {tour.grp set_showing TRUE}
+            {tour.grp set_showing FALSE}}})
+   (can_restart
+      {!
+         {meta_performer has_battle}})
+   (can_skip FALSE)
+   (BUTTON_DOWN_MSG
+      {cond
+         ({ui in_transition}
+            TRUE)
+         ({== $action kAction_Up}
+            {$this
+               scroll_expanded_details
+               {$user get_slot_num}
+               -1})
+         ({== $action kAction_Down}
+            {$this
+               scroll_expanded_details
+               {$user get_slot_num}
+               1})
+         ({&&
+               {== $action kAction_ShellOption}
+               {!
+                  {gamemode in_mode audition}}
+               {$this
+                  can_change_song_review
+                  {$user get_slot_num}}}
+            {$this
+               increment_song_review
+               {$user get_slot_num}})
+         ({&&
+               {== $action kAction_Confirm}
+               {is_leader_local}}
+            {play_instr_sfx $user button_select}
+            {help.ihp
+               set_config
+               ()}
+            {if_else
+               {meta_performer is_set_complete}
+               {cond
+                  ({gamemode in_mode audition}
+                     {ui_event_mgr trigger_event quit_early})
+                  ({gamemode in_mode tour}
+                     {{tour performer}
+                        complete_quest}
+                     {ui sync_screen tour_challenge_results_screen 0})
+                  ({&&
+                        {gamemode in_mode campaign}
+                        {campaign has_current_goal}}
+                     {ui sync_screen complete_screen 0})
+                  ({meta_performer has_battle}
+                     {ui sync_screen complete_screen 0})
+                  {ui sync_screen meta_loading_continue_screen 0}}
+               {ui sync_screen preload_nextsong_screen 0}})
+         ({&&
+               {== $action kAction_Option}
+               {$this can_restart}
+               {is_leader_local}}
+            {if_else
+               {gamemode in_mode tour}
+               {ui push_screen tour_confirm_restart_screen}
+               {$this handle_song_restart}})
+         kDataUnhandled})
+   (handle_song_restart
+      {meta_performer host_restart_last_song}
+      {game send_restart_game_net_msg}
+      {game_restart}
+      {net_sync set_ui_state kNetUI_InGame})
+   (net_songresults_scroll
+      ($slot $page)
+      {$this set_scroll_expanded_details $slot $page})}
+{new
+   BandScreen
+   coop_endgame_screen
+   (panels GAME_SCREEN_PANELS coop_endgame_panel outro_vignette_loader)
+   (focus coop_endgame_panel)
+   (pending_restart FALSE)
+   (TRANSITION_COMPLETE_MSG
+      {if
+         [pending_restart]
+         {$this set pending_restart FALSE}
+         {coop_endgame_panel handle_song_restart}}
+      {net_sync disable})}
+{new
+   BandScreen
+   coop_endgame_popups_screen
+   (panels GAME_SCREEN_PANELS outro_vignette_loader)
+   (enter
+      {overshell set_active_status kOvershellInGameShell})
+   (poll
+      {if
+         {&&
+            {!
+               {ui in_transition}}
+            {!
+               {passive_messenger has_messages}}}
+         {ui goto_screen coop_endgame_screen}})}
+{new
+   GameTimePanel
+   game_time_panel
+   (load
+      {game set multi_event TRUE})}
+{new
+   BandScreen
+   preload_nextsong_screen
+   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel preload_panel)
+   (focus preload_panel)}
+{new
+   BandScreen
+   preload_failed_nextsong_screen
+   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel)
+   (focus coop_endgame_panel)
+   (TRANSITION_COMPLETE_MSG
+      {meta_performer skip_song}
+      {ui goto_screen preload_nextsong_screen})}
+{new
+   BandScreen
+   load_nextsong_screen
+   (panels game_time_panel world_panel coop_endgame_panel outro_vignette_loader)
+   (focus coop_endgame_panel)
+   (TRANSITION_COMPLETE_MSG
+      {song_mgr
+         add_recent_song
+         {meta_performer song}}
+      {$banddirector load_game_song TRUE}
+      {coop_track_panel set_paused TRUE}
+      {ui
+         goto_screen
+         {gamemode get game_screen}})}
+{new
+   BandScreen
+   tour_confirm_restart_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_yesno tour_confirm_restart_song no.btn})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {coop_endgame_screen set pending_restart TRUE}
+            {ui pop_screen})
+         (no.btn
+            {ui pop_screen})})}

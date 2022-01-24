@@ -1,0 +1,237 @@
+{new
+   UIPanel
+   lose_panel
+   (file
+      "lose.milo")
+   (quit_confirm_screen lose_confirm_quit_screen)
+   (quit_button '')
+   (enter
+      {$this set_focus lose_resume.btn}
+      {lose_song_data.lbl
+         set_song_name
+         {meta_performer song}}
+      {do
+         ($mp
+            {beatmatch main_performer})
+         {lose_progress_data.lbl
+            set_token_fmt
+            percent_complete_format
+            {int
+               {'*'
+                  {beatmatch get_fraction_completed}
+                  100.0}}}
+         {song_section.lbl
+            set
+            text_token
+            {beatmatch
+               get_section_at_ms
+               {$mp progress_ms}}}}
+      {do
+         ($has_part FALSE)
+         ($id
+            {meta_performer song_id})
+         {user_mgr
+            foreach_user
+            $user
+            {if
+               {meta_performer
+                  part_plays_in_song
+                  {$user get_track_sym}}
+               {set $has_part TRUE}}}
+         {if_else
+            {&&
+               {gamemode in_mode qp_coop}
+               {==
+                  {session num_users}
+                  1}
+               $has_part
+               {!
+                  {song_mgr is_demo $id}}}
+            {$this enable lose_practice.btn}
+            {$this disable lose_practice.btn}}}
+      {overshell set_active_status kOvershellInGameShell}
+      {session
+         add_sink
+         $this
+         (remote_user_left)}
+      {$this set_up_buttons}
+      {$this update_nofail_checkbox})
+   (exit
+      {session remove_sink $this remote_user_left})
+   (update_meta_performer
+      {$this update_nofail_checkbox})
+   (set_up_buttons
+      {if_else
+         {gamemode get can_resume_songs}
+         {$this enable lose_resume.btn}
+         {$this disable lose_resume.btn}}
+      {lose_nofail.btn set text_token no_fail_mode_band}
+      {cond
+         ({gamemode in_mode campaign}
+            {lose_quit.btn set text_token overshell_quit_campaign})
+         ({gamemode in_mode tour}
+            {lose_quit.btn set text_token overshell_quit_tour})
+         ({gamemode in_mode audition}
+            {lose_quit.btn set text_token audition_quit})
+         {lose_quit.btn set text_token overshell_quit}})
+   (REMOTE_USER_LEFT_MSG
+      {$this set_up_buttons})
+   (SELECT_MSG
+      {switch
+         $component
+         (lose_restart.btn
+            {game send_restart_game_net_msg}
+            {game_restart})
+         (lose_resume.btn
+            {game
+               send_resume_no_score_game_net_msg
+               {beatmatch get_fraction_completed}}
+            {game_resume_no_score
+               {beatmatch get_fraction_completed}})
+         (lose_practice.btn
+            {ui push_screen confirm_practice_screen})
+         (lose_nofail.btn
+            {meta_performer
+               set_band_no_fail
+               {!
+                  {$this is_no_fail_set}}}
+            {$this update_nofail_checkbox})
+         (lose_quit.btn
+            {if_else
+               {gamemode in_mode audition}
+               {ui_event_mgr trigger_event quit_early}
+               {do
+                  {[quit_confirm_screen]
+                     set
+                     quitting
+                     TRUE}
+                  {$this confirm_goto meta_loading_continue_screen}}})})
+   (is_no_fail_set
+      {meta_performer is_band_no_fail_set})
+   (confirm_goto
+      ($destination)
+      {[quit_confirm_screen]
+         set
+         return_screen
+         {ui current_screen}}
+      {[quit_confirm_screen]
+         set
+         confirm_screen
+         $destination}
+      {ui
+         goto_screen
+         [quit_confirm_screen]})
+   (update_nofail_checkbox
+      {nofail.chk
+         set
+         checked
+         {$this is_no_fail_set}})}
+{new
+   BandScreen
+   lose_screen
+   (panels lose_panel)
+   (focus lose_panel)
+   (enter
+      {if
+         {!=
+            {rnd aspect}
+            kWidescreenAspect}
+         {rnd set_aspect kLetterboxAspect}})}
+{new
+   BandScreen
+   lose_confirm_quit_screen
+   (panels lose_panel dialog_panel)
+   (focus dialog_panel)
+   (confirm_screen '')
+   (return_screen '')
+   (quitting FALSE)
+   (enter
+      {dialog_panel set_yesno confirm_quit no.btn}
+      {$this set_up_buttons}
+      {session
+         add_sink
+         $this
+         (remote_user_left)})
+   (exit
+      {session remove_sink $this remote_user_left}
+      {unless
+         [quitting]
+         {net_sync enable}})
+   (set_up_buttons
+      {if
+         {<
+            {session num_users}
+            {gamemode get min_players}}
+         {{dialog_panel find no.btn}
+            set_state
+            kComponentDisabled}
+         {dialog_panel
+            set_focus
+            {dialog_panel find yes.btn}}})
+   (REMOTE_USER_LEFT_MSG
+      {$this set_up_buttons})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {if_else
+               {==
+                  [confirm_screen]
+                  meta_loading_main_screen}
+               {ui_event_mgr trigger_event quit_to_main}
+               {if_else
+                  [quitting]
+                  {ui
+                     pop_screen
+                     [confirm_screen]}
+                  {ui
+                     sync_screen
+                     [confirm_screen]
+                     0}}})
+         (no.btn
+            {ui
+               goto_screen
+               [return_screen]})})}
+{new
+   BandScreen
+   confirm_practice_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_yesno confirm_quit no.btn})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {if_else
+               {meta_performer
+                  part_plays_in_song
+                  {$user get_track_sym}}
+               {do
+                  {critical_user_listener set_critical_user $user}
+                  {training_mgr set_return_info song_select_screen pause_quit}
+                  {training_mgr set_user $user}
+                  {practice_panel
+                     set
+                     uses_harmony
+                     {meta_performer is_now_using_vocal_harmony}}
+                  {practice_sel_section_panel
+                     set_initial_section
+                     {beatmatch
+                        get_section_at_ms
+                        {{beatmatch main_performer}
+                           progress_ms}}}
+                  {ui pop_screen meta_loading_practice_screen}}
+               {do
+                  {ui_event_mgr
+                     trigger_event
+                     error_message
+                     (dummy init error_lose_practice_no_part)}
+                  {ui pop_screen}}})
+         (no.btn
+            {ui pop_screen})})}

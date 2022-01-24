@@ -1,0 +1,221 @@
+#define kSplashScreen_Entered
+(0)
+#define kSplashScreen_ActivateSaveLoad
+(1)
+#define kSplashScreen_StartOvershell
+(2)
+#define kSplashScreen_WaitOvershell
+(3)
+#define kSplashScreen_EndOvershell
+(4)
+{new
+   MoviePanel
+   intro_movie_panel
+   (preload FALSE)
+   (audio TRUE)
+   (loop FALSE)
+   (videos intro_movie)
+   (movie_done
+      {ui goto_screen splash_screen})
+   (enter
+      {platform_mgr disable_xmp}
+      kDataUnhandled)
+   (exit
+      #ifdef HX_PS3
+      {if
+         {elem
+            {find $syscfg system trophies}
+            1}
+         {register_trophy}}
+      #endif)
+   (BUTTON_DOWN_MSG
+      {if
+         {'||'
+            {== $action kAction_Start}
+            {== $action kAction_Confirm}}
+         {ui goto_screen splash_screen}})}
+{new
+   BandScreen
+   intro_movie_screen
+   (panels intro_movie_panel)
+   (focus intro_movie_panel)
+   #ifdef HX_PS3
+   (block_event
+      ($event)
+      {== $event invite_accepted})
+   #endif}
+{new
+   UIPanel
+   splash_panel
+   (file
+      "splash.milo")
+   (focus start.btn)
+   (last_user '')
+   (splash_state kSplashScreen_Entered)
+   #ifdef HX_PS3
+   (block_event
+      ($event)
+      {== $event invite_accepted})
+   #endif
+   (load
+      {overshell set_active_status kOvershellInactive}
+      {session clear})
+   (enter
+      #ifdef HX_PS3
+      {if_else
+         {&&
+            {trophy_registered}
+            {!
+               {trophy_disk_space_error}}}
+         {do
+            {start.btn set text_token shell_press_start_to_rock}
+            {saveload_mgr activate}}
+         {do
+            {start.btn set text_token trophy_initialization_please_wait}
+            {saveload_mgr autoload}}}
+      #endif
+      {loading.grp set_showing FALSE})
+   (poll
+      #ifdef HX_PS3
+      {if
+         {&&
+            {!=
+               {start.btn get text_token}
+               shell_press_start_to_rock}
+            {trophy_registered}}
+         {start.btn set text_token shell_press_start_to_rock}}
+      #endif
+      {if
+         {&&
+            {!
+               {ui in_transition}}
+            {==
+               {ui current_screen}
+               splash_screen}
+            #ifdef HX_PS3
+            {trophy_registered}
+            #endif}
+         {cond
+            #ifdef HX_PS3
+            ({&&
+                  {elem
+                     {find $syscfg system trophies}
+                     1}
+                  {!
+                     {trophy_disk_space_error_screen get displayed}}
+                  {trophy_disk_space_error}}
+               {ui push_screen trophy_disk_space_error_screen})
+            #endif}}
+      {if
+         {==
+            [splash_state]
+            kSplashScreen_ActivateSaveLoad}
+         {if
+            {saveload_mgr is_idle}
+            {$this set_splash_state kSplashScreen_StartOvershell}}})
+   (BUTTON_DOWN_MSG
+      {cond
+         #ifdef HX_PS3
+         ({!
+               {trophy_registered}}
+            TRUE)
+         #endif
+         ({== $action kAction_Start}
+            {$this button_down $user $raw_button kAction_Confirm $pad_num})
+         (TRUE kDataUnhandled)})
+   (SELECT_MSG
+      {if
+         {&&
+            {!
+               {ui in_transition}}
+            {==
+               {ui current_screen}
+               splash_screen}}
+         {if
+            {==
+               [splash_state]
+               kSplashScreen_Entered}
+            {set
+               [last_user]
+               $user}
+            {$this set_splash_state kSplashScreen_ActivateSaveLoad}}})
+   (set_splash_state
+      ($state)
+      {set
+         [splash_state]
+         $state}
+      {switch
+         $state
+         (kSplashScreen_ActivateSaveLoad
+            {saveload_mgr activate}
+            {text.grp set_showing FALSE})
+         (kSplashScreen_StartOvershell
+            {main_hub_panel
+               set
+               first_user
+               [last_user]}
+            {overshell
+               attempt_to_add_user
+               [last_user]}
+            {profile_mgr
+               set_primary_profile_by_user
+               [last_user]}
+            {overshell set_active_status kOvershellInShell}
+            {$this set_splash_state kSplashScreen_WaitOvershell}
+            {overshell update_all})
+         ((kSplashScreen_EndOvershell)
+            {cond
+               ({!
+                     {profile_mgr get_has_seen_first_time_calibration}}
+                  {ui push_screen first_time_calibration})
+               {ui goto_screen main_hub_screen}})})
+   (overshell_allowing_input
+      ($is_allowed)
+      {if
+         {== $is_allowed TRUE}
+         {switch
+            [splash_state]
+            (kSplashScreen_WaitOvershell
+               {handle_type
+                  ($this set_splash_state kSplashScreen_EndOvershell)})}})}
+{new
+   BandScreen
+   splash_screen
+   (panels meta sv8_panel splash_panel)
+   (focus splash_panel)
+   (gather_uistats FALSE)}
+#ifdef HX_PS3
+{new
+   BandScreen
+   trophy_disk_space_error_screen
+   (displayed FALSE)
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {set
+         [displayed]
+         TRUE}
+      {dialog_panel
+         set_msg
+         (trophy_disk_space_error
+            {trophy_file_size_mb})})}
+#endif
+{new
+   BandScreen
+   first_time_calibration
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {profile_mgr set_has_seen_first_time_calibration TRUE}
+      {dialog_small_panel set_custom calibration_msg calibration_calibrate calibration_skip opt1.btn})
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {cal_welcome_screen set cancel_screen main_hub_screen}
+            {cal_welcome_screen set confirm_screen main_hub_screen}
+            {input_mgr set_user $user}
+            {critical_user_listener set_critical_user $user}
+            {ui pop_screen cal_welcome_screen})
+         (opt2.btn
+            {ui pop_screen main_hub_screen})})}

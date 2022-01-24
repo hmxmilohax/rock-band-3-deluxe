@@ -1,0 +1,892 @@
+(Object
+   (types
+      (track_configuration
+         (editor
+            (apply
+               script
+               (script
+                  {$this milo_apply})
+               (help
+                  "apply this configuration"))
+            (aspect
+               symbol
+               (list
+                  (regular widescreen)))
+            (num_gem_tracks
+               int
+               (range 0 4)
+               (help
+                  "the number of gem tracks in this configuration"))
+            (track_positions
+               (indent
+                  (track_0_shift_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 0's horizontal shift animation target frame"))
+                  (track_0_cam_rect_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 0's horizontal camera rect animation target frame"))
+                  (track_1_shift_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 1's horizontal shift animation target frame"))
+                  (track_1_cam_rect_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 1's horizontal camera rect animation target frame"))
+                  (track_2_shift_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 2's horizontal shift animation target frame"))
+                  (track_2_cam_rect_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 2's horizontal camera rect animation target frame"))
+                  (track_3_shift_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 3's horizontal shift animation target frame"))
+                  (track_3_cam_rect_frame
+                     float
+                     (post_sync
+                        {$this update TRUE})
+                     (help
+                        "track 3's horizontal camera rect animation target frame")))
+               (help
+                  "target frames for the position animations of each track in this configuration"))
+            (save_objects
+               script
+               (script
+                  {$this save_objects}
+                  {milo update_open_editor $this})
+               (help
+                  "Saves the current object configuration"))
+            (object_configuration
+               (indent
+                  (objects
+                     (array
+                        object
+                        (class Trans)
+                        (list
+                           {{$this dir}
+                              get
+                              configurable_objects})))
+                  (visibles
+                     (array bool))
+                  (xfms
+                     (array float)))
+               (read_only TRUE)))
+         (aspect regular)
+         (num_gem_tracks 1)
+         (track_0_shift_frame 0.0)
+         (track_0_cam_rect_frame 0.0)
+         (track_1_shift_frame 0.0)
+         (track_1_cam_rect_frame 0.0)
+         (track_2_shift_frame 0.0)
+         (track_2_cam_rect_frame 0.0)
+         (track_3_shift_frame 0.0)
+         (track_3_cam_rect_frame 0.0)
+         (objects
+            ())
+         (visibles
+            ())
+         (xfms
+            ())
+         (is_active
+            {==
+               {{$this dir}
+                  get
+                  configuration}
+               $this})
+         (calculate_track_screen_position_animation_frames
+            ($track_slot)
+            {switch
+               [aspect]
+               (regular
+                  {set $aspect_frame_offset 0})
+               (widescreen
+                  {set $aspect_frame_offset 10})}
+            {set
+               $size_frame
+               {'+'
+                  $aspect_frame_offset
+                  [num_gem_tracks]}}
+            {switch
+               $track_slot
+               (0
+                  {set
+                     $shift_frame
+                     [track_0_shift_frame]}
+                  {set
+                     $cam_rect_frame
+                     [track_0_cam_rect_frame]})
+               (1
+                  {set
+                     $shift_frame
+                     [track_1_shift_frame]}
+                  {set
+                     $cam_rect_frame
+                     [track_1_cam_rect_frame]})
+               (2
+                  {set
+                     $shift_frame
+                     [track_2_shift_frame]}
+                  {set
+                     $cam_rect_frame
+                     [track_2_cam_rect_frame]})
+               (3
+                  {set
+                     $shift_frame
+                     [track_3_shift_frame]}
+                  {set
+                     $cam_rect_frame
+                     [track_3_cam_rect_frame]})}
+            {set
+               $shift_frame
+               {'+' $shift_frame $aspect_frame_offset}}
+            {set
+               $cam_rect_frame
+               {'+' $cam_rect_frame $aspect_frame_offset}}
+            ($size_frame $shift_frame $cam_rect_frame))
+         (update
+            ($animate)
+            {if
+               {$this is_active}
+               {set $track_slot 0}
+               {foreach_int
+                  $idx
+                  0
+                  {{$this dir}
+                     gem_tracks_size}
+                  {set
+                     $obj
+                     {{$this dir}
+                        get_gem_track
+                        $idx}}
+                  {if_else
+                     {$obj get in_use}
+                     {do
+                        ($play_anim
+                           {&&
+                              $animate
+                              {==
+                                 [aspect]
+                                 {$obj get screen_aspect}}})
+                        {$obj
+                           set
+                           screen_aspect
+                           [aspect]}
+                        {if
+                           {&&
+                              {!
+                                 {$obj get track_extended}}
+                              {<
+                                 {$obj get total_slots}
+                                 [num_gem_tracks]}}
+                           {set $play_anim FALSE}}
+                        {$obj
+                           set
+                           total_slots
+                           [num_gem_tracks]}
+                        {$obj set track_slot $track_slot}
+                        {if_else
+                           {== $delay 0}
+                           {$this update_track_position $obj $play_anim}
+                           {script_task
+                              kTaskUISeconds
+                              (delay $delay)
+                              (script
+                                 {$this update_track_position $obj $play_anim})}}
+                        {'++' $track_slot}}
+                     {do
+                        {$obj set_used FALSE}
+                        {$obj
+                           set
+                           total_slots
+                           [num_gem_tracks]}}}}
+               {do
+                  ($index 0)
+                  {foreach
+                     $obj
+                     [objects]
+                     {if
+                        {!= $obj ''}
+                        {do
+                           {$obj
+                              set_showing
+                              {elem
+                                 [visibles]
+                                 $index}}
+                           {do
+                              ($e
+                                 {'*' $index 9})
+                              {$obj
+                                 set_local_pos
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 0}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 1}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 2}}}
+                              {$obj
+                                 set_local_rot
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 3}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 4}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 5}}}
+                              {$obj
+                                 set_local_scale
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 6}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 7}}
+                                 {elem
+                                    [xfms]
+                                    {'+' $e 8}}}}}}
+                     {'++' $index}}}})
+         (update_track_position
+            ($obj $play_anim)
+            {do
+               ($animate_params
+                  {$this
+                     calculate_track_screen_position_animation_frames
+                     {$obj get track_slot}})
+               ($size_frame
+                  {eval
+                     {elem $animate_params 0}})
+               ($shift_frame
+                  {eval
+                     {elem $animate_params 1}})
+               ($cam_rect_frame
+                  {eval
+                     {elem $animate_params 2}})
+               {$obj update_screen_position $play_anim $size_frame $shift_frame $cam_rect_frame}
+               {if
+                  {exists overshell}
+                  {do
+                     ($overshell_slot
+                        {overshell
+                           get_panel_from_slot_num
+                           {$obj get gem_track_dir_id}})
+                     {if
+                        $overshell_slot
+                        {if_else
+                           {$overshell_slot is_in_track_mode}
+                           {$overshell_slot animate_with_track $play_anim $size_frame $shift_frame $cam_rect_frame}
+                           {$overshell_slot reset_slot_cam}}}}}})
+         (save_objects
+            {set
+               [objects]
+               {array 0}}
+            {set
+               [visibles]
+               {array 0}}
+            {set
+               [xfms]
+               {array 0}}
+            {{$this dir}
+               foreach_configurable_object
+               $obj
+               {if_else
+                  {!= $obj ''}
+                  {do
+                     ($index
+                        {size
+                           [objects]})
+                     ($x)
+                     ($y)
+                     ($z)
+                     {insert_elem
+                        [objects]
+                        $index
+                        $obj}
+                     {insert_elem
+                        [visibles]
+                        $index
+                        {$obj showing}}
+                     {$obj get_local_pos $x $y $z}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $x}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $y}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $z}
+                     {$obj get_local_rot $x $y $z}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $x}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $y}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $z}
+                     {$obj get_local_scale $x $y $z}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $x}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $y}
+                     {insert_elem
+                        [xfms]
+                        {size
+                           [xfms]}
+                        $z}}
+                  {print
+                     "A configurable object was apparently deleted.\n"}}})
+         (apply
+            ($animate)
+            {$this update $animate})
+         (milo_apply
+            {do
+               ($dir
+                  {$this dir})
+               {$dir set bass kTrackOff}
+               {$dir set drum kTrackOff}
+               {$dir set guitar kTrackOff}
+               {if
+                  {'||'
+                     {==
+                        {$this name}
+                        1_player_regular}
+                     {==
+                        {$this name}
+                        1_player_wide}}
+                  {$dir set bass kTrackLocal}}
+               {if
+                  {'||'
+                     {==
+                        {$this name}
+                        2_player_regular}
+                     {==
+                        {$this name}
+                        2_player_wide}}
+                  {$dir set bass kTrackLocal}
+                  {$dir set drum kTrackLocal}}
+               {if
+                  {'||'
+                     {==
+                        {$this name}
+                        3_player_regular}
+                     {==
+                        {$this name}
+                        3_player_wide}}
+                  {$dir set bass kTrackLocal}
+                  {$dir set drum kTrackLocal}
+                  {$dir set guitar kTrackLocal}}
+               {$dir configure_tracks}
+               {$dir set_configuration $this}}))
+      (vocals_configuration
+         (editor
+            (apply
+               script
+               (script
+                  {$this milo_apply})
+               (help
+                  "apply this configuration"))
+            (cleanup
+               script
+               (script
+                  {$this cleanup})
+               (help
+                  "remove missing objects from configurable objs array")
+               (refresh objects visibles xfms))
+            (save_objects
+               script
+               (script
+                  {$this save_objects}
+                  {milo update_open_editor $this})
+               (help
+                  "Saves the current object configuration"))
+            (object_configuration
+               (indent
+                  (objects
+                     (array
+                        object
+                        (class Trans)
+                        (list
+                           {{$this dir}
+                              get
+                              configurable_objects})))
+                  (visibles
+                     (array bool))
+                  (xfms
+                     (array float)))
+               (read_only TRUE))
+            (remote bool)
+            (align
+               symbol
+               (list
+                  (top bottom))
+               (help
+                  "align relative to top or bottom of track panel"))
+            (left
+               float
+               (help
+                  "the x value for the left boundary for the track")
+               (post_sync
+                  {{{$this dir}
+                        find
+                        track_left.trans}
+                     set_local_pos
+                     [left]
+                     0
+                     0}))
+            (right
+               float
+               (help
+                  "the x value for the right boundary for the track")
+               (post_sync
+                  {{{$this dir}
+                        find
+                        track_right.trans}
+                     set_local_pos
+                     [right]
+                     0
+                     0}))
+            (now
+               float
+               (help
+                  "the x value for the position of the now bar")
+               (post_sync
+                  {{{$this dir}
+                        find
+                        now_bar.trans}
+                     set_local_pos
+                     [now]
+                     0
+                     0})))
+         (objects
+            ())
+         (visibles
+            ())
+         (xfms
+            ())
+         (remote FALSE)
+         (align top)
+         (left -12)
+         (right 12)
+         (top 3.5)
+         (bottom 0)
+         (now -7)
+         (is_active
+            {==
+               {{$this dir}
+                  get
+                  vox_configuration}
+               $this})
+         (update
+            {if
+               {$this is_active}
+               {do
+                  ($index 0)
+                  {foreach
+                     $obj
+                     [objects]
+                     {if
+                        {!=
+                           $obj
+                           ""}
+                        {$obj
+                           set_showing
+                           {elem
+                              [visibles]
+                              $index}}
+                        {do
+                           ($e
+                              {'*' $index 9})
+                           {$obj
+                              set_local_pos
+                              {elem
+                                 [xfms]
+                                 {'+' $e 0}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 1}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 2}}}
+                           {$obj
+                              set_local_rot
+                              {elem
+                                 [xfms]
+                                 {'+' $e 3}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 4}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 5}}}
+                           {$obj
+                              set_local_scale
+                              {elem
+                                 [xfms]
+                                 {'+' $e 6}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 7}}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 8}}}}}
+                     {'++' $index}}
+                  {set
+                     $vocal_track_dir
+                     {$this dir}}}})
+         (cleanup
+            {do
+               ($new_objects
+                  {array 0})
+               ($new_visibles
+                  {array 0})
+               ($new_xfms
+                  {array 0})
+               {do
+                  ($index 0)
+                  {foreach
+                     $obj
+                     [objects]
+                     {if
+                        {!=
+                           $obj
+                           ""}
+                        {insert_elem
+                           $new_objects
+                           {size $new_objects}
+                           $obj}
+                        {insert_elem
+                           $new_visibles
+                           {size $new_visibles}
+                           {elem
+                              [visibles]
+                              $index}}
+                        {do
+                           ($e
+                              {'*' $index 9})
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 $e}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 1}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 2}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 3}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 4}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 5}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 6}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 7}}}
+                           {insert_elem
+                              $new_xfms
+                              {size $new_xfms}
+                              {elem
+                                 [xfms]
+                                 {'+' $e 8}}}}}
+                     {'++' $index}}
+                  {set
+                     [objects]
+                     $new_objects}
+                  {set
+                     [visibles]
+                     $new_visibles}
+                  {set
+                     [xfms]
+                     $new_xfms}}})
+         (save_objects
+            {set
+               [objects]
+               {array 0}}
+            {set
+               [visibles]
+               {array 0}}
+            {set
+               [xfms]
+               {array 0}}
+            {{$this dir}
+               foreach_configurable_object
+               $obj
+               {do
+                  ($index
+                     {size
+                        [objects]})
+                  ($x)
+                  ($y)
+                  ($z)
+                  {insert_elem
+                     [objects]
+                     $index
+                     $obj}
+                  {insert_elem
+                     [visibles]
+                     $index
+                     {$obj showing}}
+                  {$obj get_local_pos $x $y $z}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $x}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $y}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $z}
+                  {$obj get_local_rot $x $y $z}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $x}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $y}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $z}
+                  {$obj get_local_scale $x $y $z}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $x}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $y}
+                  {insert_elem
+                     [xfms]
+                     {size
+                        [xfms]}
+                     $z}}}
+            {{{$this dir}
+                  find
+                  track_left.trans}
+               get_local_pos
+               $val
+               $ignore
+               $ignore}
+            {set
+               [left]
+               $val}
+            {{{$this dir}
+                  find
+                  track_right.trans}
+               get_local_pos
+               $val
+               $ignore
+               $ignore}
+            {set
+               [right]
+               $val}
+            {{{$this dir}
+                  find
+                  track_top.trans}
+               get_local_pos
+               $ignore
+               $ignore
+               $val}
+            {set
+               [top]
+               $val}
+            {{{$this dir}
+                  find
+                  track_bottom.trans}
+               get_local_pos
+               $ignore
+               $ignore
+               $val}
+            {set
+               [bottom]
+               $val}
+            {{{$this dir}
+                  find
+                  now_bar.trans}
+               get_local_pos
+               $val
+               $ignore
+               $ignore}
+            {set
+               [now]
+               $val})
+         (apply
+            {{{$this dir}
+                  find
+                  track_left.trans}
+               set_local_pos
+               [left]
+               0
+               0}
+            {{{$this dir}
+                  find
+                  track_right.trans}
+               set_local_pos
+               [right]
+               0
+               0}
+            {{{$this dir}
+                  find
+                  track_top.trans}
+               set_local_pos
+               0
+               0
+               [top]}
+            {{{$this dir}
+                  find
+                  track_bottom.trans}
+               set_local_pos
+               0
+               0
+               [bottom]}
+            {{{$this dir}
+                  find
+                  now_bar.trans}
+               set_local_pos
+               [now]
+               0
+               0}
+            {{{$this dir}
+                  find
+                  pitch_now.trans}
+               set_local_pos
+               [now]
+               0
+               0}
+            {$this update})
+         (milo_apply
+            {{$this dir}
+               set_vox_configuration
+               $this}
+            {{$this dir}
+               reset}))))
+(view_times
+   (drum
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (bass
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (guitar
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (real_guitar
+      (easy 2.4)
+      (medium 2.2)
+      (hard 1.8)
+      (expert 1.2))
+   (real_bass
+      (easy 2.4)
+      (medium 2.2)
+      (hard 1.8)
+      (expert 1.2))
+   (real_keys
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (keys
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (pending
+      (easy 2.4)
+      (medium 2.0)
+      (hard 1.6)
+      (expert 1.2))
+   (description
+      "Specifies track speed via view times for various difficulties on various instruments."))

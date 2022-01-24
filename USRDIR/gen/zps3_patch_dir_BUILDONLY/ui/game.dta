@@ -1,0 +1,529 @@
+#include track_panel.dta
+#include pause_mics_helper.dta
+#define LOSE_MUSIC_SLOW_SEC
+(2)
+{new
+   GamePanel
+   game
+   (file
+      "")
+   (disable_pause_ms 2000)
+   (audition_jump_back_ms 12000)
+   (audition_jump_forward_ms 30000)
+   (audition_jump_end_buffer_ms 5000)
+   (audition_keyboard_synth_volumes
+      (0 15 30 45 60))
+   (audition_cam_toggle
+      {audition_cycle_free_camera})
+   (reset
+      {active_events_parser
+         add_sink
+         $this
+         ()
+         kSinkModeExportType})
+   (coda
+      {if_else
+         {&&
+            {game want_coda}
+            {game is_playing}}
+         {do
+            {beatmatch
+               foreach_active_player
+               $p
+               {handle
+                  ($p enter_coda)}}
+            kDataUnhandled}
+         0})
+   (pick_intro
+      {if_else
+         {'||'
+            $skip_intro
+            {gamemode in_mode frame_rate}
+            {beatmatch resumed_no_score}}
+         {handle
+            ($this intro_skip)}
+         {handle
+            ($this intro_start)}}
+      {if
+         {gamemode in_mode trainer_real_guitar}
+         {{gamemode get game_panel}
+            setup}})
+   (intro_start
+      {{gamemode get game_screen}
+         set_showing
+         TRUE}
+      {script_task
+         kTaskBeats
+         (delay
+            {-
+               {taskmgr beat}})
+         (script
+            {handle
+               ($this intro_end)})}
+      kDataUnhandled)
+   (intro_skip
+      {{gamemode get game_screen}
+         set_showing
+         TRUE}
+      kDataUnhandled)
+   (beat
+      {if
+         $debug.beep
+         {{get_track_panel}
+            play_seq
+            click}}
+      kDataUnhandled)
+   (excitement
+      ($ex)
+      {if
+         {gamemode get crowd_reacts}
+         {if
+            {< $ex kNumExcitements}
+            {handle
+               {elem
+                  (($this excitement_boot)
+                     ($this excitement_bad)
+                     ($this excitement_okay)
+                     ($this excitement_great)
+                     ($this excitement_peak))
+                  $ex}}}}
+      kDataUnhandled)
+   (game_over
+      {stagekit_reset}
+      {beatmatch
+         foreach_active_player
+         $p
+         {$p on_game_over}}
+      {if
+         {&&
+            {==
+               {ui current_screen}
+               pause_controller_screen}
+            {!
+               {ui in_transition}}}
+         {pause_controller_screen on_controllers_ok}}
+      kDataUnhandled)
+   (game_won_common
+      {beatmatch set_realtime TRUE}
+      {beatmatch set_paused TRUE FALSE}
+      {{get_track_panel}
+         play_seq
+         track_end.cue})
+   (game_won
+      {$this game_won_common}
+      kDataUnhandled)
+   (game_won_finale
+      {$this game_won_common}
+      kDataUnhandled)
+   (game_lost
+      {beatmatch set_realtime TRUE}
+      {beatmatch
+         foreach_active_player
+         $p
+         {$p on_game_lost}}
+      {if
+         {gamecfg multiplayer}
+         {{beatmatch main_performer}
+            on_game_lost}
+         {game play_band_died_cue}}
+      {script_task
+         kTaskBeats
+         (delay LOSE_MUSIC_SLOW_SEC)
+         (script
+            {do
+               {beatmatch set_paused TRUE FALSE}})}
+      kDataUnhandled)
+   (game_skip
+      {beatmatch set_realtime TRUE}
+      {beatmatch set_paused TRUE FALSE}
+      {handle
+         ($this game_outro)})
+   (game_outro
+      {if
+         {&&
+            {==
+               {ui current_screen}
+               {gamemode get game_screen}}
+            {!
+               {ui in_transition}}}
+         {beatmatch set_ready_for_exit TRUE}}
+      {beatmatch
+         foreach_active_player
+         $p
+         {$p disable_controller}}
+      {ui
+         sync_screen
+         {if_else
+            {$this lost}
+            {gamemode get lose_screen}
+            {gamemode get win_screen}}
+         1}
+      kDataUnhandled)
+   (disable_all_controllers
+      {beatmatch
+         foreach_active_player
+         $p
+         {$p disable_controller}})
+   (resume_no_score
+      {{{get_track_panel}
+            my_track_panel_dir}
+         hide_score}
+      {foreach_int
+         $i
+         0
+         {beatmatch num_active_players}
+         {{beatmatch active_player $i}
+            set_crowd_rating_active
+            FALSE}})}
+{new SyncGameStartPanel sync_audio_net_panel}
+{new
+   UIPanel
+   world_panel
+   (file
+      "../world/world.milo")
+   (unload_async TRUE)
+   (unload
+      {if
+         $bandwardrobe
+         {$bandwardrobe unload_venue}}
+      {meta_performer clear_venues})}
+#define GAME_SCREEN_HANDLERS
+((disable_screen_saver TRUE)
+   PAUSE_ON_MIC_DISCONNECT
+   (enter
+      {$this set_showing TRUE}
+      {set
+         [delayed_mic_check]
+         FALSE}
+      {rnd set_in_game TRUE}
+      {platform_mgr
+         add_sink
+         $this
+         (ui_changed)}
+      {platform_mgr
+         add_sink
+         $this
+         (microphones_changed)}
+      {if
+         {game get multi_event}
+         {coop_track_panel set_paused FALSE}
+         {{world_panel loaded_dir}
+            enter}
+         {game set multi_event FALSE}}
+      {user_mgr foreach_local_user $user}
+      {profile_mgr update_all_mic_levels}
+      {overshell set_active_status kOvershellInSong}
+      {net_sync set_ui_state kNetUI_InGame}
+      {handle
+         ($this my_enter)})
+   (exit
+      {platform_mgr remove_sink $this ui_changed}
+      {platform_mgr remove_sink $this microphones_changed}
+      {synth stop_playback_all_mics}
+      {$this set_showing FALSE}
+      {rnd reset_postproc})
+   (UI_CHANGED_MSG
+      {$this on_guide_change})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         $game_unpause_on_enter
+         {beatmatch set_paused FALSE}
+         {set $game_unpause_on_enter FALSE}}
+      {$this on_guide_change}
+      {unless
+         $fake_controllers
+         {$this pause_for_mic_check}})
+   (on_guide_change
+      {overshell update_all}
+      PAUSE_MICS_ON_GUIDE_CHANGE))
+{new
+   UIPanel
+   outro_vignette_loader
+   (chosen_vignette '')
+   (load
+      {set
+         [chosen_vignette]
+         ''}
+      {if
+         {meta_performer is_set_complete}
+         {meta_performer upload_debug_stats}
+         {set
+            [chosen_vignette]
+            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
+            {[chosen_vignette]
+               load}}
+         #else
+         {[chosen_vignette]
+            load}
+         #endif})
+   (unload
+      {if
+         {!=
+            [chosen_vignette]
+            ''}
+         {[chosen_vignette]
+            unload}})}
+#define GAME_SCREEN_PANELS
+(game world_panel coop_track_panel sync_audio_net_panel)
+{new
+   BandScreen
+   game_screen
+   (panels GAME_SCREEN_PANELS)
+   GAME_SCREEN_HANDLERS}
+{new
+   RetryAudioPanel
+   sync_audio_net_screen_panel
+   (my_is_loaded FALSE)
+   (load
+      {$this set_volume_offset_symbol voiceover_retry_volume_offset}
+      {sync_audio_net_panel start_sync_with_external_block}
+      {set
+         [my_is_loaded]
+         FALSE}
+      {if_else
+         {exists beatmatch}
+         {beatmatch reset_audio}
+         {notify
+            "no beatmatch!"}})
+   (handle_audio_finished
+      {sync_audio_net_panel clear_external_block})
+   (is_loaded
+      {unless
+         [my_is_loaded]
+         {do
+            ($cur
+               {ui current_screen})
+            {if
+               {'||'
+                  {! $cur}
+                  {!
+                     {$cur exiting}}}
+               {if
+                  {sync_audio_net_panel check_is_synced}
+                  {set
+                     [my_is_loaded]
+                     TRUE}}}}}
+      [my_is_loaded])}
+{new
+   BandScreen
+   restart_sync_audio_net_screen
+   (panels)
+   (enter
+      {overshell set_active_status kOvershellInactive}
+      {{gamemode get game_screen}
+         set_showing
+         FALSE}
+      {ui goto_screen sync_audio_net_screen})}
+{new
+   BandScreen
+   sync_audio_net_screen
+   (panels sync_audio_net_screen_panel)
+   (TRANSITION_COMPLETE_MSG
+      {{gamemode get game_screen}
+         reenter_screen}
+      {overshell set_active_status kOvershellInSong}
+      {ui
+         pop_screen
+         {gamemode get game_screen}})}
+{new
+   BandScreen
+   restart_game_screen
+   (panels GAME_SCREEN_PANELS sync_audio_net_screen_panel)
+   (load_panels
+      {overshell set_active_status kOvershellInactive}
+      {$this set_showing FALSE})
+   (TRANSITION_COMPLETE_MSG
+      {overshell set_active_status kOvershellInSong}
+      {ui
+         goto_screen
+         {gamemode get game_screen}}
+      {{gamemode get game_screen}
+         reenter_screen}
+      {beatmatch replay})}
+{new
+   BandScreen
+   vocal_test_screen
+   (panels)
+   (enter
+      {content_mgr start_refresh}
+      {set
+         [waiting]
+         TRUE})
+   (poll
+      {if
+         {&&
+            [waiting]
+            {content_mgr refresh_done}}
+         {set
+            [waiting]
+            FALSE}
+         {ui goto_screen vocal_test_game_screen}})
+   (waiting TRUE)}
+{new
+   BandScreen
+   vocal_test_game_screen
+   (panels game coop_track_panel)
+   GAME_SCREEN_HANDLERS}
+{func
+   set_wavdata_song
+   ($sym)
+   {meta_performer set_song $sym}}
+{new
+   BandScreen
+   gen_wavdata_start_screen
+   (panels)
+   (enter
+      {content_mgr start_refresh}
+      {set
+         [waiting]
+         TRUE})
+   (poll
+      {if
+         {&&
+            [waiting]
+            {content_mgr refresh_done}}
+         {set
+            [waiting]
+            FALSE}
+         {set $gen_wavdata_idx 0}
+         {set_wavdata_song
+            {elem
+               (GEN_WAVDATA_SONGS)
+               $gen_wavdata_idx}}
+         {print
+            "GENERATING WAV DATA FOR "
+            {elem
+               (GEN_WAVDATA_SONGS)
+               $gen_wavdata_idx}
+            "\n"}
+         {ui goto_screen gen_wavdata_game_screen}})
+   (waiting TRUE)}
+{new
+   BandScreen
+   gen_wavdata_advance_screen
+   (panels coop_track_panel)
+   (enter
+      {coop_track_panel exit}
+      {coop_track_panel set_paused TRUE}
+      {set_wavdata_song
+         {elem
+            (GEN_WAVDATA_SONGS)
+            $gen_wavdata_idx}}
+      {print
+         "GENERATING WAV DATA FOR "
+         {elem
+            (GEN_WAVDATA_SONGS)
+            $gen_wavdata_idx}
+         "\n"}
+      {ui goto_screen gen_wavdata_game_screen})}
+{new
+   BandScreen
+   gen_wavdata_game_screen
+   (panels game coop_track_panel)
+   GAME_SCREEN_HANDLERS
+   (gen_wavdata_done
+      {'++' $gen_wavdata_idx}
+      {if_else
+         {==
+            $gen_wavdata_idx
+            {size
+               (GEN_WAVDATA_SONGS)}}
+         {ui goto_screen gen_wavdata_done_screen}
+         {ui goto_screen gen_wavdata_advance_screen}})}
+{new
+   BandScreen
+   gen_wavdata_done_screen
+   (panels)
+   (enter
+      {print
+         "\n\nWAV DATA GENERATION DONE!\n"}
+      {exit})}
+{new
+   BandScreen
+   vocal_score_song_start_screen
+   (panels)
+   (enter
+      {content_mgr start_refresh}
+      {set
+         [waiting]
+         TRUE})
+   (poll
+      {if
+         {&&
+            [waiting]
+            {content_mgr refresh_done}}
+         {set
+            [waiting]
+            FALSE}
+         {print
+            "VOCAL SCORE SONG FOR "
+            {meta_performer song}
+            "\n"}
+         {ui goto_screen vocal_score_song_game_screen}})
+   (waiting TRUE)}
+{new
+   BandScreen
+   vocal_score_song_game_screen
+   (panels game coop_track_panel)
+   GAME_SCREEN_HANDLERS
+   (vocal_score_song_done
+      {ui goto_screen vocal_score_song_done_screen})}
+{new
+   BandScreen
+   vocal_score_song_done_screen
+   (panels)
+   (enter
+      {print
+         "\n\nVOCAL SCORE SONG DONE!\n"}
+      {exit})}
+{new
+   UIPanel
+   mydta_start_in_game_panel
+   (state begin)
+   (enter
+      {set
+         [state]
+         begin})
+   (TRANSITION_COMPLETE_MSG
+      {set
+         [state]
+         saveload}
+      {saveload_mgr activate}
+      {saveload_mgr autosave})
+   (poll
+      {switch
+         [state]
+         (saveload
+            {if
+               {saveload_mgr is_initial_load_done}
+               {set
+                  [state]
+                  contentrefresh}
+               {content_mgr start_refresh}})
+         (contentrefresh
+            {if
+               {content_mgr refresh_done}
+               {set
+                  [state]
+                  done}
+               {{ui current_screen}
+                  ready_for_game}})})}
+{new
+   BandScreen
+   mydta_start_in_game_screen
+   (panels mydta_start_in_game_panel)
+   (ready_for_game
+      {ui goto_screen preloading_screen})}
+{new
+   BandScreen
+   mydta_start_practice_in_game_screen
+   (panels mydta_start_in_game_panel)
+   (ready_for_game
+      {ui goto_screen practice_game_screen})}

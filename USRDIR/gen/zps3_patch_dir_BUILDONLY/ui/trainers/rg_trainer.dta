@@ -1,0 +1,207 @@
+{new
+   ChordbookPanel
+   chordbook_panel
+   (file
+      "chordbook_panel.milo")
+   (play_correct_fret
+      {{get_track_panel}
+         play_seq
+         achieve_star.cue})
+   (BUTTON_DOWN_MSG
+      {if
+         {==
+            {ui focus_panel}
+            $this}
+         {switch
+            $action
+            ((kAction_Confirm)
+               {$this skip_confirm})
+            ((kAction_Cancel)
+               {$this skip_cancel})
+            ((kAction_ShellOption)
+               {$this skip_push_dialog})}}
+      kDataUnhandled)}
+{new
+   RGTrainerPanel
+   rg_trainer_panel
+   (file
+      "gem_trainer_panel.milo")
+   (enter
+      GEM_TRAINER_PANEL_ENTER
+      {section_list_hide.trig trigger}
+      {chord_legend set_showing FALSE}
+      {chordbook_panel set_showing FALSE}
+      {num_steps.anim set_frame 0.0}
+      {toggle_icon.lbl set_showing TRUE}
+      {toggle_icon.lbl
+         set
+         icon
+         "s"}
+      {start_stop.chk
+         set
+         checked
+         [start_stop]}
+      {{gamemode get game_panel}
+         goto_preview
+         1})
+   (exit GEM_TRAINER_PANEL_EXIT)
+   GEM_TRAINER_PANEL_SCORING
+   GEM_TRAINER_PANEL_SPEED
+   GEM_TRAINER_PANEL_PREVIEW
+   GEM_TRAINER_PANEL_SECTIONS
+   (on_hit
+      ($gem_id)
+      {$this hit_notify $gem_id})
+   (on_miss
+      ($gem_id))
+   (on_pass
+      ($gem_id)
+      {if
+         {$this miss_notify $gem_id}
+         {if
+            [start_stop]
+            {$this goto_chord_legend $gem_id}}})
+   (goto_chordbook
+      {$this set_showing FALSE}
+      {chordbook_panel start_chordbook}
+      {chordbook_panel set_showing TRUE}
+      {rg_trainer_screen set_focus_panel chordbook_panel})
+   (end_chordbook
+      {chordbook_panel set_showing FALSE}
+      {coop_track_panel set_showing TRUE}
+      {rg_trainer_screen set_focus_panel $this}
+      {$this set_showing TRUE}
+      {$this goto_preview 1}
+      {if_else
+         {==
+            {rnd aspect}
+            kWidescreenAspect}
+         {{get_track_panel}
+            set_configuration
+            {{get_track_panel}
+               find
+               1_player_wide}
+            FALSE}
+         {{get_track_panel}
+            set_configuration
+            {{get_track_panel}
+               find
+               1_player_regular}
+            FALSE}})
+   (goto_preview_no_chordbook
+      ($sec_dir)
+      {gem_preview_panel set sec_dir $sec_dir}
+      {ui push_screen gem_preview_screen})
+   (relearn_chords
+      {chordbook_panel set relearn_chords TRUE}
+      {script_task
+         kTaskUISeconds
+         (delay 0.2)
+         (script
+            {if_else
+               {==
+                  {rnd aspect}
+                  kWidescreenAspect}
+               {{get_track_panel}
+                  set_configuration
+                  {{get_track_panel}
+                     find
+                     chordbook_wide}
+                  FALSE}
+               {{get_track_panel}
+                  set_configuration
+                  {{get_track_panel}
+                     find
+                     chordbook_regular}
+                  FALSE}})}
+      {$this goto_chordbook})
+   (setup)
+   (goto_chord_legend
+      ($gem_id)
+      {$this pause_track TRUE}
+      {show_chord_legend.trig trigger}
+      {chord_legend play_intro}
+      {foreach_int
+         $i
+         0
+         6
+         {chord_legend
+            set_chord_fret
+            $i
+            {$this get_fret $gem_id $i}}}
+      {chord_legend reset_chord_legend}
+      {chord_legend reset_chord}
+      {$this set_legend_gem_id $gem_id}
+      {$this set_legend_mode TRUE})
+   (end_chord_legend_internal
+      {hide_chord_legend.trig trigger}
+      {num_steps.anim set_frame 0.0}
+      {$this set_legend_mode FALSE}
+      {$this set_loop_points})
+   (end_chord_legend
+      {$this unpause_track_rollback}
+      {$this end_chord_legend_internal})
+   (end_chord_legend_no_rollback
+      {$this unpause_track_no_rollback}
+      {$this end_chord_legend_internal})
+   (toggle_start_stop
+      {set
+         [start_stop]
+         {!
+            [start_stop]}}
+      {start_stop.chk
+         set
+         checked
+         [start_stop]})
+   (strum_string
+      ($string)
+      {chord_legend strum_string $string})
+   (set_finger_fret
+      ($string $fret)
+      {chord_legend set_finger_fret $string $fret})
+   (set_step_text
+      ($lbl $token $fret $low_str $high_str)
+      {$lbl
+         set_token_fmt
+         $token
+         ((fret_num $fret)
+            (low_string $low_str)
+            (high_string $high_str))})
+   GEM_TRAINER_PANEL_PROPERTIES
+   (start_stop TRUE)}
+{new
+   BandScreen
+   rg_trainer_screen
+   (panels game sync_audio_net_panel gem_trainer_loop_panel trainer_background_panel coop_track_panel rg_trainer_panel chordbook_panel)
+   (focus rg_trainer_panel)
+   GAME_SCREEN_HANDLERS
+   (my_enter)
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Right}
+         {{gamemode get game_panel}
+            goto_preview
+            1}
+         {if_else
+            {== $action kAction_Left}
+            {{gamemode get game_panel}
+               goto_preview
+               -1}
+            {if_else
+               {== $action kAction_Up}
+               {{gamemode get game_panel}
+                  inc_speed}
+               {if_else
+                  {== $action kAction_Down}
+                  {{gamemode get game_panel}
+                     dec_speed}
+                  {if
+                     {== $action kAction_ViewModify}
+                     {{gamemode get game_panel}
+                        toggle_start_stop}}}}}}
+      {if
+         {rg_trainer_panel get_legend_mode}
+         {if
+            {== $action kAction_Cancel}
+            {{gamemode get game_panel}
+               end_chord_legend}}})}

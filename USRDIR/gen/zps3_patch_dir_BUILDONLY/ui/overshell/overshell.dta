@@ -1,0 +1,371 @@
+{new
+   OvershellPanel
+   overshell
+   (file
+      "overshell.milo")
+   (player_panels
+      (slots
+         (valid_controllers
+            (normal
+               (guitar real_guitar keys)
+               (drum)
+               (vocals)
+               (guitar real_guitar keys))
+            (auto_vocals
+               (guitar real_guitar keys)
+               (drum)
+               (guitar real_guitar keys)
+               (guitar real_guitar keys)))
+         (joining_priority 0 3 2 1))
+      (type
+         (state_handlers
+            #include slot_states.dta)
+         (enter
+            {overshell_player_message set_showing FALSE})
+         (exit)
+         (get_remote_status
+            {do
+               ($user_machine
+                  {machine_mgr
+                     get_user_machine
+                     {$this get_user}})
+               {switch
+                  {$user_machine get_net_ui_state}
+                  (kNetUI_MainMenu
+                     (remote_status_main_menu))
+                  (kNetUI_JoinInvite
+                     (remote_status_join_invite))
+                  (kNetUI_WaitingPartyShuffle
+                     (remote_status_waiting_party_shuffle))
+                  (kNetUI_WaitingChooseSong
+                     (remote_status_waiting_choose_song))
+                  (kNetUI_WaitingChooseSetlist
+                     (remote_status_waiting_choose_setlist))
+                  (kNetUI_WaitingTour
+                     (remote_status_waiting_tour))
+                  (kNetUI_WaitingQpFindPlayers
+                     (remote_status_waiting_qp_find_players))
+                  (kNetUI_WaitingTourFindPlayers
+                     (remote_status_waiting_tour_find_players))
+                  (kNetUI_MusicStore
+                     (remote_status_music_store))
+                  (kNetUI_Campaign
+                     (remote_status_campaign))
+                  (kNetUI_CampaignSongs
+                     (remote_status_campaign_songs))
+                  (kNetUI_CampaignRankings
+                     (remote_status_campaign_rankings))
+                  (kNetUI_CustomizeBand
+                     (remote_status_customize_band))
+                  (kNetUI_CustomizeCharacter
+                     (remote_status_customize_character))
+                  (kNetUI_MusicLibrary
+                     {do
+                        ($song_name
+                           {$user_machine get_current_song_preview})
+                        {if_else
+                           {==
+                              $song_name
+                              ""}
+                           (remote_status_music_library)
+                           {'`'
+                              (remote_status_song_preview
+                                 {',' $song_name})}}})
+                  kDataUnhandled}})
+         (print_haq_focus_status
+            {do
+               ($view
+                  {$this get_current_view})
+               ($focus_comp
+                  {$this focus_name})
+               ($focus_sym
+                  {if_else
+                     $focus_comp
+                     {$focus_comp selected_sym FALSE}
+                     ""})
+               ($slot_num
+                  {$this get_slot_num})
+               {haq_mgr
+                  raw_print
+                  "Overshell_Focus"
+                  {sprint
+                     $slot_num
+                     " "
+                     $view
+                     " "
+                     $focus_sym}}})
+         (is_message_hiding
+            {>
+               {{overshell_player_message find hide.trg}
+                  end_time}
+               {taskmgr ui_seconds}})
+         (show_message
+            {{overshell_player_message find show.trg}
+               trigger}
+            {overshell_player_message set_showing TRUE})
+         (hide_message
+            {{overshell_player_message find hide.trg}
+               trigger})
+         PASSIVE_MESSAGE_SETUP_HANDLERS
+         (message_dir overshell_player_message)
+         (post_setup)
+         (msg_duration 5000)
+         (meter_anim_delay 500)))
+   (update
+      ($active)
+      {if
+         $active
+         {if
+            {exists beatmatch}
+            {beatmatch
+               set_overshell_pause
+               {&&
+                  {session is_local}
+                  {'||'
+                     {$this should_pause}
+                     {platform_mgr guide_showing}}}}
+            {coop_track_panel
+               update_join_in_progress
+               {$this is_any_slot_joinable}
+               FALSE}}
+         {if
+            {gamemode in_mode drum_freestyle}
+            {drum_freestyle_panel
+               set_paused
+               {'||'
+                  {$this should_pause}
+                  {platform_mgr guide_showing}}}}
+         {if_else
+            {$this is_any_slot_allowing_input_to_shell}
+            {dimmer_off.trig trigger}
+            {dimmer_on.trig trigger}}}
+      {do
+         ($zero_players
+            {==
+               {session num_users}
+               0})
+         ($any_dialog_up
+            {ui_event_mgr has_active_dialog_event})
+         ($zero_players_dialog_up
+            {==
+               zero_players
+               {ui_event_mgr current_dialog_event}})
+         ($in_game
+            {exists beatmatch})
+         {if_else
+            {&&
+               $zero_players
+               $active
+               {'||'
+                  {!
+                     {gamemode in_mode audition}}
+                  {!
+                     {audition_mgr has_autoplayer}}}}
+            {if
+               {&&
+                  $in_game
+                  {! $any_dialog_up}}
+               {ui_event_mgr trigger_event zero_players}}
+            {if
+               $zero_players_dialog_up
+               {ui_event_mgr dismiss_dialog_event}}}}
+      {ui
+         foreach_screen
+         $screen
+         {do
+            ($focus_panel
+               {$screen focus_panel})
+            {if
+               $focus_panel
+               {do
+                  ($dir
+                     {$focus_panel loaded_dir})
+                  {if
+                     $dir
+                     {$dir
+                        set_show_focus_component
+                        {'||'
+                           {! $active}
+                           {$this is_any_local_slot_allowing_input_to_shell}
+                           {&&
+                              {!
+                                 {session_mgr is_leader_local}}
+                              {net_sync is_enabled}}}}}}}}}
+      {handle
+         (ui
+            overshell_allowing_input
+            {'||'
+               {! $active}
+               {$this is_any_slot_allowing_input_to_shell}})})
+   (autohide_msg
+      ($enabled)
+      {if_else
+         $enabled
+         {autohide_enabled.trg trigger}
+         {autohide_disabled.trg trigger}})
+   (no_slot_button_down_msg
+      ($action)
+      {if
+         {'||'
+            {== $action kAction_Start}
+            {== $action kAction_Confirm}}
+         {if
+            {coop_track_panel is_up}
+            {coop_track_panel failed_join_in_progress}}
+         {synth play button_error.cue}})
+   (save_load_all_complete_msg
+      {$this update_all})
+   (saveloadmgr_status_update_msg
+      ($status)
+      {if
+         {'||'
+            {== $status kStatus_Start}
+            {== $status kStatus_End}}
+         {$this update_all}})
+   (enter
+      {memcardmgr
+         add_sink
+         $this
+         (save_load_all_complete_msg)}
+      {$this hide_waiting}
+      {gamecfg set coop_intro_category INTRO}
+      {waiting.grp set_showing FALSE}
+      {waiting.tnm set_frame 0}
+      {waiting.mnm set_frame 0}
+      {saveload_mgr add_sink $this})
+   (exit
+      {saveload_mgr remove_sink $this}
+      {memcardmgr remove_sink $this save_load_all_complete_msg}
+      {synth reset_mics_changed})
+   (first_time_real_guitar_prompt_reqs
+      ($user)
+      {&&
+         {!
+            {acc_mgr has_completed_goal $user acc_3starproguitar}}
+         {!
+            {acc_mgr has_completed_goal $user acc_3starprobass}}
+         {!
+            {acc_mgr has_completed_goal $user acc_guitartutorial01}}})
+   (second_time_real_guitar_prompt_reqs
+      ($user)
+      {!
+         {acc_mgr has_completed_goal $user acc_guitartutorial03}})
+   (show_waiting
+      {guitar.mnm
+         animate
+         (loop 13)}
+      {waiting.grp set_showing TRUE}
+      {waiting.tnm
+         animate
+         (dest
+            {waiting.tnm end_frame})}
+      {waiting.mnm
+         animate
+         (dest
+            {waiting.mnm end_frame})})
+   (hide_waiting
+      {waiting.tnm
+         animate
+         (dest 0)}
+      {waiting.mnm
+         animate
+         (dest 0)})
+   (wait_for_session
+      {$this update_all})
+   (move_slots
+      ($in_game)
+      {if_else
+         $in_game
+         {if_else
+            {modifier_mgr is_modifier_active mod_auto_vocals}
+            {slot_positions.anim set_frame 2}
+            {slot_positions.anim set_frame 1}}
+         {slot_positions.anim set_frame 0}})
+   (set_position_frame
+      ($frame)
+      {slot_positions.anim set_frame $frame})
+   (hide_connect_controller_mesh
+      ($hide)
+      {if_else
+         $hide
+         {connect_controller02.mat set alpha 0}
+         {connect_controller02.mat set alpha 1}})}
+{new
+   UIPanel
+   selchannel_panel
+   (file
+      "../dev_only/selchanneldialog.milo")
+   (enter
+      {channels.lst
+         set_data
+         (Default A B C D E F G)}
+      {$this set_focus channels.lst}
+      {channels.lst
+         set_selected
+         {matchmaker get_channel}})
+   (SELECT_MSG
+      {matchmaker
+         set_channel
+         {channels.lst selected_pos}}
+      {ui pop_screen})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {do
+            {play_instr_sfx $user button_back}
+            {ui pop_screen}}
+         kDataUnhandled})}
+{new
+   BandScreen
+   selchannel_screen
+   (panels selchannel_panel)
+   (focus selchannel_panel)}
+{new
+   UIPanel
+   dev_lobby_panel
+   (file
+      "../dev_only/devlobby.milo")
+   (session_size -1)
+   (enter
+      {session
+         add_sink
+         $this
+         (new_remote_user)}
+      {session
+         add_sink
+         $this
+         (processed_join_request)}
+      {$this update_text}
+      {matchmaker set searching_interval 5000}
+      {matchmaker find_players kMatchmaker_Qp})
+   (exit
+      {matchmaker cancel_find}
+      {session remove_sink $this new_remote_user}
+      {session remove_sink $this processed_join_request})
+   (NEW_REMOTE_USER_MSG
+      {$this update_text})
+   (PROCESSED_JOIN_REQUEST_MSG
+      {if
+         {==
+            [session_size]
+            {session num_users}}
+         {ui goto_screen preloading_screen}})
+   (update_text
+      {channel.lbl
+         set_int
+         {gamecfg get channel}}
+      {nummax.lbl
+         set_int
+         [session_size]}
+      {numplayers.lbl
+         set_int
+         {session num_users}}
+      {if_else
+         {is_leader_local}
+         {leader.lbl set_showing TRUE}
+         {leader.lbl set_showing FALSE}})}
+{new
+   BandScreen
+   dev_lobby_screen
+   (panels meta dev_lobby_panel)
+   (focus dev_lobby_panel)}

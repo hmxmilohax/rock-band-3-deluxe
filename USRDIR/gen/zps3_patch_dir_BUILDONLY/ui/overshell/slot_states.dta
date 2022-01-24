@@ -1,0 +1,2078 @@
+#define PLAY_ERROR_ON_START_OR_CONFIRM
+((on_start
+      ($user)
+      {synth play button_error.cue})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Confirm}
+         {synth play button_error.cue}
+         kDataUnhandled}))
+(kState_NoInstrument
+   (view no_instrument)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   PLAY_ERROR_ON_START_OR_CONFIRM)
+(kState_Join
+   (view join)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   (on_start
+      ($user)
+      {overshell attempt_to_add_user $user}
+      {play_instr_sfx $user button_select})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Confirm}
+         {do
+            {overshell attempt_to_add_user $user}
+            {play_instr_sfx $user button_select}}
+         kDataUnhandled}))
+(kState_SignIn
+   (view join)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Confirm}
+         {unless
+            {$this in_song}
+            {ui_event_mgr trigger_event sign_in}}
+         kDataUnhandled})
+   (on_start
+      ($user)
+      {unless
+         {$this in_song}
+         {ui_event_mgr trigger_event sign_in}}))
+(kState_ConnectMic
+   (view connect_mic)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   PLAY_ERROR_ON_START_OR_CONFIRM)
+(kState_NoJoinInGame
+   (view no_join_in_game)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   PLAY_ERROR_ON_START_OR_CONFIRM)
+(kState_Finding
+   (view finding)
+   (retracted_position TRUE)
+   PLAY_ERROR_ON_START_OR_CONFIRM)
+(kState_JoinedDefault
+   (view joined_default)
+   (allows_input_to_shell TRUE)
+   (allows_hiding TRUE)
+   (ready_to_play TRUE)
+   (retracted_position TRUE)
+   (on_start
+      ($user)
+      {if
+         {'||'
+            {$user is_participating}
+            {!
+               {$this in_song}}}
+         {$this show_options}}))
+(kState_ChooseChar
+   (view choose_char)
+   (choose_char_flow TRUE)
+   (remote_status remote_status_choose_char)
+   (enter
+      {prefab_mgr load_portraits $this}
+      {if
+         {{$this get_user}
+            is_local}
+         {$this update_character_list}}
+      {handle
+         ($this set_default_option '')}
+      {handle
+         ($this
+            set_default_option_index
+            {$this get_default_char_index})})
+   (exit
+      {prefab_mgr unload_portraits $this})
+   (update_view
+      {if
+         {==
+            {$this focus_name}
+            chars.lst}
+         {$this update_character_list}
+         {$this
+            refresh_highlighted_char
+            {chars.lst selected_pos}}})
+   (SCROLL_MSG
+      {$this update})
+   (SELECT_MSG
+      {$this
+         select_char
+         {chars.lst selected_pos}})
+   (on_cancel
+      {if_else
+         {{$this get_user}
+            has_char}
+         {$this show_options}
+         {$this attempt_remove_user}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Option}
+         {do
+            ($index
+               {chars.lst selected_pos})
+            {if
+               {$this can_edit_character $index}
+               {$this
+                  show_char_edit
+                  {chars.lst selected_pos}}}}
+         kDataUnhandled}))
+(kState_ChooseCharDenial
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message error_cannot_choose_char_while_editing)})
+   (on_cancel
+      {$this show_options})
+   (SELECT_MSG
+      {$this show_options}))
+(kState_ChooseContribute
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_choose_contribute
+            (overshell_confirm_yes overshell_confirm_no))})
+   (on_cancel
+      {$this attempt_remove_user})
+   (SELECT_MSG
+      {do
+         ($user
+            {$this get_user})
+         {switch
+            {$component selected_sym}
+            (overshell_confirm_yes
+               {$user set_contributes_song_progress TRUE})
+            (overshell_confirm_no
+               {$user set_contributes_song_progress FALSE})}}
+      {$this leave_options}))
+(kState_ChooseProfile
+   (view choose_profile)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this attempt_remove_user})
+   (update_view
+      {$this update_profiles_list})
+   (SELECT_MSG
+      {if_else
+         {== $component profiles.lst}
+         {$this
+            attempt_swap_user_profile
+            {profiles.lst selected_pos}}
+         {switch
+            {$component selected_sym}
+            (overshell_continue_without_profile
+               {$this leave_options})
+            (overshell_sign_in
+               {platform_mgr signin 1})}}))
+(kState_ChooseProfileConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_choose_profile})
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_swap_profile
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this confirm_swap_user_profile})
+         (overshell_confirm_no
+            {$this show_choose_profile})}))
+(kState_Options
+   (view
+      {if_else
+         {'||'
+            {$this in_game}
+            {gamemode in_mode drum_freestyle}}
+         options_in_game
+         options})
+   (update_view
+      {handle
+         ($this
+            update_online_options_allowed
+            {!
+               {session_mgr is_busy}})}
+      {do
+         ($in_game_options
+            {'||'
+               {$this in_game}
+               {gamemode in_mode drum_freestyle}})
+         ($showing_metronome
+            {&&
+               {gamemode get show_metronome_options}
+               {==
+                  {{$this get_user}
+                     get_controller_type}
+                  kControllerDrum}})
+         ($can_skip_song
+            {&&
+               {$this in_song}
+               {{$this get_session_mgr}
+                  is_leader_local}
+               {exists meta_performer}
+               {>
+                  {meta_performer num_songs}
+                  1}
+               {!
+                  {meta_performer is_set_complete}}
+               {!
+                  {meta_performer is_last_song}}
+               {gamemode get can_skip_songs}})
+         ($can_quit
+            {'||'
+               {{$this get_session_mgr}
+                  is_leader_local}
+               {gamemode get non_leader_can_quit}})
+         ($show_pause_restart
+            {&&
+               {gamemode get show_pause_restart}
+               {$this in_song}})
+         ($restart_allowed
+            {{$this get_session_mgr}
+               is_leader_local})
+         {if_else
+            $in_game_options
+            {do
+               {handle
+                  ($this
+                     update_in_game_options
+                     {gamemode get pause_menu_quit_token}
+                     $can_skip_song
+                     $show_pause_restart
+                     {gamemode get show_change_difficulty}
+                     $showing_metronome
+                     {gamemode get show_pause_practice_new}
+                     $can_quit)}
+               {handle
+                  ($this update_restart_allowed $restart_allowed)}}
+            {handle
+               ($this
+                  setup_options_list
+                  {{$this get_session_mgr}
+                     is_online_enabled})}}
+         {handle
+            ($this
+               update_can_access_song_options_in_game
+               {$this in_song})}
+         {handle
+            ($this update_metronome_check $showing_metronome)}
+         {if
+            $showing_metronome
+            {metronome_vol.sld set_num_steps 12}
+            {metronome_vol_freestyle.sld set_num_steps 12}
+            {handle
+               ($this
+                  update_slider
+                  metronome_vol.sld
+                  "")}
+            {handle
+               ($this
+                  update_slider
+                  metronome_vol_freestyle.sld
+                  "")}}})
+   (SELECT_MSG
+      {if_else
+         {$this
+            is_quit_token
+            {$component selected_sym}}
+         {if_else
+            {gamemode get skip_quit_prompt}
+            {ui_event_mgr trigger_event quit_early}
+            {$this show_state kState_QuitEarlyConfirm}}
+         {switch
+            {$component selected_sym}
+            (overshell_change_character
+               {$this show_chars})
+            (overshell_end_game
+               {$this show_options_end_game})
+            (overshell_restart
+               {if_else
+                  {gamemode get skip_restart_prompt}
+                  {if_else
+                     {gamemode in_mode trainer}
+                     {{gamemode get game_panel}
+                        restart_section}
+                     {session end_game kRestart}}
+                  {$this show_state kState_RestartConfirm}})
+            (overshell_change_diff
+               {$this begin_override_flow kOverrideFlow_SongSettings})
+            (overshell_practice_new_section
+               {ui_event_mgr trigger_event go_to_practice_screen})
+            (overshell_metronome
+               {metronome.chk
+                  set
+                  checked
+                  {!
+                     {metronome.chk get checked}}}
+               {{gamemode get game_panel}
+                  enable_metronome
+                  {metronome.chk get checked}})
+            (overshell_relearn_chords
+               {{gamemode get game_panel}
+                  relearn_chords}
+               {$this show_chord_book})
+            (overshell_metronome_volume
+               {if_else
+                  {gamemode in_mode drum_freestyle}
+                  {do
+                     {metronome_vol_freestyle.sld store}
+                     {metronome_vol_freestyle.sld set_showing TRUE}
+                     {$this set_focus metronome_vol_freestyle.sld}}
+                  {do
+                     {metronome_vol.sld store}
+                     {metronome_vol.sld set_showing TRUE}
+                     {$this set_focus metronome_vol.sld}}})
+            (overshell_return
+               {$this leave_options})
+            (overshell_online_options
+               {$this show_online_options})
+            (overshell_register_online
+               {$this attempt_register_online})
+            (overshell_game_options
+               {$this show_game_options})
+            (overshell_leave
+               {$this attempt_remove_user})}})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({==
+               {$this focus_name}
+               "metronome_vol.sld"}
+            {switch
+               $action
+               ((kAction_Confirm kAction_Cancel)
+                  {metronome_vol.sld confirm}
+                  {metronome_vol.sld set_showing FALSE}
+                  {$this set_focus options.lst})
+               kDataUnhandled})
+         ({==
+               {$this focus_name}
+               "metronome_vol_freestyle.sld"}
+            {switch
+               $action
+               ((kAction_Confirm kAction_Cancel)
+                  {metronome_vol_freestyle.sld confirm}
+                  {metronome_vol_freestyle.sld set_showing FALSE}
+                  {$this set_focus options.lst})
+               kDataUnhandled})
+         kDataUnhandled})
+   (on_cancel
+      {$this leave_options})
+   (on_start
+      ($user)
+      {$this leave_options}))
+(kState_OptionsEndGame
+   (view options_end_game)
+   (SELECT_MSG
+      {cond
+         ({$this
+               is_quit_token
+               {$component selected_sym}}
+            {$this show_state kState_QuitEarlyConfirm})
+         ({==
+               {$component selected_sym}
+               overshell_skip_song}
+            {$this show_state kState_SkipSongConfirm})})
+   (on_cancel
+      {$this show_options}))
+(kState_QuitEarlyConfirm
+   (view confirm_action)
+   (update_view
+      {if_else
+         {{$this get_session_mgr}
+            is_local}
+         {handle
+            ($this
+               set_confirm_actions
+               confirm_quit
+               (overshell_confirm_yes overshell_confirm_no))}
+         {handle
+            ($this
+               set_confirm_actions
+               confirm_quit_online
+               (overshell_confirm_yes overshell_confirm_no))}})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {ui_event_mgr trigger_event quit_early}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_RestartConfirm
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            confirm_restart
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {if_else
+               {gamemode in_mode trainer}
+               {{gamemode get game_panel}
+                  restart_section}
+               {session end_game kRestart}})
+         (overshell_confirm_no
+            {$this show_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_SkipSongConfirm
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            confirm_quit
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {session end_game kSkip}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_OnlineOptions
+   (view online_options)
+   (update_view
+      {do
+         ($session_mgr
+            {$this get_session_mgr})
+         ($is_local
+            {$session_mgr is_local})
+         ($has_remote_users
+            {$session_mgr has_remote_users})
+         ($is_leader_local
+            {$session_mgr is_leader_local})
+         ($are_invites_allowed
+            {$session_mgr are_invites_allowed})
+         #ifdef HX_XBOX
+         ($is_partying
+            {&&
+               {platform_mgr is_in_party_with_others}
+               {$session_mgr are_invites_allowed}})
+         {handle
+            ($this update_in_xbox_party $is_partying)}
+         #endif
+         {handle
+            ($this
+               update_kick_allowed
+               {&&
+                  {! $is_local}
+                  $is_leader_local})}
+         {handle
+            ($this update_mute_allowed $has_remote_users)}
+         {handle
+            ($this update_invites_allowed $are_invites_allowed)}})
+   (requires_online_session TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_invite
+            #ifdef HX_XBOX
+            {platform_mgr show_user_friends $user}
+            #else
+            {$this show_invite_friends}
+            #endif)
+         (overshell_kick
+            {$this show_kick_users})
+         (overshell_mute
+            {$this show_mute_users})
+         (overshell_gamercard
+            {$this show_gamercard_users})
+         (overshell_disconnect
+            {$this attempt_disconnect})
+         (overshell_invite_xbox_party
+            {platform_mgr invite_user_party $user})
+         (overshell_check_invites
+            {join_invite_panel set_joining_user $user}
+            {platform_mgr check_mailbox})})
+   (on_cancel
+      {if_else
+         {$this in_game}
+         {$this show_game_options}
+         {$this show_options}}))
+(kState_DisconnectConfirm
+   (view confirm_action)
+   (requires_online_session TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_disconnect
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {session disconnect})
+         (overshell_confirm_no
+            {$this show_online_options})})
+   (on_cancel
+      {$this show_online_options}))
+(kState_RemoveUserDisconnectConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (remove_user_prompt TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_remove_user
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this remove_user})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
+(kState_RemoveCriticalUserConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (remove_user_prompt TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_remove_critical_user
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this remove_user})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
+(kState_RemoveUserInSongConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (remove_user_prompt TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_remove_user_in_song
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this remove_user})
+         (overshell_confirm_no
+            {$this show_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_RemoveUserDenial
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_remove_user_denial_failure_on)})
+   (SELECT_MSG
+      {$this show_options})
+   (on_cancel
+      {$this show_options}))
+(kState_GameOptions
+   (view game_options)
+   (update_view
+      {do
+         ($controller
+            {{$this get_user}
+               get_controller_sym})
+         ($controller_type
+            {{$this get_user}
+               get_controller_type})
+         {if_else
+            {'||'
+               {== vocals $controller}
+               {== keys $controller}
+               {== drum $controller}}
+            {do
+               {instr_option.chk set checked FALSE}
+               {instr_option.chk set_showing FALSE}}
+            {do
+               {instr_option.chk set_showing TRUE}
+               {$this
+                  update_options_check
+                  {{$this get_user}
+                     get_gameplay_options}}}}
+         {handle
+            ($this
+               setup_game_options_list
+               $controller_type
+               {&&
+                  {gamemode get show_pause_multiplayer}
+                  {$this in_song}}
+               {{$this get_session_mgr}
+                  is_online_enabled}
+               {$this in_game}
+               {==
+                  {user_mgr get_num_participants}
+                  1})}}
+      {handle
+         ($this
+            update_auto_vocals_enabled
+            {modifier_mgr is_modifier_active mod_auto_vocals})}
+      {do
+         ($no_fail_enabled
+            {modifier_mgr is_modifier_active mod_no_fail_band})
+         {handle
+            ($this update_no_fail_enabled $no_fail_enabled)}})
+   (exit
+      {instr_option.chk set_showing FALSE})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (mod_auto_vocals
+            {$this attempt_toggle_auto_vocals})
+         (mod_no_fail_band
+            {if_else
+               {session_mgr is_leader_local}
+               {meta_performer
+                  set_band_no_fail
+                  {!
+                     {meta_performer is_band_no_fail_set}}}
+               {$this show_toggle_no_fail_denial}}
+            {overshell update_all})
+         (overshell_lefty_flip
+            {do
+               ($options
+                  {{$this get_user}
+                     get_gameplay_options})
+               ($lefty_flipped
+                  {$options get_lefty})
+               {$options
+                  set_lefty
+                  {! $lefty_flipped}}
+               {$this update}
+               {if
+                  {$user player}
+                  {{$user player}
+                     update_lefty_flip}}})
+         (overshell_register_online
+            {$this attempt_register_online})
+         (overshell_online_options
+            {$this show_online_options})
+         (overshell_drum_options
+            {$this show_options_drum})
+         (overshell_vocal_options
+            {$this show_options_vocal})
+         (overshell_av_settings
+            {$this show_options_av_settings})
+         (overshell_extras
+            {$this show_options_extras})
+         (overshell_modifiers
+            {$this show_modifiers})})
+   (on_cancel
+      {$this show_options}))
+(kState_ToggleNoFailDenial
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_toggle_no_fail_denial)})
+   (SELECT_MSG
+      {$this show_game_options})
+   (on_cancel
+      {$this show_game_options}))
+(kState_OptionsAVSettings
+   (view options_av_settings)
+   (on_cancel
+      {$this show_game_options})
+   (update_view
+      {handle
+         ($this update_dolby_check)}
+      {handle
+         ($this update_bass_boost_check)}
+      {handle
+         ($this update_overscan_check)}
+      {do
+         ($user
+            {$this get_user})
+         ($enabled
+            {if_else
+               {$user can_save_data}
+               {saveload_mgr is_autosave_enabled $user}
+               FALSE})
+         {$this
+            update_autosave_enabled
+            {!
+               {saveload_mgr is_idle}}
+            $enabled}}
+      {$this
+         set_options_signed_in
+         {profile_mgr
+            get_profile
+            {$this get_user}}})
+   (exit
+      {unless
+         {$this in_game}
+         {saveload_mgr autosave}})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_calibration
+            {$this show_enter_calibration})
+         (overshell_dolby
+            {profile_mgr
+               set_dolby
+               {!
+                  {profile_mgr get_dolby}}}
+            {$this update_dolby_check})
+         (overshell_bass_boost
+            {profile_mgr
+               set_bass_boost
+               {!
+                  {profile_mgr get_bass_boost}}}
+            {$this update_bass_boost_check})
+         (overshell_overscan
+            {profile_mgr
+               set_overscan
+               {!
+                  {profile_mgr get_overscan}}}
+            {$this update_overscan_check})
+         (overshell_audio_options
+            {$this show_options_audio})
+         (overshell_autosave_enabled
+            {if_else
+               {meta is_up}
+               {if_else
+                  {saveload_mgr is_idle}
+                  {do
+                     {if_else
+                        {saveload_mgr is_autosave_enabled $user}
+                        {$this show_saveloadmgr_autosave_confirm}
+                        {saveload_mgr enable_autosave $user}}
+                     {overshell update_all}}
+                  {$this show_saveloadmgr_not_idle}}
+               {$this show_saveloadmgr_not_meta}})}))
+(kState_OptionsAudio
+   (view options_audio)
+   (on_cancel
+      {$this show_options_av_settings})
+   (enter
+      {instruments.sld set_num_steps 12}
+      {bg_music.sld set_num_steps 12}
+      {crowd.sld set_num_steps 12}
+      {sfx.sld set_num_steps 12}
+      {voice_chat.sld set_num_steps 12})
+   (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            crowd.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            sfx.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            voice_chat.sld
+            "")})
+   (SELECT_MSG
+      {if
+         {== $component options_audio.lst}
+         {switch
+            {$component selected_sym}
+            (overshell_audio_instruments
+               {instruments.sld store}
+               {instruments.sld set_showing TRUE}
+               {$this set_focus instruments.sld})
+            (overshell_audio_bg_music
+               {bg_music.sld store}
+               {bg_music.sld set_showing TRUE}
+               {$this set_focus bg_music.sld})
+            (overshell_audio_crowd
+               {crowd.sld store}
+               {crowd.sld set_showing TRUE}
+               {$this set_focus crowd.sld})
+            (overshell_audio_sfx
+               {sfx.sld store}
+               {sfx.sld set_showing TRUE}
+               {$this set_focus sfx.sld})
+            (overshell_audio_voice_chat
+               {voice_chat.sld store}
+               {voice_chat.sld set_showing TRUE}
+               {$this set_focus voice_chat.sld})}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {$this set_focus options_audio.lst})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user}))
+(kState_OptionsVocal
+   (view options_vocal)
+   (on_cancel
+      {$this show_game_options})
+   (enter
+      {vocal_track.sld set_num_steps 12}
+      {vocal_sens1.sld set_num_steps 12}
+      {vocal_sens2.sld set_num_steps 12}
+      {vocal_sens3.sld set_num_steps 12})
+   (update_view
+      {do
+         ($options
+            {{$this get_user}
+               get_gameplay_options})
+         ($can_change_synapse
+            {$this can_change_synapse_option})
+         {handle
+            ($this
+               update_synapse_check
+               {profile_mgr get_synapse_enabled})}
+         {handle
+            ($this
+               update_static_check
+               {==
+                  {$options get_vocal_style}
+                  kVocalStyleStatic})}
+         {handle
+            ($this
+               update_slider
+               vocal_track.sld
+               "")}
+         {handle
+            ($this
+               update_slider
+               vocal_sens1.sld
+               "")}
+         {handle
+            ($this
+               update_slider
+               vocal_sens2.sld
+               "")}
+         {handle
+            ($this
+               update_slider
+               vocal_sens3.sld
+               "")}
+         {handle
+            ($this set_can_change_synapse $can_change_synapse)}})
+   (SELECT_MSG
+      {if
+         {== $component options_vocal.lst}
+         {switch
+            {$component selected_sym}
+            (overshell_vocals_mode_static
+               {do
+                  ($options
+                     {{$this get_user}
+                        get_gameplay_options})
+                  {$options
+                     set_vocal_style
+                     {if_else
+                        {==
+                           {$options get_vocal_style}
+                           kVocalStyleStatic}
+                        kVocalStyleScrolling
+                        kVocalStyleStatic}}}
+               {if
+                  {$user player}
+                  {{$user player}
+                     update_vocal_style}}
+               {$this update})
+            (overshell_synapse
+               {profile_mgr
+                  set_synapse_enabled
+                  {!
+                     {profile_mgr get_synapse_enabled}}}
+               {$this update})
+            (overshell_vocal_track_vol
+               {vocal_track.sld store}
+               {vocal_track.sld set_showing TRUE}
+               {$this set_focus vocal_track.sld})
+            (mic_1_gain
+               {vocal_sens1.sld store}
+               {vocal_sens1.sld set_showing TRUE}
+               {$this set_focus vocal_sens1.sld})
+            (mic_2_gain
+               {vocal_sens2.sld store}
+               {vocal_sens2.sld set_showing TRUE}
+               {$this set_focus vocal_sens2.sld})
+            (mic_3_gain
+               {vocal_sens3.sld store}
+               {vocal_sens3.sld set_showing TRUE}
+               {$this set_focus vocal_sens3.sld})}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("vocal_track.sld"
+               "vocal_sens1.sld"
+               "vocal_sens2.sld"
+               "vocal_sens3.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {$this set_focus options_vocal.lst})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user}))
+(kState_OptionsExtras
+   (view options_extras)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_credits
+            {$this show_enter_credits})
+         (overshell_linking_code
+            {if_else
+               {&&
+                  {$user can_save_data}
+                  {$user is_signed_in_online}}
+               {$this show_linking_code}
+               #ifdef HX_PS3
+               {do
+                  {$this show_linking_code_error}
+                  {platform_mgr run_net_start_utility}}
+               #else
+               {$this show_linking_code_error}
+               #endif})
+         (overshell_audition
+            #ifdef HX_XBOX
+            {cond
+               ({!
+                     {platform_mgr has_hard_drive}}
+                  {$this show_state kState_AuditionNoHardDriveConfirm})
+               ({&&
+                     {! $cheat_skip_ugc_membership_check}
+                     {==
+                        -1
+                        {platform_mgr get_rbn_member_pad_num}}}
+                  {$this show_state kState_AuditionNoMembershipConfirm})
+               ({!
+                     {server is_connected}}
+                  {$this show_state kState_AuditionNoRockCentral})
+               ({!
+                     {session_mgr is_local}}
+                  {$this show_state kState_AuditionDenialRemotePlayers})
+               ({audition_mgr can_enter_audition}
+                  {$this show_state kState_AuditionEnterConfirm})
+               {$this leave_options}}
+            #else
+            {$this leave_options}
+            #endif)})
+   (on_cancel
+      {$this show_game_options}))
+(kState_AuditionNoHardDriveConfirm
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message audition_no_hard_drive_found)})
+   (SELECT_MSG
+      {$this show_options_extras})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_AuditionNoMembershipConfirm
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message audition_no_club_found)})
+   (SELECT_MSG
+      {$this show_options_extras})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_AuditionNoRockCentral
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message audition_no_rock_central)})
+   (SELECT_MSG
+      {$this show_options_extras})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_AuditionDenialRemotePlayers
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_audition_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_options_extras})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_AuditionEnterConfirm
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_audition
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {ui_event_mgr trigger_event go_to_audition}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_options_extras})})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_LinkingCode
+   (view linking_code)
+   (success FALSE)
+   (waiting TRUE)
+   (code
+      "")
+   (update_view
+      {do
+         ($profile
+            {profile_mgr
+               get_profile
+               {$this get_user}})
+         {if
+            $profile
+            {$this
+               update_linking_code
+               {{$this get_state}
+                  get
+                  waiting}
+               {{$this get_state}
+                  get
+                  success}
+               {{$this get_state}
+                  get
+                  code}
+               $profile}}})
+   (enter
+      {$this fetch_linking_code})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {&&
+            {== $action kAction_Confirm}
+            {!
+               {{$this get_state}
+                  get
+                  waiting}}}
+         {$this show_options_extras}
+         kDataUnhandled})
+   (on_cancel
+      {$this cancel_linking_code}
+      {$this show_options_extras}))
+(kState_LinkingCodeError
+   (view confirm_action)
+   (enter
+      {if_else
+         {{$this get_user}
+            can_save_data}
+         {handle
+            ($this set_confirm_message linking_code_connect_error)}
+         {handle
+            ($this set_confirm_message linking_code_signin_error)}})
+   (SELECT_MSG
+      {$this show_options_extras}))
+(kState_SaveloadManagerNotIdle
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message options_autosave_toggle)})
+   (SELECT_MSG
+      {$this show_options_av_settings}))
+(kState_SaveloadManagerNotMeta
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message options_autosave_not_meta)})
+   (SELECT_MSG
+      {$this show_options_av_settings}))
+(kState_SaveloadManagerAutosaveConfirm
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            options_autosave_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {saveload_mgr disable_autosave $user}
+            {$this show_options_av_settings})
+         (overshell_confirm_no
+            {$this show_options_av_settings})})
+   (on_cancel
+      {$this show_options_av_settings}))
+(kState_Modifiers
+   (view modifiers)
+   (update_view
+      {$this update_modifiers_list})
+   (exit
+      {unless
+         {$this in_game}
+         {saveload_mgr autosave}})
+   (SELECT_MSG
+      {do
+         ($modifier
+            {$component selected_sym})
+         {switch
+            $modifier
+            (modifier_enter_entry_name
+               {$this show_modifier_unlock})
+            (mod_drum_surface_navigation
+               {modifier_mgr toggle_modifier_enabled $modifier}
+               {unless
+                  {modifier_mgr is_modifier_active mod_drum_surface_navigation}
+                  {$this show_modifiers_drum_warning}}
+               {overshell update_all})
+            {modifier_mgr toggle_modifier_enabled $modifier}
+            {if
+               {&&
+                  {$this in_song}
+                  {modifier_mgr is_modifier_delayed_effect $modifier}}
+               {$this show_modifier_delayed_effect}}
+            {overshell update_all}}})
+   (on_cancel
+      {$this show_game_options}))
+(kState_ModifiersDrumWarning
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message disable_drum_surface_navigation_warning)})
+   (SELECT_MSG
+      {$this show_modifiers}))
+(kState_ModifierUnlock
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message modifier_enter_msg)})
+   (SELECT_MSG
+      {$this show_modifiers}))
+(kState_ModifierDelayedEffect
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message modifier_delayed_effect)})
+   (SELECT_MSG
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+(kState_AutoVocalsDenial
+   (view confirm_action)
+   (enter
+      {cond
+         ({overshell is_non_vocalist_in_vocals_slot}
+            {handle
+               ($this set_confirm_message overshell_auto_vocals_denial_non_vocalist)})
+         ({$this in_game}
+            {handle
+               ($this set_confirm_message overshell_auto_vocals_denial_in_game)})
+         ({&&
+               {==
+                  {user_mgr get_num_local_participants}
+                  1}
+               {==
+                  {{$this get_user}
+                     get_controller_type}
+                  kControllerVocals}}
+            {handle
+               ($this set_confirm_message overshell_auto_vocals_denial_lone_vocalist)})
+         {handle
+            ($this set_confirm_message overshell_auto_vocals_denial_generic)}})
+   (SELECT_MSG
+      {$this show_game_options})
+   (on_cancel
+      {$this show_game_options}))
+#define TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS
+(switch
+   {{$this get_user}
+      get_controller_type}
+   (kControllerVocals
+      {$this toggle_vocal_style})
+   (kControllerKeys TRUE)
+   {$this toggle_lefty_flip})
+(kState_ChoosePart
+   (view
+      {switch
+         {{$this get_user}
+            get_controller_type}
+         (kControllerGuitar choose_part_guitar)
+         (kControllerRealGuitar choose_part_real_guitar)
+         (kControllerVocals choose_part_vocals)
+         (kControllerKeys choose_part_keys)
+         (kControllerDrum choose_part_drum)
+         {fail
+            "No choose part view for this controller type"}})
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (shows_extended_mic_arrows TRUE)
+   (update_remote_feedback
+      ($focus_item)
+      {choose_part.lst set_selected $focus_item})
+   (update_view
+      {$this update_part_select_list})
+   (enter
+      {$this update_part_select_list})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_guitar
+            {$this select_part kTrackGuitar})
+         (overshell_bass
+            {$this select_part kTrackBass})
+         (overshell_keys
+            {$this select_part kTrackKeys})
+         (overshell_real_guitar
+            {$this select_part kTrackRealGuitar}
+            {if
+               {gamemode in_mode trainer}
+               {gamemode set_mode pro_song_lessons_real_guitar}})
+         (overshell_real_bass
+            {$this select_part kTrackRealBass}
+            {if
+               {gamemode in_mode trainer}
+               {gamemode set_mode pro_song_lessons_real_bass}})
+         (overshell_real_keys
+            {$this select_part kTrackRealKeys})
+         (overshell_vocal_solo
+            {$this select_vocal_part FALSE}
+            {if
+               {gamemode in_mode practice}
+               {practice_panel set uses_harmony FALSE}})
+         (overshell_vocal_harmony
+            {$this select_vocal_part TRUE}
+            {if
+               {gamemode in_mode practice}
+               {practice_panel set uses_harmony TRUE}})
+         (overshell_drums
+            {$this select_drum_part FALSE})
+         (overshell_drums_pro
+            {$this select_drum_part TRUE})})
+   (SCROLL_MSG
+      {$this update})
+   (get_focus_is_harmony
+      {if_else
+         {$this focus_name}
+         {if_else
+            {==
+               {{$this focus_name}
+                  selected_sym}
+               overshell_vocal_harmony}
+            TRUE
+            FALSE}
+         FALSE})
+   (get_focus_is_prodrums
+      {if_else
+         {$this focus_name}
+         {if_else
+            {==
+               {{$this focus_name}
+                  selected_sym}
+               overshell_drums_pro}
+            TRUE
+            FALSE}
+         FALSE})
+   (get_focus_track_type
+      {if_else
+         {$this focus_name}
+         {switch
+            {{$this focus_name}
+               selected_sym}
+            (overshell_guitar kTrackGuitar)
+            (overshell_bass kTrackBass)
+            (overshell_keys kTrackKeys)
+            (overshell_real_guitar kTrackRealGuitar)
+            (overshell_real_bass kTrackRealBass)
+            (overshell_real_keys kTrackRealKeys)
+            (overshell_vocal_solo kTrackVocals)
+            (overshell_vocal_harmony kTrackVocals)
+            (overshell_drums kTrackDrum)
+            (overshell_drums_pro kTrackDrum)
+            kTrackNone}
+         kTrackNone})
+   (on_view_modify
+      {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
+   (on_cancel
+      {$this leave_choose_part}))
+(kState_ChoosePartDenial
+   (view confirm_action)
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (update_view
+      {if_else
+         {==
+            {critical_user_listener get_critical_user}
+            {$this get_user}}
+         {handle
+            ($this set_confirm_message overshell_choose_part_denial)}
+         {handle
+            ($this set_confirm_message overshell_choose_part_denial_no_part)}})
+   (update_remote_feedback
+      ($focus_item)
+      {confirm_action.lst set_selected $focus_item})
+   (SELECT_MSG
+      {$this show_song_options})
+   (on_cancel
+      {$this show_song_options}))
+(kState_ChoosePartWarn
+   (view confirm_action)
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_choose_part_warn
+            (overshell_confirm_yes overshell_confirm_no))})
+   (update_remote_feedback
+      ($focus_item)
+      {confirm_action.lst set_selected $focus_item})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_choose_part_wait})
+         (overshell_confirm_no
+            {$this leave_choose_part_wait})})
+   (on_cancel
+      {$this leave_choose_part_wait}))
+(kState_NotBattlePartWarn
+   (view confirm_action)
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_not_battle_part_warn
+            (overshell_confirm_yes overshell_confirm_no))})
+   (update_remote_feedback
+      ($focus_item)
+      {confirm_action.lst set_selected $focus_item})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_choose_part_wait})
+         (overshell_confirm_no
+            {$this leave_choose_part_wait})})
+   (on_cancel
+      {$this leave_choose_part_wait}))
+(kState_ChoosePartWait
+   (view
+      {switch
+         {{$this get_user}
+            get_controller_type}
+         (kControllerGuitar choose_part_guitar)
+         (kControllerRealGuitar choose_part_real_guitar)
+         (kControllerVocals choose_part_vocals)
+         (kControllerKeys choose_part_keys)
+         (kControllerDrum choose_part_drum)
+         {fail
+            "No choose part view for this controller type"}})
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (shows_extended_mic_arrows TRUE)
+   (update_remote_feedback
+      ($focus_item)
+      {choose_part.lst set_selected $focus_item})
+   (on_view_modify
+      {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
+   (on_cancel
+      {$this leave_choose_part_wait}))
+#define CYMBAL_SELECTION
+(SELECT_MSG
+   {cond
+      ({==
+            {$component selected_sym}
+            overshell_cymbals_continue}
+         {$this finish_cymbal_selection FALSE})
+      ({==
+            {$component selected_sym}
+            overshell_lefty_flip}
+         {do
+            ($options
+               {{$this get_user}
+                  get_gameplay_options})
+            ($lefty_flipped
+               {$options get_lefty})
+            {$options
+               set_lefty
+               {! $lefty_flipped}}
+            {$this update_drum_lefty_check $options}
+            {if
+               {$user player}
+               {{$user player}
+                  update_lefty_flip}}})
+      ({==
+            {$component selected_sym}
+            overshell_enable_hihat}
+         {$this toggle_hihat_pedal}
+         {enable_hihat.chk
+            set
+            checked
+            {!
+               {enable_hihat.chk get checked}}})
+      (TRUE
+         {do
+            ($checkmark $selected)
+            {set
+               $selected
+               {$component selected_sym}}
+            {set
+               $checkmark
+               {sprintf
+                  "%s.chk"
+                  {substr
+                     $selected
+                     10
+                     {strlen $selected}}}}
+            {$this toggle_cymbal $selected}
+            {$checkmark
+               set
+               checked
+               {!
+                  {$checkmark get checked}}}
+            {$component refresh}})})
+(kState_OptionsDrum
+   (view options_drum)
+   (enter
+      {$this
+         update_drum_lefty_check
+         {{$this get_user}
+            get_gameplay_options}}
+      {$this update_enable_hihat_check}
+      {green_cym.chk
+         set
+         checked
+         {$this is_cymbal_selected overshell_green_cym}}
+      {blue_cym.chk
+         set
+         checked
+         {$this is_cymbal_selected overshell_blue_cym}}
+      {yellow_cym.chk
+         set
+         checked
+         {$this is_cymbal_selected overshell_yellow_cym}}
+      {cymbal_message.lbl set text_token overshell_drum_message}
+      {$this refresh_cymbal_provider})
+   (CYMBAL_SELECTION)
+   (on_cancel
+      {$this finish_cymbal_selection FALSE}))
+(kState_OptionsDrumInSongSettings
+   (view options_drum)
+   (song_settings_flow TRUE)
+   (remote_status remote_status_drum_options)
+   (enter
+      {$this
+         update_drum_lefty_check
+         {{$this get_user}
+            get_gameplay_options}}
+      {$this update_enable_hihat_check}
+      {cymbal_message.lbl set text_token overshell_cymbal_message}
+      {$this refresh_cymbal_provider})
+   (CYMBAL_SELECTION)
+   (on_cancel
+      {$this finish_cymbal_selection TRUE}))
+(kState_OptionsDrumMessage
+   (view confirm_action)
+   (song_settings_flow TRUE)
+   (remote_status remote_status_drum_options)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_cymbals_in_options_msg)})
+   (SELECT_MSG
+      {$this dismiss_cymbal_message}))
+(kState_ChooseDiff
+   (view choose_diff)
+   (song_settings_flow TRUE)
+   (shows_extended_mic_arrows TRUE)
+   (SELECT_MSG
+      {switch
+         {choose_diff.lst selected_sym}
+         (overshell_easy
+            {$this select_difficulty kDifficultyEasy})
+         (overshell_medium
+            {$this select_difficulty kDifficultyMedium})
+         (overshell_hard
+            {$this select_difficulty kDifficultyHard})
+         (overshell_expert
+            {$this select_difficulty kDifficultyExpert})})
+   (update_remote_feedback
+      ($focus_item)
+      {choose_diff.lst set_selected $focus_item})
+   (on_view_modify
+      {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
+   (on_cancel
+      {$this leave_choose_difficulty}))
+(kState_ChooseDiffConfirm
+   (view confirm_action)
+   (song_settings_flow TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_difficulty_confirm
+            (overshell_continue overshell_restart overshell_cancel))}
+      {handle
+         ($this
+            update_restart_allowed
+            {{$this get_session_mgr}
+               is_leader_local})})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_continue
+            {$this confirm_choose_diff})
+         (overshell_restart
+            {$this confirm_choose_diff}
+            {if_else
+               {gamemode in_mode trainer}
+               {{gamemode get game_panel}
+                  restart_section}
+               {session end_game kRestart}})
+         (overshell_cancel
+            {$this leave_difficulty_confirmation})})
+   (on_cancel
+      {$this leave_difficulty_confirmation}))
+(kState_ReadyToPlay
+   (view ready_to_play)
+   (song_settings_flow TRUE)
+   (ready_to_play TRUE)
+   (on_cancel
+      {$this leave_ready_to_play}))
+(kState_ReadyToPlayWait
+   (view ready_to_play)
+   (song_settings_flow TRUE)
+   (ready_to_play TRUE))
+(kState_SongOptionsCancel
+   (view cancel_song)
+   (song_settings_flow TRUE)
+   (part_unresolved TRUE)
+   (update_view
+      {$this
+         update_cancel_song
+         {gamemode in_mode party_shuffle}
+         {{$this get_session_mgr}
+            is_leader_local}})
+   (update_remote_feedback
+      ($focus_item)
+      {cancel_song.lst set_selected $focus_item})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {if_else
+               {session_mgr is_leader_local}
+               {overshell end_override_flow kOverrideFlow_SongSettings TRUE}
+               {do
+                  {session_mgr disconnect}
+                  {if
+                     {overshell in_override_flow kOverrideFlow_SongSettings}
+                     {overshell end_override_flow kOverrideFlow_SongSettings TRUE}}}})
+         (overshell_confirm_no
+            {$this show_song_options})
+         (overshell_leave
+            {$this attempt_remove_user})})
+   (on_cancel
+      {$this show_song_options}))
+(kState_AutoSignInSony
+   (view confirm_action)
+   (register_online_flow TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_sign_in_fail_retry
+            (overshell_sign_in_retry overshell_sign_in_cancel))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_sign_in_retry
+            {platform_mgr run_net_start_utility})
+         (overshell_sign_in_cancel
+            {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+(kState_SignInSonyPrivilegeDenial
+   (view confirm_action)
+   (register_online_flow TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_auto_sign_in_sony_restricted_privilege)})
+   (SELECT_MSG
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+(kState_AutoSignInRockCentral
+   (view auto_sign_in_rock_central)
+   (register_online_flow TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_sign_in_cancel
+            {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+#define SIGN_IN_TO_REGISTER_STATE
+((view sign_in_to_register)
+   (register_online_flow TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_sign_in_continue
+            {$this show_sign_in_wait})
+         (overshell_sign_in
+            {platform_mgr signin 1 TRUE})
+         (overshell_sign_in_cancel
+            {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+(kState_SignInToRegister
+   SIGN_IN_TO_REGISTER_STATE
+   (update_view
+      {handle
+         ($this setup_sign_in_to_register_list FALSE)}))
+(kState_SignInToRegisterNoResolve
+   SIGN_IN_TO_REGISTER_STATE
+   (update_view
+      {handle
+         ($this setup_sign_in_to_register_list TRUE)}))
+(kState_SignInWait
+   (view sign_in_wait)
+   (register_online_flow TRUE)
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+(kState_RegisteringOnline
+   (view registering_online)
+   (register_online_flow TRUE)
+   (prevents_drop_out TRUE)
+   (on_cancel
+      {session_mgr disconnect}))
+(kState_SignInFailRetry
+   (view confirm_action)
+   (register_online_flow TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_sign_in_fail_retry
+            (overshell_sign_in_retry overshell_sign_in_cancel))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_sign_in_retry
+            #ifdef HX_PS3
+            {$this show_state kState_AutoSignInSony}
+            #else
+            {$this show_sign_in_wait}
+            #endif)
+         (overshell_sign_in_cancel
+            {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
+   (on_cancel
+      {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE}))
+(kState_RegisterOnlineDenial
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message overshell_register_online_denial_auto_vocals)})
+   (SELECT_MSG
+      {$this show_options})
+   (on_cancel
+      {$this show_options}))
+(kState_KickUsers
+   (view kick_users)
+   (requires_online_session TRUE)
+   (requires_remote_users TRUE)
+   (update_view
+      {$this update_kick_users_list})
+   (on_cancel
+      {$this show_online_options})
+   (SELECT_MSG
+      {$this
+         kick_user
+         {users.lst selected_pos}}))
+(kState_KickConfirmation
+   (view confirm_action)
+   (requires_online_session TRUE)
+   (requires_remote_users TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_kick_confirmation
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this confirm_kick})
+         (overshell_confirm_no
+            {$this leave_kick_confirmation})})
+   (on_cancel
+      {$this leave_kick_confirmation}))
+(kState_MuteUsers
+   (view mute_users)
+   (requires_online_session TRUE)
+   (requires_remote_users TRUE)
+   (update_view
+      {$this update_mute_users_list})
+   (SELECT_MSG
+      {$this
+         toggle_mute_user
+         {users.lst selected_pos}})
+   (on_cancel
+      {$this show_online_options}))
+(kState_GamercardUsers
+   (view gamercard_users)
+   (requires_online_session TRUE)
+   (update_view
+      {$this update_gamercard_users_list})
+   (SELECT_MSG
+      {$this
+         view_user_gamercard
+         {users.lst selected_pos}})
+   (on_cancel
+      {$this show_online_options}))
+(kState_InviteFriends
+   (view invite_friends)
+   (requires_online_session TRUE)
+   (enter
+      {$this update_friends_list})
+   (update_view
+      {$this update_friends_list})
+   (on_cancel
+      {$this show_online_options})
+   (SELECT_MSG
+      {$this
+         invite_friend
+         {invite_friends.lst selected_pos}}))
+(kState_InviteFriendsDenial
+   (view confirm_action)
+   (requires_online_session TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message error_invite_no_friends)})
+   (on_cancel
+      {$this show_online_options})
+   (SELECT_MSG
+      {$this show_online_options}))
+(kState_EnterCalibration
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_calibration
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {cal_welcome_screen set cancel_screen main_hub_screen}
+            {cal_welcome_screen set confirm_screen main_hub_screen}
+            {input_mgr set_user $user}
+            {critical_user_listener set_critical_user $user}
+            {ui_event_mgr trigger_event go_to_calibration}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_options_av_settings})})
+   (on_cancel
+      {$this show_options_av_settings}))
+(kState_ChooseCharEdit
+   (view choose_char_edit)
+   (choose_char_flow TRUE)
+   (char_edit_flow TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_rename_character
+            {if
+               #ifdef HX_PS3
+               {!
+                  {virtual_keyboard is_open}}
+               #else
+               TRUE
+               #endif
+               {virtual_keyboard
+                  show_keyboard
+                  $user
+                  kCharNameLength
+                  {localize create_char_vk_title}
+                  {localize create_char_vk_desc}
+                  {$this character_name}
+                  $this}})
+         (overshell_delete_character
+            {$this attempt_show_char_delete})})
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if
+         {&&
+            $ok
+            $this
+            {!
+               {==
+                  $text
+                  ""}}}
+         {$this rename_character $text}
+         {$this show_chars}
+         {saveload_mgr autosave}})
+   (on_cancel
+      {$this show_chars}))
+(kState_ChooseCharDelete
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (char_edit_flow TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_delete_character_confirmation
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this delete_character}
+            {$this show_chars}
+            {$this
+               refresh_highlighted_char
+               {chars.lst selected_pos}}
+            {saveload_mgr autosave})
+         (overshell_confirm_no
+            {$this leave_char_delete})})
+   (on_cancel
+      {$this leave_char_delete}))
+(kState_ChooseCharDeleteDenial
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (view choose_char_edit)
+   (enter
+      {handle
+         ($this set_confirm_message overshell_delete_char_denial)})
+   (SELECT_MSG
+      {$this show_chars})
+   (on_cancel
+      {$this show_chars}))
+(kState_EnterCharCreator
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_charactercreator
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {critical_user_listener set_critical_user $user}
+            {closet_mgr set_user $user}
+            {closet_mgr set_return_screen main_hub_screen}
+            {$this leave_options}
+            {ui_event_mgr trigger_event go_to_charactercreator})
+         (overshell_confirm_no
+            {$this show_chars})})
+   (on_cancel
+      {$this show_chars}))
+(kState_EnterCredits
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_credits
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {meta_performer set_credits_pending}
+            {ui_event_mgr trigger_event quit_to_main_credits}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_options_extras})})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_CreditsDenial
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_credits_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_options_extras})
+   (on_cancel
+      {$this show_options_extras}))
+(kState_CharCreatorDenialNoProfile
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_sign_in_create_character
+            (overshell_sign_in overshell_sign_in_cancel))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_sign_in
+            {platform_mgr signin 1})
+         (overshell_sign_in_cancel
+            {$this show_chars})})
+   (on_cancel
+      {$this show_chars}))
+(kState_CharCreatorDenialMaxChars
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (update_view
+      {set
+         $max_characters
+         {profile_mgr get_max_characters}}
+      {handle
+         ($this
+            set_confirm_message_fmt
+            (charcreator_full_profile_fmt $max_characters))})
+   (SELECT_MSG
+      {$this show_chars})
+   (on_cancel
+      {$this show_chars}))
+(kState_CharCreatorDenial
+   (view confirm_action)
+   (choose_char_flow TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_char_creator_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_chars})
+   (on_cancel
+      {$this show_chars}))
+(kState_CalibrationDenial
+   (view confirm_action)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_calibration_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_options_av_settings})
+   (on_cancel
+      {$this show_options_av_settings}))
+(kState_ReconnectController
+   (view reconnect_controller)
+   (prevents_override TRUE))
+(kState_FirstTimeRG
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_first_time_rg
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this leave_options}
+            {accomplishment_panel set_goal acc_guitartutorial01}
+            {accomplishment_panel set_career_state kCareerState_Goal}
+            {ui_event_mgr trigger_event go_to_campaign})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
+(kState_SecondTimeRG
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_second_time_rg
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this leave_options}
+            {accomplishment_panel set_goal acc_guitartutorial03}
+            {accomplishment_panel set_career_state kCareerState_Goal}
+            {ui_event_mgr trigger_event go_to_campaign})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
