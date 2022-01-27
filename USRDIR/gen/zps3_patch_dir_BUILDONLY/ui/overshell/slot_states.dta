@@ -1565,17 +1565,49 @@
 (kState_RB3ESettings
  (view options_vocal)
  (enter
-  {crowd.sld set_num_steps 60}
+  ;Slider shit, practically copied over 1-1 from RB2DX
+  ;why the hell doesn't this work
+  {instruments.sld set_num_steps 41} ;number of steps for note speed slider
+  {bg_music.sld set_num_steps 31} ;number of steps for song speed slider
+  {crowd.sld set_num_steps 60} ;number of steps for venue fps slider
+  {instruments.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+  {bg_music.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
+  {crowd.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
+  {trackspeed_msg set_localized {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg
+  {speed_msg set_localized {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg
+  {fps_msg set_localized {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg
+  {$this update_from_profile}
   {options_vocal.lst
    set_data
-   ("Track Speed"
+   (;trackspeed_msg
+    ;speed_msg
+    ;fps_msg
+    "Track Speed"
     "Music Speed"
-	 "Venue FPS slider placeholder"
     "Venue FPS"
     "Venue Select")}
   {synapse.chk set_showing 0}
   {static_vocals.chk set_showing 1})
+   (display_trackspd_msg
+      ($tspd)
+      {instruments.btn set_localized {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $tspd 100}}}}})
+   (display_speed_msg
+      ($mspd)
+     {background_music.btn set_localized {sprintf {localize speed_msg} {int {+ 0.5 {* $mspd 100}}}}})
+   (display_fps_msg
+      ($fps)
+     {crowd.btn set_localized {sprintf {localize fps_msg} {int $fps}}}) ;don't add 1 here because this is being fed the actual fps
  (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            "")}
       {handle
          ($this
             update_slider
@@ -1584,14 +1616,22 @@
  (SELECT_MSG
   {switch
    {$component selected_sym}
+   (trackspeed_msg
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   (speed_msg
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   (fps_msg
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
    ("Track Speed"
     {$this show_state kState_RB3ETrackSpeedSettings})
    ("Music Speed"
     {$this show_state kState_RB3EMusicSpeedSettings})
-   ("Venue FPS slider placeholder"
-    {crowd.sld store}
-    {crowd.sld set_showing TRUE}
-    {$this set_focus crowd.sld})
    ("Venue FPS"
     {$this show_state kState_RB3EVenueFPS})
    ("Venue Select"
@@ -1601,7 +1641,9 @@
  (BUTTON_DOWN_MSG
       {if_else
          {find_elem
-            ("crowd.sld")
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld")
             {$this focus_name}}
          {switch
             $action
@@ -1624,15 +1666,52 @@
       {$this on_slider_change $component $user})
    (set_speeds
          {do
+            {set $trackspeed {- {+ 1 {* {instruments.sld current} 0.05}} 0.5}}
+            {set $speedmod
+               {+ 1 {* {bg_music.sld current} 0.05}}}
             {set $emulatefps
-               {+ 1 {crowd.sld current}}}})
+               {+ 1 {crowd.sld current}}}
+         {set $leaderspeed $speedmod}}
+         {set $leaderspeed $speedmod}
+         {$this display_trackspd_msg $trackspeed}
+         {$this display_speed_msg $speedmod}
+         {$this display_fps_msg $emulatefps})
    (on_slider_change
       ($component)
       {switch
          $component
+         (instruments.sld
+               {do {set $component current}}
+            {$this set_speeds})
+         (bg_music.sld
+               {do {set $component current}}
+            {$this set_speeds})
          (crowd.sld
                {do {set $component current}}
                {$this set_speeds})
+      })
+(update_all_from_profile
+      {$this
+         iterate
+         UISlider
+         $s
+         {$this update_from_profile $s}})
+   (update_from_profile
+      ($component)
+      {switch
+         $component
+         (instruments.sld
+            {$component
+               set_current
+               {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}})
+         (bg_music.sld
+            {$component
+               set_current
+               {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}})
+         (crowd.sld
+            {$component
+               set_current
+               {int {- $emulatefps 1}}})
       })
  (on_cancel
   {$this show_game_options}))
