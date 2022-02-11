@@ -2340,7 +2340,8 @@
    ("In-Game Settings"
     "Venue Select"
     "Set Colors"
-	"Screensaver")})
+	"Screensaver"
+   "sliders testing")})
  (SELECT_MSG
   {switch
    {$component selected_sym}
@@ -2361,9 +2362,85 @@
    ("Set Colors"
     {$this show_state kState_RB3EColorSelector})
    ("Screensaver"
-    {$this show_state kState_RB3EScreensaver})})
+    {$this show_state kState_RB3EScreensaver})
+   ("sliders testing"
+    {$this show_state kState_RB3ESliderSettings})})
  (on_cancel
   {$this show_game_options}))
+(kState_RB3ESliderSettings
+ (view options_vocal)
+ (enter
+      {set $rb3eslider TRUE}
+      {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
+      {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
+      {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg
+      {options_vocal.lst
+       set_data
+      (fps_msg)}
+     {$this update_all_from_profile}
+     )
+ (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")})
+   (SELECT_MSG
+      {if
+         {== $component options_vocal.lst}
+         {switch
+            {$component selected_sym}
+            (fps_msg
+               {instruments.sld store}
+               {instruments.sld set_showing TRUE}
+               {$this set_focus instruments.sld})
+            (overshell_audio_bg_music
+               {bg_music.sld store}
+               {bg_music.sld set_showing TRUE}
+               {$this set_focus bg_music.sld})
+            (overshell_audio_crowd
+               {crowd.sld store}
+               {crowd.sld set_showing TRUE}
+               {$this set_focus crowd.sld})
+            (overshell_audio_sfx
+               {sfx.sld store}
+               {sfx.sld set_showing TRUE}
+               {$this set_focus sfx.sld})
+            (overshell_audio_voice_chat
+               {voice_chat.sld store}
+               {voice_chat.sld set_showing TRUE}
+               {$this set_focus voice_chat.sld})}})
+(BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {$this set_focus options_vocal.lst})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (on_cancel
+   {set $rb3eslider FALSE}
+  {$this show_state kState_RB3ESettings}))
 (kState_RB3EFretboardSelector
  (view choose_char)
  (enter
