@@ -573,29 +573,33 @@
       {switch
          $component
          (edit_name.btn
+            {$this set_paused 1}
             {set
                [current_edit]
                name}
             {virtual_keyboard
                show_keyboard
                $user
-               50
+               kVkSetlistNameLengthLimit
                {localize new_setlist_vk_title}
                {localize new_setlist_vk_desc}
-               [setlist_name]
-               $this})
+               {localize setlist_default_name}
+               $this
+               kVkNormalEntry})
          (edit_desc.btn
+            {$this set_paused 1}
             {set
                [current_edit]
                desc}
             {virtual_keyboard
                show_keyboard
                $user
-               120
+               kVkSetlistDescLengthLimit
                {localize new_setlist_vk_title}
-               {localize setlist_desc_vk_desc}
-               [setlist_desc]
-               $this})
+               {localize new_setlist_vk_desc}
+               {localize setlist_default_desc}
+               $this
+               kVkNormalEntry})
          (edit_art.btn
             {do
                ($profile
@@ -645,7 +649,11 @@
    (virtual_keyboard_result_msg
       ($ok $str)
       {if
-         $ok
+         {&&
+            {== $ok 1}
+            {!=
+               $str
+               ""}}
          {if_else
             {==
                [current_edit]
@@ -656,7 +664,8 @@
             {set
                [setlist_desc]
                $str}}
-         {$this refresh_fields}})
+         {$this refresh_fields}}
+      {$this set_paused 0})
    (leave_setlist
       {ui pop_screen})
    (goto_create_dialog
@@ -701,8 +710,7 @@
    delete_content_confirm_screen
    (panels dialog_panel)
    (focus dialog_panel)
-   (content
-      "")
+   (content 0)
    (enter
       {do
          ($num_songs
@@ -763,12 +771,44 @@
    (refresh_done
       {unless
          {ui in_transition}
-         {ui pop_screen}})}
+         #ifdef HX_WII
+         {script_task
+            kTaskUISeconds
+            (delay 0.5)
+            (script
+               {if_else
+                  {$this delete_failed}
+                  {ui goto_screen deleting_content_failed_screen}
+                  {ui pop_screen}})}
+         #else
+         {ui pop_screen}
+         #endif})}
 {new
    BandScreen
    deleting_content_screen
    (panels deleting_content_panel)
    (focus deleting_content_panel)}
+#ifdef HX_WII
+{new
+   BandScreen
+   deleting_content_failed_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($error
+            {content_mgr get_last_result})
+         {switch
+            $error
+            (kOpSDWriteProtected
+               {set $error dlc_backup_sdwriteprotected})
+            (kOpIncompatibleCard
+               {set $error dlc_backup_sdincompatible})
+            {set $error store_delete_failed}}
+         {dialog_panel set_ok $error}})
+   (SELECT_MSG
+      {ui pop_screen})}
+#endif
 {new
    BandScreen
    missing_setlist_songs_screen
@@ -809,9 +849,10 @@
    (SELECT_MSG
       {if_else
          {== $component yes.btn}
-         {if
-            {$user is_signed_in_online}
-            {input_mgr set_user $user}
+         {do
+            {if
+               {$user is_signed_in_online}
+               {input_mgr set_user $user}}
             {setlist_to_store_panel get_songs_from_music_library}
             {ui pop_screen setlist_to_store_screen}}
          {ui pop_screen}})}
@@ -856,14 +897,5 @@
    (focus dialog_panel)
    (enter
       {dialog_panel set_ok setlist_content_restricted})
-   (SELECT_MSG
-      {ui pop_screen})}
-{new
-   BandScreen
-   ugc_not_allowed_screen
-   (panels dialog_panel)
-   (focus dialog_panel)
-   (enter
-      {dialog_panel set_ok ugc_not_allowed_in_trainers})
    (SELECT_MSG
       {ui pop_screen})}

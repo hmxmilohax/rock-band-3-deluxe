@@ -8,13 +8,6 @@
    (file
       "")
    (disable_pause_ms 2000)
-   (audition_jump_back_ms 12000)
-   (audition_jump_forward_ms 30000)
-   (audition_jump_end_buffer_ms 5000)
-   (audition_keyboard_synth_volumes
-      (0 15 30 45 60))
-   (audition_cam_toggle
-      {audition_cycle_free_camera})
    (reset
       {active_events_parser
          add_sink
@@ -89,14 +82,9 @@
                   $ex}}}}
       kDataUnhandled)
    (game_over
-      {{{{gamemode get track_panel}
-               find
-               mtv_overlay}
-            find
-            fade.anim}
-         set_frame
-         0}
+      #ifndef HX_WII
       {stagekit_reset}
+      #endif
       {beatmatch
          foreach_active_player
          $p
@@ -198,21 +186,6 @@
 ((disable_screen_saver TRUE)
    PAUSE_ON_MIC_DISCONNECT
    (enter
-      {if_else
-         {modifier_mgr is_modifier_active mod_auto_play}
-         {do
-            {beatmatch
-               foreach_active_player
-               $player
-               {$player set_auto_play 1}}}
-         {do
-            {beatmatch
-               foreach_active_player
-               $player
-               {$player set_auto_play 0}}}}
-      {if
-         {modifier_mgr is_modifier_active mod_staticfills}
-         {gamemode set allow_drum_fills FALSE}}
       {$this set_showing TRUE}
       {set
          [delayed_mic_check]
@@ -239,7 +212,6 @@
       {handle
          ($this my_enter)})
    (exit
-      {set $speedmod $leaderspeed}
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -259,42 +231,10 @@
    (on_guide_change
       {overshell update_all}
       PAUSE_MICS_ON_GUIDE_CHANGE))
-{new
-   UIPanel
-   outro_vignette_loader
-   (chosen_vignette '')
-   (load
-      {set
-         [chosen_vignette]
-         ''}
-      {if
-         {meta_performer is_set_complete}
-         {meta_performer upload_debug_stats}
-         {set
-            [chosen_vignette]
-            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
-         #ifndef _SHIP
-         {if
-            {ui get_vignettes_showing}
-            {print
-               "Loading outro vignette: "
-               [chosen_vignette]
-               "\n"}
-            {[chosen_vignette]
-               load}}
-         #else
-         {[chosen_vignette]
-            load}
-         #endif})
-   (unload
-      {if
-         {!=
-            [chosen_vignette]
-            ''}
-         {[chosen_vignette]
-            unload}})}
 #define GAME_SCREEN_PANELS
-(game world_panel coop_track_panel sync_audio_net_panel)
+(world_panel coop_track_panel game sync_audio_net_panel)
+#define GAME_SCREEN_PANELS_NO_TRACK
+(world_panel game sync_audio_net_panel)
 {new
    BandScreen
    game_screen
@@ -339,18 +279,6 @@
    restart_sync_audio_net_screen
    (panels)
    (enter
-      {if
-         {is_leader_local}
-         {session
-            send_msg_to_all
-            {'`'
-               (set
-                  $speedmod
-                  {',' $leaderspeed})
-               kNetReliable}}}
-      {if
-         {is_leader_local}
-         {set $speedmod $leaderspeed}}
       {overshell set_active_status kOvershellInactive}
       {{gamemode get game_screen}
          set_showing
@@ -370,7 +298,7 @@
 {new
    BandScreen
    restart_game_screen
-   (panels GAME_SCREEN_PANELS sync_audio_net_screen_panel)
+   (panels GAME_SCREEN_PANELS_NO_TRACK sync_audio_net_screen_panel)
    (load_panels
       {overshell set_active_status kOvershellInactive}
       {$this set_showing FALSE})
@@ -521,51 +449,19 @@
 {new
    UIPanel
    mydta_start_in_game_panel
-   (state begin)
-   (enter
-      {set
-         [state]
-         begin})
-   (TRANSITION_COMPLETE_MSG
-      {set
-         [state]
-         saveload}
-      {saveload_mgr activate}
-      {unless
-         {'||'
-            {! $gotcha}
-            {modifier_mgr is_modifier_active mod_auto_play}}
-         {saveload_mgr autosave}})
-   (poll
-      {switch
-         [state]
-         (saveload
-            {if
-               {saveload_mgr is_initial_load_done}
-               {set
-                  [state]
-                  contentrefresh}
-               {content_mgr start_refresh}})
-         (contentrefresh
-            {if
-               {content_mgr refresh_done}
-               {set
-                  [state]
-                  done}
-               {{ui current_screen}
-                  ready_for_game}})})}
+   (load
+      {content_mgr start_refresh})
+   (is_loaded
+      {content_mgr refresh_done})}
 {new
    BandScreen
    mydta_start_in_game_screen
    (panels mydta_start_in_game_panel)
-   (ready_for_game
+   (TRANSITION_COMPLETE_MSG
       {ui goto_screen preloading_screen})}
 {new
    BandScreen
    mydta_start_practice_in_game_screen
    (panels mydta_start_in_game_panel)
-   (ready_for_game
-      {if_else
-         {== $venue BLACK_VENUE}
-         {ui goto_screen practice_black_game_screen}
-         {ui goto_screen practice_game_screen}})}
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen practice_game_screen})}

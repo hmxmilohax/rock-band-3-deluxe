@@ -5,22 +5,6 @@
       {&&
          {> $mp.before_delta_sec $before}
          {> $mp.after_delta_sec $after}}}
-   {func
-      is_ugc_plus
-      {&&
-         {exists meta_performer}
-         {exists song_mgr}}
-      {'||'
-         {==
-            {{song_mgr
-                  get_meta_data
-                  {meta_performer song}}
-               version}
-            30}
-         {{song_mgr
-               get_meta_data
-               {meta_performer song}}
-            is_ugc_plus}}}
    {new
       MidiParser
       events_parser
@@ -1878,6 +1862,7 @@
                (97 snare_drum)
                (100 crash_hit)
                kDataUnhandled}})}
+   #ifndef HX_WII
    {new
       MidiParser
       stagekit_fogstrobe_parser
@@ -2011,6 +1996,7 @@
             {$this add_message start_vocal}
             {set $mp.start $mp.end}
             {$this add_message end_vocal})}}
+   #endif
    #define CAMERA_OFFSET
    (-0.125)
    #define MAX_CAM_SONG_LENGTH
@@ -2125,9 +2111,7 @@
                      [song_name]}
                   30}})
          {if
-            {'||'
-               {< $ver 30}
-               {is_ugc_plus}}
+            {< $ver 30}
             {new
                MidiParser
                world_crowd_parser
@@ -2173,73 +2157,43 @@
                MidiParser
                world_postproc_parser
                (track_name VENUE)
-               (enabled TRUE)
-               (init
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+               (init)
                (allowed_notes
                   (96 97 98 99 100 101 102 103 104 105 106 107 108 109 110))
                (midi
+                  {-= $mp.start 0.15}
+                  {-= $mp.end 0.15}
                   {if
-                     [enabled]
-                     {-= $mp.start 0.15}
-                     {-= $mp.end 0.15}
-                     {if
-                        {< $mp.length 0.5}
-                        {set $mp.end $mp.start}
-                        {set $mp.length 0}}
-                     {do
-                        ($startSec
-                           {beat_to_seconds $mp.start})
-                        ($endSec
-                           {beat_to_seconds $mp.end})
-                        {$banddirector
-                           midi_add_postproc
-                           {switch
-                              $mp.val
-                              (96 ProFilm_a.pp)
-                              (97 contrast_a.pp)
-                              (98 film_16mm.pp)
-                              (99 film_sepia_ink.pp)
-                              (100 film_silvertone.pp)
-                              (101 photo_negative.pp)
-                              (102 photocopy.pp)
-                              (103 ProFilm_a.pp)
-                              (104 ProFilm_b.pp)
-                              (105 ProFilm_mirror_a.pp)
-                              (106 film_blue_filter.pp)
-                              (107 video_a.pp)
-                              (108 video_bw.pp)
-                              (109 video_security.pp)
-                              (110 video_trails.pp)
-                              kDataUnhandled}
-                           $startSec
-                           {- $endSec $startSec}}}})}
-            {new
-               MidiParser
-               world_postproc_parser_rbn3
-               (track_name VENUE)
-               (compress TRUE)
-               (enabled TRUE)
-               (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
-               (post_procs
-                  (bloom.pp bright.pp clean_trails.pp contrast_a.pp desat_blue.pp desat_posterize_trails.pp film_16mm.pp 'film_b+w.pp' film_blue_filter.pp film_contrast.pp film_contrast_blue.pp film_contrast_green.pp film_contrast_red.pp film_sepia_ink.pp film_silvertone.pp flicker_trails.pp horror_movie_special.pp photo_negative.pp photocopy.pp posterize.pp ProFilm_a.pp ProFilm_b.pp ProFilm_mirror_a.pp ProFilm_psychedelic_blue_red.pp shitty_tv.pp space_woosh.pp video.pp video_a.pp video_bw.pp video_security.pp video_trails.pp))
-               (text
-                  {if
-                     {&&
-                        [enabled]
-                        {find_elem
-                           [post_procs]
-                           $mp.val}}
+                     {< $mp.length 0.5}
+                     {set $mp.end $mp.start}
+                     {set $mp.length 0}}
+                  {do
+                     ($startSec
+                        {beat_to_seconds $mp.start})
+                     ($endSec
+                        {beat_to_seconds $mp.end})
                      {$banddirector
-                        rbn2_add_postproc
-                        $mp.val
-                        {beat_to_seconds $mp.start}}})}
+                        midi_add_postproc
+                        {switch
+                           $mp.val
+                           (96 ProFilm_a.pp)
+                           (97 contrast_a.pp)
+                           (98 film_16mm.pp)
+                           (99 film_sepia_ink.pp)
+                           (100 film_silvertone.pp)
+                           (101 photo_negative.pp)
+                           (102 photocopy.pp)
+                           (103 ProFilm_a.pp)
+                           (104 ProFilm_b.pp)
+                           (105 ProFilm_mirror_a.pp)
+                           (106 film_blue_filter.pp)
+                           (107 video_a.pp)
+                           (108 video_bw.pp)
+                           (109 video_security.pp)
+                           (110 video_trails.pp)
+                           kDataUnhandled}
+                        $startSec
+                        {- $endSec $startSec}}})}
             {new
                MidiParser
                world_bonusfx_parser
@@ -2259,12 +2213,7 @@
                MidiParser
                world_lighting_pst_keyframes
                (track_name VENUE)
-               (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}}
                   {set
                      [zero_length]
                      TRUE})
@@ -2279,68 +2228,11 @@
                      (50 first)
                      kDataUnhandled})
                (midi
-                  {if
-                     [enabled]
-                     {$banddirector
-                        add_symbol_key
-                        lightpreset_keyframe
-                        {$this get_keyframe}
-                        {beat_to_seconds $mp.start}}})}
-            {new
-               MidiParser
-               world_lighting_pst_keyframes_rbn3
-               (track_name VENUE)
-               (compress TRUE)
-               (enabled TRUE)
-               (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
-               (text
-                  {if
-                     {&&
-                        [enabled]
-                        {find_elem
-                           (next prev first)
-                           $mp.val}}
-                     {$banddirector
-                        add_symbol_key
-                        lightpreset_keyframe
-                        $mp.val
-                        {beat_to_seconds $mp.start}}})}
-            {new
-               MidiParser
-               world_lighting_parser_rbn3
-               (track_name VENUE)
-               (init
-                  {set
-                     [zero_length]
-                     TRUE}
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
-               (text
-                  {if
-                     {&&
-                        [enabled]
-                        {== $mp.val lighting}}
-                     {do
-                        ($presets
-                           {elem $mp.data 1})
-                        {if
-                           {&&
-                              {type $presets kDataArray}
-                              {>
-                                 {size $presets}
-                                 0}}
-                           {set
-                              $mp.start
-                              {max 5 $mp.start}}
-                           {$banddirector
-                              add_symbol_key
-                              lightpreset
-                              {elem $presets 0}
-                              {beat_to_seconds $mp.start}}}}})}
+                  {$banddirector
+                     add_symbol_key
+                     lightpreset_keyframe
+                     {$this get_keyframe}
+                     {beat_to_seconds $mp.start}})}
             {new
                MidiParser
                world_lighting_presets
@@ -2352,15 +2244,11 @@
                      TRUE}
                   {set
                      [legacy_presets]
-                     FALSE}
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+                     FALSE})
                (term
                   {if
                      [legacy_presets]
-                     {$banddirector midi_cleanup_presets TRUE}})
+                     {$banddirector midi_cleanup_presets}})
                (get_category
                   {switch
                      $mp.val
@@ -2374,40 +2262,34 @@
                      {elem $mp.data 1}
                      ''})
                (text
-                  {if
-                     [enabled]
-                     {set
-                        $mp.start
-                        {max 5 $mp.start}}
-                     {do
-                        ($cat
-                           {$this get_category})
-                        {if
-                           {!= $cat IGNORED_EVENT}
-                           {$banddirector
-                              midi_add_preset
-                              $cat
-                              {$this get_adjective}
-                              {beat_to_seconds $mp.start}}
-                           {set
-                              [legacy_presets]
-                              TRUE}}}})}
+                  {set
+                     $mp.start
+                     {max 5 $mp.start}}
+                  {do
+                     ($cat
+                        {$this get_category})
+                     {if
+                        {!= $cat IGNORED_EVENT}
+                        {$banddirector
+                           midi_add_preset
+                           $cat
+                           {$this get_adjective}
+                           {beat_to_seconds $mp.start}}
+                        {set
+                           [legacy_presets]
+                           TRUE}}})}
             {new
                MidiParser
                world_spotlight_focus
                (track_name VENUE)
                (compress TRUE)
                (append_length TRUE)
-               (allow_keys FALSE)
                (init
                   {set
                      [start_offset]
-                     0.25}
-                  {set
-                     [allow_keys]
-                     {is_ugc_plus}})
+                     0.25})
                (allowed_notes
-                  (37 38 39 40 41))
+                  (37 38 39 40))
                (get_instrument
                   {switch
                      $mp.val
@@ -2415,11 +2297,6 @@
                      (38 spot_drums)
                      (39 spot_guitar)
                      (40 spot_vocal)
-                     (41
-                        {if_else
-                           [allow_keys]
-                           spot_keyboard
-                           kDataUnhandled})
                      kDataUnhandled})
                (midi
                   {$banddirector
@@ -2496,115 +2373,70 @@
                            {handle_type
                               ($this add_pad)}}}})
                (track_name VENUE)
-               (enabled TRUE)
                (init
                   {set $mp.camflags 0}
                   {set $mp.last_time MAX_CAM_SONG_LENGTH}
                   {set $mp.next_dircut_pad MAX_CAM_SONG_LENGTH}
                   {set
                      $mp.last_times
-                     (0 0 0 0 0 0 0 0)}
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+                     (0 0 0 0 0 0 0 0)})
                (term
-                  {if
-                     [enabled]
-                     {set $mp.start MAX_CAM_SONG_LENGTH}
-                     {handle_type
-                        ($this check)}})
+                  {set $mp.start MAX_CAM_SONG_LENGTH}
+                  {handle_type
+                     ($this check)})
                (allowed_notes
                   (60 61 62 63 64 70 71 72 73))
                (midi
-                  {if
-                     [enabled]
-                     {handle_type
-                        ($this check)}
-                     {if_else
-                        {== $mp.val 60}
-                        {set $mp.last_time $mp.start}
+                  {handle_type
+                     ($this check)}
+                  {if_else
+                     {== $mp.val 60}
+                     {set $mp.last_time $mp.start}
+                     {do
+                        ($op
+                           {-
+                              $mp.val
+                              {if_else
+                                 {< $mp.val 70}
+                                 61
+                                 66}})
+                        {'|='
+                           $mp.camflags
+                           {elem CAM_BITS $op}}
+                        {set_elem $mp.last_times $op $mp.end}}})
+               (text
+                  {switch
+                     $mp.val
+                     ((do_directed_cut do_optional_cut)
                         {do
-                           ($op
-                              {-
-                                 $mp.val
-                                 {if_else
-                                    {< $mp.val 70}
-                                    61
-                                    66}})
-                           {'|='
-                              $mp.camflags
-                              {elem CAM_BITS $op}}
-                           {set_elem $mp.last_times $op $mp.end}}}})
-               (text
-                  {if
-                     [enabled]
-                     {switch
-                        $mp.val
-                        ((do_directed_cut do_optional_cut)
-                           {do
-                              ($start
-                                 {beat_to_seconds $mp.start})
-                              ($dc
-                                 {elem $mp.data 1})
-                              {handle_type
-                                 ($this check)}
-                              {set
-                                 $mp.next_dircut_pad
-                                 {seconds_to_beat
-                                    {'+' $start 0.125}}}
-                              {set
+                           ($start
+                              {beat_to_seconds $mp.start})
+                           ($dc
+                              {elem $mp.data 1})
+                           {handle_type
+                              ($this check)}
+                           {set
+                              $mp.next_dircut_pad
+                              {seconds_to_beat
+                                 {'+' $start 0.125}}}
+                           {set
+                              $dc
+                              {switch
                                  $dc
-                                 {switch
-                                    $dc
-                                    (directed_guitar_cam
-                                       {random_elem
-                                          (directed_guitar_cam_pr directed_guitar_cam_pt)})
-                                    (directed_vocal_cam
-                                       {random_elem
-                                          (directed_vocals_cam_pr directed_vocals_cam_pt)})
-                                    (directed_crowd_b
-                                       {random_elem
-                                          (directed_crowd_b directed_crowd_b directed_crowd)})
-                                    (directed_crowd_g
-                                       {random_elem
-                                          (directed_crowd_g directed_crowd_g directed_crowd)})
-                                    $dc}}
-                              {$banddirector add_symbol_key shot_bg $dc $start}})}})}
-            {new
-               MidiParser
-               world_camera_parser_rbn3
-               (track_name VENUE)
-               (enabled TRUE)
-               (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
-               (term
-                  {if
-                     [enabled]
-                     {$banddirector midi_shot5_cleanup}})
-               (text
-                  {if
-                     [enabled]
-                     {if
-                        {has_substr
-                           $mp.val
-                           "coop_"}
-                        {$banddirector
-                           add_symbol_key
-                           shot_5
-                           $mp.val
-                           {beat_to_seconds $mp.start}}}
-                     {if
-                        {has_substr
-                           $mp.val
-                           "directed_"}
-                        {$banddirector
-                           add_symbol_key
-                           shot_5
-                           $mp.val
-                           {beat_to_seconds $mp.start}}}})}}}}
+                                 (directed_guitar_cam
+                                    {random_elem
+                                       (directed_guitar_cam_pr directed_guitar_cam_pt)})
+                                 (directed_vocal_cam
+                                    {random_elem
+                                       (directed_vocals_cam_pr directed_vocals_cam_pt)})
+                                 (directed_crowd_b
+                                    {random_elem
+                                       (directed_crowd_b directed_crowd_b directed_crowd)})
+                                 (directed_crowd_g
+                                    {random_elem
+                                       (directed_crowd_g directed_crowd_g directed_crowd)})
+                                 $dc}}
+                           {$banddirector add_symbol_key shot_bg $dc $start}})})}}}}
    {new
       MidiParser
       end_of_song

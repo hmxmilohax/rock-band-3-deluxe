@@ -5,9 +5,32 @@
    (file
       "song_select.milo")
    (focus song.lst)
+   (get_page_up_button
+      #ifdef HX_WII
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_ShellOption
+         kAction_PageUp}
+      #else
+      kAction_PageUp
+      #endif)
+   (get_page_down_button
+      #ifdef HX_WII
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_ShellOption
+         kAction_PageDown}
+      #else
+      kAction_PageDown
+      #endif)
    (held_buttons
       (kAction_PageUp 0.25)
       (kAction_PageDown 0.25)
+      (kAction_ShellOption 0.25)
       (kAction_Confirm 1.5)
       (kAction_Cancel 1.5))
    (joypad
@@ -25,43 +48,19 @@
    (trainer_from_main_menu kControllerNone)
    (song_data_mounted
       {$this refresh_top})
+   (get_option_button kAction_Option)
+   (get_button_for_review
+      #ifdef HX_WII
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_Right
+         kAction_Option}
+      #else
+      kAction_Option
+      #endif)
    (enter
-      {unless {modifier_mgr is_modifier_active mod_songselectnoise} {synth stop_all_sfx TRUE}}
-      {unless
-         {'||'
-            {gamemode in_mode campaign}
-            {gamemode in_mode tour}}
-         {if
-            {== $force TRUE}
-            {gamecfg set_venue $venue}}}
-      {unless
-         {'||'
-            {gamemode in_mode campaign}
-            {gamemode in_mode tour}}
-         {if
-            {== $force TRUE}
-            {meta_performer set_venue $venue}}}
-      {if
-         {is_leader_local}
-         {session
-            send_msg_to_all
-            {'`'
-               (set
-                  $speedmod
-                  {',' $leaderspeed})
-               kNetReliable}}}
-      {if
-	    {'&&'
-         {is_leader_local}
-         {modifier_mgr is_modifier_active mod_auto_play}}
-         {session
-            send_msg_to_all
-            {'`'
-               (ui goto_screen meta_loading_main_screen)
-               kNetReliable}}}
-      {if
-         {is_leader_local}
-         {set $speedmod $leaderspeed}}
       {net_sync set_ui_state kNetUI_MusicLibrary}
       {set
          [should_go_to_art_maker]
@@ -109,7 +108,10 @@
       {$this refresh_setlist}
       {$this
          refresh_sort
-         [waiting_for_sort]})
+         [waiting_for_sort]}
+      #ifdef HX_WII
+      {rnd set_in_game TRUE}
+      #endif)
    (TRANSITION_COMPLETE_MSG
       {if
          [resume_setlist_edit]
@@ -135,7 +137,10 @@
       {rock_central remove_sink $this server_status_changed}
       {platform_mgr remove_sink $this signin_changed}
       {platform_mgr remove_sink $this profile_swapped}
-      {platform_mgr remove_sink $this storage_changed})
+      {platform_mgr remove_sink $this storage_changed}
+      #ifdef HX_WII
+      {rnd set_in_game FALSE}
+      #endif)
    (BUTTON_DOWN_MSG
       {if_else
          {ui in_transition}
@@ -231,10 +236,8 @@
                      {delete_content_confirm_screen
                         set
                         content
-                        {song_mgr
-                           content_name
-                           {{music_library get_highlighted_node}
-                              id}}}
+                        {{music_library get_highlighted_node}
+                           id}}
                      {ui push_screen delete_content_confirm_screen}}
                   {do
                      {push_basic_confirm_dialog_small delete_song_no_online}}})
@@ -379,11 +382,7 @@
                   {{$setlist get_owner_profile}
                      setlist_changed
                      $setlist}
-                  {unless
-                     {'||'
-                        {! $gotcha}
-                        {modifier_mgr is_modifier_active mod_auto_play}}
-                     {saveload_mgr autosave}}
+                  {saveload_mgr autosave}
                   {$component set text_token unshare_setlist}})
             ({==
                   {$component get text_token}
@@ -397,11 +396,7 @@
                   {{$setlist get_owner_profile}
                      setlist_changed
                      $setlist}
-                  {unless
-                     {'||'
-                        {! $gotcha}
-                        {modifier_mgr is_modifier_active mod_auto_play}}
-                     {saveload_mgr autosave}}
+                  {saveload_mgr autosave}
                   {$component set text_token share_setlist}})
             kDataUnhandled}})
    (refresh_leaderboard
@@ -443,8 +438,47 @@
                      {leaderboard_instruments.lst scroll 1 $user})
                   ({details_bottom.grp showing}
                      {instruments.lst scroll 1 $user})}})
-         ({== $action kAction_Option}
+         ({==
+               $action
+               {$this get_option_button}}
             {$this hide_details})
+         #ifdef HX_WII
+         ({'||'
+               {== $action kAction_Left}
+               {== $action kAction_Right}}
+            {do
+               ($node
+                  {music_library get_highlighted_node})
+               ($type
+                  {$node get_node_type})
+               ($new_score
+                  {if_else
+                     {== $action kAction_Left}
+                     {mod
+                        {-
+                           {header_review.rvw get score}
+                           1}
+                        6}
+                     {mod
+                        {'+'
+                           {header_review.rvw get score}
+                           1}
+                        6}})
+               {if
+                  {&&
+                     {!
+                        [waiting_for_sort]}
+                     {song_review.grp showing}}
+                  {{profile_mgr get_primary_profile}
+                     set_song_review
+                     {$node id}
+                     $new_score}
+                  {$node update_review}
+                  {header_review.rvw set_values $new_score TRUE}
+                  {set
+                     [reviews_dirty]
+                     TRUE}}})
+         #endif
          ({== $action kAction_Cancel}
             {with
                song_select_details
@@ -540,6 +574,9 @@
                         {song_select_panel lb_in_progress}
                         kDataUnhandled})
                   #ifdef HX_PS3
+                  (kAction_Confirm TRUE)
+                  #endif
+                  #ifdef HX_WII
                   (kAction_Confirm TRUE)
                   #endif
                   kDataUnhandled}})
@@ -660,7 +697,9 @@
                      {play_instr_sfx $user button_select}
                      {music_library select_highlighted_node $user}}}})
          ({&&
-               {== $action kAction_Option}
+               {==
+                  $action
+                  {$this get_option_button}}
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -676,7 +715,13 @@
                         {== $type kNodeSetlist}}}
                   {$this show_details $user}}})
          ({&&
-               {== $action kAction_ShellOption}
+               {'||'
+                  {'||'
+                     {==
+                        $action
+                        {$this get_option_button}}
+                     {== $action kAction_Right}}
+                  {== $action kAction_Left}}
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -685,11 +730,18 @@
                ($type
                   {$node get_node_type})
                ($new_score
-                  {mod
-                     {'+'
-                        {header_review.rvw get score}
-                        1}
-                     6})
+                  {if_else
+                     {== $action kAction_Left}
+                     {mod
+                        {-
+                           {header_review.rvw get score}
+                           1}
+                        6}
+                     {mod
+                        {'+'
+                           {header_review.rvw get score}
+                           1}
+                        6}})
                {if
                   {&&
                      {!
@@ -705,7 +757,9 @@
                      [reviews_dirty]
                      TRUE}}})
          ({&&
-               {== $action kAction_PageDown}
+               {==
+                  $action
+                  {$this get_page_down_button}}
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -713,7 +767,9 @@
                {song.lst set_scroll_user $user}
                {music_library skip_to_next_shortcut}})
          ({&&
-               {== $action kAction_PageUp}
+               {==
+                  $action
+                  {$this get_page_up_button}}
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -805,8 +861,12 @@
                      {music_library get_back_screen}
                      $user}}})
          ({'||'
-               {== $action kAction_PageUp}
-               {== $action kAction_PageDown}}
+               {==
+                  $action
+                  {$this get_page_up_button}}
+               {==
+                  $action
+                  {$this get_page_down_button}}}
             {unless
                {'||'
                   {ui in_transition}
@@ -831,11 +891,7 @@
                {set
                   [reviews_dirty]
                   FALSE}
-               {unless
-                  {'||'
-                     {! $gotcha}
-                     {modifier_mgr is_modifier_active mod_auto_play}}
-                  {saveload_mgr autosave}}})
+               {saveload_mgr autosave}})
          ({==
                $component
                {song_select_details find instruments.lst}}
@@ -971,22 +1027,19 @@
                         {gamemode in_mode practice}
                         {gamemode in_mode trainer}}
                      {if_else
-                        {&&
-                           {!
-                              {$item is_ugc}}
-                           {'||'
-                              {&&
-                                 {==
-                                    {$user connected_controller_type}
-                                    kControllerKeys}
-                                 {$item has_part real_keys}}
-                              {&&
-                                 {==
-                                    {$user connected_controller_type}
-                                    kControllerRealGuitar}
-                                 {'||'
-                                    {$item has_part real_guitar}
-                                    {$item has_part real_bass}}}}}
+                        {'||'
+                           {&&
+                              {==
+                                 {$user connected_controller_type}
+                                 kControllerKeys}
+                              {$item has_part real_keys}}
+                           {&&
+                              {==
+                                 {$user connected_controller_type}
+                                 kControllerRealGuitar}
+                              {'||'
+                                 {$item has_part real_guitar}
+                                 {$item has_part real_bass}}}}
                         {push_back $config practice_or_train_song}
                         {push_back $config practice_song}}}
                   {if
@@ -1481,115 +1534,117 @@
             {header_normal.trg trigger}}}
       {$this refresh_screen_header})
    (refresh_top
-      {do
-         ($item
-            {music_library get_highlighted_node})
-         ($token
-            {$item get_token})
-         {album_overlay.mesh set_showing FALSE}
-         {cond
-            ({&&
-                  {==
-                     kNodeSong
-                     {$item get_node_type}}
-                  {!
-                     {song_mgr is_song_mounted $token}}}
-               {album_art.pic
-                  set
-                  tex_file
-                  "ui/image/blank_album_art_keep.png"}
-               {album_art.pic
-                  set
-                  mesh
-                  {album_art.pic get mesh}})
-            ({==
-                  kNodeStoreSong
-                  {$item get_node_type}}
-               {album_art.pic
-                  set
-                  tex_file
-                  "ui/image/blank_album_art_keep.png"}
-               {album_art.pic
-                  set
-                  mesh
-                  {album_art.pic get mesh}}
-               {music_library
-                  load_store_art
-                  {$item get_offer}
-                  $this})
-            ({==
-                  kNodeSetlist
-                  {$item get_node_type}}
-               {cond
-                  ({$item is_net_setlist}
-                     {if_else
-                        {music_library net_setlist_art_ready $token}
-                        {do
-                           {album_overlay.mesh set_showing TRUE}
-                           {album_overlay.mat
-                              set
-                              diffuse_tex
-                              {music_library get_net_setlist_art $token}}
-                           {album_art.pic
-                              set
-                              tex_file
-                              "ui/image/canvas_keep.png"}
-                           {album_art.pic
-                              set
-                              mesh
-                              {album_art.pic get mesh}}}
-                        {do
-                           {album_art.pic
-                              set
-                              tex_file
-                              {$item album_art_path}}
-                           {album_art.pic
-                              set
-                              mesh
-                              {album_art.pic get mesh}}
-                           {music_library refresh_net_setlist_art}}})
-                  ({$item is_local_setlist}
-                     {if_else
-                        {$item get_art_tex}
-                        {do
-                           {album_overlay.mesh set_showing TRUE}
-                           {album_overlay.mat
-                              set
-                              diffuse_tex
-                              {$item get_art_tex}}
-                           {album_art.pic
-                              set
-                              tex_file
-                              "ui/image/canvas_keep.png"}
-                           {album_art.pic
-                              set
-                              mesh
-                              {album_art.pic get mesh}}}
-                        {do
-                           {album_art.pic
-                              set
-                              tex_file
-                              {$item album_art_path}}
-                           {album_art.pic
-                              set
-                              mesh
-                              {album_art.pic get mesh}}}})
+      {if
+         {$this is_up}
+         {do
+            ($item
+               {music_library get_highlighted_node})
+            ($token
+               {$item get_token})
+            {album_overlay.mesh set_showing FALSE}
+            {cond
+               ({&&
+                     {==
+                        kNodeSong
+                        {$item get_node_type}}
+                     {!
+                        {song_mgr is_song_mounted $token}}}
                   {album_art.pic
                      set
                      tex_file
-                     {$item album_art_path}}
+                     "ui/image/blank_album_art_keep.png"}
                   {album_art.pic
                      set
                      mesh
-                     {album_art.pic get mesh}}})
-            {album_art.pic
-               set
-               tex_file
-               {$item album_art_path}}
-            {album_art.pic
-               set
-               mesh
-               {album_art.pic get mesh}}}})
+                     {album_art.pic get mesh}})
+               ({==
+                     kNodeStoreSong
+                     {$item get_node_type}}
+                  {album_art.pic
+                     set
+                     tex_file
+                     "ui/image/blank_album_art_keep.png"}
+                  {album_art.pic
+                     set
+                     mesh
+                     {album_art.pic get mesh}}
+                  {music_library
+                     load_store_art
+                     {$item get_offer}
+                     $this})
+               ({==
+                     kNodeSetlist
+                     {$item get_node_type}}
+                  {cond
+                     ({$item is_net_setlist}
+                        {if_else
+                           {music_library net_setlist_art_ready $token}
+                           {do
+                              {album_overlay.mesh set_showing TRUE}
+                              {album_overlay.mat
+                                 set
+                                 diffuse_tex
+                                 {music_library get_net_setlist_art $token}}
+                              {album_art.pic
+                                 set
+                                 tex_file
+                                 "ui/image/canvas_keep.png"}
+                              {album_art.pic
+                                 set
+                                 mesh
+                                 {album_art.pic get mesh}}}
+                           {do
+                              {album_art.pic
+                                 set
+                                 tex_file
+                                 {$item album_art_path}}
+                              {album_art.pic
+                                 set
+                                 mesh
+                                 {album_art.pic get mesh}}
+                              {music_library refresh_net_setlist_art}}})
+                     ({$item is_local_setlist}
+                        {if_else
+                           {$item get_art_tex}
+                           {do
+                              {album_overlay.mesh set_showing TRUE}
+                              {album_overlay.mat
+                                 set
+                                 diffuse_tex
+                                 {$item get_art_tex}}
+                              {album_art.pic
+                                 set
+                                 tex_file
+                                 "ui/image/canvas_keep.png"}
+                              {album_art.pic
+                                 set
+                                 mesh
+                                 {album_art.pic get mesh}}}
+                           {do
+                              {album_art.pic
+                                 set
+                                 tex_file
+                                 {$item album_art_path}}
+                              {album_art.pic
+                                 set
+                                 mesh
+                                 {album_art.pic get mesh}}}})
+                     {album_art.pic
+                        set
+                        tex_file
+                        {$item album_art_path}}
+                     {album_art.pic
+                        set
+                        mesh
+                        {album_art.pic get mesh}}})
+               {album_art.pic
+                  set
+                  tex_file
+                  {$item album_art_path}}
+               {album_art.pic
+                  set
+                  mesh
+                  {album_art.pic get mesh}}}}})
    (art_loaded
       {if
          {&&
@@ -1844,10 +1899,8 @@
                   set
                   num_vocal_parts
                   {if_else
-                     {$item has_data vocal_parts}
-                     {$item
-                        get_data
-                        (vocal_parts)}
+                     {$item has_vocal_parts}
+                     {$item vocal_parts}
                      0}}
                {live_diffs.grp set_showing TRUE})
             {live_diffs.grp set_showing FALSE}}
@@ -1925,9 +1978,21 @@
       {if
          [details_mode]
          {$this hide_details}}
+      #ifdef HX_WII
+      {if
+         {&&
+            {!=
+               {ui transition_screen}
+               deleting_content_screen}
+            {!=
+               {ui current_screen}
+               deleting_content_screen}}
+         {content_mgr start_refresh}}
+      #else
       {if
          {content_mgr refresh_done}
-         {content_mgr start_refresh}})
+         {content_mgr start_refresh}}
+      #endif)
    (show_setlist_save_dialog
       {ui push_screen setlist_save_screen})
    (show_missing_setlist_songs_dialog
@@ -1975,29 +2040,19 @@
             song_select_details
             {view_gamer_card.ihp set_showing FALSE}
             {performance.lst set showing FALSE}
+            #ifdef HX_WII
+            {lb_status.lbl set text_token lb_error_live}
+            #else
             {if_else
                {platform_mgr is_connected}
                {lb_status.lbl set text_token lb_error}
-               {lb_status.lbl set text_token lb_error_live}}}})}
+               {lb_status.lbl set text_token lb_error_live}}
+            #endif}})}
 {new
    BandScreen
    song_select_screen
-   (panels meta sv4_panel song_select_panel song_select_shortcut_panel song_select_filter_panel)
+   (panels meta postsong_sfx_panel sv4_panel song_select_panel song_select_shortcut_panel song_select_filter_panel)
    (focus song_select_panel)
    (enter
-      {unless
-         {'||'
-            {gamemode in_mode campaign}
-            {gamemode in_mode tour}}
-         {if
-            {== $force TRUE}
-            {gamecfg set_venue $venue}}}
-      {unless
-         {'||'
-            {gamemode in_mode campaign}
-            {gamemode in_mode tour}}
-         {if
-            {== $force TRUE}
-            {meta_performer set_venue $venue}}}
       {sv4_panel set_showing TRUE})
    (net_sync_scroll FALSE)}

@@ -68,7 +68,7 @@
       (slot_view
          symbol
          (list
-            (no_instrument sign_in finding join connect_mic no_join_in_game options options_in_game choose_profile choose_char choose_char_edit online_options joined_default choose_part_guitar choose_part_vocals choose_part_drum choose_part_real_guitar choose_part_keys choose_diff cancel_song ready_to_play confirm_action remote_status options_drum auto_sign_in_rock_central sign_in_to_register sign_in_wait registering_online hidden block_all_input game_options options_av_settings options_audio options_vocal options_extras modifiers options_end_game linking_code reconnect_controller kick_users mute_users gamercard_users invite_friends options_rb3esettings)
+            (no_instrument sign_in finding join connect_mic no_join_in_game options options_in_game choose_profile choose_char choose_char_edit online_options joined_default choose_part_guitar choose_part_vocals choose_part_drum choose_part_real_guitar choose_part_keys choose_diff cancel_song ready_to_play confirm_action remote_status options_drum auto_sign_in_rock_central sign_in_to_register sign_in_wait registering_online hidden block_all_input game_options options_av_settings options_audio options_vocal options_extras modifiers options_end_game linking_code reconnect_controller kick_users mute_users gamercard_users invite_friends)
             sort)
          (no_test))
       (button_pulse_joined
@@ -104,13 +104,16 @@
                set_platform
                {$this get_native_platform}})
          (enter
-            {$this init}
-            {modifiers.lst set circular 1}) ;circular modifiers menu
+            {$this init})
          (setup_providers
-            ($char_provider $profiles_provider $invite_provider $part_select_provider $cymbal_provider $modifier_provider)
+            ($char_provider $profiles_provider $friends_provider $part_select_provider $cymbal_provider $modifier_provider)
             {chars.lst set_provider $char_provider}
+            #ifdef HX_WII
+            {profiles_wii.lst set_provider $profiles_provider}
+            #else
             {profiles.lst set_provider $profiles_provider}
-            {invite_friends.lst set_provider $invite_provider}
+            {invite_friends.lst set_provider $friends_provider}
+            #endif
             {choose_part.lst set_provider $part_select_provider}
             {options_drum.lst set_provider $cymbal_provider}
             {modifiers.lst set_provider $modifier_provider})
@@ -124,15 +127,24 @@
             {cancel_song.lst
                set_data
                (overshell_confirm_yes overshell_confirm_no overshell_leave)}
+            #ifndef HX_WII
             {profile_options.lst
                set_data
                (overshell_continue_without_profile overshell_sign_in)}
+            #endif
             {auto_sign_in_rock_central.lst
                set_data
                (overshell_sign_in_cancel)}
+            #ifdef HX_WII
+            {options_av_settings.lst
+               set_data
+               (overshell_calibration overshell_bass_boost overshell_overscan overshell_audio_options overshell_autosave_enabled dlc_sdmode)}
+            #else
+            {dolby.chk set_showing FALSE}
             {options_av_settings.lst
                set_data
                (overshell_dolby overshell_bass_boost overshell_overscan overshell_calibration overshell_autosave_enabled overshell_audio_options)}
+            #endif
             {options_audio.lst
                set_data
                (overshell_audio_instruments
@@ -142,27 +154,63 @@
                   #ifdef HX_PS3
                   overshell_audio_voice_chat
                   #endif)}
+            #ifdef HX_WII
+            {options_vocal.lst
+               set_data
+               (overshell_vocals_mode_static overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
+            #else
             {options_vocal.lst
                set_data
                (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
+            #endif
+            {options_wiispeak.lst
+               set_data
+               (wiispeak_button_toggle_wiispeak wiispeak_button_friends_volume wiispeak_button_microphone_sensitivity wiispeak_button_headphone_mode)}
             {options_extras.lst
                set_data
-               (overshell_freecam
-			      overshell_postproc
-			      overshell_credits
-                  overshell_linking_code
-                  #ifdef HX_XBOX
-                  overshell_audition
-                  #endif)}
+               (overshell_credits overshell_linking_code)}
             {choose_char_edit.lst
                set_data
-               (overshell_rename_character overshell_delete_character)})
+               (overshell_rename_character overshell_delete_character)}
+            #ifdef HX_WII
+            {accept_invitation.lst
+               set_data
+               (wii_friends_accept_invitation_yes wii_friends_accept_invitation_no wii_friends_accept_invitation_cancel)}
+            {invitations.lst set_provider wii_invitations_provider}
+            {no_invitations.lst
+               set_data
+               (wii_friends_no_invitations_ok)}
+            #endif)
          (setup_online_options_list
             ($platform)
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if_else
+                  {== $platform wii}
+                  {do
+                     {if
+                        {wii_invitations_provider is_invitation_pending}
+                        {push_back $options wii_friends_view_invite}}
+                     {if
+                        {==
+                           {ui current_screen}
+                           main_hub_screen}
+                        {if_else
+                           {!
+                              {profile_mgr get_using_wii_friends}}
+                           {if
+                              {session_mgr is_local}
+                              {push_back $options overshell_import_wii_friends}}
+                           {push_back $options overshell_invite}}}}
+                  {do
+                     {print
+                        "Huh?  HX_WII defined but platform isn't wii?\n"}
+                     {push_back $options overshell_invite}}}
+               #else
                {push_back $options overshell_invite}
+               #endif
                {if
                   {== $platform xbox}
                   {push_back $options overshell_invite_xbox_party}}
@@ -170,12 +218,14 @@
                   {== $platform ps3}
                   {push_back $options overshell_check_invites}}
                {push_back $options overshell_kick}
+               #ifndef HX_WII
                {push_back
                   $options
                   {if_else
                      {== $platform xbox}
                      overshell_gamercard
                      overshell_mute}}
+               #endif
                {push_back $options overshell_disconnect}
                {online_options.lst set_data $options}})
          (setup_options_list
@@ -183,15 +233,51 @@
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if
+                  {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}}
+               #endif
                {push_back $options overshell_return}
+               #ifdef HX_WII
                {if_else
-                  $online_enabled
-                  {push_back $options overshell_online_options}
-                  {push_back $options overshell_register_online}}
-               {push_back $options overshell_change_character}
-               {push_back $options overshell_game_options}
-               {push_back $options overshell_leave}
-               {options.lst set_data $options}})
+                  {overshell in_wiifriend_invite}
+                  {do
+                     {options.lst set_data $options}}
+                  {do
+                     #endif
+                     #ifdef HX_WII
+                     {if
+                        {&&
+                           {!
+                              {platform_mgr is_online_restricted}}
+                           {!
+                              {meta_performer are_credits_pending}}}
+                        {if_else
+                           $online_enabled
+                           {push_back $options overshell_online_options}
+                           {push_back $options overshell_register_online}}}
+                     #else
+                     {if_else
+                        $online_enabled
+                        {push_back $options overshell_online_options}
+                        {push_back $options overshell_register_online}}
+                     #endif
+                     #ifdef HX_WII
+                     {if
+                        {&&
+                           {!
+                              {memcardmgr is_disable_writing}}
+                           {!
+                              {join_invite_panel join_in_progress}}}
+                        {push_back $options overshell_wiiprofile_options}}
+                     #endif
+                     {push_back $options overshell_change_character}
+                     {push_back $options overshell_game_options}
+                     {push_back $options overshell_leave}
+                     {options.lst set_data $options}
+                     #ifdef HX_WII}}
+               #endif})
          (setup_sign_in_to_register_list
             ($show_continue)
             {do
@@ -227,8 +313,53 @@
                {push_back $options overshell_av_settings}
                {push_back $options overshell_extras}
                {push_back $options overshell_modifiers}
-                  {push_back $options overshell_rb3esettings}
+               #ifdef WIISPEAK_SUPPORT
+               #ifdef HX_WII
+               {push_back $options overshell_wiispeak_options}
+               #endif
+               #ifdef HX_PC
+               {push_back $options overshell_wiispeak_options}
+               #endif
+               #endif
                {game_options.lst set_data $options}})
+         #ifdef HX_WII
+         (setup_wiiprofile_options_list
+            ($user)
+            {do
+               ($options
+                  {array 0})
+               ($is_empty TRUE)
+               {if
+                  {>
+                     {profile_mgr get_count}
+                     0}
+                  {push_back $options overshell_wiiprofile_switch}
+                  {set $is_empty FALSE}}
+               {if
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {do
+                     {push_back $options overshell_wiiprofile_create}
+                     {if
+                        {&&
+                           {>
+                              {profile_mgr get_unregistered_count}
+                              0}
+                           {!
+                              {platform_mgr is_online_restricted}}}
+                        {push_back $options overshell_wiiprofile_register}}
+                     {set $is_empty FALSE}}}
+               {if
+                  {>
+                     {profile_mgr get_count}
+                     0}
+                  {push_back $options overshell_wiiprofile_delete}
+                  {set $is_empty FALSE}}
+               {if
+                  {== $is_empty TRUE}
+                  {push_back $options overshell_return}}
+               {options.lst set_data $options}})
+         #endif
          (set_platform
             ($platform)
             {$this setup_online_options_list $platform}
@@ -254,6 +385,7 @@
                   {! $in_track_mode}
                   {shell_mode.trg trigger}
                   {$this refresh_list_types_in_nav_chain $initial_focus $in_track_mode}}
+               {view_default_wii.trg trigger}
                {view_default.trg trigger}
                {view_default.trg set_view_pos $this $in_track_mode}
                {$this
@@ -371,6 +503,9 @@
                $can_kick
                {online_options.lst enable_data overshell_kick}
                {online_options.lst disable_data overshell_kick}})
+         (update_wiispeak_toggle_allowed
+            ($can_wiispeak_toggle)
+            {online_options.lst enable_data overshell_wiispeak_toggle})
          (update_mute_allowed
             ($can_mute)
             {if_else
@@ -450,11 +585,16 @@
             {options_drum.lst refresh})
          (update_profiles_provider
             ($provider)
+            #ifdef HX_WII
+            {profiles_wii.lst refresh false}
+            {$this enable profiles_wii.lst}
+            #else
             {profiles.lst refresh}
             {if_else
                {$provider num_data}
                {$this enable profiles.lst}
-               {$this disable profiles.lst}})
+               {$this disable profiles.lst}}
+            #endif)
          (update_friends_provider
             ($provider)
             {invite_friends.lst refresh})
@@ -508,10 +648,15 @@
             ($enabled)
             {no_fail.chk set checked $enabled})
          (update_in_game_options
-            ($quit_token $can_skip $restart $change_diff $metronome $practice $can_quit)
+            ($quit_token $can_skip $restart $change_diff $metronome $practice $trainer $can_quit)
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if
+                  {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}}
+               #endif
                {push_back $options overshell_return}
                {if
                   $restart
@@ -597,10 +742,12 @@
                   {{gamemode get game_panel}
                      metronome_enabled}}})
          (update_dolby_check
+            #ifndef HX_WII
             {dolby.chk
                set
                checked
-               {profile_mgr get_dolby}})
+               {profile_mgr get_dolby}}
+            #endif)
          (update_bass_boost_check
             {bass_boost.chk
                set
@@ -611,15 +758,40 @@
                set
                checked
                {profile_mgr get_overscan}})
+         (update_sdmode_check
+            {do
+               ($isSdMode
+                  {==
+                     kSDMode
+                     {content_mgr get_mode}})
+               {sdmode.chk set checked $isSdMode}
+               {if_else
+                  {&&
+                     {session_mgr is_local}
+                     {!
+                        {ui in_transition}}
+                     {==
+                        main_hub_screen
+                        {ui current_screen}}}
+                  {options_av_settings.lst enable_data dlc_sdmode}
+                  {options_av_settings.lst disable_data dlc_sdmode}}})
          (update_synapse_check
             ($synapse_enabled)
             {synapse.chk set checked $synapse_enabled})
+         (update_toggle_wiispeak_check
+            ($wiispeak_enabled)
+            {ToggleWiispeak.chk set checked $wiispeak_enabled})
+         (update_wiispeak_headphone_mode_check
+            ($headphones_enabled)
+            {HeadphoneMode.chk set checked $headphones_enabled})
+         #ifndef HX_WII
          (set_can_change_synapse
             ($can_change)
             {if_else
                $can_change
                {options_vocal.lst enable_data overshell_synapse}
                {options_vocal.lst disable_data overshell_synapse}})
+         #endif
          (update_static_check
             ($static_enabled)
             {static_vocals.chk set checked $static_enabled})
@@ -646,16 +818,9 @@
          (set_options_signed_in
             ($val)
             {if_else
-;            {|| 
-                {modifier_mgr is_modifier_active mod_auto_play}
-;                {modifier_mgr is_modifier_active mod_ghdrums}
-;                {modifier_mgr is_modifier_active mod_rrdrums}
-;            }
-			   {options_av_settings.lst disable_data overshell_autosave_enabled}
-			{if_else
-			   $val
+               $val
                {options_av_settings.lst enable_data overshell_autosave_enabled}
-               {options_av_settings.lst disable_data overshell_autosave_enabled}}})
+               {options_av_settings.lst disable_data overshell_autosave_enabled}})
          (update_mics
             ($mgr $showing $extended $mic0_connected $mic1_connected $mic2_connected $is_vocal_slot)
             {mic_arrows.grp set_showing $is_vocal_slot}
@@ -681,26 +846,6 @@
                         {mics.mia set_mic_preview $mic_index}
                         {mics.mia set_mic_connected $connected $mic_index}}}}
                {mics.mia set_mic_mgr $mgr}})
-   ;why do these not work
-   (display_trackspeed_msg
-      ($tspd)
-      {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $tspd 100}}}}})
-   (display_speed_msg
-      ($mspd)
-     {speed_msg set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $mspd 100}}}}})
-   (display_fps_msg
-      ($fps)
-     {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $fps}}})
-         (set_speeds
-         {do
-            {set $emulatefps {+ 1 {instruments.sld current}}}
-            {set $trackspeed {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
-            {set $speedmod {+ 1 {* {crowd.sld current} 0.05}}}
-            {set $leaderspeed $speedmod}}
-            {set $leaderspeed $speedmod}
-         {$this display_trackspeed_msg $trackspeed}
-         {$this display_speed_msg $speedmod}
-         {$this display_fps_msg $emulatefps})
          (update_slider
             ($component $options)
             {switch
@@ -708,57 +853,23 @@
                (instruments.sld
                   {$component
                      set_current
-                     {if_else $rb3eslider ; if using speed sliders,
-                     {int {- $emulatefps 1}} ; set current fps value
-                     {if_else $gemsliders $slot1_color ; set current gem color depending on selected slot
-                     {if_else $fretsliders $fret1_color ; set current fret color depending on selected slot
-                     {if_else $sussliders $sus1_color ; set current sustain color depending on selected slot
-                     {if_else $drumgemsliders $drum1_color
-                     {if_else $cymsliders $cym2_color
-                     {if_else $smashersliders $smasher1_color
-                     {profile_mgr get_foreground_volume}}}}}}}}})
+                     {profile_mgr get_foreground_volume}})
                (bg_music.sld
                   {$component
                      set_current
-                     {if_else $rb3eslider ; if using speed sliders,
-                     {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}} ; set current track speed value
-                     {if_else $gemsliders $slot2_color ; set current gem color depending on selected slot
-                     {if_else $fretsliders $fret2_color ; set current fret color depending on selected slot
-                     {if_else $sussliders $sus2_color ; set current sustain color depending on selected slot
-                     {if_else $drumgemsliders $drum2_color
-                     {if_else $cymsliders $cym3_color
-                     {if_else $smashersliders $smasher2_color
-                     {profile_mgr get_background_volume}}}}}}}}})
+                     {profile_mgr get_background_volume}})
                (crowd.sld
                   {$component
                      set_current
-                     {if_else $rb3eslider ; if using speed sliders,
-                     {int {+ 0.5 {/ {- $speedmod 1} 0.05}}} ; set current song speed value
-                     {if_else $gemsliders $slot3_color ; set current gem color depending on selected slot
-                     {if_else $fretsliders $fret3_color ; set current fret color depending on selected slot
-                     {if_else $sussliders $sus3_color ; set current sustain color depending on selected slot
-                     {if_else $drumgemsliders $drum3_color
-                     {if_else $cymsliders $cym4_color
-                     {if_else $smashersliders $smasher3_color
-                     {profile_mgr get_crowd_volume}}}}}}}}})
+                     {profile_mgr get_crowd_volume}})
                (sfx.sld
                   {$component
                      set_current
-                     {if_else $gemsliders $slot4_color ; set current gem color depending on selected slot
-                     {if_else $fretsliders $fret4_color ; set current fret color depending on selected slot
-                     {if_else $sussliders $sus4_color ; set current sustain color depending on selected slot
-                     {if_else $drumgemsliders $drum4_color
-                     {if_else $cymsliders $cym1_color
-                     {if_else $smashersliders $smasher4_color
-                     {profile_mgr get_fx_volume}}}}}}}})
+                     {profile_mgr get_fx_volume}})
                (voice_chat.sld
                   {$component
                      set_current
-                     {if_else $gemsliders $slot5_color ; set current gem color depending on selected slot
-                     {if_else $fretsliders $fret5_color ; set current fret color depending on selected slot
-                     {if_else $sussliders $sus5_color ; set current sustain color depending on selected slot
-                     {if_else $drumgemsliders $kick_color
-                     {profile_mgr get_voice_chat_volume}}}}}})
+                     {profile_mgr get_voice_chat_volume}})
                (vocal_track.sld
                   {$component
                      set_current
@@ -776,6 +887,14 @@
                   {$component
                      set_current
                      {profile_mgr get_mic_vol 2}})
+               (FriendsVolume.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_wiispeak_friends_volume}})
+               (MicrophoneSensitivity.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_wiispeak_microphone_sensitivity}})
                ((metronome_vol.sld metronome_vol_freestyle.sld)
                   {if
                      {gamemode get game_panel FALSE}
@@ -789,87 +908,25 @@
             {switch
                $component
                (instruments.sld
-                  {if_else $rb3eslider
-                  {do {set $component current} {$this set_speeds}}
-                  {if_else $gemsliders
-                  {do {set $component current} {set $slot1_color {$this current}}} ;set gem color to slider value
-                  {if_else $fretsliders
-                  {do {set $component current} {set $fret1_color {$this current}}} ;set fret color to slider value
-                  {if_else $sussliders
-                  {do {set $component current} {set $sus1_color {$this current}}} ;set sustain color to slider value
-                  {if_else $drumgemsliders
-                  {do {set $component current} {set $drum1_color {$this current}}}
-                  {if_else $cymsliders
-                  {do {set $component current} {set $cym2_color {$this current}}}
-                  {if_else $smashersliders
-                  {do {set $component current} {set $smasher1_color {$this current}}}
                   {profile_mgr
                      set_foreground_volume
-                     {$component current}}}}}}}}})
+                     {$component current}})
                (bg_music.sld
-                  {if_else $rb3eslider
-                  {do {set $component current} {$this set_speeds}}
-                  {if_else $gemsliders
-                  {do {set $component current} {set $slot2_color {$this current}}} ;set gem color to slider value
-                  {if_else $fretsliders
-                  {do {set $component current} {set $fret2_color {$this current}}} ;set fret color to slider value
-                  {if_else $sussliders
-                  {do {set $component current} {set $sus2_color {$this current}}} ;set sustain color to slider value
-                  {if_else $drumgemsliders
-                  {do {set $component current} {set $drum2_color {$this current}}}
-                  {if_else $cymsliders
-                  {do {set $component current} {set $cym3_color {$this current}}}
-                  {if_else $smashersliders
-                  {do {set $component current} {set $smasher2_color {$this current}}}
                   {profile_mgr
                      set_background_volume
-                     {$component current}}}}}}}}})
+                     {$component current}})
                (crowd.sld
-                  {if_else $rb3eslider
-                  {do {set $component current} {$this set_speeds}}
-                  {if_else $gemsliders
-                  {do {set $component current} {set $slot3_color {$this current}}} ;set gem color to slider value
-                  {if_else $fretsliders
-                  {do {set $component current} {set $fret3_color {$this current}}} ;set fret color to slider value
-                  {if_else $sussliders
-                  {do {set $component current} {set $sus3_color {$this current}}} ;set sustain color to slider value
-                  {if_else $drumgemsliders
-                  {do {set $component current} {set $drum3_color {$this current}}}
-                  {if_else $cymsliders
-                  {do {set $component current} {set $cym4_color {$this current}}}
-                  {if_else $smashersliders
-                  {do {set $component current} {set $smasher3_color {$this current}}}
                   {profile_mgr
                      set_crowd_volume
-                     {$component current}}}}}}}}})
+                     {$component current}})
                (sfx.sld
-                  {if_else $gemsliders
-                  {do {set $component current} {set $slot4_color {$this current}}} ;set gem color to slider value
-                  {if_else $fretsliders
-                  {do {set $component current} {set $fret4_color {$this current}}} ;set fret color to slider value
-                  {if_else $sussliders
-                  {do {set $component current} {set $sus4_color {$this current}}} ;set sustain color to slider value
-                  {if_else $drumgemsliders
-                  {do {set $component current} {set $drum4_color {$this current}}}
-                  {if_else $cymsliders
-                  {do {set $component current} {set $cym1_color {$this current}}}
-                  {if_else $smashersliders
-                  {do {set $component current} {set $smasher4_color {$this current}}}
                   {profile_mgr
                      set_fx_volume
-                     {$component current}}}}}}}})
+                     {$component current}})
                (voice_chat.sld
-                  {if_else $gemsliders
-                  {do {set $component current} {set $slot5_color {$this current}}} ;set gem color to slider value
-                  {if_else $fretsliders
-                  {do {set $component current} {set $fret5_color {$this current}}} ;set fret color to slider value
-                  {if_else $sussliders
-                  {do {set $component current} {set $sus5_color {$this current}}} ;set sustain color to slider value
-                  {if_else $drumgemsliders
-                  {do {set $component current} {set $kick_color {$this current}}}
                   {profile_mgr
                      set_voice_chat_volume
-                     {$component current}}}}}})
+                     {$component current}})
                (vocal_track.sld
                   {profile_mgr
                      set_vocal_cue_volume

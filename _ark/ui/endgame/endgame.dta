@@ -4,6 +4,7 @@
    coop_endgame_panel
    (file
       "coop_endgame.milo")
+   (unload_async TRUE)
    (details_showing
       (FALSE FALSE FALSE FALSE))
    (network_mic_setup TRUE)
@@ -64,46 +65,7 @@
          add_sink
          $this
          (remote_leader_left_msg)}
-      {if_else
-         {gamemode in_mode audition}
-         {do
-            ($slot0
-               {$this find slot0})
-            ($slot1
-               {$this find slot0})
-            ($slot2
-               {$this find slot0})
-            ($slot3
-               {$this find slot0})
-            {{slot0 find song_review.rvw}
-               set_showing
-               FALSE}
-            {{slot0 find review.ihp}
-               set_showing
-               FALSE}
-            {{slot1 find song_review.rvw}
-               set_showing
-               FALSE}
-            {{slot1 find review.ihp}
-               set_showing
-               FALSE}
-            {{slot2 find song_review.rvw}
-               set_showing
-               FALSE}
-            {{slot2 find review.ihp}
-               set_showing
-               FALSE}
-            {{slot3 find song_review.rvw}
-               set_showing
-               FALSE}
-            {{slot3 find review.ihp}
-               set_showing
-               FALSE}}
-         {unless
-            {'||'
-               {! $gotcha}
-               {modifier_mgr is_modifier_active mod_auto_play}}
-            {saveload_mgr autosave}}})
+      {saveload_mgr autosave})
    (update_help
       {help.ihp
          set_config
@@ -131,7 +93,13 @@
                meta_loading_continue_screen}
             {==
                {ui transition_screen}
-               meta_loading_continue_screen}}
+               meta_loading_continue_screen}
+            {==
+               {ui current_screen}
+               outro_to_meta_loading_continue_screen}
+            {==
+               {ui transition_screen}
+               outro_to_meta_loading_continue_screen}}
          {overshell set_active_status kOvershellInactive}}
       {song_highscore.cue stop}
       {platform_mgr set_notify_ui_location kOSNotifyTopRight}
@@ -144,7 +112,10 @@
             {ui_event_mgr has_active_destructive_event}
             {==
                {ui current_screen}
-               meta_loading_continue_screen}}
+               meta_loading_continue_screen}
+            {==
+               {ui current_screen}
+               outro_to_meta_loading_continue_screen}}
          {net_sync set_ui_state kNetUI_InGame}
          {overshell set_active_status kOvershellInSong}})
    (set_tour_results_showing
@@ -177,8 +148,6 @@
                1})
          ({&&
                {== $action kAction_ShellOption}
-               {!
-                  {gamemode in_mode audition}}
                {$this
                   can_change_song_review
                   {$user get_slot_num}}}
@@ -195,8 +164,6 @@
             {if_else
                {meta_performer is_set_complete}
                {cond
-                  ({gamemode in_mode audition}
-                     {ui_event_mgr trigger_event quit_early})
                   ({gamemode in_mode tour}
                      {{tour performer}
                         complete_quest}
@@ -207,7 +174,7 @@
                      {ui sync_screen complete_screen 0})
                   ({meta_performer has_battle}
                      {ui sync_screen complete_screen 0})
-                  {ui sync_screen meta_loading_continue_screen 0}}
+                  {ui sync_screen maybe_outro_to_meta_loading_continue_screen 0}}
                {ui sync_screen preload_nextsong_screen 0}})
          ({&&
                {== $action kAction_Option}
@@ -220,16 +187,22 @@
          kDataUnhandled})
    (handle_song_restart
       {meta_performer host_restart_last_song}
+      #ifdef HX_WII
+      {game send_restart_game_net_msg TRUE}
+      {game_restart_from_win}
+      {ui sync_screen preload_nextsong_screen 0}
+      #else
       {game send_restart_game_net_msg}
       {game_restart}
-      {net_sync set_ui_state kNetUI_InGame})
+      {net_sync set_ui_state kNetUI_InGame}
+      #endif)
    (net_songresults_scroll
       ($slot $page)
       {$this set_scroll_expanded_details $slot $page})}
 {new
    BandScreen
    coop_endgame_screen
-   (panels GAME_SCREEN_PANELS coop_endgame_panel outro_vignette_loader)
+   (panels GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel)
    (focus coop_endgame_panel)
    (pending_restart FALSE)
    (TRANSITION_COMPLETE_MSG
@@ -241,7 +214,7 @@
 {new
    BandScreen
    coop_endgame_popups_screen
-   (panels GAME_SCREEN_PANELS outro_vignette_loader)
+   (panels GAME_SCREEN_PANELS_NO_TRACK)
    (enter
       {overshell set_active_status kOvershellInGameShell})
    (poll
@@ -258,23 +231,50 @@
    (load
       {game set multi_event TRUE})}
 {new
+   UIPanel
+   character_hide_hack_panel
+   (load
+      {$banddirector set_character_hide_hack_enabled TRUE})
+   (unload
+      {$banddirector set_character_hide_hack_enabled FALSE})}
+{new
    BandScreen
    preload_nextsong_screen
-   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel preload_panel)
+   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel preload_panel character_hide_hack_panel)
    (focus preload_panel)}
 {new
    BandScreen
    preload_failed_nextsong_screen
-   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel)
+   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel)
    (focus coop_endgame_panel)
    (TRANSITION_COMPLETE_MSG
       {meta_performer skip_song}
       {ui goto_screen preload_nextsong_screen})}
+#ifdef HX_WII
+{new
+   BandScreen
+   wii_preload_failed_nextsong_screen
+   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel dialog_panel)
+   WII_PRELOADING_FAILED_HANDLERS
+   (SELECT_MSG
+      {ui goto_screen meta_loading_continue_screen})}
+#endif
 {new
    BandScreen
    load_nextsong_screen
-   (panels game_time_panel world_panel coop_endgame_panel outro_vignette_loader)
-   (focus coop_endgame_panel)
+   (panels game_time_panel world_panel character_hide_hack_panel)
+   (focus world_panel)
+   (enter
+      {overshell set_active_status kOvershellInactive})
+   (exit_complete
+      {overshell set_active_status kOvershellInGame})
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen load_nextsong_screen_and_panel})}
+{new
+   BandScreen
+   load_nextsong_screen_and_panel
+   (panels game_time_panel world_panel coop_track_panel character_hide_hack_panel)
+   (focus world_panel)
    (TRANSITION_COMPLETE_MSG
       {song_mgr
          add_recent_song
