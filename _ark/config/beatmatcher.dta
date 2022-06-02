@@ -19,6 +19,9 @@
          {stagekit_left_right kStageSweepLeft_medium kStageSweepRight_medium}}
       #endif)
    (beat
+   {unless {> {gamecfg get practice_speed} 0} {if {is_leader_local} {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}}}
+   {unless {> {gamecfg get practice_speed} 0} {beatmatch set_music_speed $speedmod}}
+   {if {modifier_mgr is_modifier_active mod_auto_play} {session send_msg_to_all {'`' (ui goto_screen meta_loading_main_screen) kNetReliable}}}
       #ifdef HX_WII
       {unless
          $stagekit
@@ -32,6 +35,11 @@
             (game beat)}}
       #endif)
    (downbeat
+      {unless {> {gamecfg get practice_speed} 0} {beatmatch set_music_speed $speedmod}}
+	{if_else
+          {modifier_mgr is_modifier_active mod_auto_play} {beatmatch foreach_active_player $player {unless {mod $measure 4} {$player deploy_if_possible}}}
+          {if {modifier_mgr is_modifier_active mod_staticfills} {beatmatch foreach_active_player $player {switch {$player instrument} (bass) (guitar) (vocals) (drum {$player deploy_if_possible})}}}
+		  }
       {unless
          $stagekit
          {handle
@@ -78,7 +86,7 @@
    (player_slot 9))
 (audio
    (default_style unmute)
-   (mute_volume -16.0)
+   (mute_volume -96.0)
    (mute_volume_vocals -12.0)
    (multiplayer_scale 0.33)
    (multiplayer_attenuation 3.0)
@@ -94,7 +102,7 @@
    #ifndef HX_WII
    (drum_sample_attenuation 3.0)
    #endif
-   (whammy_enabled TRUE)
+   (whammy_enabled {! $whammyfx})
    (auto_miss_sound_timeout_seconds 5.0)
    (auto_miss_sound_timeout_gems 5)
    (auto_miss_sound_timeout_gems_remote 10)

@@ -1264,7 +1264,9 @@
          (overshell_wiispeak_options
             {$this show_options_wiispeak})
          (overshell_modifiers
-            {$this show_modifiers})})
+            {$this show_modifiers})
+         (overshell_rb3esettings
+            {$this show_state kState_RB3ESettings})})
    (on_cancel
       {$this show_options}))
 (kState_ToggleNoFailDenial
@@ -1309,7 +1311,9 @@
             {$this get_user}}})
    (exit
       {unless
+	  {'||'
          {$this in_game}
+		 {modifier_mgr is_modifier_active mod_auto_play}}
          {saveload_mgr autosave}})
    (SELECT_MSG
       {switch
@@ -1345,7 +1349,8 @@
                      {if_else
                         {saveload_mgr is_autosave_enabled $user}
                         {$this show_saveloadmgr_autosave_confirm}
-                        {saveload_mgr enable_autosave $user}}
+                        {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
+                        {saveload_mgr enable_autosave $user}}}
                      {overshell update_all}}
                   {$this show_saveloadmgr_not_idle}}
                {$this show_saveloadmgr_not_meta}})
@@ -1688,6 +1693,16 @@
       {$this on_slider_change $component $user}))
 (kState_OptionsExtras
    (view options_extras)
+      (enter
+         {options_extras.lst
+            set_data
+               (overshell_freecam
+			    overshell_postproc
+			    overshell_credits
+                overshell_linking_code
+                #ifdef HX_XBOX
+                overshell_audition
+                #endif)})
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -1758,6 +1773,1008 @@
             ($this set_confirm_message linking_code_signin_error)}})
    (SELECT_MSG
       {$this show_options_extras}))
+(kState_RB3EScreensaver
+ (view options_end_game)
+ (enter
+  {options_end_game.lst
+   set_data
+   ("ON"
+    "OFF")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("ON"
+   {set $screensaver FALSE}
+   {unless
+   {$this in_song}
+    {ui goto_screen meta_loading_main_screen}})
+   ("OFF"
+   {set $screensaver TRUE}
+   {unless
+   {$this in_song}
+    {ui goto_screen meta_loading_main_screen}})
+   })
+ (on_cancel
+  {$this show_state kState_RB3ESettings}))
+(kState_RB3EDrumColorSelector
+ (view options_extras)
+ (enter
+  {options_extras.lst
+   set_data
+   ("Gem Color"
+    "Cymbal Color"
+    "Smasher Color")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Gem Color"
+    {$this show_state kState_RB3EDrumGemColorSelector})
+   ("Cymbal Color"
+    {$this show_state kState_RB3ECymbalColorSelector})
+   ("Smasher Color"
+    {$this show_state kState_RB3ESmasherColorSelector})})
+ (on_cancel
+  {$this show_state kState_RB3ESettings}))
+(kState_RB3ECymbalColorSelector
+ (view options_audio)
+ (enter
+  {set $cymsliders TRUE}
+  {instruments.sld set_num_steps 5}
+  {bg_music.sld set_num_steps 5}
+  {crowd.sld set_num_steps 5}
+  {sfx.sld set_num_steps 5}
+  {instruments.sld set_current $cym2_color}
+  {bg_music.sld set_current $cym3_color}
+  {crowd.sld set_current $cym4_color}
+  {sfx.sld set_current $cym1_color}
+  {options_audio.lst
+   set_data
+   ("Cymbal 1"
+    "Cymbal 2"
+    "Cymbal 3"
+    "Cymbal 3 (Lefty)")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Cymbal 1"
+    {set $drumsld1 TRUE}
+    {set $drumslds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Cymbal 2"
+    {set $drumsld2 TRUE}
+    {set $drumslds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Cymbal 3"
+    {set $drumsld3 TRUE}
+    {set $drumslds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Cymbal 3 (Lefty)"
+    {set $drumsld4 TRUE}
+    {set $drumslds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $drumslds
+               {do {$this show_state kState_RB3ECymMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $cymsliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EDrumColorSelector}))
+(kState_RB3ECymMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $drumsld1 {do
+               {if_else {== {int $cym2_color} 0} os_cym2
+               {if_else {== {int $cym2_color} 1} os_cym3
+               {if_else {== {int $cym2_color} 2} os_cym4
+               {if_else {== {int $cym2_color} 3} os_cym1
+               os_cym5}}}}}
+            {if_else $drumsld2 {do
+               {if_else {== {int $cym3_color} 0} os_cym2
+               {if_else {== {int $cym3_color} 1} os_cym3
+               {if_else {== {int $cym3_color} 2} os_cym4
+               {if_else {== {int $cym3_color} 3} os_cym1
+               os_cym5}}}}}
+            {if_else $drumsld3 {do
+               {if_else {== {int $cym4_color} 0} os_cym2
+               {if_else {== {int $cym4_color} 1} os_cym3
+               {if_else {== {int $cym4_color} 2} os_cym4
+               {if_else {== {int $cym4_color} 3} os_cym1
+               os_cym5}}}}}
+            {do
+               {if_else {== {int $cym1_color} 0} os_cym2
+               {if_else {== {int $cym1_color} 1} os_cym3
+               {if_else {== {int $cym1_color} 2} os_cym4
+               {if_else {== {int $cym1_color} 3} os_cym1
+               os_cym5}}}}}}}})})
+   (SELECT_MSG
+      {set $drumsld1 FALSE}
+      {set $drumsld2 FALSE}
+      {set $drumsld3 FALSE}
+      {set $drumsld4 FALSE}
+      {set $drumslds FALSE}
+      {$this show_state kState_RB3ECymbalColorSelector}))
+(kState_RB3EDrumGemColorSelector
+ (view options_audio)
+ (enter
+  {set $drumgemsliders TRUE}
+  {instruments.sld set_num_steps 5}
+  {bg_music.sld set_num_steps 5}
+  {crowd.sld set_num_steps 5}
+  {sfx.sld set_num_steps 5}
+  {voice_chat.sld set_num_steps 2}
+  {instruments.sld set_current $drum1_color}
+  {bg_music.sld set_current $drum2_color}
+  {crowd.sld set_current $drum3_color}
+  {sfx.sld set_current $drum4_color}
+  {voice_chat.sld set_current $kick_color}
+  {options_audio.lst
+   set_data
+   ("Gem 1"
+    "Gem 2"
+    "Gem 3"
+    "Gem 4"
+    "Kick")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Gem 1"
+    {set $drumsld1 TRUE}
+    {set $drumslds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Gem 2"
+    {set $drumsld2 TRUE}
+    {set $drumslds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Gem 3"
+    {set $drumsld3 TRUE}
+    {set $drumslds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Gem 4"
+    {set $drumsld4 TRUE}
+    {set $drumslds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})
+   ("Kick"
+    {set $drumsld5 TRUE}
+    {set $drumslds TRUE}
+    {voice_chat.sld store}
+    {voice_chat.sld set_showing TRUE}
+    {$this set_focus voice_chat.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $drumslds
+               {do {$this show_state kState_RB3EDrumGemMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $drumgemsliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EDrumColorSelector}))
+(kState_RB3EDrumGemMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $drumsld1 {do
+               {if_else {== {int $drum1_color} 0} os_gem2
+               {if_else {== {int $drum1_color} 1} os_gem3
+               {if_else {== {int $drum1_color} 2} os_gem4
+               {if_else {== {int $drum1_color} 3} os_gem1
+               os_gem6}}}}}
+            {if_else $drumsld2 {do
+               {if_else {== {int $drum2_color} 0} os_gem2
+               {if_else {== {int $drum2_color} 1} os_gem3
+               {if_else {== {int $drum2_color} 2} os_gem4
+               {if_else {== {int $drum2_color} 3} os_gem1
+               os_gem6}}}}}
+            {if_else $drumsld3 {do
+               {if_else {== {int $drum3_color} 0} os_gem2
+               {if_else {== {int $drum3_color} 1} os_gem3
+               {if_else {== {int $drum3_color} 2} os_gem4
+               {if_else {== {int $drum3_color} 3} os_gem1
+               os_gem6}}}}}
+            {if_else $drumsld4 {do
+               {if_else {== {int $drum4_color} 0} os_gem2
+               {if_else {== {int $drum4_color} 1} os_gem3
+               {if_else {== {int $drum4_color} 2} os_gem4
+               {if_else {== {int $drum4_color} 3} os_gem1
+               os_gem6}}}}}
+            {do
+               {if_else {== {int $kick_color} 0} os_kick1
+               os_kick2}}}}}})})
+   (SELECT_MSG
+      {set $drumsld1 FALSE}
+      {set $drumsld2 FALSE}
+      {set $drumsld3 FALSE}
+      {set $drumsld4 FALSE}
+      {set $drumsld5 FALSE}
+      {set $drumslds FALSE}
+      {$this show_state kState_RB3EDrumGemColorSelector}))
+(kState_RB3ESmasherColorSelector
+ (view options_audio)
+ (enter
+  {set $smashersliders TRUE}
+  {instruments.sld set_num_steps 4}
+  {bg_music.sld set_num_steps 4}
+  {crowd.sld set_num_steps 4}
+  {sfx.sld set_num_steps 4}
+  {instruments.sld set_current $smasher1_color}
+  {bg_music.sld set_current $smasher2_color}
+  {crowd.sld set_current $smasher3_color}
+  {sfx.sld set_current $smasher4_color}
+  {options_audio.lst
+   set_data
+   ("Smasher 1"
+    "Smasher 2"
+    "Smasher 3"
+    "Smasher 4")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Smasher 1"
+    {set $drumsld1 TRUE}
+    {set $drumslds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Smasher 2"
+    {set $drumsld2 TRUE}
+    {set $drumslds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Smasher 3"
+    {set $drumsld3 TRUE}
+    {set $drumslds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Smasher 4"
+    {set $drumsld4 TRUE}
+    {set $drumslds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $drumslds
+               {do {$this show_state kState_RB3ESmasherMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+   {set $smashersliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EDrumColorSelector}))
+(kState_RB3ESmasherMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $drumsld1 {do
+               {if_else {== {int $smasher1_color} 0} os_smasher2
+               {if_else {== {int $smasher1_color} 1} os_smasher3
+               {if_else {== {int $smasher1_color} 2} os_smasher4
+               os_smasher1}}}}
+            {if_else $drumsld2 {do
+               {if_else {== {int $smasher2_color} 0} os_smasher2
+               {if_else {== {int $smasher2_color} 1} os_smasher3
+               {if_else {== {int $smasher2_color} 2} os_smasher4
+               os_smasher1}}}}
+            {if_else $drumsld3 {do
+               {if_else {== {int $smasher3_color} 0} os_smasher2
+               {if_else {== {int $smasher3_color} 1} os_smasher3
+               {if_else {== {int $smasher3_color} 2} os_smasher4
+               os_smasher1}}}}
+            {do
+               {if_else {== {int $smasher4_color} 0} os_smasher2
+               {if_else {== {int $smasher4_color} 1} os_smasher3
+               {if_else {== {int $smasher4_color} 2} os_smasher4
+               os_smasher1}}}}}}})})
+   (SELECT_MSG
+      {set $drumsld1 FALSE}
+      {set $drumsld2 FALSE}
+      {set $drumsld3 FALSE}
+      {set $drumsld4 FALSE}
+      {set $drumslds FALSE}
+      {$this show_state kState_RB3ESmasherColorSelector}))
+(kState_RB3EColorSelector
+ (view options_extras)
+ (enter
+  {options_extras.lst
+   set_data
+   ("Gem Color"
+    "Fret Color"
+    "Sustain Color")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Gem Color"
+    {$this show_state kState_RB3EGemColorSelector})
+   ("Fret Color"
+    {$this show_state kState_RB3EFretColorSelector})
+   ("Sustain Color"
+    {$this show_state kState_RB3ESusColorSelector})})
+ (on_cancel
+  {$this show_state kState_RB3ESettings}))
+(kState_RB3EGemColorSelector
+ (view options_audio)
+ (enter
+  {set $gemsliders TRUE}
+  {instruments.sld set_num_steps 6}
+  {bg_music.sld set_num_steps 6}
+  {crowd.sld set_num_steps 6}
+  {sfx.sld set_num_steps 6}
+  {voice_chat.sld set_num_steps 6}
+  {instruments.sld set_current $slot1_color}
+  {bg_music.sld set_current $slot2_color}
+  {crowd.sld set_current $slot3_color}
+  {sfx.sld set_current $slot4_color}
+  {voice_chat.sld set_current $slot5_color}
+  {options_audio.lst
+   set_data
+   ("Gem 1"
+    "Gem 2"
+    "Gem 3"
+    "Gem 4"
+    "Gem 5")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Gem 1"
+    {set $sld1 TRUE}
+    {set $slds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Gem 2"
+    {set $sld2 TRUE}
+    {set $slds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Gem 3"
+    {set $sld3 TRUE}
+    {set $slds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Gem 4"
+    {set $sld4 TRUE}
+    {set $slds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})
+   ("Gem 5"
+    {set $sld5 TRUE}
+    {set $slds TRUE}
+    {voice_chat.sld store}
+    {voice_chat.sld set_showing TRUE}
+    {$this set_focus voice_chat.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $slds
+               {do {$this show_state kState_RB3EGemMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $gemsliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EColorSelector}))
+(kState_RB3EGemMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $sld1 {do
+               {if_else {== {int $slot1_color} 0} os_gem1
+               {if_else {== {int $slot1_color} 1} os_gem2
+               {if_else {== {int $slot1_color} 2} os_gem3
+               {if_else {== {int $slot1_color} 3} os_gem4
+               {if_else {== {int $slot1_color} 4} os_gem5
+               os_gem6}}}}}}
+            {if_else $sld2 {do
+               {if_else {== {int $slot2_color} 0} os_gem1
+               {if_else {== {int $slot2_color} 1} os_gem2
+               {if_else {== {int $slot2_color} 2} os_gem3
+               {if_else {== {int $slot2_color} 3} os_gem4
+               {if_else {== {int $slot2_color} 4} os_gem5
+               os_gem6}}}}}}
+            {if_else $sld3 {do
+               {if_else {== {int $slot3_color} 0} os_gem1
+               {if_else {== {int $slot3_color} 1} os_gem2
+               {if_else {== {int $slot3_color} 2} os_gem3
+               {if_else {== {int $slot3_color} 3} os_gem4
+               {if_else {== {int $slot3_color} 4} os_gem5
+               os_gem6}}}}}}
+            {if_else $sld4 {do
+               {if_else {== {int $slot4_color} 0} os_gem1
+               {if_else {== {int $slot4_color} 1} os_gem2
+               {if_else {== {int $slot4_color} 2} os_gem3
+               {if_else {== {int $slot4_color} 3} os_gem4
+               {if_else {== {int $slot4_color} 4} os_gem5
+               os_gem6}}}}}}
+            {do
+               {if_else {== {int $slot5_color} 0} os_gem1
+               {if_else {== {int $slot5_color} 1} os_gem2
+               {if_else {== {int $slot5_color} 2} os_gem3
+               {if_else {== {int $slot5_color} 3} os_gem4
+               {if_else {== {int $slot5_color} 4} os_gem5
+               os_gem6}}}}}}}}}})})
+   (SELECT_MSG
+      {set $sld1 FALSE}
+      {set $sld2 FALSE}
+      {set $sld3 FALSE}
+      {set $sld4 FALSE}
+      {set $sld5 FALSE}
+      {set $slds FALSE}
+      {$this show_state kState_RB3EGemColorSelector}))
+(kState_RB3EFretColorSelector
+ (view options_audio)
+ (enter
+  {set $fretsliders TRUE}
+  {instruments.sld set_num_steps 5}
+  {bg_music.sld set_num_steps 5}
+  {crowd.sld set_num_steps 5}
+  {sfx.sld set_num_steps 5}
+  {voice_chat.sld set_num_steps 5}
+  {instruments.sld set_current $fret1_color}
+  {bg_music.sld set_current $fret2_color}
+  {crowd.sld set_current $fret3_color}
+  {sfx.sld set_current $fret4_color}
+  {voice_chat.sld set_current $fret5_color}
+  {options_audio.lst
+   set_data
+   ("Fret 1"
+    "Fret 2"
+    "Fret 3"
+    "Fret 4"
+    "Fret 5")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Fret 1"
+    {set $sld1 TRUE}
+    {set $slds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Fret 2"
+    {set $sld2 TRUE}
+    {set $slds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Fret 3"
+    {set $sld3 TRUE}
+    {set $slds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Fret 4"
+    {set $sld4 TRUE}
+    {set $slds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})
+   ("Fret 5"
+    {set $sld5 TRUE}
+    {set $slds TRUE}
+    {voice_chat.sld store}
+    {voice_chat.sld set_showing TRUE}
+    {$this set_focus voice_chat.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $slds
+               {do {$this show_state kState_RB3EFretMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+   {set $fretsliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EColorSelector}))
+(kState_RB3EFretMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $sld1 {do
+               {if_else {== {int $fret1_color} 0} os_fret1
+               {if_else {== {int $fret1_color} 1} os_fret2
+               {if_else {== {int $fret1_color} 2} os_fret3
+               {if_else {== {int $fret1_color} 3} os_fret4
+               os_fret5}}}}}
+            {if_else $sld2 {do
+               {if_else {== {int $fret2_color} 0} os_fret1
+               {if_else {== {int $fret2_color} 1} os_fret2
+               {if_else {== {int $fret2_color} 2} os_fret3
+               {if_else {== {int $fret2_color} 3} os_fret4
+               os_fret5}}}}}
+            {if_else $sld3 {do
+               {if_else {== {int $fret3_color} 0} os_fret1
+               {if_else {== {int $fret3_color} 1} os_fret2
+               {if_else {== {int $fret3_color} 2} os_fret3
+               {if_else {== {int $fret3_color} 3} os_fret4
+               os_fret5}}}}}
+            {if_else $sld4 {do
+               {if_else {== {int $fret4_color} 0} os_fret1
+               {if_else {== {int $fret4_color} 1} os_fret2
+               {if_else {== {int $fret4_color} 2} os_fret3
+               {if_else {== {int $fret4_color} 3} os_fret4
+               os_fret5}}}}}
+            {do
+               {if_else {== {int $fret5_color} 0} os_fret1
+               {if_else {== {int $fret5_color} 1} os_fret2
+               {if_else {== {int $fret5_color} 2} os_fret3
+               {if_else {== {int $fret5_color} 3} os_fret4
+               os_fret5}}}}}}}}})})
+   (SELECT_MSG
+      {set $sld1 FALSE}
+      {set $sld2 FALSE}
+      {set $sld3 FALSE}
+      {set $sld4 FALSE}
+      {set $sld5 FALSE}
+      {set $slds FALSE}
+      {$this show_state kState_RB3EFretColorSelector}))
+(kState_RB3ESusColorSelector
+ (view options_audio)
+ (enter
+  {set $sussliders TRUE}
+  {instruments.sld set_num_steps 5}
+  {bg_music.sld set_num_steps 5}
+  {crowd.sld set_num_steps 5}
+  {sfx.sld set_num_steps 5}
+  {voice_chat.sld set_num_steps 5}
+  {instruments.sld set_current $sus1_color}
+  {bg_music.sld set_current $sus2_color}
+  {crowd.sld set_current $sus3_color}
+  {sfx.sld set_current $sus4_color}
+  {voice_chat.sld set_current $sus5_color}
+  {options_audio.lst
+   set_data
+   ("Sustain 1"
+    "Sustain 2"
+    "Sustain 3"
+    "Sustain 4"
+    "Sustain 5")})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Sustain 1"
+    {set $sld1 TRUE}
+    {set $slds TRUE}
+    {instruments.sld store}
+    {instruments.sld set_showing TRUE}
+    {$this set_focus instruments.sld})
+   ("Sustain 2"
+    {set $sld2 TRUE}
+    {set $slds TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Sustain 3"
+    {set $sld3 TRUE}
+    {set $slds TRUE}
+    {crowd.sld store}
+    {crowd.sld set_showing TRUE}
+    {$this set_focus crowd.sld})
+   ("Sustain 4"
+    {set $sld4 TRUE}
+    {set $slds TRUE}
+    {sfx.sld store}
+    {sfx.sld set_showing TRUE}
+    {$this set_focus sfx.sld})
+   ("Sustain 5"
+    {set $sld5 TRUE}
+    {set $slds TRUE}
+    {voice_chat.sld store}
+    {voice_chat.sld set_showing TRUE}
+    {$this set_focus voice_chat.sld})})
+ (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld"
+               "sfx.sld"
+               "voice_chat.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $slds
+               {do {$this show_state kState_RB3ESusMsg} {$this set_focus confirm_action.lst}}
+               {$this set_focus options_audio.lst}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+   {set $sussliders FALSE})
+ (on_cancel
+  {$this show_state kState_RB3EColorSelector}))
+(kState_RB3ESusMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message 
+            {if_else $sld1 {do
+               {if_else {== {int $sus1_color} 0} os_sus1
+               {if_else {== {int $sus1_color} 1} os_sus2
+               {if_else {== {int $sus1_color} 2} os_sus3
+               {if_else {== {int $sus1_color} 3} os_sus4
+               os_sus5}}}}}
+            {if_else $sld2 {do
+               {if_else {== {int $sus2_color} 0} os_sus1
+               {if_else {== {int $sus2_color} 1} os_sus2
+               {if_else {== {int $sus2_color} 2} os_sus3
+               {if_else {== {int $sus2_color} 3} os_sus4
+               os_sus5}}}}}
+            {if_else $sld3 {do
+               {if_else {== {int $sus3_color} 0} os_sus1
+               {if_else {== {int $sus3_color} 1} os_sus2
+               {if_else {== {int $sus3_color} 2} os_sus3
+               {if_else {== {int $sus3_color} 3} os_sus4
+               os_sus5}}}}}
+            {if_else $sld4 {do
+               {if_else {== {int $sus4_color} 0} os_sus1
+               {if_else {== {int $sus4_color} 1} os_sus2
+               {if_else {== {int $sus4_color} 2} os_sus3
+               {if_else {== {int $sus4_color} 3} os_sus4
+               os_sus5}}}}}
+            {do
+               {if_else {== {int $sus5_color} 0} os_sus1
+               {if_else {== {int $sus5_color} 1} os_sus2
+               {if_else {== {int $sus5_color} 2} os_sus3
+               {if_else {== {int $sus5_color} 3} os_sus4
+               os_sus5}}}}}}}}})})
+   (SELECT_MSG
+      {set $sld1 FALSE}
+      {set $sld2 FALSE}
+      {set $sld3 FALSE}
+      {set $sld4 FALSE}
+      {set $sld5 FALSE}
+      {set $slds FALSE}
+      {$this show_state kState_RB3ESusColorSelector}))
+(kState_RB3ESettings
+ (view options_audio)
+ (enter
+  {set $rb3eslider TRUE}
+  {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
+  {bg_music.sld set_num_steps 41} ;number of steps for note speed slider
+  {crowd.sld set_num_steps 31} ;number of steps for song speed slider
+  {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
+  {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+  {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
+  {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg (or not, thanks rb3)
+  {speed_msg.lbl set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg (or not, thanks rb3)
+  {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg (or not, thanks rb3)
+  {if_else {== {{$this get_user} get_controller_type} kControllerVocals}
+  {options_audio.lst
+   set_data
+   (
+    "Venue FPS"
+    "Track Speed"
+    "Song Speed"
+    "Venue Select"
+	"Screensaver")}
+  {if_else {== {{$this get_user} get_controller_type} kControllerRealGuitar}
+  {options_audio.lst
+   set_data
+   (
+    "Venue FPS"
+    "Track Speed"
+    "Song Speed"
+    "Venue Select"
+   "Screensaver")}
+  {options_audio.lst
+   set_data
+   (
+    "Venue FPS"
+    "Track Speed"
+    "Song Speed"
+    "Venue Select"
+    "Set Colors"
+   "Screensaver")}}})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   ("Venue FPS"
+      {set $fpsslider TRUE}
+      {instruments.sld store}
+      {instruments.sld set_showing TRUE}
+      {$this set_focus instruments.sld})
+   ("Track Speed"
+    {set $trackspeedslider TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   ("Song Speed"
+      {set $songspeedslider TRUE}
+      {crowd.sld store}
+      {crowd.sld set_showing TRUE}
+      {$this set_focus crowd.sld})
+   ("Venue Select"
+    {$this show_state kState_RB3EVenueSelector})
+   ("Fretboard Select"
+    {$this show_state kState_RB3EFretboardSelector})
+   ("Set Colors"
+    {do {set $rb3eslider FALSE} {if_else {== {{$this get_user} get_controller_type} kControllerDrum}
+    {$this show_state kState_RB3EDrumColorSelector} {if_else {== {{$this get_user} get_controller_type} kControllerKeys}
+    {$this show_state kState_RB3EKeysColorWarning} 
+    {$this show_state kState_RB3EColorSelector}}}})
+   ("Screensaver"
+    {$this show_state kState_RB3EScreensaver})})
+(BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $fpsslider
+                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $songspeedslider
+                  {do {$this show_state kState_SongSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $trackspeedslider
+                  {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                  {$this set_focus options_audio.lst}}}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit 
+  {set $rb3eslider FALSE})
+ (on_cancel
+  {$this show_game_options}))
+(kState_VenueFPSSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_fps} {int $emulatefps}})})
+   (SELECT_MSG
+      {set $fpsslider FALSE}
+      {$this show_state kState_RB3ESettings}))
+(kState_SongSpeedSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_speed} {int {+ 0.5 {* $speedmod 100}}}})})
+   (SELECT_MSG
+      {set $songspeedslider FALSE}
+      {$this show_state kState_RB3ESettings}))
+(kState_TrackSpeedSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_tspeed} {int {+ 0.5 {* $trackspeed 100}}}})})
+   (SELECT_MSG
+      {set $trackspeedslider FALSE}
+      {$this show_state kState_RB3ESettings}))
+(kState_RB3EKeysColorWarning
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_kColorWarn)})
+   (SELECT_MSG
+      {$this show_state kState_RB3EColorSelector}))
+(kState_RB3EFretboardSelector
+ (view choose_char)
+ (enter
+  {prefab_mgr load_portraits $this}
+  {name.lbl set_showing 0}
+  {choose_character.tex
+   set_bitmap
+   "custom_textures/default.bmp"}
+  {chars.lst
+   set_data
+   (default test2 test3)})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   (default
+    {watermark_guitar.tex
+     set_bitmap
+     "custom_textures/default.bmp"})
+   (venue_selector
+    {$this show_state kState_RB3EVenueSelector})
+   (fretboard_selector
+    {$this show_state kState_RB3EFretboardSelector})})
+ (on_cancel
+  {$this show_state kState_RB3ESettings}))
+(kState_RB3EVenueSelector
+ (view online_options)
+ (enter
+       {do
+         ($venue_array
+            {array
+               (VENUES VENUES_VIDEO)})
+         {insert_elem $venue_array 0 none}
+		 {insert_elem $venue_array 1 random}
+         {online_options.lst set_data $venue_array}
+		 {online_options.lst set circular 1}
+         {online_options.lst set_selected 1}
+         {$this update_venue_selection}})
+   (update_venue_selection
+      {options_extras.lst
+         set_selected
+         {{set $force TRUE} {set $venue {online_options.lst selected_sym}} {ui goto_screen meta_loading_main_screen}}})
+   (SELECT_MSG
+      {set $force TRUE} {set $venue {online_options.lst selected_sym}} {ui goto_screen meta_loading_main_screen}
+      {switch
+         {$component selected_sym}
+         (random
+            {set $force FALSE} {ui goto_screen meta_loading_main_screen})
+		 (none
+            {set $force TRUE} {set $venue BLACK_VENUE} {ui goto_screen meta_loading_main_screen})}
+      {$this show_state kState_RB3ESettings} {ui pop_screen})
+  (exit
+  {options_extras.lst set circular 0}
+  {options_extras.lst set_selected 0})
+ (on_cancel
+  {$this show_state kState_RB3ESettings}))
 (kState_SaveloadManagerNotIdle
    (view confirm_action)
    (enter
@@ -1806,6 +2823,12 @@
             $modifier
             (modifier_enter_entry_name
                {$this show_modifier_unlock})
+            (mod_auto_play
+                  {modifier_mgr toggle_modifier_enabled $modifier}
+                  {set $autoplay TRUE} {set $gotcha FALSE}
+                  {saveload_mgr disable_autosave $user}
+                  {overshell update_all}
+				  {ui goto_screen meta_loading_main_screen})
             (mod_drum_surface_navigation
                {modifier_mgr toggle_modifier_enabled $modifier}
                {unless
@@ -1824,10 +2847,27 @@
 (kState_ModifiersDrumWarning
    (view confirm_action)
    (enter
+      {if_else $ingameset
+            {handle
+               ($this set_confirm_message ingame_warning)}
+      {if_else $author
+         {do {set $author FALSE}
+            {handle
+               ($this set_confirm_message author_warning)}}
+      {if_else $autoplay
+         {do {set $autoplay FALSE}
+            {handle
+               ($this set_confirm_message autoplay_warning)}}
+      {if_else $breakneck
+         {do {set $breakneck FALSE}
+            {handle
+               ($this set_confirm_message breakneck_warning)}}
       {handle
-         ($this set_confirm_message disable_drum_surface_navigation_warning)})
+         ($this set_confirm_message disable_drum_surface_navigation_warning)}}}}})
    (SELECT_MSG
-      {$this show_modifiers}))
+      {if_else $ingameset
+      {do {set $ingameset FALSE} {$this show_state kState_RB3ESettings}}
+      {$this show_modifiers}}))
 (kState_ModifierUnlock
    (view confirm_action)
    (enter
@@ -1899,7 +2939,13 @@
    (update_view
       {$this update_part_select_list})
    (enter
-      {$this update_part_select_list})
+      {$this update_part_select_list}
+      {if {== {{$this get_user} get_controller_type} kControllerGuitar}
+  {choose_part.lst
+   set_data
+   (overshell_guitar
+    overshell_bass
+    overshell_keys)}})
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -2174,6 +3220,9 @@
    (view choose_diff)
    (song_settings_flow TRUE)
    (shows_extended_mic_arrows TRUE)
+   (enter {if {! $firstdiff}
+	     {set $firstdiff TRUE}
+		 {choose_diff.lst set_selected 3}})
    (SELECT_MSG
       {switch
          {choose_diff.lst selected_sym}
@@ -2517,8 +3566,8 @@
                   ""}}}
          {$this rename_character $text}
          {$this show_chars}
-         {saveload_mgr autosave}}
-      {$this set_paused 0})
+         {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}} {saveload_mgr autosave}}
+      {$this set_paused 0}})
    (on_cancel
       {$this show_chars}))
 (kState_ChooseCharDelete
@@ -2542,7 +3591,7 @@
             {$this
                refresh_highlighted_char
                {chars.lst selected_pos}}
-            {saveload_mgr autosave})
+            {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}} {saveload_mgr autosave}})
          (overshell_confirm_no
             {$this leave_char_delete})})
    (on_cancel

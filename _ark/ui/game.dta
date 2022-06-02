@@ -82,6 +82,13 @@
                   $ex}}}}
       kDataUnhandled)
    (game_over
+      {{{{gamemode get track_panel}
+               find
+               mtv_overlay}
+            find
+            fade.anim}
+         set_frame
+         0}
       #ifndef HX_WII
       {stagekit_reset}
       #endif
@@ -186,6 +193,21 @@
 ((disable_screen_saver TRUE)
    PAUSE_ON_MIC_DISCONNECT
    (enter
+      {if_else
+         {modifier_mgr is_modifier_active mod_auto_play}
+         {do
+            {beatmatch
+               foreach_active_player
+               $player
+               {$player set_auto_play 1}}}
+         {do
+            {beatmatch
+               foreach_active_player
+               $player
+               {$player set_auto_play 0}}}}
+      {if
+         {modifier_mgr is_modifier_active mod_staticfills}
+         {gamemode set allow_drum_fills FALSE}}
       {$this set_showing TRUE}
       {set
          [delayed_mic_check]
@@ -212,6 +234,7 @@
       {handle
          ($this my_enter)})
    (exit
+      {set $speedmod $leaderspeed}
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -231,6 +254,40 @@
    (on_guide_change
       {overshell update_all}
       PAUSE_MICS_ON_GUIDE_CHANGE))
+{new
+   UIPanel
+   outro_vignette_loader
+   (chosen_vignette '')
+   (load
+      {set
+         [chosen_vignette]
+         ''}
+      {if
+         {meta_performer is_set_complete}
+         {meta_performer upload_debug_stats}
+         {set
+            [chosen_vignette]
+            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
+            {[chosen_vignette]
+               load}}
+         #else
+         {[chosen_vignette]
+            load}
+         #endif})
+   (unload
+      {if
+         {!=
+            [chosen_vignette]
+            ''}
+         {[chosen_vignette]
+            unload}})}
 #define GAME_SCREEN_PANELS
 (world_panel coop_track_panel game sync_audio_net_panel)
 #define GAME_SCREEN_PANELS_NO_TRACK
@@ -279,6 +336,18 @@
    restart_sync_audio_net_screen
    (panels)
    (enter
+      {if
+         {is_leader_local}
+         {session
+            send_msg_to_all
+            {'`'
+               (set
+                  $speedmod
+                  {',' $leaderspeed})
+               kNetReliable}}}
+      {if
+         {is_leader_local}
+         {set $speedmod $leaderspeed}}
       {overshell set_active_status kOvershellInactive}
       {{gamemode get game_screen}
          set_showing
@@ -464,4 +533,7 @@
    mydta_start_practice_in_game_screen
    (panels mydta_start_in_game_panel)
    (TRANSITION_COMPLETE_MSG
-      {ui goto_screen practice_game_screen})}
+      {if_else
+         {== $venue BLACK_VENUE}
+         {ui goto_screen practice_black_game_screen}
+         {ui goto_screen practice_game_screen}})}
