@@ -29,6 +29,11 @@ If installing for the first time, make sure you rename the vanilla "default.xex"
 Also make sure to disable any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in "/_build/_optional-xbox-rb3e-rawfiles/" and place the "config" and "ui" folders next to the "gen" folder on your Xbox
 
+On Wii (PROS ONLY), extract your Rock Band 3 ISO using [WIT](https://wit.wiimm.de/download.html), copy the files in "extracted_rb3/DATA/files/gen" to "_build/wii/".
+Once copied, run "_build_wii.bat", then copy all the files in "_build/wii/" back to "extracted_rb3/DATA/files/gen" and repack using the "copy" command in wit.
+Subsequent builds do not require copying the files from your extracted iso to "_build/wii/".
+Copy to your wii using whatever method you usually use, or drag the ISO onto Dolphin to boot.
+
 Run the build script again to pull any new updates committed to the repo and rebuild a new ark.
 
 ## Songs
