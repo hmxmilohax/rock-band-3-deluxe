@@ -4,7 +4,50 @@
 
 ## Introduction
 
-This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360.
+This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/jnackmclain/rock-band-3-deluxe/tree/wii)
+
+## Features
+
+### Quality of Life
+* Max song limit increased to 32767. Tested up to 11.2k in RPCS3
+* Song select ambient noise modifier, default disabled
+* New menu, "RB3DX Menu", in game for additional modifications
+* Selectable song speed and track speed by 5% increments
+* Selectable venue framerate up to 60fps
+* Selectable venues, including a "Black Venue" with decreased load times and system load
+* Fast start executable modification by ihatecompvir
+* Additional intro skip scripting to load the main menu by default and automatically start loading installed content
+* Press select to restart the section in practice mode
+* Default difficulty on first load is Expert
+* Song title always visible modifier
+* Keys on Guitar unlocked without meeting requirements
+
+
+### Authoring
+* Autoplay modifier for chart demos
+* Gameplay watermarks to deter abuse of autoplay including -
+    * Disabling autosave
+    * Replacing endgame percentage with "BOT"
+    * Manipulating MTV Overlay
+* Cycle camera menu button - available in-game when autoplay is enabled
+* Rock Revolution drums register as Pro Keys on PS3/RPCS3, to allow easy demos for pro instruments
+* Guitar Hero World Tour drums register as Pro Guitar/Bass on PS3/RPCS3, to allow easy demos for pro instruments
+
+### Additional Modifications
+* Selectable colors per fret/note/sustain
+* Huge variety of custom song sources supported
+* All official exports, DLC, and RBN sorted into individual sources
+* Auto activating drum modifier (no fills mode)
+* Translations for Spanish, French, German
+* Post processing toggle - disables/reenables post processing in-game, or in menus
+* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed
+* Nice (69%) and Awesome Choke (98-99%) callouts on solo completion
+* No crowd modifier
+* No whammy effect modifier
+* No sustain trails modifier
+* Rock Band 2 Sustain look modifier
+* Upgrades/fixes for tons of songs from [RB3_plus](https://github.com/rjkiv/rb3_plus)
+* Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
 ## Install
 
