@@ -34,13 +34,14 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Guitar Hero World Tour drums register as Pro Guitar/Bass on PS3/RPCS3, to allow easy demos for pro instruments
 
 ### Additional Modifications
-* Selectable colors per fret/note/sustain
+* Selectable colors per fret/note/sustain (It works on Pro Drums/non-Pro Keys too!)
+* Selectable Overshell colors
 * Huge variety of custom song sources supported
 * All official exports, DLC, and RBN sorted into individual sources
 * Auto activating drum modifier (no fills mode)
 * Translations for Spanish, French, German
 * Post processing toggle - disables/reenables post processing in-game, or in menus
-* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed
+* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed (it will softlock your game, so be careful!)
 * Nice (69%) and Awesome Choke (98-99%) callouts on solo completion
 * No crowd modifier
 * No whammy effect modifier
