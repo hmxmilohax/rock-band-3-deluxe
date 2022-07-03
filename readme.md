@@ -9,7 +9,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 ## Features
 
 ### Quality of Life
-* Max song limit increased to 32767. Tested up to 11.2k in RPCS3
+* Max song limit increased to 32767. Tested up to 2k (twice default) On a real Wii
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Menu", in game for additional modifications
 * Selectable song speed and track speed by 5% increments
@@ -30,17 +30,15 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
     * Replacing endgame percentage with "BOT"
     * Manipulating MTV Overlay
 * Cycle camera menu button - available in-game when autoplay is enabled
-* Rock Revolution drums register as Pro Keys on PS3/RPCS3, to allow easy demos for pro instruments
-* Guitar Hero World Tour drums register as Pro Guitar/Bass on PS3/RPCS3, to allow easy demos for pro instruments
 
 ### Additional Modifications
-* Selectable colors per fret/note/sustain
+* Selectable colors per fret/note/sustain (It works on Pro Drums/non-Pro Keys too!)
 * Huge variety of custom song sources supported
 * All official exports, DLC, and RBN sorted into individual sources
 * Auto activating drum modifier (no fills mode)
 * Translations for Spanish, French, German
 * Post processing toggle - disables/reenables post processing in-game, or in menus
-* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed
+* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed (it will softlock your game, so be careful!)
 * Nice (69%) and Awesome Choke (98-99%) callouts on solo completion
 * No crowd modifier
 * No whammy effect modifier
@@ -68,10 +66,9 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 ## Songs
 
-You can find song packs compatible with all Rock Band titles for both platforms on the [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
+~~You can find song packs compatible with all Rock Band titles for both platforms on the [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).~~
 
-
-You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games.
+There are currently no Wii songs available on the spreadsheet, instead use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to convert/generate your own custom song packs for Rock Band 3 on Wii.
 
 ## Included Dependencies
 
