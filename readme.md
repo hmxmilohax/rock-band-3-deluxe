@@ -69,12 +69,18 @@ On ps3/rpcs3, copy all files in "_build/ps3/" to "/dev_hdd0/game/BLUS30463/"
 Match the file system and overwrite the files.
 
 On Xbox, copy the gen folder and the xex from "_build/xbox/" to the location you have installed Rock Band 3.
+
 Make sure you clear your song cache, as well as your system cache.
+
 To clear song cache, navigate to Storage>Rock Band 3> and delete the song cache.
+
 To clear system cache, navigate to Storage, and press Y to clear the system cache.
+
 If installing for the first time, make sure you rename the vanilla "default.xex" to "default_vanilla.xex" for safety.
+
 Also make sure to disable any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
-If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in "/_build/_optional-xbox-rb3e-rawfiles/" and place the "config" and "ui" folders next to the "gen" folder on your Xbox
+
+If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in "/_build/_optional-xbox-rb3e-rawfiles/" and place the "config" and "ui" folders next to the "gen" folder on your Xbox.
 
 Run the build script again to pull any new updates committed to the repo and rebuild a new ark.
 
