@@ -52,6 +52,8 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 
 ## Install
 
+NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
+
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
