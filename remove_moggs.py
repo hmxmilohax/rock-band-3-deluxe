@@ -1,4 +1,4 @@
-# add_moggs.py
+# remove_moggs.py
 from pathlib import Path
 
 # get the current working directory
