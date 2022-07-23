@@ -21,7 +21,8 @@ for mogg in rb3_plus_path.glob("Pro Keys/*/*/*.mogg"):
     shortname = mogg.name.replace(".mogg","")
     mogg_update = shortname + "_update.mogg"
     song_update_path = song_updates_folder.joinpath(shortname)
-    mogg.rename(song_update_path/mogg_update)
+    mogg_update_path = song_update_path.joinpath(mogg_update)
+    mogg_update_path.write_bytes(mogg.read_bytes())
 
 # uncomment the ADDED_MOGGS line
 macros_path = cwd.joinpath("_ark/config/macros.dta")
