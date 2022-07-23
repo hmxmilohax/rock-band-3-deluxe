@@ -17,7 +17,7 @@ macro_contents = []
 
 macro_contents = [line for line in open(macros_path,"r")]
 for i in range(len(macro_contents)):
-    if "ADDED_MOGGS" in macro_contents[i]:
+    if "KEYS_ENABLED" in macro_contents[i]:
         if "; #define" not in macro_contents[i]:
             macro_contents[i] = "; " + macro_contents[i]
         break
