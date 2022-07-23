@@ -9,7 +9,6 @@ mogg_count = 0
 # start at the songs updates folder, and find moggs
 song_updates_folder = cwd.joinpath("_ark/songs/updates")
 for path in song_updates_folder.rglob("*/*.mogg"):
-    print(path)
     path.unlink(missing_ok=True)
 
 # comment the ADDED_MOGGS line

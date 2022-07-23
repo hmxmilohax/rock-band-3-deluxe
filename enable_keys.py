@@ -17,11 +17,9 @@ except:
 song_updates_folder = cwd.joinpath("_ark/songs/updates")
 # traverse through the repo and find the moggs
 for mogg in rb3_plus_path.glob("Pro Keys/*/*/*.mogg"):
-    print(mogg.name)
     # insert the mogg into the respective song's update folder
     shortname = mogg.name.replace(".mogg","")
     mogg_update = shortname + "_update.mogg"
-    print(mogg_update)
     song_update_path = song_updates_folder.joinpath(shortname)
     mogg.rename(song_update_path/mogg_update)
 
