@@ -115,9 +115,7 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
 
-Head to the `/dependencies/` folder in this repo and run the install_gitpython.bat.
-
-You may optionally run `pip install gitpython` in cmd.
+Head to the `/dependencies/` folder in this repo and run the install_gitpython.bat, or run `pip install gitpython` in cmd.
 
 Next simply run the `enable_keys.bat` or `disable_keys.bat` to download the new mogg files and enable their additions.
 
