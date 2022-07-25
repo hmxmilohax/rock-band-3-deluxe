@@ -93,7 +93,7 @@ You can find song packs compatible with all Rock Band titles for both platforms 
 
 You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games.
 
-## Included Dependencies
+## Dependencies
 
 [Git for Windows](https://gitforwindows.org/) - CLI application to allow auto updating rb3dx repo files
 
@@ -102,3 +102,5 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 [Mackiloha](https://github.com/PikminGuts92/Mackiloha) - ArkHelper for building Rock Band 3 ARK - Superfreq for building .bmp_xbox highway images
 
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
+
+[python](https://www.python.org/downloads/) - for more detailed script functions such as enabling/disabling extra keys support
