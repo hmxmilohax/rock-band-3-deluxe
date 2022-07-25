@@ -1,7 +1,12 @@
 # enable_keys.py
 from pathlib import Path
-import git
-
+try:
+    import git
+    print("module 'git' is installed")
+except ModuleNotFoundError:
+    print("module 'git' is not installed. Install it via '/dependencies/install_gitpython.bat' or 'pip install gitpython'")
+    sys.exit(1)
+    
 # get the current working directory
 cwd = Path().absolute()
 
