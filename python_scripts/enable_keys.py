@@ -2,7 +2,7 @@
 from pathlib import Path
 try:
     import git
-    print("module 'git' is installed")
+    print("module 'git' is installed. Downloading/enabling additional rb3_plus song data, this may take some time.")
 except ModuleNotFoundError:
     print("module 'git' is not installed. Install it via '/dependencies/install_gitpython.bat' or 'pip install gitpython'")
     sys.exit(1)
