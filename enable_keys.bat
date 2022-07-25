@@ -1,2 +1,2 @@
-python3 python_scripts/enable_keys.py
+python python_scripts/enable_keys.py
 pause
