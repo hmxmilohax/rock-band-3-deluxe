@@ -1,2 +1,0 @@
-python python_scripts/enable_keys.py
-pause

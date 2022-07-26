@@ -1,2 +1,0 @@
-python python_scripts/disable_keys.py
-pause
