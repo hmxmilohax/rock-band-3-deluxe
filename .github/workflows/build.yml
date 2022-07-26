@@ -133,6 +133,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Declare some variables
+        id: vars
+        shell: bash
+        run: |
+          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+  
+  - name: Another step
+    run: |
+      echo "Branch: ${{ steps.vars.outputs.branch }}"
+      echo "Sha: ${{ steps.vars.outputs.sha_short }}"
+
       - uses: actions/checkout@v3
 
       - name: Build ARK
@@ -142,6 +154,7 @@ jobs:
           chmod +x dependencies/superfreq
           sed -i -e "s/(ro_drums_ps3_ghwt kControllerDrum)/(ro_drums_ps3_ghwt kControllerRealGuitar)/" _ark/config/joypad.dta
           sed -i -e "s/(konami_drums_ps3_rr kControllerDrum)/(konami_drums_ps3_rr kControllerKeys)/" _ark/config/joypad.dta
+          sed -i -e "s/(message_motd "Rock Band 3 Deluxe 0.1.7 Loaded! Thanks for playing!")/(message_motd "Rock Band 3 Deluxe ${{ steps.vars.outputs.sha_short }} Loaded! Thanks for playing!")/" _ark/ui/locale/eng/locale_updates_keep.dta
           dependencies/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
 
       - name: Upload result
