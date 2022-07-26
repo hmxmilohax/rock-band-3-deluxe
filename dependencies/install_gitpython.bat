@@ -1,1 +1,1 @@
-pip3 install gitpython
+pip install gitpython

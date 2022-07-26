@@ -27,7 +27,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Autoplay modifier for chart demos
 * Gameplay watermarks to deter abuse of autoplay including -
     * Disabling autosave
-    * Replacing endgame percentage with "BOT"
+    * Replacing endgame percentage with `BOT`
     * Manipulating MTV Overlay
 * Cycle camera menu button - available in-game when autoplay is enabled
 * Rock Revolution drums register as Pro Keys on PS3/RPCS3, to allow easy demos for pro instruments
@@ -47,44 +47,79 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * No whammy effect modifier
 * No sustain trails modifier
 * Rock Band 2 Sustain look modifier
-* Upgrades/fixes for tons of songs from [RB3_plus](https://github.com/rjkiv/rb3_plus)
+* Upgrades/fixes for tons of songs from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
-## Install
+## Setup
 
 NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
 
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
-Simply go to the Releases of this repo and grab all three files. (two .exe, one .bat, .sh for linux)
+Simply go to the [Releases](https://github.com/jnackmclain/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there are .bat files for Windows and .sh files for linux, as well as a specific branch for Wii.
 
-The two exe's are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
-Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK file, the archive format the game needs to run.
+Included on the release page for ease of install are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
+Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK/HDR file, the archive format the game needs to run. You cannot run any deluxe title without building an ark first.
+
 You can setup git with all default options, same with dot net.
 
-Once the dependencies are installed, run "_init_repo.bat" in an **empty folder**. git will pull the repo and make sure you are completely up to date.
+Once the dependencies are installed, run `_init_repo.bat` in an **empty folder**. git will pull the repo and make sure you are completely up to date.
 
-From then on simply run "_build_ps3.bat" or "_build_xbox.bat", depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in _build/Xbox or _build/PS3
+From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
+## Install
 
-On ps3/rpcs3, copy all files in "_build/ps3/" to "/dev_hdd0/game/BLUS30463/"
-Match the file system and overwrite the files.
+### RPCS3 Emulator
 
-On Xbox, copy the gen folder and the xex from "_build/xbox/" to the location you have installed Rock Band 3.
+To install on rpcs3, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
+
+If the folder does not exist, create it. The game will need the included .bin file, and a built .ark/.hdr to function. The folder format in `/_build/ps3` matches how it should be installed.
+
+Overwrite files if asked.
+
+Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
+
+### PS3 Hardware
+
+To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 first to register the update in your system.
+
+Next, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
+
+If the folder does not exist, create it. The game will need the included .bin file, and a built .ark/.hdr to function. The folder format in `/_build/ps3` matches how it should be installed.
+
+Overwrite files if asked.
+
+Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
+
+### Xbox
+
+On Xbox, copy the gen folder and the xex from `_build/xbox/` to the same location your copy of Rock Band 3 lives.
 
 Make sure you clear your song cache, as well as your system cache.
 
-To clear song cache, navigate to Storage>Rock Band 3> and delete the song cache.
+To clear song cache, navigate to `System Settings>Storage>Rock Band 3` and delete the song cache.
 
-To clear system cache, navigate to Storage, and press Y to clear the system cache.
+To clear system cache, navigate to `System Settings>Storage` and press Y to clear the system cache.
 
-If installing for the first time, make sure you rename the vanilla "default.xex" to "default_vanilla.xex" for safety.
+If installing for the first time, make sure you rename the vanilla `default.xex` to `default_vanilla.xex` for safety.
 
-Also make sure to disable any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
+Also make sure to `disable` any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
 
-If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in "/_build/_optional-xbox-rb3e-rawfiles/" and place the "config" and "ui" folders next to the "gen" folder on your Xbox.
+If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `/_build/_optional-xbox-rb3e-rawfiles/` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
-Run the build script again to pull any new updates committed to the repo and rebuild a new ark.
+Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
+
+## Optional Install - rb3_plus keys upgrades
+
+[rb3_plus](https://github.com/rjkiv/rb3_plus) contains additional keys upgrades that can be optionally downloaded into rb3dx easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
+
+To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
+
+Head to the `/dependencies/` folder in this repo and run the install_gitpython.bat, or run `pip install gitpython` in cmd.
+
+Next simply run the `enable_keys.bat` or `disable_keys.bat` to download the new mogg files and enable their additions.
+
+Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
 
 ## Songs
 
