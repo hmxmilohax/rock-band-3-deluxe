@@ -2,7 +2,21 @@
 
 ![Header Image](dependencies/header.png)
 
-## Introduction
+# Table of Contents  
+* [Introduction](#introduction)
+* [Features](#features)
+* [Setup](#setup)
+* [Builds](#actions)
+* [Repo Setup](#repo-setup)
+* [Install](#install)
+* [Install RPCS3](#rpcs3-emulator)
+* [Install PS3](#ps3-hardware)
+* [Install Xbox](#xbox)
+* [Optional rb3_plus Keys Upgrades](#optional-rb3_plus-keys-upgrades)
+* [Songs](#songs)
+* [Dependencies](#dependencies)
+
+# Introduction
 
 This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/jnackmclain/rock-band-3-deluxe/tree/wii)
 
@@ -54,6 +68,19 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 
 NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
 
+### Actions
+
+There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
+
+* RB3DX-Base-*platform* - The default build of Rock Band 3 Deluxe
+* RB3DX-*platform*-additional-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
+* RB3DX-*platform*-pad-is-guitar - A build of Rock Band 3 Deluxe where joypad controllers are forced to act as guitars for traditional pad play
+* RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where GHWT and Rock Revolution kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 real hardware.
+
+If using pre built actions, skip down to the `Install` section and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
+
+### Repo-Setup
+
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
@@ -67,9 +94,10 @@ You can setup git with all default options, same with dot net.
 Once the dependencies are installed, run `_init_repo.bat` in an **empty folder**. git will pull the repo and make sure you are completely up to date.
 
 From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
+
 ## Install
 
-### RPCS3 Emulator
+### RPCS3-Emulator
 
 To install on rpcs3, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
 
@@ -79,7 +107,9 @@ Overwrite files if asked.
 
 Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
 
-### PS3 Hardware
+### PS3-Hardware
+
+NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
 
 To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 first to register the update in your system.
 
@@ -92,6 +122,8 @@ Overwrite files if asked.
 Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
 
 ### Xbox
+
+NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
 
 On Xbox, copy the gen folder and the xex from `_build/xbox/` to the same location your copy of Rock Band 3 lives.
 
@@ -109,7 +141,7 @@ If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
 Run the build script again to pull any new updates committed to the repo and rebuild a new ark/hdr.
 
-## Optional Install - rb3_plus keys upgrades
+## Optional-rb3_plus-Keys-Upgrades
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) contains additional keys upgrades that can be optionally downloaded into rb3dx easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
 
