@@ -115,7 +115,7 @@ To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 
 
 Next, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
 
-If the folder does not exist, create it. The game will need the included .bin file, and a built .ark/.hdr to function. The folder format in `/_build/ps3` matches how it should be installed.
+If the folder does not exist, you have not installed vanilla patch 1.05. You need to do this first. The game will need the included .bin file, and a built .ark/.hdr to function. The folder format in `/_build/ps3` matches how it should be installed.
 
 Overwrite files if asked.
 
