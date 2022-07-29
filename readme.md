@@ -109,7 +109,7 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 ### PS3-Hardware
 
-NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
+**NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear**
 
 To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 first to register the update in your system.
 
@@ -123,17 +123,17 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 ### Xbox
 
-NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear
+**NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear**
 
-On Xbox, copy the gen folder and the xex from `_build/xbox/` to the same location your copy of Rock Band 3 lives.
+On Xbox, copy the gen folder and the xex from `_build/xbox/` to the same location your base copy of Rock Band 3 lives.
+
+If installing for the first time, make sure you rename the vanilla `default.xex` to `default_vanilla.xex` for safety.
 
 Make sure you clear your song cache, as well as your system cache.
 
 To clear song cache, navigate to `System Settings>Storage>Rock Band 3` and delete the song cache.
 
 To clear system cache, navigate to `System Settings>Storage` and press Y to clear the system cache.
-
-If installing for the first time, make sure you rename the vanilla `default.xex` to `default_vanilla.xex` for safety.
 
 Also make sure to `disable` any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
 
@@ -143,7 +143,9 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 ## Optional-rb3_plus-Keys-Upgrades
 
-[rb3_plus](https://github.com/rjkiv/rb3_plus) contains additional keys upgrades that can be optionally downloaded into rb3dx easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
+[rb3_plus](https://github.com/rjkiv/rb3_plus) features optional key upgrades that you can install alongside RB3DX fairly easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
+
+You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
 
 To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
 
@@ -156,7 +158,6 @@ Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
 ## Songs
 
 You can find song packs compatible with all Rock Band titles for both platforms on the [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
-
 
 You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games.
 
