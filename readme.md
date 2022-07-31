@@ -12,6 +12,7 @@
 * [Install RPCS3](#rpcs3-emulator)
 * [Install PS3](#ps3-hardware)
 * [Install Xbox](#xbox)
+* [Optional install custom highways](#optional-install-custom-highways)
 * [Optional rb3_plus Keys Upgrades](#optional-rb3_plus-keys-upgrades)
 * [Songs](#songs)
 * [Dependencies](#dependencies)
@@ -154,6 +155,31 @@ Head to the `/dependencies/` folder in this repo and run the install_gitpython.b
 Next simply run the `enable_keys.bat` or `disable_keys.bat` to download the new mogg files and enable their additions.
 
 Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
+
+## Optional-Install-Custom-Highways
+
+This repo also supports the import of custom highways and groove/spotlights via the use of a bat script, python script, manual dta editing and a couple external dependencies included, but it's way easier than it sounds to create your own.
+
+RB3DX includes a variety of custom highways by default, available via the "RB3DX Menu", but you can add your own with the following steps.
+
+Simply drag in a .jpg/.png/.bmp into the `highways` folder at the root of the repo, then run `highways.bat`.
+Or, drag in a .jpg/.png/.bmp into the `spotlights` folder at the root of the repo, then run `spotlights.bat`.
+
+This will size your images accordingly (supports arbitrary resolutions), and convert them to the proper format for rb3 to read. Spotlights will be set to 50% opacity.
+
+A .dta file will be generated for a list of your custom highways/spotlights.
+You must copy and paste the contents of the generated dta, and overwrite the similar data in another dta.
+
+For highways, copy all contents from `_ark/ui/track/surfaces/highways.dta`.
+For spotlights, copy all contents from `_ark/ui/track/surfaces/spotlights.dta`.
+
+Next go to `_ark/ui/overshell/slot_states.dta` and search for `highways.dta` or `spotlights.dta`.
+Being careful to stay within the parenthesis, highlight and delete existing custom highways. All existing custom highways are within quotation marks.
+
+Paste your desired block of highways over the existing block.
+
+You will need to run the build script to again to create your new ARK and reinstall RB3DX to your desired platform.
+
 
 ## Songs
 
