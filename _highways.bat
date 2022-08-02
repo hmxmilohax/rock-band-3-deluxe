@@ -10,6 +10,6 @@ move "%~dp0highways\highways.dta" "%~dp0_ark\ui\track\surfaces\highways.dta"
 FOR /F "tokens=*" %%G IN ('dir /b *.png') DO "%~dp0dependencies/magick/magick.exe" convert "%~dp0highways/%%G" -resize 256x512! -filter Box "%~dp0highways\%%~nG.png"
 FOR /F "tokens=*" %%G IN ('dir /b *.jpg') DO "%~dp0dependencies/magick/magick.exe" convert "%~dp0highways/%%G" -resize 256x512! -filter Box "%~dp0highways\%%~nG.png"
 FOR /F "tokens=*" %%G IN ('dir /b *.bmp') DO "%~dp0dependencies/magick/magick.exe" convert "%~dp0highways/%%G" -resize 256x512! -filter Box "%~dp0highways\%%~nG.png"
-FOR /F "tokens=*" %%G IN ('dir /b *.png') DO "%~dp0dependencies/superfreq.exe" png2tex "%~dp0highways/%%G" "%~dp0_ark\ui\track\surfaces\gen\%%~nG.bmp_xbox" --platform x360 --miloVersion 26
+FOR /F "tokens=*" %%G IN ('dir /b *.png') DO "%~dp0dependencies/superfreq.exe" png2tex "%~dp0highways/%%G" "%~dp0_ark\ui\track\surfaces\gen\%%~nG.png_xbox" --platform x360 --miloVersion 26
 cd "%~dp0_ark/ui/track/surfaces/gen"
-FOR /F "tokens=*" %%G IN ('dir /b *.bmp_xbox') DO python "%~dp0dependencies/swap_dds_bytes.py" "%~dp0_ark/ui/track/surfaces/gen/%%G" "%~dp0_ark/ui/track/surfaces/gen/%%~nG.bmp_ps3"
+FOR /F "tokens=*" %%G IN ('dir /b *.png_xbox') DO python "%~dp0dependencies/swap_dds_bytes.py" "%~dp0_ark/ui/track/surfaces/gen/%%G" "%~dp0_ark/ui/track/surfaces/gen/%%~nG.png_ps3"
