@@ -4,7 +4,7 @@ import sys
 
 def Main():
     if len(sys.argv) < 2:
-        print("Usage: swap_dds_bytes <input path> <output path>")
+        print("Usage: swap_rb_art_bytes <input path> <output path>")
         return
     elif len(sys.argv) < 3:
         print("Expected three arguements.")
@@ -22,7 +22,7 @@ def Swapper(pathIn, pathOut):
     fin.seek(0,0)
     fout.seek(0,0)
 
-    buffer = fin.read(128)
+    buffer = fin.read(32)
     fout.write(buffer)
 
     # Shuffles bytes after header.
