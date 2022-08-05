@@ -195,6 +195,8 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 
 [Mackiloha](https://github.com/PikminGuts92/Mackiloha) - ArkHelper for building Rock Band 3 ARK - Superfreq for building .bmp_xbox highway images
 
+[swap_rb_art_bytes.py](https://github.com/PikminGuts92/re-notes/blob/master/scripts/swap_rb_art_bytes.py) - py script for converting xbox images to ps3
+
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
 
 [python](https://www.python.org/downloads/) - for more detailed script functions such as enabling/disabling extra keys support
