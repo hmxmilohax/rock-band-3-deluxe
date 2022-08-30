@@ -9,6 +9,7 @@
 * [Builds](#actions)
 * [Repo Setup](#repo-setup)
 * [Install](#install)
+* [Install Xenia](#xenia-emulator)
 * [Install RPCS3](#rpcs3-emulator)
 * [Install PS3](#ps3-hardware)
 * [Install Xbox](#xbox)
@@ -97,6 +98,12 @@ Once the dependencies are installed, run `_init_repo.bat` in an **empty folder**
 From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
 
 ## Install
+
+### Xenia-Emulator
+
+To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `_xenia/gen`
+
+then just run `_build_xenia.bat` to automatically build and run Rock Band 3 Deluxe.
 
 ### RPCS3-Emulator
 
