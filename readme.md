@@ -20,7 +20,7 @@
 
 # Introduction
 
-This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/jnackmclain/rock-band-3-deluxe/tree/wii)
+This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii)
 
 ## Features
 
@@ -72,7 +72,7 @@ NOTE: You WILL need a modded/hacked console to play this mod on console. I hope 
 
 ### Actions
 
-There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
+There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
 
 * RB3DX-Base-*platform* - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-additional-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
@@ -86,7 +86,7 @@ If using pre built actions, skip down to the `Install` section and assume any me
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
-Simply go to the [Releases](https://github.com/jnackmclain/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there are .bat files for Windows and .sh files for linux, as well as a specific branch for Wii.
+Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there are .bat files for Windows and .sh files for linux, as well as a specific branch for Wii.
 
 Included on the release page for ease of install are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
 Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK/HDR file, the archive format the game needs to run. You cannot run any deluxe title without building an ark first.
@@ -153,7 +153,7 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) features optional key upgrades that you can install alongside RB3DX fairly easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
 
-You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
+You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
 
 To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
 
