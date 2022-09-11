@@ -15,7 +15,7 @@ cwd = Path().absolute()
 # clone/pull rbdx_animated_textures
 rbdx_animated_textures_path = cwd.joinpath("rbdx_animated_textures")
 try:
-    repo = git.Repo.clone_from("https://github.com/jnackmclain/rbdx_animated_textures.git", rbdx_animated_textures_path, branch="main")
+    repo = git.Repo.clone_from("https://github.com/hmxmilohax/rbdx_animated_textures.git", rbdx_animated_textures_path, branch="main")
 except:
     repo = git.Repo(rbdx_animated_textures_path)
     origin = repo.remotes.origin
