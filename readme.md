@@ -169,21 +169,10 @@ This repo also supports the import of custom highways and groove/spotlights via 
 
 RB3DX includes a variety of custom highways by default, available via the "RB3DX Menu", but you can add your own with the following steps.
 
-Simply drag in a .jpg/.png/.bmp into the `highways` folder at the root of the repo, then run `highways.bat`.
-Or, drag in a .jpg/.png/.bmp into the `spotlights` folder at the root of the repo, then run `spotlights.bat`.
+Simply drag in a .jpg/.png/.bmp into the `highways` folder at the root of the repo, then run `_texture-process_highways.bat`.
+Or, drag in a .jpg/.png/.bmp into the `spotlights` folder at the root of the repo, then run `_texture-process_spotlights.bat`.
 
 This will size your images accordingly (supports arbitrary resolutions), and convert them to the proper format for rb3 to read. Spotlights will be set to 50% opacity.
-
-A .dta file will be generated for a list of your custom highways/spotlights.
-You must copy and paste the contents of the generated dta, and overwrite the similar data in another dta.
-
-For highways, copy all contents from `_ark/ui/track/surfaces/highways.dta`.
-For spotlights, copy all contents from `_ark/ui/track/surfaces/spotlights.dta`.
-
-Next go to `_ark/ui/overshell/slot_states.dta` and search for `highways.dta` or `spotlights.dta`.
-Being careful to stay within the parenthesis, highlight and delete existing custom highways. All existing custom highways are within quotation marks.
-
-Paste your desired block of highways over the existing block.
 
 You will need to run the build script to again to create your new ARK and reinstall RB3DX to your desired platform.
 
@@ -207,3 +196,5 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
 
 [python](https://www.python.org/downloads/) - for more detailed script functions such as enabling/disabling extra keys support
+
+[sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm) - for regex on windows for custom textures listing in game
