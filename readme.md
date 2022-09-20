@@ -165,12 +165,13 @@ Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
 
 ## Optional-Install-Custom-Highways
 
-This repo also supports the import of custom highways and groove/spotlights via the use of a bat script, python script, manual dta editing and a couple external dependencies included, but it's way easier than it sounds to create your own.
+This repo also supports the import of custom highways and groove/spotlights via the use of a bat script.
 
 RB3DX includes a variety of custom highways by default, available via the "RB3DX Menu", but you can add your own with the following steps.
 
-Simply drag in a .jpg/.png/.bmp into the `highways` folder at the root of the repo, then run `_texture-process_highways.bat`.
-Or, drag in a .jpg/.png/.bmp into the `spotlights` folder at the root of the repo, then run `_texture-process_spotlights.bat`.
+Simply drag in a .jpg/.png/.bmp into the `highways` folder in the "custom_textures" folder, then run `_texture-process_highways.bat`.
+
+Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in the "custom_textures" folder, then run `_texture-process_spotlights.bat`.
 
 This will size your images accordingly (supports arbitrary resolutions), and convert them to the proper format for rb3 to read. Spotlights will be set to 50% opacity.
 
