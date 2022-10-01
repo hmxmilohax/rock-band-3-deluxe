@@ -9,6 +9,7 @@
 * [Builds](#actions)
 * [Repo Setup](#repo-setup)
 * [Install](#install)
+* [Install Xenia](#xenia-emulator)
 * [Install RPCS3](#rpcs3-emulator)
 * [Install PS3](#ps3-hardware)
 * [Install Xbox](#xbox)
@@ -19,7 +20,7 @@
 
 # Introduction
 
-This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/jnackmclain/rock-band-3-deluxe/tree/wii)
+This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii)
 
 ## Features
 
@@ -71,7 +72,7 @@ NOTE: You WILL need a modded/hacked console to play this mod on console. I hope 
 
 ### Actions
 
-There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
+There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
 
 * RB3DX-Base-*platform* - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-additional-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
@@ -85,7 +86,7 @@ If using pre built actions, skip down to the `Install` section and assume any me
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
-Simply go to the [Releases](https://github.com/jnackmclain/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there are .bat files for Windows and .sh files for linux, as well as a specific branch for Wii.
+Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there are .bat files for Windows and .sh files for linux, as well as a specific branch for Wii.
 
 Included on the release page for ease of install are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
 Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK/HDR file, the archive format the game needs to run. You cannot run any deluxe title without building an ark first.
@@ -97,6 +98,12 @@ Once the dependencies are installed, run `_init_repo.bat` in an **empty folder**
 From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
 
 ## Install
+
+### Xenia-Emulator
+
+To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `_xenia/gen`
+
+then just run `_build_xenia.bat` to automatically build and run Rock Band 3 Deluxe.
 
 ### RPCS3-Emulator
 
@@ -146,7 +153,7 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) features optional key upgrades that you can install alongside RB3DX fairly easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
 
-You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/jnackmclain/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
+You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
 
 To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
 
@@ -158,25 +165,15 @@ Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
 
 ## Optional-Install-Custom-Highways
 
-This repo also supports the import of custom highways and groove/spotlights via the use of a bat script, python script, manual dta editing and a couple external dependencies included, but it's way easier than it sounds to create your own.
+This repo also supports the import of custom highways and groove/spotlights via the use of a bat script.
 
 RB3DX includes a variety of custom highways by default, available via the "RB3DX Menu", but you can add your own with the following steps.
 
-Simply drag in a .jpg/.png/.bmp into the `highways` folder at the root of the repo, then run `highways.bat`.
-Or, drag in a .jpg/.png/.bmp into the `spotlights` folder at the root of the repo, then run `spotlights.bat`.
+Simply drag in a .jpg/.png/.bmp into the `highways` folder in the "custom_textures" folder, then run `_texture-process_highways.bat`.
+
+Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in the "custom_textures" folder, then run `_texture-process_spotlights.bat`.
 
 This will size your images accordingly (supports arbitrary resolutions), and convert them to the proper format for rb3 to read. Spotlights will be set to 50% opacity.
-
-A .dta file will be generated for a list of your custom highways/spotlights.
-You must copy and paste the contents of the generated dta, and overwrite the similar data in another dta.
-
-For highways, copy all contents from `_ark/ui/track/surfaces/highways.dta`.
-For spotlights, copy all contents from `_ark/ui/track/surfaces/spotlights.dta`.
-
-Next go to `_ark/ui/overshell/slot_states.dta` and search for `highways.dta` or `spotlights.dta`.
-Being careful to stay within the parenthesis, highlight and delete existing custom highways. All existing custom highways are within quotation marks.
-
-Paste your desired block of highways over the existing block.
 
 You will need to run the build script to again to create your new ARK and reinstall RB3DX to your desired platform.
 
@@ -200,3 +197,5 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
 
 [python](https://www.python.org/downloads/) - for more detailed script functions such as enabling/disabling extra keys support
+
+[sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm) - for regex on windows for custom textures listing in game
