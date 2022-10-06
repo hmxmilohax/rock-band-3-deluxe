@@ -76,7 +76,7 @@ There are now pre compiled ARK files available in many flavors in the [Actions](
 
 * RB3DX-Base-*platform* - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-additional-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
-* RB3DX-*platform*-pad-is-guitar - A build of Rock Band 3 Deluxe where joypad controllers are forced to act as guitars for traditional pad play
+* RB3DX-*platform*-pad-is-guitar - A build of Rock Band 3 Deluxe where joypad controllers are forced to act as guitars for traditional pad play (This is no longer necessary, controllers can now play any non-pro instrument with base dx. This is left in as an option as the pause menu does not work when playing a non-vocals instrument as a controller)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where GHWT and Rock Revolution kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 real hardware.
 
 If using pre built actions, skip down to the `Install` section and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
