@@ -1,0 +1,141 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build_wii_raw:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          find . -name "*.*_ps3" -type f -delete
+          find . -name "*.*_xbox" -type f -delete
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/wii/gen -n "patch_wii" -e -v 6
+          dependencies/arkhelper ark2dir ./_build/wii/gen/patch_wii.hdr ./_build/wii/rawfiles -a
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Base-Wii-Rawfiles
+          path: _build/wii/rawfiles
+
+  build_wii_keys_raw:
+    if: ${{ false }} # do the grim thing
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          python dependencies/enable_keys.py
+          find . -name "*.*_ps3" -type f -delete
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Xbox-additional-keys
+          path: _build/xbox
+
+
+  build_wii_animation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          python dependencies/enable_animation.py
+          find . -name "*.*_ps3" -type f -delete
+          find . -name "*.*_xbox" -type f -delete
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/wii/gen -n "patch_wii" -e -v 6
+          dependencies/arkhelper ark2dir ./_build/wii/gen/patch_wii.hdr ./_build/wii/rawfiles -a
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Wii-Animated-Textures-Rawfiles
+          path: _build/wii/rawfiles
+
+  build_wii_animation_keys:
+    if: ${{ false }} # do the grim thing
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          python dependencies/enable_animation.py
+          python dependencies/enable_keys.py
+          find . -name "*.*_ps3" -type f -delete
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Xbox-Animated-Textures-and-Keys
+          path: _build/xbox
+
+  build_wii_pad_is_guitar_raw:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          find . -name "*.*_ps3" -type f -delete
+          find . -name "*.*_xbox" -type f -delete
+          sed -i -e "s/;#define FORCE_PAD/#define FORCE_PAD/" _ark/config/macros.dta
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/wii/gen -n "patch_wii" -e -v 6
+          dependencies/arkhelper ark2dir ./_build/wii/gen/patch_wii.hdr ./_build/wii/rawfiles -a
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-wii-pad-is-guitar-Rawfiles
+          path: _build/wii/rawfiles
