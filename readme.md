@@ -9,7 +9,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 ## Features
 
 ### Quality of Life
-* Max song limit increased to 32767. Tested up to 2k (twice default) On a real Wii
+* Max song limit increased to 5000. Tested up to 2k (twice default) On a real Wii
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Menu", in game for additional modifications
 * Selectable song speed and track speed by 5% increments

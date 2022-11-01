@@ -5,4 +5,4 @@ copy "%~dp0\_build\wii_rebuild_files\main_wii_10.ark" "%~dp0\_build\wii"
 move "%~dp0\_build\wii\gen\main_wii.hdr" "%~dp0\_build\wii"
 move "%~dp0\_build\wii\gen\main_wii_10.ark" "%~dp0\_build\wii"
 rmdir "%~dp0\_build\wii\gen"
-pause
+
