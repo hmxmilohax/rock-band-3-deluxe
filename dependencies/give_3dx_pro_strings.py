@@ -70,16 +70,26 @@ for pro_song in rb3_plus_path.glob("Pro Strings/*/*"):
 # TODO: write the merged upgrade dta to the bottom of missing_songs_dta automatically
 # do this by taking in missing_songs_dta up to the line that says "; rb3_plus pro strings upgrades - generated automatically" or whatever
 # then append it and rewrite
+with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "r") as f:
+    missing_dta = [line for line in f.readlines()]
 
-# write the merged upgrade dta to an output file, to paste into the missing_songs_dta manually
-with open("merged_upgrades.dta","w") as f:
-    for song in merged_songs.keys():
-        # print(merged_songs[song])
-        rank_str = ""
-        for rank in merged_songs[song]["rank"]:
-            rank_str += f"({rank} {merged_songs[song]['rank'][rank]}) "
+rb3_plus_index = missing_dta.index("; rb3_plus pro strings upgrades - generated automatically\n")
+print(rb3_plus_index)
 
-        f.write(f"({song} (rank {rank_str})\n")
-        f.write(f"\t(real_guitar_tuning ({' '.join(str(x) for x in merged_songs[song]['real_guitar_tuning'])})) (real_bass_tuning ({' '.join(str(x) for x in merged_songs[song]['real_bass_tuning'])})))\n")
+missing_dta = missing_dta[:rb3_plus_index + 1]
+
+for line in missing_dta:
+    print(line)
+    
+for song in merged_songs.keys():
+    rank_str = ""
+    for rank in merged_songs[song]["rank"]:
+        rank_str += f"({rank} {merged_songs[song]['rank'][rank]}) "
+
+    missing_dta.append(f"({song} (rank {rank_str})\n")
+    missing_dta.append(f"\t(real_guitar_tuning ({' '.join(str(x) for x in merged_songs[song]['real_guitar_tuning'])})) (real_bass_tuning ({' '.join(str(x) for x in merged_songs[song]['real_bass_tuning'])})))\n")
+
+with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "w") as f:
+    f.writelines(missing_dta)
 
 print(f"Successfully merged rb3_plus pro string upgrades into the RB3DX ark. Please copy/paste the output from \"merged_upgrades.dta\" into the missing_songs_data.dta before you rebuild in order to see them reflected in-game.")
