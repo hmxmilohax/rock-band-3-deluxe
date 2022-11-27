@@ -68,7 +68,7 @@ for pro_song in rb3_plus_path.glob("Pro Strings/*/*"):
                 destination_path.write_bytes(pro_file.read_bytes())
 
 # write the new upgrade dta info to the bottom of missing_song_data.dta
-with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "r") as f:
+with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "r", encoding="utf-8") as f:
     missing_dta = [line for line in f.readlines()]
 
 rb3_plus_index = missing_dta.index("; rb3_plus pro strings upgrades - generated automatically\n")
@@ -82,7 +82,7 @@ for song in merged_songs.keys():
     missing_dta.append(f"({song} (rank {rank_str})\n")
     missing_dta.append(f"\t(real_guitar_tuning ({' '.join(str(x) for x in merged_songs[song]['real_guitar_tuning'])})) (real_bass_tuning ({' '.join(str(x) for x in merged_songs[song]['real_bass_tuning'])})))\n")
 
-with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "w") as f:
+with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "w", encoding="utf-8") as f:
     f.writelines(missing_dta)
 
 print(f"Successfully merged rb3_plus pro string upgrades into the RB3DX ark. Please rebuild in order to see them reflected in-game.")
