@@ -236,26 +236,7 @@
                            set
                            icon
                            {$user get_track_icon}}
-                        {noteshit_details.lbl
-                           set_token_fmt
-                           {if_else
-                              {modifier_mgr is_modifier_active mod_auto_play}
-                              "bot"
-                           {if_else
-                              {modifier_mgr is_modifier_active mod_chmode}
-                              {sprint
-                              {int
-                              {'*'
-                                 100
-                                 {{$user player}
-                                    notes_hit_fraction}}}
-                                    "% ch"}
-                              endgame_player_noteshit_fmt}}
-                           {int
-                              {'*'
-                                 100
-                                 {{$user player}
-                                    notes_hit_fraction}}}}
+                        {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "%"}} ;hard set the score percentage ourselves. 99% glitch fix even????
                         {do
                            ($award_sym
                               {coop_endgame_panel get_performance_award $slot})
@@ -271,10 +252,17 @@
                            {{$user player}
                               num_stars}
                            5}
-                        {difficulty_details.lbl
-                           set
-                           text_token
-                           {$user get_difficulty_sym}}
+                        {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty first
+                        {if_else {modifier_mgr is_modifier_active mod_auto_play} ;check if in autoplay
+                           {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_play} ")"}} ;report autoplay with diff
+                           {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
+                              {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_chmode_short} ")"}} ;report ch mode for guitar and bass with diff
+                              {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
+                                 {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_kick} ")"}} ;report autokick for drum or pro drum
+                                 {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+                              }
+                           }
+                        }
                         {if_else
                            {gamemode in_mode tour}
                            {do
