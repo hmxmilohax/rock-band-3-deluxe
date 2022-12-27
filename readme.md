@@ -25,7 +25,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 ## Features
 
 ### Quality of Life
-* Max song limit increased to 5000. Above 5000 causes instability issues.
+* Max song limit increased to 8000. Above 5000 ccan lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Menu", in game for additional modifications
 * Selectable song speed and track speed by 5% increments
