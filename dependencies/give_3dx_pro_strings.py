@@ -80,7 +80,7 @@ for song in merged_songs.keys():
         rank_str += f"({rank} {merged_songs[song]['rank'][rank]}) "
 
     missing_dta.append(f"({song} (rank {rank_str})\n")
-    missing_dta.append(f"\t(real_guitar_tuning ({' '.join(str(x) for x in merged_songs[song]['real_guitar_tuning'])})) (real_bass_tuning ({' '.join(str(x) for x in merged_songs[song]['real_bass_tuning'])})))\n")
+    missing_dta.append(f"\t(real_guitar_tuning ({' '.join(str(x) for x in merged_songs[song]['real_guitar_tuning'])})) (real_bass_tuning ({' '.join(str(x) for x in merged_songs[song]['real_bass_tuning'])})) (extra_authoring disc_update))\n")
 
 with open(cwd.joinpath("_ark/songs/missing_song_data.dta"), "w", encoding="ISO-8859-1") as f:
     f.writelines(missing_dta)
