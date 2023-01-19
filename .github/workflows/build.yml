@@ -3,6 +3,37 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  build_xbox_vanilla_mids:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Set env
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+      - name: restore vanilla mids
+        run: yes | cp -rf dependencies/vanilla_mids/updates/* _ark\songs\updates
+      - name: Build ARK
+        run: |
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          sed -i -e "s/;#define VANILLA_MIDS/#define VANILLA_MIDS/" _ark/config/macros.dta
+          find . -name "*.*_ps3" -type f -delete
+          echo $GITHUB_SHA_SHORT
+          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Base-Xbox-vanilla_mids
+          path: _build/xbox
+
   build_xbox:
     runs-on: ubuntu-latest
 
