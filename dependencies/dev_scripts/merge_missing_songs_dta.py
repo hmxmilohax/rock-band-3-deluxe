@@ -1,5 +1,5 @@
 from pathlib import Path
-from .add_rb3_plus_pro_strings import *
+from add_rb3_plus_pro_strings import *
 import argparse
 
 # use -k if you want to add keys
