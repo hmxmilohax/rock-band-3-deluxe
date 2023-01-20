@@ -1,4 +1,5 @@
 from pathlib import Path
+from .add_rb3_plus_pro_strings import *
 import argparse
 
 # use -k if you want to add keys
@@ -38,6 +39,8 @@ with open(dta_dir.joinpath("custom_sources_rbn.dta"),"r", encoding="ISO-8859=1")
 with open(dta_dir.joinpath("custom_sources_unofficial.dta"),"r", encoding="ISO-8859=1") as f:
     cs_unofficial = [line for line in f.readlines()]
 
+rb3_plus_dta = integrate_rb3_plus()
+
 if args.keys:
     with open(dta_dir.joinpath("keys.dta"),"r", encoding="ISO-8859=1") as f:
         keys_dta = [line for line in f.readlines()]
@@ -62,6 +65,8 @@ grand_total_dta.append("\n")
 grand_total_dta.extend(harms_dta)
 grand_total_dta.append("\n")
 grand_total_dta.extend(vanilla_pro)
+grand_total_dta.append("\n")
+grand_total_dta.extend(rb3_plus_dta)
 
 with open(root_dir.joinpath("_ark/songs/missing_song_data.dta"),"w",encoding="ISO-8859-1") as dta_output:
         dta_output.writelines(grand_total_dta)
