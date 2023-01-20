@@ -65,3 +65,5 @@ grand_total_dta.extend(vanilla_pro)
 
 with open(root_dir.joinpath("_ark/songs/missing_song_data.dta"),"w",encoding="ISO-8859-1") as dta_output:
         dta_output.writelines(grand_total_dta)
+
+print(f"missing song dta written to {root_dir.joinpath('_ark/songs/missing_song_data.dta')}.")
