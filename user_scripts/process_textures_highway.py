@@ -22,7 +22,7 @@ for highway in highway_dir.glob("*"):
     if highway.suffix == ".png" or highway.suffix == ".jpg" or highway.suffix == ".bmp":
         print(highway.name)
         highway_dta.append(highway.stem)
-        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\highways\{highway.name} -resize 256x512! -filter Box -alpha set -background none +channel custom_textures\highways\{highway.name}".split()
+        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\highways\{highway.name} -resize 256x512! -filter Box custom_textures\highways\{highway.name}".split()
         subprocess.run(cmd_convert_png, shell=True, cwd="..")
 
 highway_dta.sort()
