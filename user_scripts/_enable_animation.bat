@@ -1,2 +1,0 @@
-python dependencies/enable_animation.py
-pause

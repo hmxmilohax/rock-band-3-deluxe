@@ -1,19 +1,14 @@
 # enable_keys.py
 from pathlib import Path
-import shutil
-import os
-try:
-    import git
-    print("module 'git' is installed. Downloading/enabling additional rbdx_animated_textures, this may take some time.")
-except ModuleNotFoundError:
-    print("module 'git' is not installed. Install it via '/dependencies/install_gitpython.bat' or 'pip install gitpython'")
-    sys.exit(1)
-    
+import git
+
 # get the current working directory
 cwd = Path().absolute()
+root_dir = Path(__file__).parents[1] # root directory of the repo
+dependencies_dir = root_dir.joinpath("dependencies")
 
 # clone/pull rbdx_animated_textures
-rbdx_animated_textures_path = cwd.joinpath("rbdx_animated_textures")
+rbdx_animated_textures_path = dependencies_dir.joinpath("rbdx_animated_textures")
 try:
     repo = git.Repo.clone_from("https://github.com/hmxmilohax/rbdx_animated_textures.git", rbdx_animated_textures_path, branch="main")
 except:
@@ -21,19 +16,18 @@ except:
     origin = repo.remotes.origin
     origin.pull()
 
-animated_smashers_source_folder = cwd.joinpath("rbdx_animated_textures/animated_smashers")
-animated_surfaces_source_folder = cwd.joinpath("rbdx_animated_textures/animated_surfaces")
-animated_gems_source_folder = cwd.joinpath("rbdx_animated_textures/animated_gems")
-animated_smashers_folder = cwd.joinpath("_ark/ui/track/animated_smashers")
-animated_surfaces_folder = cwd.joinpath("_ark/ui/track/animated_surfaces")
-animated_gems_folder = cwd.joinpath("_ark/ui/track/animated_gems")
-files = os.listdir(rbdx_animated_textures_path)
-shutil.copytree(animated_smashers_source_folder, animated_smashers_folder)
-shutil.copytree(animated_surfaces_source_folder, animated_surfaces_folder)
-shutil.copytree(animated_gems_source_folder, animated_gems_folder)
+animated_folder_list = ["animated_gems", "animated_smashers", "animated_surfaces"]
+for folder in animated_folder_list:
+    for f in rbdx_animated_textures_path.joinpath(folder).rglob("*"):
+        if f.is_file():
+            repo_root_path = str(f).replace(f"{str(root_dir)}\\dependencies\\rbdx_animated_textures\\", "")
+            # print(repo_root_path)
+            anim_dest_path = root_dir.joinpath(f"_ark/ui/track").joinpath(repo_root_path)
+            anim_dest_path.parent.mkdir(parents=True, exist_ok=True)
+            anim_dest_path.write_bytes(f.read_bytes())
 
 # uncomment the ANIMATION_ENABLED line
-macros_path = cwd.joinpath("_ark/config/macros.dta")
+macros_path = root_dir.joinpath("_ark/config/macros.dta")
 macro_contents = []
 
 macro_contents = [line for line in open(macros_path,"r")]

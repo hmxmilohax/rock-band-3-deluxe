@@ -2,6 +2,7 @@
 from pathlib import Path
 from subprocess import CalledProcessError
 import subprocess
+import sys
 
 def rm_tree(pth):
     pth = Path(pth)
@@ -32,7 +33,10 @@ for f in ark_dir.rglob("*_ps3"):
 # build the ark
 failed = False
 try:
-    cmd_build = f"dependencies\\arkhelper.exe dir2ark _ark _build\\xbox\gen -n patch_xbox -e -v 6".split()
+    if sys.platform == "win32":
+        cmd_build = f"dependencies\\arkhelper.exe dir2ark _ark _build\\xbox\gen -n patch_xbox -e -v 6".split()
+    else:
+        cmd_build = f"dependencies\\arkhelper dir2ark _ark _build\\xbox\gen -n patch_xbox -e -v 6".split()
     subprocess.check_output(cmd_build, shell=True, cwd="..")
 except CalledProcessError as e:
     print(e.output)
