@@ -22,7 +22,7 @@ for emissive in emissive_dir.glob("*"):
     if emissive.suffix == ".png" or emissive.suffix == ".jpg" or emissive.suffix == ".bmp":
         print(emissive.name)
         emissive_dta.append(emissive.stem)
-        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\emissives\{emissive.name} -resize 256x512! -filter Box -alpha set -background none -channel A -evaluate multiply 0.5 +channel custom_textures\emissives\{emissive.name}".split()
+        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\emissives\{emissive.name} -resize 256x512! -filter Box -alpha set -background none -channel A -evaluate multiply 0.5 +channel custom_textures\emissives\{emissive.stem}.png".split()
         subprocess.run(cmd_convert_png, shell=True, cwd="..")
 
 emissive_dta.sort()

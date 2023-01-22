@@ -54,9 +54,6 @@ def build_patch_ark(xbox: bool):
     rm_tree(root_dir.joinpath("_tmp"))
 
     if not failed:
-        if xbox:
-            print("Successfully built Rock Band 3 Deluxe ARK. You may find the files needed to place on your Xbox 360 in /_build/Xbox/.")
-        else:
-            print("Successfully built Rock Band 3 Deluxe ARK. You may find the files needed to place on your PS3 in /_build/PS3/.")
+        print("Successfully built Rock Band 3 Deluxe ARK.")
     else:
         print("Error building ARK. Check your modifications or run git_reset.py to rebase your repo.")

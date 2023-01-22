@@ -22,7 +22,7 @@ for spotlight in spotlight_dir.glob("*"):
     if spotlight.suffix == ".png" or spotlight.suffix == ".jpg" or spotlight.suffix == ".bmp":
         print(spotlight.name)
         spotlight_dta.append(spotlight.stem)
-        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\spotlights\{spotlight.name} -resize 256x512! -filter Box -alpha set -background none +channel custom_textures\spotlights\{spotlight.name}".split()
+        cmd_convert_png = f"dependencies\magick\magick.exe convert custom_textures\spotlights\{spotlight.name} -resize 256x512! -filter Box -alpha set -background none +channel custom_textures\spotlights\{spotlight.stem}.png".split()
         subprocess.run(cmd_convert_png, shell=True, cwd="..")
 
 spotlight_dta.sort()
