@@ -1,5 +1,6 @@
 from pathlib import Path
 from add_rb3_plus_pro_strings import *
+from add_rb3_plus_keys import *
 import argparse
 
 # use -k if you want to add keys
@@ -42,8 +43,10 @@ with open(dta_dir.joinpath("custom_sources_unofficial.dta"),"r", encoding="ISO-8
 rb3_plus_dta = integrate_rb3_plus()
 
 if args.keys:
-    with open(dta_dir.joinpath("keys.dta"),"r", encoding="ISO-8859=1") as f:
-        keys_dta = [line for line in f.readlines()]
+    # with open(dta_dir.joinpath("keys.dta"),"r", encoding="ISO-8859=1") as f:
+    #     keys_dta = [line for line in f.readlines()]
+
+    keys_dta = integrate_rb3_plus_keys()
 else:
     keys_dta = []
 

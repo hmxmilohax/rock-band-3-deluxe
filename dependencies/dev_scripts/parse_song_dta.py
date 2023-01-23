@@ -111,8 +111,8 @@ def dict_from_parsed(parsed: list):
     return big_songs_dict
 
 # the main parse function - supply a path to a dta, and it will return a big song dictionary
-def parse_dta(dta_path: Path):
-    # print(dta_path.name)
+def parse_song_dta(dta_path: Path):
+    # print(dta_path)
     parsed = parse(clean_dta(dta_path))
     parsed_dta_dict = dict_from_parsed(parsed)
     # pprint.pprint(parsed_dta_dict, sort_dicts=False)
@@ -122,7 +122,7 @@ def main():
     if len(sys.argv) != 2:
         print("no dta provided")
         exit()
-    parse_dta(sys.argv[1])
+    parse_song_dta(sys.argv[1])
     
 if __name__ == "__main__":
     main()

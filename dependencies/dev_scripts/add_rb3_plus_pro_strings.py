@@ -1,7 +1,7 @@
 # give_3dx_pro_strings.py
 from pathlib import Path
 from mido import MidiFile
-from parse_dta import parse_dta
+from parse_song_dta import parse_song_dta
 import json
 import git
 
@@ -35,7 +35,7 @@ def integrate_rb3_plus():
         for pro_file in pro_song.glob("*"):
             # if working with a dta, parse it, and merge it with song info from the mega dta
             if pro_file.name == "upgrades.dta":
-                upgrade_dict = parse_dta(pro_file)
+                upgrade_dict = parse_song_dta(pro_file)
                 original_song_dict = all_the_song_info["songs"][pro_song.stem]
                 merged_songs[pro_song.stem] = {}
                 merged_songs[pro_song.stem]["rank"] = original_song_dict["rank"] | upgrade_dict["songs"][pro_song.stem]["rank"]
