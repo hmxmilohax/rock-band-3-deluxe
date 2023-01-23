@@ -1,2 +1,0 @@
-python dependencies/enable_keys.py
-pause
