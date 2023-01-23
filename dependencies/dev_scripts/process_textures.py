@@ -56,6 +56,96 @@ def generate_dtas(input_path: Path, output_path: Path, which_texture: str):
     print("Generating the necessary dtas...")
 
     texture_dta = [texture.stem for texture in input_path.glob("*")]
+    texture_dta.sort()
+
+    with open(output_path.joinpath(f"{which_texture}s.dta"), "w", encoding="ISO-8859-1") as dta_output:
+        for asdf in texture_dta:
+            dta_output.write(f"\"{asdf}\"\n")
+
+    # slot_states.dta stuff goes here
+    # open and write into slot_states.dta
+    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "r", encoding="ISO-8859=1") as f:
+        slot_states_dta = [line for line in f.readlines()]
+
+    for i in range(len(slot_states_dta)):
+        if f"; paste your {which_texture}s.dta contents here" in slot_states_dta[i]:
+            threshold_begin = i
+        elif f"; end {which_texture}s.dta contents" in slot_states_dta[i]:
+            threshold_end = i
+            break
+
+    leading_spaces = len(slot_states_dta[threshold_begin]) - len(slot_states_dta[threshold_begin].lstrip())
+    slot_state_additions = []
+    slot_state_additions.append(f"{' ' * leading_spaces}(\n")
+    for addition in texture_dta:
+        slot_state_additions.append(f"{' ' * (leading_spaces + 2)}\"{addition}\"\n")
+    slot_state_additions.append(f"{' ' * leading_spaces})\n")
+
+    new_slot_states_dta = slot_states_dta[:threshold_begin+1]
+    new_slot_states_dta.extend(slot_state_additions)
+    new_slot_states_dta.extend(slot_states_dta[threshold_end:])
+
+    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "w", encoding="ISO-8859=1") as ff:
+        ff.writelines(new_slot_states_dta)
+
+def generate_dtas_concise(input_path: Path, output_path: Path, which_texture: str):
+    root_dir = Path().absolute().parents[0] # root directory of the repo
+    print("Generating the necessary dtas...")
+
+    texture_dta = []
+
+    for texture in input_path.glob("*"):
+        if "rb2" in texture.stem and "rb2" not in texture_dta:
+            texture_dta.append("rb2")
+        elif "rb3" in texture.stem and "rb3" not in texture_dta:
+            texture_dta.append("rb3")
+        elif "rb4" in texture.stem and "rb4" not in texture_dta:
+            texture_dta.append("rb4")
+
+    texture_dta.sort()
+
+    with open(output_path.joinpath(f"{which_texture}s.dta"), "w", encoding="ISO-8859-1") as dta_output:
+        for asdf in texture_dta:
+            dta_output.write(f"\"{asdf}\"\n")
+
+    # slot_states.dta stuff goes here
+    # open and write into slot_states.dta
+    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "r", encoding="ISO-8859=1") as f:
+        slot_states_dta = [line for line in f.readlines()]
+
+    for i in range(len(slot_states_dta)):
+        if f"; paste your {which_texture}s.dta contents here" in slot_states_dta[i]:
+            threshold_begin = i
+        elif f"; end {which_texture}s.dta contents" in slot_states_dta[i]:
+            threshold_end = i
+            break
+
+    leading_spaces = len(slot_states_dta[threshold_begin]) - len(slot_states_dta[threshold_begin].lstrip())
+    slot_state_additions = []
+    slot_state_additions.append(f"{' ' * leading_spaces}(\n")
+    for addition in texture_dta:
+        slot_state_additions.append(f"{' ' * (leading_spaces + 2)}\"{addition}\"\n")
+    slot_state_additions.append(f"{' ' * leading_spaces})\n")
+
+    new_slot_states_dta = slot_states_dta[:threshold_begin+1]
+    new_slot_states_dta.extend(slot_state_additions)
+    new_slot_states_dta.extend(slot_states_dta[threshold_end:])
+
+    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "w", encoding="ISO-8859=1") as ff:
+        ff.writelines(new_slot_states_dta)
+
+def generate_dtas_keyboard(input_path: Path, output_path: Path, which_texture: str):
+    root_dir = Path().absolute().parents[0] # root directory of the repo
+    print("Generating the necessary dtas...")
+
+    texture_dta = []
+
+    for texture in input_path.glob("*"):
+        final_texture_name = texture.stem.replace("gem_mash_prokeys_","").replace("gem_smasher_sharp_diffuse_nomip_","").replace("track_lanes_keyboard_","").replace("track_lanes_keyboard_press_","")
+        if final_texture_name not in texture_dta:
+            texture_dta.append(final_texture_name)
+
+    texture_dta.sort()
 
     with open(output_path.joinpath(f"{which_texture}s.dta"), "w", encoding="ISO-8859-1") as dta_output:
         for asdf in texture_dta:
@@ -101,7 +191,22 @@ def process_textures(which_texture: str):
     elif which_texture == "spotlight":
         generate_dtas(input_path=root_dir.joinpath("custom_textures/spotlights"), output_path=root_dir.joinpath("_ark/ui/track/spotlights"), which_texture="spotlight")
         process_images(input_path=root_dir.joinpath("custom_textures/spotlights"), output_path=root_dir.joinpath("_ark/ui/track/spotlights/gen"), which_texture="spotlight")
+        print("Successfully implemented custom spotlight textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
     elif which_texture == "custom_track":
         process_images(input_path=root_dir.joinpath("custom_textures/custom_track_textures"), output_path=root_dir.joinpath("_ark/ui/track/custom_track_textures/gen"), which_texture="custom_track")
+        print("Successfully implemented custom track textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
     elif which_texture == "overshell":
         process_images(input_path=root_dir.joinpath("custom_textures/overshell/rb4_early"), output_path=root_dir.joinpath("_ark/ui/overshell/rb4_early/gen"), which_texture="overshell")
+        print("Successfully implemented custom overshell textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+    elif which_texture == "smasher":
+        generate_dtas_concise(input_path=root_dir.joinpath("custom_textures/smashers"), output_path=root_dir.joinpath("_ark/ui/track/smashers"), which_texture="smasher")
+        process_images(input_path=root_dir.joinpath("custom_textures/smashers"), output_path=root_dir.joinpath("_ark/ui/track/smashers/gen"), which_texture="smasher")
+        print("Successfully implemented custom smasher textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+    elif which_texture == "gem":
+        generate_dtas_concise(input_path=root_dir.joinpath("custom_textures/gems"), output_path=root_dir.joinpath("_ark/ui/track/gems"), which_texture="gem")
+        process_images(input_path=root_dir.joinpath("custom_textures/gems"), output_path=root_dir.joinpath("_ark/ui/track/gems/gen"), which_texture="gem")
+        print("Successfully implemented custom gem textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+    elif which_texture == "keyboard":
+        generate_dtas_keyboard(input_path=root_dir.joinpath("custom_textures/keyboards"), output_path=root_dir.joinpath("_ark/ui/track/keyboards"), which_texture="keyboard")
+        process_images(input_path=root_dir.joinpath("custom_textures/keyboards"), output_path=root_dir.joinpath("_ark/ui/track/keyboards/gen"), which_texture="keyboard")
+        print("Successfully implemented custom keyboard textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
