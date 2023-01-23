@@ -96,6 +96,8 @@ def dict_from_parsed(parsed: list):
                 song_dict[song[0]]["song"] = dict_from_song(song[a])
             elif song[a][0] == "rank":
                 song_dict[song[0]]["rank"] = dict_from_rank(song[a])
+            elif song[a][0] == "album_name":
+                song_dict[song[0]]["album_name"] = dict_from_name(song[a])
             else:
                 val = []
                 for b in range(len(song[a])):

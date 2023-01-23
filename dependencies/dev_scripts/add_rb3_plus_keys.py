@@ -3,7 +3,6 @@ from pathlib import Path
 from mido import MidiFile
 from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
-import json
 import git
 
 def integrate_rb3_plus_keys():
@@ -24,14 +23,6 @@ def integrate_rb3_plus_keys():
         repo = git.Repo(rb3_plus_path)
         origin = repo.remotes.origin
         origin.pull()
-
-    # load all the legacy song info from the pre-compiled json file
-    with open(root_dir.joinpath("dependencies/song_info.json")) as json_file:
-        all_the_song_info = json.load(json_file)
-
-    # load all the vanilla pro upgrade song info from the pre-compiled json file
-    with open(root_dir.joinpath("dependencies/upgrades.json")) as pro_json_file:
-        all_the_upgrade_info = json.load(pro_json_file)
 
     merged_songs = {}
 
@@ -86,4 +77,4 @@ def integrate_rb3_plus_keys():
     # for line in song_dict_to_dta(merged_songs):
     #     print(line)
 
-    return song_dict_to_dta(merged_songs)
+    return merged_songs

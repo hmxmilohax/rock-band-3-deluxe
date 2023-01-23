@@ -41,6 +41,7 @@ def integrate_rb3_plus():
                 merged_songs[pro_song.stem]["rank"] = original_song_dict["rank"] | upgrade_dict["songs"][pro_song.stem]["rank"]
                 merged_songs[pro_song.stem]["real_guitar_tuning"] = upgrade_dict["songs"][pro_song.stem]["real_guitar_tuning"]
                 merged_songs[pro_song.stem]["real_bass_tuning"] = upgrade_dict["songs"][pro_song.stem]["real_bass_tuning"]
+                merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"
             # if working with a mid, 
             elif "_plus.mid" in pro_file.name:
                 print(pro_file.name)
@@ -48,6 +49,7 @@ def integrate_rb3_plus():
                 if root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mid").is_file():
                     print("This song has an update file, will merge")
                     mid_original = MidiFile(root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mid"))
+                    
                     mid_plus = MidiFile(pro_file)
                     mid_merged = MidiFile()
 
@@ -59,7 +61,7 @@ def integrate_rb3_plus():
                         if "PART REAL" in track.name:
                             mid_merged.tracks.append(track)
 
-                    mid_merged.save(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mid")
+                    mid_merged.save(root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mid"))
                 # otherwise, copy the mid from rb3_plus directly into the song update folder
                 else:
                     print("This song does not have an update file - will copy the _plus mid directly into the update location")
@@ -75,6 +77,7 @@ def integrate_rb3_plus():
     # missing_dta = missing_dta[:rb3_plus_index + 1]
         
     # generate dta to return
+    return merged_songs
 
     rb3_plus_pro_dta = []
     rb3_plus_pro_dta.append("; rb3_plus pro string upgrades\n")
