@@ -98,3 +98,10 @@ def process_textures(which_texture: str):
         generate_dtas(input_path=root_dir.joinpath("custom_textures/highways"), output_path=root_dir.joinpath("_ark/ui/track/highways"), which_texture="highway")
         process_images(input_path=root_dir.joinpath("custom_textures/highways"), output_path=root_dir.joinpath("_ark/ui/track/highways/gen"), which_texture="highway")
         print("Successfully implemented custom highway textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+    elif which_texture == "spotlight":
+        generate_dtas(input_path=root_dir.joinpath("custom_textures/spotlights"), output_path=root_dir.joinpath("_ark/ui/track/spotlights"), which_texture="spotlight")
+        process_images(input_path=root_dir.joinpath("custom_textures/spotlights"), output_path=root_dir.joinpath("_ark/ui/track/spotlights/gen"), which_texture="spotlight")
+    elif which_texture == "custom_track":
+        process_images(input_path=root_dir.joinpath("custom_textures/custom_track_textures"), output_path=root_dir.joinpath("_ark/ui/track/custom_track_textures/gen"), which_texture="custom_track")
+    elif which_texture == "overshell":
+        process_images(input_path=root_dir.joinpath("custom_textures/overshell/rb4_early"), output_path=root_dir.joinpath("_ark/ui/overshell/rb4_early/gen"), which_texture="overshell")
