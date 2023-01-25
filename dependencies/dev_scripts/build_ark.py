@@ -23,6 +23,8 @@ def build_patch_ark(xbox: bool):
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
     build_location = "_build\\xbox\gen" if xbox else "_build\ps3\\USRDIR\gen"
+    if platform != "win32":
+        build_location.replace("\\","/")
     patch_hdr_version = "patch_xbox" if xbox else "patch_ps3"
 
     # pull the latest changes from the RB3DX repo
@@ -42,7 +44,7 @@ def build_patch_ark(xbox: bool):
         if platform == "win32":
             cmd_build = f"dependencies\\arkhelper.exe dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
         else:
-            cmd_build = f"dependencies/arkhelper dir2ark _ark {build_location.replace('\\','/')} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"dependencies/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
         subprocess.check_output(cmd_build, shell=True, cwd="..")
     except CalledProcessError as e:
         print(e.output)
