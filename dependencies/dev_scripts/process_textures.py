@@ -24,7 +24,10 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
     # convert every image to .png
     for texture in input_path.glob("*"):
         if texture.suffix == ".png" or texture.suffix == ".jpg" or texture.suffix == ".bmp":
-            cmd_convert_png = f"dependencies\magick\magick.exe convert {input_path}\{texture.name} {addnl_params} {input_path}\{texture.stem}.png".split()
+            if platform == "win32":
+                cmd_convert_png = f"dependencies\magick\magick.exe convert {input_path}\{texture.name} {addnl_params} {input_path}\{texture.stem}.png".split()
+            else:
+                cmd_convert_png = f"dependencies\magick\magick convert {input_path}\{texture.name} {addnl_params} {input_path}\{texture.stem}.png".split()
             subprocess.run(cmd_convert_png, shell=True, cwd="..")
 
     # convert images to .png_xbox/ps3 and move them to output_path
