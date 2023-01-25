@@ -1,5 +1,6 @@
 # process_textures.py
 from pathlib import Path
+from sys import platform
 import subprocess
 
 # per jnack:
@@ -29,7 +30,10 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
     # convert images to .png_xbox/ps3 and move them to output_path
     for new_texture in input_path.glob("*"):
         if new_texture.suffix == ".png":
-            cmd_xbox = f"dependencies\superfreq.exe png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+            if platform == "win32":
+                cmd_xbox = f"dependencies\superfreq.exe png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+            else:
+                cmd_xbox = f"dependencies\superfreq png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
             subprocess.run(cmd_xbox, shell=True, cwd="..")
             cmd_ps3 = f"python dependencies\dev_scripts\swap_rb_art_bytes.py {output_path}\{new_texture.stem}.png_xbox {output_path}\{new_texture.stem}.png_ps3".split()
             subprocess.run(cmd_ps3, shell=True, cwd="..", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)

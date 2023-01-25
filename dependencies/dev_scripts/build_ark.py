@@ -1,6 +1,7 @@
 # build_ark.py
 from pathlib import Path
 from subprocess import CalledProcessError
+from sys import platform
 import subprocess
 
 def rm_tree(pth):
@@ -38,7 +39,10 @@ def build_patch_ark(xbox: bool):
     # build the ark
     failed = False
     try:
-        cmd_build = f"dependencies\\arkhelper.exe dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+        if platform == "win32":
+            cmd_build = f"dependencies\\arkhelper.exe dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+        else:
+            cmd_build = f"dependencies\\arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
         subprocess.check_output(cmd_build, shell=True, cwd="..")
     except CalledProcessError as e:
         print(e.output)
