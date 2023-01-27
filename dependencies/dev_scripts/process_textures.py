@@ -27,8 +27,10 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
             if platform == "win32":
                 cmd_convert_png = f"dependencies\magick\magick.exe convert {input_path}\{texture.name} {addnl_params} {input_path}\{texture.stem}.png".split()
             else:
-                cmd_convert_png = f"dependencies\magick\magick convert {input_path}\{texture.name} {addnl_params} {input_path}\{texture.stem}.png".split()
-            subprocess.run(cmd_convert_png, shell=True, cwd="..")
+                cmd_chmod_magick = "chmod +x dependencies/magick/magick".split()
+                subprocess.run(cmd_chmod_magick, shell=(platform == "win32"), cwd="..")
+                cmd_convert_png = f"dependencies/magick/magick convert {input_path}/{texture.name} {addnl_params} {input_path}/{texture.stem}.png".split()
+            subprocess.run(cmd_convert_png, shell=(platform == "win32"), cwd="..")
 
     # convert images to .png_xbox/ps3 and move them to output_path
     for new_texture in input_path.glob("*"):
@@ -36,10 +38,15 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
             if platform == "win32":
                 cmd_xbox = f"dependencies\superfreq.exe png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
             else:
-                cmd_xbox = f"dependencies\superfreq png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
-            subprocess.run(cmd_xbox, shell=True, cwd="..")
-            cmd_ps3 = f"python dependencies\dev_scripts\swap_rb_art_bytes.py {output_path}\{new_texture.stem}.png_xbox {output_path}\{new_texture.stem}.png_ps3".split()
-            subprocess.run(cmd_ps3, shell=True, cwd="..", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                cmd_chmod_superfreq = "chmod +x dependencies/superfreq".split()
+                subprocess.run(cmd_chmod_superfreq, shell=(platform == "win32"), cwd="..")
+                cmd_xbox = f"dependencies/superfreq png2tex {input_path}/{new_texture.name} {output_path}/{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+            subprocess.run(cmd_xbox, shell=(platform == "win32"), cwd="..")
+            if platform == "win32":
+                cmd_ps3 = f"python dependencies\dev_scripts\swap_rb_art_bytes.py {output_path}\{new_texture.stem}.png_xbox {output_path}\{new_texture.stem}.png_ps3".split()
+            else:
+                cmd_ps3 = f"python dependencies/dev_scripts/swap_rb_art_bytes.py {output_path}/{new_texture.stem}.png_xbox {output_path}/{new_texture.stem}.png_ps3".split()
+            subprocess.run(cmd_ps3, shell=(platform == "win32"), cwd="..", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 def generate_dtas(input_path: Path, output_path: Path, which_texture: str):
     root_dir = Path().absolute().parents[0] # root directory of the repo
