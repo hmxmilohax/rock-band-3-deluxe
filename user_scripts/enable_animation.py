@@ -1,5 +1,6 @@
-# enable_keys.py
+# enable_animation.py
 from pathlib import Path
+from sys import platform
 import git
 
 # get the current working directory
@@ -20,7 +21,10 @@ animated_folder_list = ["animated_gems", "animated_smashers", "animated_surfaces
 for folder in animated_folder_list:
     for f in rbdx_animated_textures_path.joinpath(folder).rglob("*"):
         if f.is_file():
-            repo_root_path = str(f).replace(f"{str(root_dir)}\\dependencies\\rbdx_animated_textures\\", "")
+            if platform == "win32":
+                repo_root_path = str(f).replace(f"{str(root_dir)}\\dependencies\\rbdx_animated_textures\\", "")
+            else:
+                repo_root_path = str(f).replace(f"{str(root_dir)}/dependencies/rbdx_animated_textures/", "")
             # print(repo_root_path)
             anim_dest_path = root_dir.joinpath(f"_ark/ui/track").joinpath(repo_root_path)
             anim_dest_path.parent.mkdir(parents=True, exist_ok=True)

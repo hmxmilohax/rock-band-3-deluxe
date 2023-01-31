@@ -1,4 +1,4 @@
-# disable_keys.py
+# disable_animation.py
 from pathlib import Path
 
 def rm_tree(pth):
