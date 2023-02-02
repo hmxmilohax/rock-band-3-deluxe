@@ -54,6 +54,9 @@ with open(dta_dir.joinpath("custom_sources_rbn.dta"),"r", encoding="ISO-8859=1")
 with open(dta_dir.joinpath("custom_sources_unofficial.dta"),"r", encoding="ISO-8859=1") as f:
     cs_unofficial = [line for line in f.readlines()]
 
+with open(dta_dir.joinpath("misc.dta"),"r", encoding="ISO-8859=1") as f:
+    misc = [line for line in f.readlines()]
+
 rb3_plus_dta = [s + "\n" for s in song_dict_to_dta(integrate_rb3_plus())]
 
 if args.keys:
@@ -78,6 +81,8 @@ grand_total_dta.append("\n")
 grand_total_dta.extend(cs_rbn)
 grand_total_dta.append("\n")
 grand_total_dta.extend(cs_unofficial)
+grand_total_dta.append("\n")
+grand_total_dta.extend(misc)
 grand_total_dta.append("\n")
 if not args.original:
     grand_total_dta.extend(harms_dta)
