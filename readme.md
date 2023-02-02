@@ -74,15 +74,14 @@ NOTE: You WILL need a modded/hacked console to play this mod on console. I hope 
 
 There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
 
-* RB3DX-Base-*platform* - The default build of Rock Band 3 Deluxe
-* RB3DX-*platform*-additional-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
-* RB3DX-*platform*-pad-is-guitar - A build of Rock Band 3 Deluxe where joypad controllers are forced to act as guitars for traditional pad play (This is no longer necessary, controllers can now play any non-pro instrument with base dx. This is left in as an option as the pause menu does not work when playing a non-vocals instrument as a controller)
+* RB3DX-*platform*-Base - The default build of Rock Band 3 Deluxe
+* RB3DX-*platform*-original-mids - Rock Band 3 Deluxe, but without any harmonies or chart updates
+* RB3DX-*platform*-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where GHWT and Rock Revolution kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 real hardware.
 
 If using pre built actions, skip down to the `Install` section and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
 
 ### Repo-Setup
-
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
@@ -91,11 +90,13 @@ Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/rel
 Included on the release page for ease of install are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
 Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK/HDR file, the archive format the game needs to run. You cannot run any deluxe title without building an ark first.
 
+In addition to this, you will also need to download Python in order to utilize the provided user scripts.
+
 You can setup git with all default options, same with dot net.
 
 Once the dependencies are installed, run `_init_repo.bat` in an **empty folder**. git will pull the repo and make sure you are completely up to date.
 
-From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
+From then on simply run the build .py corresponding to the platform you are building for. This script will pull the repo again for updates, and build the ARK for you and spit it out in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`
 
 ## Install
 
@@ -103,7 +104,7 @@ From then on simply run `_build_ps3.bat` or `_build_xbox.bat`, depending on the 
 
 To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `_xenia/gen`
 
-then just run `_build_xenia.bat` to automatically build and run Rock Band 3 Deluxe.
+then just navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe.
 
 ### RPCS3-Emulator
 
@@ -153,15 +154,7 @@ Run the build script again to pull any new updates committed to the repo and reb
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) features optional key upgrades that you can install alongside RB3DX fairly easily. These upgrades include new audio files (moggs) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any keys player.
 
-You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. The following steps are for a manual install with a local copy of the [Repo Setup](#repo-setup).
-
-To take advantage of these upgrades, first ensure [python](https://www.python.org/downloads/) is downloaded, and installed into PATH. Click the checkbox presented during python install to ensure this.
-
-Head to the `/dependencies/` folder in this repo and run the install_gitpython.bat, or run `pip install gitpython` in cmd.
-
-Next simply run the `enable_keys.bat` or `disable_keys.bat` to download the new mogg files and enable their additions.
-
-Rebuild your ark and reinstall Rock Band 3 Deluxe to see your new keys upgrades!
+You can simply download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo.
 
 ## Optional-Install-Custom-Highways
 
@@ -169,9 +162,9 @@ This repo also supports the import of custom highways and groove/spotlights via 
 
 RB3DX includes a variety of custom highways by default, available via the "RB3DX Menu", but you can add your own with the following steps.
 
-Simply drag in a .jpg/.png/.bmp into the `highways` folder in the "custom_textures" folder, then run `_texture-process_highways.bat`.
+Simply drag in a .jpg/.png/.bmp into the `highways` folder in the "custom_textures" folder, then run `process_textures_highway.py`.
 
-Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in the "custom_textures" folder, then run `_texture-process_spotlights.bat`.
+Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in the "custom_textures" folder, then run `process_textures_spotlight.py`.
 
 This will size your images accordingly (supports arbitrary resolutions), and convert them to the proper format for rb3 to read. Spotlights will be set to 50% opacity.
 
@@ -196,6 +189,4 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
 
-[python](https://www.python.org/downloads/) - for more detailed script functions such as enabling/disabling extra keys support
-
-[sed for Windows](http://gnuwin32.sourceforge.net/packages/sed.htm) - for regex on windows for custom textures listing in game
+[python](https://www.python.org/downloads/) - for overall user script functionality

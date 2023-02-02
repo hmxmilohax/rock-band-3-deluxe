@@ -3,45 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build_xbox_vanilla_mids:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Set env
-        run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/arkhelper
-          chmod +x dependencies/dtab
-          chmod +x dependencies/superfreq
-      - name: Restore vanilla mids
-        run: |
-          find _ark/songs/updates/ -name "*.mid" -type f -delete
-          find _ark/songs/updates/ -empty -type d -delete
-          sed -i -e "s/;#define VANILLA_MIDS/#define VANILLA_MIDS/" _ark/config/macros.dta
-      - name: Remove PS3 files
-        run: |
-          find . -name "*.*_ps3" -type f -delete
-      - name: Print build info
-        run: |
-          echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
-      - name: Build ARK
-        run: |
-          dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
-      
-      - name: Upload result
-        uses: actions/upload-artifact@v2
-        with:
-          name: RB3DX-Base-Xbox-vanilla_mids
-          path: _build/xbox
-
-  build_xbox:
+  build_xbox_standard:
     runs-on: ubuntu-latest
 
     steps:
@@ -59,16 +21,16 @@ jobs:
           chmod +x dependencies/superfreq
           pip install gitpython
           pip install mido
-      - name: Embed pro string upgrades
+      - name: Merge rb3_plus pro strings and create missing_song_data.dta
         run: |
-          python dependencies/give_3dx_pro_strings.py
+          python dependencies/dev_scripts/merge_missing_songs_dta.py
       - name: Remove PS3 files
         run: |
           find . -name "*.*_ps3" -type f -delete
       - name: Print build info
         run: |
           echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
           dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
@@ -76,7 +38,49 @@ jobs:
       - name: Upload result
         uses: actions/upload-artifact@v2
         with:
-          name: RB3DX-Base-Xbox
+          name: RB3DX-Xbox-Base
+          path: _build/xbox
+
+  build_xbox_original_mids:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Set env
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          pip install mido
+      - name: Revert mid updates to their originals
+        run: |
+          find _ark/songs/updates/ -name "*.mid" -type f -delete
+          find _ark/songs/updates/ -empty -type d -delete
+      - name: Merge rb3_plus pro strings and create missing_song_data.dta
+        run: |
+          python dependencies/dev_scripts/merge_missing_songs_dta.py -o
+      - name: Remove PS3 files
+        run: |
+          find . -name "*.*_ps3" -type f -delete
+      - name: Print build info
+        run: |
+          echo $GITHUB_SHA_SHORT
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
+      - name: Build ARK
+        run: |
+          dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Xbox-original-mids
           path: _build/xbox
 
   build_xbox_keys:
@@ -97,17 +101,16 @@ jobs:
           chmod +x dependencies/superfreq
           pip install gitpython
           pip install mido
-      - name: Embed pro string/key upgrades
+      - name: Merge rb3_plus pro strings, pro keys, and create missing_song_data.dta
         run: |
-          python dependencies/give_3dx_pro_strings.py
-          python dependencies/enable_keys.py
+          python dependencies/dev_scripts/merge_missing_songs_dta.py -k
       - name: Remove PS3 files
         run: |
           find . -name "*.*_ps3" -type f -delete
       - name: Print build info
         run: |
           echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
           dependencies/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
@@ -115,48 +118,10 @@ jobs:
       - name: Upload result
         uses: actions/upload-artifact@v2
         with:
-          name: RB3DX-Xbox-additional-keys
+          name: RB3DX-Xbox-keys
           path: _build/xbox
 
-  build_ps3_vanilla_mids:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Set env
-        run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/arkhelper
-          chmod +x dependencies/dtab
-          chmod +x dependencies/superfreq
-      - name: Restore vanilla mids
-        run: |
-          find _ark/songs/updates/ -name "*.mid" -type f -delete
-          find _ark/songs/updates/ -empty -type d -delete
-          sed -i -e "s/;#define VANILLA_MIDS/#define VANILLA_MIDS/" _ark/config/macros.dta
-      - name: Remove Xbox files
-        run: |
-          find . -name "*.*_xbox" -type f -delete
-      - name: Print build info
-        run: |
-          echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
-      - name: Build ARK
-        run: |
-          dependencies/arkhelper dir2ark ./_ark ./_build/ps3/gen -n "patch_ps3" -e -v 6
-      
-      - name: Upload result
-        uses: actions/upload-artifact@v2
-        with:
-          name: RB3DX-Base-PS3-vanilla_mids
-          path: _build/ps3
-
-  build_ps3:
+  build_ps3_standard:
     runs-on: ubuntu-latest
 
     steps:
@@ -174,16 +139,16 @@ jobs:
           chmod +x dependencies/superfreq
           pip install gitpython
           pip install mido
-      - name: Embed pro string upgrades
+      - name: Merge rb3_plus pro strings and create missing_song_data.dta
         run: |
-          python dependencies/give_3dx_pro_strings.py
+          python dependencies/dev_scripts/merge_missing_songs_dta.py
       - name: Remove Xbox files
         run: |
           find . -name "*.*_xbox" -type f -delete
       - name: Print build info
         run: |
           echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
           dependencies/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
@@ -191,7 +156,49 @@ jobs:
       - name: Upload result
         uses: actions/upload-artifact@v2
         with:
-          name: RB3DX-Base-PS3
+          name: RB3DX-PS3-Base
+          path: _build/ps3
+
+  build_ps3_original_mids:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Set env
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          pip install mido
+      - name: Revert mid updates to their originals
+        run: |
+          find _ark/songs/updates/ -name "*.mid" -type f -delete
+          find _ark/songs/updates/ -empty -type d -delete
+      - name: Merge rb3_plus pro strings and create missing_song_data.dta
+        run: |
+          python dependencies/dev_scripts/merge_missing_songs_dta.py -o
+      - name: Remove Xbox files
+        run: |
+          find . -name "*.*_xbox" -type f -delete
+      - name: Print build info
+        run: |
+          echo $GITHUB_SHA_SHORT
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
+      - name: Build ARK
+        run: |
+          dependencies/arkhelper dir2ark ./_ark ./_build/ps3/gen -n "patch_ps3" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-PS3-original-mids
           path: _build/ps3
 
   build_ps3_keys:
@@ -210,19 +217,18 @@ jobs:
           chmod +x dependencies/arkhelper
           chmod +x dependencies/dtab
           chmod +x dependencies/superfreq
-          pip install mido
           pip install gitpython
+          pip install mido
+      - name: Merge rb3_plus pro strings, pro keys, and create missing_song_data.dta
+        run: |
+          python dependencies/dev_scripts/merge_missing_songs_dta.py -k
       - name: Remove Xbox files
         run: |
           find . -name "*.*_xbox" -type f -delete
-      - name: Embed pro string/key upgrades
-        run: |
-          python dependencies/give_3dx_pro_strings.py
-          python dependencies/enable_keys.py
       - name: Print build info
         run: |
           echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
           dependencies/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
@@ -230,7 +236,7 @@ jobs:
       - name: Upload result
         uses: actions/upload-artifact@v2
         with:
-          name: RB3DX-PS3-additional-keys
+          name: RB3DX-PS3-keys
           path: _build/ps3
 
   build_ps3_stock_inst_mapping:
@@ -247,19 +253,28 @@ jobs:
           chmod +x dependencies/superfreq
           pip install mido
           pip install gitpython
+      - name: Set env
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/arkhelper
+          chmod +x dependencies/dtab
+          chmod +x dependencies/superfreq
+          pip install gitpython
+          pip install mido
+      - name: Merge rb3_plus pro strings and create missing_song_data.dta
+        run: |
+          python dependencies/dev_scripts/merge_missing_songs_dta.py
       - name: Remove Xbox files
         run: |
           find . -name "*.*_xbox" -type f -delete
-      - name: Embed pro string upgrades
-        run: |
-          python dependencies/give_3dx_pro_strings.py
       - name: Restore stock instrument mapping
         run: |
-          sed -i -e "s/;#define STOCK_PAD/#define STOCK_PAD/" _ark/config/macros.dta
+          python dependencies/dev_scripts/enable_stock_pad.py
       - name: Print build info
         run: |
           echo $GITHUB_SHA_SHORT
-          sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
           dependencies/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
