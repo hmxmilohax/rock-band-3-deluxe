@@ -3,7 +3,6 @@ from sys import platform
 import subprocess
 
 def check_git_updated() -> bool:
-
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
 
@@ -19,5 +18,7 @@ def check_git_updated() -> bool:
 
     # print(latest_commit)
     # print(local_commit)
+    print(f"Local commit: {local_commit}")
+    print(f"Latest commit: {latest_commit}")
 
     return (local_commit == latest_commit)
