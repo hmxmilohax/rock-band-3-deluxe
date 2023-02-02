@@ -7,8 +7,12 @@ def check_git_updated() -> bool:
     root_dir = cwd.parents[0] # root directory of the repo
 
     # retrieve current commit and compare against latest
-    with open(root_dir.joinpath(".git/refs/heads/main"),"r") as g:
-        local_commit = g.read()
+    if root_dir.joinpath(".git/refs/heads/main").is_file():
+        with open(root_dir.joinpath(".git/refs/heads/main"),"r") as g:
+            local_commit = g.read()
+    elif root_dir.joinpath(".git/refs/heads/master").is_file():
+        with open(root_dir.joinpath(".git/refs/heads/master"),"r") as g:
+            local_commit = g.read()
     local_commit = local_commit.strip()
 
     cmd_get_latest_commit = "git ls-remote https://github.com/hmxmilohax/rock-band-3-deluxe.git HEAD".split()
