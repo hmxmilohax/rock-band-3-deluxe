@@ -25,7 +25,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 ## Features
 
 ### Quality of Life
-* Max song limit increased to 8000. Above 5000 ccan lead to instability issues, use with caution.
+* Max song limit increased to 8000. Above 5000 can lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Menu", in game for additional modifications
 * Selectable song speed and track speed by 5% increments
@@ -90,7 +90,7 @@ Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/rel
 Included on the release page for ease of install are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime).
 Git is required for you to take advantage of auto updating via github pulls. Dot Net is required to build an ARK/HDR file, the archive format the game needs to run. You cannot run any deluxe title without building an ark first.
 
-In addition to this, you will also need to download Python in order to utilize the provided user scripts.
+In addition to this, you will also need to download Python in order to utilize the provided user scripts. These scripts were written and tested using Python 3.9, so it's highly recommended to get that version of Python or newer.
 
 You can setup git with all default options, same with dot net.
 
@@ -144,7 +144,7 @@ To clear song cache, navigate to `System Settings>Storage>Rock Band 3` and delet
 
 To clear system cache, navigate to `System Settings>Storage` and press Y to clear the system cache.
 
-Also make sure to `disable` any enabled updates for Rock Band 3 in Aurora. Rock Band 3 deluxe rolls TU5 into its base installation.
+Also make sure to `disable` any enabled updates for Rock Band 3 in Aurora. Rock Band 3 Deluxe rolls TU5 into its base installation.
 
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `/_build/_optional-xbox-rb3e-rawfiles/` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
@@ -189,4 +189,4 @@ You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-cus
 
 [dtab](https://github.com/mtolly/dtab) - For serializing Rock Band dtb files
 
-[python](https://www.python.org/downloads/) - for overall user script functionality
+[python](https://www.python.org/downloads/) - for overall user script functionality (NOTE: 3.9 or newer is highly recommended!)
