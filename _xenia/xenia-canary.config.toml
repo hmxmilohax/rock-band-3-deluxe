@@ -19,14 +19,15 @@ clock_source_raw = false                          	# Use the RDTSC instruction a
 cpu = "any"                                       	# CPU backend [any, x64].
 debug_symbol_loader = false                       	# Enable dbghelp debug logging and validation.
 debugprint_trap_log = false                       	# Log debugprint traps to the active debugger
-disable_function_precompilation = true            	# Disables pre-compiling guest functions that we know we've called on previous runs
 disable_global_lock = false                       	# Disables global lock usage in guest code. Does not affect host code.
 disable_instruction_infocache = false             	# Disables caching records of called instructions/mmio accesses.
 disable_prefetch_and_cachecontrol = false         	# Disables translating ppc prefetch/cache flush instructions to host prefetch/cacheflush instructions. This may improve performance as these instructions were written with the Xbox 360's cache in mind, and modern processors do their own automatic prefetching.
 disassemble_functions = false                     	# Disassemble functions during generation.
+dump_translated_hir_functions = false             	# dumps translated hir
 elide_e0_check = false                            	# Eliminate e0 check on some memory accesses, like to r13(tls) or r1(sp)
 emit_mmio_aware_stores_for_recorded_exception_addresses = true	# Uses info gathered via record_mmio_access_exceptions to emit special stores that are faster than trapping the exception
 emit_source_annotations = false                   	# Add extra movs and nops to make disassembly easier to read.
+enable_early_precompilation = false               	# Enable pre-compiling guest functions that we know we've called/that we've recognized as being functions via simple heuristics, good for error finding/stress testing with the JIT
 full_optimization_even_with_debug = false         	# For developer use to analyze the quality of the generated code, not intended for actual debugging of the code
 ignore_trap_instructions = true                   	# Generate no code for powerpc trap instructions, can result in better performance in games that aggressively check with trap.
 ignore_undefined_externs = true                   	# Don't exit when an undefined extern is called.
@@ -40,8 +41,6 @@ pvr = 7407360                                     	# Processor version and revis
                                                   	# Bits 16 to 31 are the revision number.
                                                   	# Note: Some XEXs (such as mfgbootlauncher.xex) may check for a value that's less than 0x710700.
 
-record_mmio_access_exceptions = true              	# For guest addresses records whether we caught any mmio accesses for them. This info can then be used on a subsequent run to instruct the recompiler to emit checks
-resolve_rel32_guest_calls = true                  	# Experimental optimization, directly call already resolved functions via x86 rel32 call/jmp
 store_all_context_values = false                  	# Don't strip dead context stores to aid in debugging.
 trace_function_coverage = false                   	# Generate tracing for function instruction coverage statistics.
 trace_function_data = false                       	# Generate tracing for function result data.
@@ -50,6 +49,7 @@ trace_function_references = false                 	# Generate tracing for functi
 trace_functions = false                           	# Generate tracing for function statistics.
 use_fast_dot_product = false                      	# Experimental optimization, much shorter sequence on dot products, treating inf as overflow instead of using mcxsrfour insn dotprod
 validate_hir = false                              	# Perform validation checks on the HIR during compilation.
+writable_code_segments = true                     	# Enables a program to write to its own code segments in memory.
 
 
 [Config]
@@ -80,6 +80,7 @@ d3d12_pipeline_creation_threads = -1              	# Number of threads used for 
 d3d12_queue_priority = 1                          	# Graphics (direct) command queue scheduling priority, 0 - normal, 1 - high, 2 - global realtime (requires administrator privileges, may impact system responsibility)
 d3d12_readback_memexport = false                  	# Read data written by memory export in shaders on the CPU. This may be needed in some games (but many only access exported data on the GPU, and this flag isn't needed to handle such behavior), but causes mid-frame synchronization, so it has a huge performance impact.
 d3d12_readback_resolve = false                    	# Read render-to-texture results on the CPU. This may be needed in some games, for instance, for screenshots in saved games, but causes mid-frame synchronization, so it has a huge performance impact.
+d3d12_remove_retc_from_geometry_shader = false    	# [ONLY FOR AMD 7900 Series GPU] Workaround for broken Geometry Shader. Warning! Might cause issues and hardlocks!
 d3d12_submit_on_primary_buffer_end = true         	# Submit the command list when a PM4 primary buffer ends if it's possible to submit immediately to try to reduce frame latency.
 d3d12_tessellation_wireframe = false              	# Display tessellated surfaces as wireframe for debugging.
 d3d12_tiled_shared_memory = true                  	# Enable tiled resources for shared memory emulation. Disabling them increases video memory usage - a 512 MB buffer is created - but allows graphics debuggers that don't support tiled resources to work.
@@ -88,7 +89,7 @@ d3d12_tiled_shared_memory = true                  	# Enable tiled resources for 
 [Display]
 fullscreen = false                                	# Whether to launch the emulator in fullscreen.
 host_present_from_non_ui_thread = true            	# Allow the GPU emulation thread to present the guest output to the host surface directly instead of requesting the UI thread to do so through the host window system.
-internal_display_resolution = 8                   	#    0=640x480
+internal_display_resolution = 8                   	# Allow game that support different resolutions to be rendered in specific resolution.   0=640x480
                                                   	#    1=640x576
                                                   	#    2=720x480
                                                   	#    3=720x576
@@ -216,6 +217,7 @@ mrt_edram_used_range_clamp_to_min = true          	# With host render targets, i
 native_2x_msaa = true                             	# Use host 2x MSAA when available. Can be disabled for scalability testing on host GPU APIs where 2x is not mandatory, in this case, 2 samples of 4x MSAA will be used instead (with similar or worse quality and higher memory usage).
 native_stencil_value_output = true                	# Use pixel shader stencil reference output where available for purposes like copying between render targets. Can be disabled for scalability testing, in this case, much more expensive drawing of 8 quads will be done.
 native_stencil_value_output_d3d12_intel = false   	# Allow stencil reference output usage on Direct3D 12 on Intel GPUs - not working on UHD Graphics 630 as of March 2021 (driver 27.20.0100.8336).
+no_discard_stencil_in_transfer_pipelines = false  	# bleh
 primitive_processor_cache_min_indices = 4096      	# Smallest number of guest indices to store in the cache to try reusing later in the same frame if processing (such as primitive type conversion or reset index replacement) is performed.
                                                   	# Setting this to a very high value may result in excessive CPU processing, while a very low value may result in excessive locking and lookups.
                                                   	# Negative values disable caching.
@@ -236,6 +238,20 @@ render_target_path_d3d12 = ""                     	# Render target emulation pat
                                                   	#  Any other value:
                                                   	#   Choose what is considered the most optimal for the system (currently always RTV because the ROV path is much slower now, except for Intel GPUs, which have a bug in stencil testing that causes Xbox 360 Direct3D 9 clears not to work).
 
+render_target_path_vulkan = ""                    	# Render target emulation path to use on Vulkan.
+                                                  	# Use: [any, fbo, fsi]
+                                                  	#  fbo:
+                                                  	#   Host framebuffers and fixed-function blending and depth / stencil testing, copying between render targets when needed.
+                                                  	#   Lower accuracy (limited pixel format support).
+                                                  	#   Performance limited primarily by render target layout changes requiring copying, but generally higher.
+                                                  	#  fsi:
+                                                  	#   Manual pixel packing, blending and depth / stencil testing, with free render target layout changes.
+                                                  	#   Requires a GPU supporting fragment shader interlock.
+                                                  	#   Highest accuracy (all pixel formats handled in software).
+                                                  	#   Performance limited primarily by overdraw.
+                                                  	#  Any other value:
+                                                  	#   Choose what is considered the most optimal for the system (currently always FB because the FSI path is much slower now).
+
 resolve_resolution_scale_fill_half_pixel_offset = true	# When using resolution scaling, apply the hack that stretches the first surely covered host pixel in the left and top sides of render target resolve areas to eliminate the gap caused by the half-pixel offset (this is necessary for certain games to display the scene graphics).
 snorm16_render_target_full_range = true           	# When the host can only support 16_16 and 16_16_16_16 render targets as -1...1, remap -32...32 to -1...1 to use the full possible range of values, at the expense of multiplicative blending correctness.
 store_shaders = true                              	# Store shaders persistently and load them when loading games to avoid runtime spikes and freezes when playing the game not for the first time.
@@ -252,11 +268,11 @@ vsync_interval = 16                               	# VSYNC interval. Value is fr
 
 
 [General]
-allow_game_relative_writes = false                	# Not useful to non-developers. Allows code to write to paths relative to game://. Used for generating test data to compare with original hardware. 
+allow_game_relative_writes = true                 	# Not useful to non-developers. Allows code to write to paths relative to game://. Used for generating test data to compare with original hardware. 
 apply_patches = true                              	# Enables custom patching functionality
+controller_hotkeys = true                         	# Toggle hotkeys for Xbox and PS controllers.
 debug = false                                     	# Allow debugging and retain debug information.
 discord = true                                    	# Enable Discord rich presence
-enable_console = false                            	# Open a console window with the main window
 launch_module = ""                                	# Executable to launch from the .iso or the package instead of default.xex or the module specified by the game. Leave blank to launch the default module.
 time_scalar = 1.0                                 	# Scalar used to speed or slow time (1x, 2x, 1/2x, etc).
 
@@ -275,6 +291,7 @@ keybind_dpad_down = "^S"                          	# List of keys to bind to DPA
 keybind_dpad_left = "^A"                          	# List of keys to bind to DPAD_LEFT, separated by spaces
 keybind_dpad_right = "^D"                         	# List of keys to bind to DPAD_RIGHT, separated by spaces
 keybind_dpad_up = "^W"                            	# List of keys to bind to DPAD_UP, separated by spaces
+keybind_guide = "0x08"                            	# List of keys to bind to GUIDE, separated by spaces
 keybind_left_shoulder = "1"                       	# List of keys to bind to LEFT_SHOULDER, separated by spaces
 keybind_left_thumb = "F"                          	# List of keys to bind to LEFT_THUMB_PRESSED, separated by spaces
 keybind_left_thumb_down = "_S"                    	# List of keys to bind to LEFT_THUMB_DOWN, separated by spaces
@@ -308,6 +325,7 @@ log_high_frequency_kernel_calls = false           	# Log kernel calls with the k
 
 
 [Logging]
+enable_console = false                            	# Open a console window with the main window
 flush_log = true                                  	# Flush log file after each log line batch.
 log_file = ""                                     	# Logs are written to the given file
 log_level = 2                                     	# Maximum level to be logged. (0=error, 1=warning, 2=info, 3=debug)
@@ -317,6 +335,7 @@ log_to_stdout = true                              	# Write log output to stdout
 
 
 [Memory]
+ignore_offset_for_ranged_allocations = false      	# Allows to ignore 4k offset for physical allocations with provided range. Certain titles check if result matches provided lower range.
 protect_on_release = false                        	# Protect released memory to prevent accesses.
 protect_zero = true                               	# Protect the zero page from reads and writes.
 scribble_heap = false                             	# Scribble 0xCD into all allocated heap memory.
@@ -359,6 +378,7 @@ vulkan_validation = false                         	# Enable Vulkan validation (V
 
 
 [Win32]
+enable_rdrand_ntdll_patch = true                  	# Hot-patches ntdll at the start of the process to not use rdrand as part of the RNG for heap randomization. Can reduce CPU usage significantly, but is untested on all Windows versions.
 win32_high_resolution_timer = true                	# Requests high-resolution timer from the NT kernel
 win32_mmcss = true                                	# Opt in the Multimedia Class Scheduler Service (MMCSS) scheduling for prioritized access to CPU resources
 
@@ -385,9 +405,13 @@ user_language = 1                                 	# User language ID.
 
 [x64]
 align_all_basic_blocks = 0                        	# Aligns the start of all basic blocks to N bytes. Only specify a power of 2, 16 is the recommended value. Results in larger icache usage, but potentially faster loops
+delay_via_maybeyield = false                      	# implement the db16cyc instruction via MaybeYield, may improve scheduling of guest threads
+enable_host_guest_stack_synchronization = true    	# Records entries for guest/host stack mappings at function starts and checks for reentry at return sites. Has slight performance impact, but fixes crashes in games that use setjmp/longjmp.
 enable_incorrect_roundingmode_behavior = false    	# Disables the FPU/VMX MXCSR sharing workaround, potentially causing incorrect rounding behavior and denormal handling in VMX code. The workaround may cause reduced CPU performance but is a more accurate emulation
 enable_rmw_context_merging = false                	# Permit merging read-modify-write HIR instr sequences together into x86 instructions that use a memory operand.
 instrument_call_times = false                     	# Compute time taken for functions, for profiling guest code
+max_stackpoints = 65536                           	# Max number of host->guest stack mappings we can record.
+record_mmio_access_exceptions = true              	# For guest addresses records whether we caught any mmio accesses for them. This info can then be used on a subsequent run to instruct the recompiler to emit checks
 x64_extension_mask = -1                           	# Allow the detection and utilization of specific instruction set features.
                                                   	#     0 = x86_64 + AVX1
                                                   	#     1 = AVX2
@@ -402,6 +426,7 @@ x64_extension_mask = -1                           	# Allow the detection and uti
                                                   	#   512 = AVX512VL
                                                   	#  1024 = AVX512BW
                                                   	#  2048 = AVX512DQ
+                                                  	#  4096 = AVX512VBMI
                                                   	#    -1 = Detect and utilize all possible processor features
 
 xop_arithmetic_right_shifts = false               	# sar via xop
