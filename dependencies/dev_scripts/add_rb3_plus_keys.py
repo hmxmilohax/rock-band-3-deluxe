@@ -12,7 +12,7 @@ def integrate_rb3_plus_keys():
     # get the current working directory
     cwd = Path().absolute()
     # get the root directory of the repo
-    root_dir = cwd.parents[1]
+    root_dir = Path(__file__).parents[2]
     print(root_dir)
 
     # clone/pull rb3_plus
@@ -70,6 +70,7 @@ def integrate_rb3_plus_keys():
                     # print(destination_path)
                     destination_path.write_bytes(pro_file.read_bytes())
             elif pro_file.suffix == ".mogg":
+                print(pro_file.name)
                 root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}").mkdir(parents=True, exist_ok=True)
                 destination_path = root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mogg")
                 destination_path.write_bytes(pro_file.read_bytes())

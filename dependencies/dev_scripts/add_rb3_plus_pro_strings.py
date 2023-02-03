@@ -13,6 +13,7 @@ def integrate_rb3_plus():
     cwd = Path().absolute()
     # get the root directory of the repo
     root_dir = Path(__file__).parents[2]
+    print(root_dir)
 
     # clone/pull rb3_plus
     rb3_plus_path = cwd.joinpath("rb3_plus")
