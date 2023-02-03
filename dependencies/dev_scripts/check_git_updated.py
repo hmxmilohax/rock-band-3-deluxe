@@ -13,6 +13,8 @@ def check_git_updated() -> bool:
     elif root_dir.joinpath(".git/refs/heads/master").is_file():
         with open(root_dir.joinpath(".git/refs/heads/master"),"r") as g:
             local_commit = g.read()
+    else:
+        return False
     local_commit = local_commit.strip()
 
     cmd_get_latest_commit = "git ls-remote https://github.com/hmxmilohax/rock-band-3-deluxe.git HEAD".split()
