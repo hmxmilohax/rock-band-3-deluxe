@@ -66,7 +66,7 @@ if args.keys:
 
     for key in strings_dict:
         if key in keys_dict:
-            print(key)
+            # print(key)
             keys_to_remove.append(key)
             if "real_guitar_tuning" in strings_dict[key]:
                 keys_dict[key]["rank"]["real_guitar"] = strings_dict[key]["rank"]["real_guitar"]
@@ -74,7 +74,7 @@ if args.keys:
             if "real_bass_tuning" in strings_dict[key]:
                 keys_dict[key]["rank"]["real_bass"] = strings_dict[key]["rank"]["real_bass"]
                 keys_dict[key]["real_bass_tuning"] = strings_dict[key]["real_bass_tuning"]
-            print(keys_dict[key])
+            # print(keys_dict[key])
 
     for key in keys_to_remove:
         strings_dict.pop(key, None)
