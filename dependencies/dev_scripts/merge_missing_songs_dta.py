@@ -57,12 +57,33 @@ with open(dta_dir.joinpath("custom_sources_unofficial.dta"),"r", encoding="ISO-8
 with open(dta_dir.joinpath("misc.dta"),"r", encoding="ISO-8859=1") as f:
     misc = [line for line in f.readlines()]
 
-rb3_plus_dta = [s + "\n" for s in song_dict_to_dta(integrate_rb3_plus())]
+strings_dict = integrate_rb3_plus()
 
 if args.keys:
-    keys_dta = [s + "\n" for s in song_dict_to_dta(integrate_rb3_plus_keys())]
+    keys_dict = integrate_rb3_plus_keys()
+
+    keys_to_remove = []
+
+    for key in strings_dict:
+        if key in keys_dict:
+            print(key)
+            keys_to_remove.append(key)
+            if "real_guitar_tuning" in strings_dict[key]:
+                keys_dict[key]["rank"]["real_guitar"] = strings_dict[key]["rank"]["real_guitar"]
+                keys_dict[key]["real_guitar_tuning"] = strings_dict[key]["real_guitar_tuning"]
+            if "real_bass_tuning" in strings_dict[key]:
+                keys_dict[key]["rank"]["real_bass"] = strings_dict[key]["rank"]["real_bass"]
+                keys_dict[key]["real_bass_tuning"] = strings_dict[key]["real_bass_tuning"]
+            print(keys_dict[key])
+
+    for key in keys_to_remove:
+        strings_dict.pop(key, None)
+
+    keys_dta = [s + "\n" for s in song_dict_to_dta(keys_dict)]
 else:
     keys_dta = []
+
+rb3_plus_dta = [s + "\n" for s in song_dict_to_dta(strings_dict)]
 
 if not args.original:
     with open(dta_dir.joinpath("harms_and_updates.dta"),"r", encoding="ISO-8859=1") as f:
