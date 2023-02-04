@@ -11,7 +11,7 @@ def song_dict_to_dta(song_dict: dict, indent=0):
             if isinstance(song_v, str) and song_k in ["name", "artist", "album_name", "midi_file"]:
                 lines.append(f"{'    '*(indent)}({song_k} \"{song_v}\")")
             elif isinstance(song_v, list):
-                if song_k == "preview":
+                if song_k == "preview" or song_k == "crowd_channels":
                     lines.append(f"{'    '*(indent)}({song_k} {' '.join(str(a) for a in song_v)})")
                 else:
                     lines.append(f"{'    '*(indent)}({song_k} ({' '.join(str(a) for a in song_v)}))")
