@@ -5,7 +5,11 @@ def song_dict_to_dta(song_dict: dict, indent=0):
     for song_k,song_v in song_dict.items():
         if isinstance(song_v, dict):
             lines.append(f"{'    '*indent}({song_k}")
+            if song_k == "tracks":
+                lines.append(f"{'    '*indent}{'  '}(")
             lines.extend(song_dict_to_dta(song_v, indent+1))
+            if song_k == "tracks":
+                lines.append(f"{'    '*indent}{'  '})")
             lines.append(f"{'    '*indent})")
         else:
             if isinstance(song_v, str) and song_k in ["name", "artist", "album_name", "midi_file"]:
