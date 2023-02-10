@@ -38,6 +38,10 @@ for pro_song in rb3_plus_path.glob("Pro Strings/*/*"):
             destination_path = root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_file.name}")
             destination_path.write_bytes(pro_file.read_bytes())
 
+for i in range(len(mega_upgrade_dta)):
+    if "(midi_file \"songs_upgrades/" in mega_upgrade_dta[i]:
+        mega_upgrade_dta[i] = mega_upgrade_dta[i].replace("songs_upgrades/", "songs_upgrades/rb3_plus/")
+
 with open(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus.dta"), "w") as f:
     f.writelines(mega_upgrade_dta)
 
