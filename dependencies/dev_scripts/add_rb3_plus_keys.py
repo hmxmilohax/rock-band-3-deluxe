@@ -91,7 +91,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                         final_midi.tracks.append(track)
                     # print(track.name)
                 for track in key_midi.tracks:
-                    if pro_song.stem not in track.name:
+                    if pro_song.stem not in track.name and "VENUE" not in track.name:
                         final_midi.tracks.append(track)
                         # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
                         # blame RB3 for this, not me
@@ -102,12 +102,33 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             else:
                 print("this song doesn't have an upgrade file - will duplicate real key tracks and move file over")
                 for track in key_midi.tracks:
-                    final_midi.tracks.append(track)
-                    # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
-                    # blame RB3 for this, not me
-                    if "REAL_KEYS" in track.name:
+                    if "VENUE" not in track.name:
                         final_midi.tracks.append(track)
+                        # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
+                        # blame RB3 for this, not me
+                        if "REAL_KEYS" in track.name:
+                            final_midi.tracks.append(track)
                 final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
+
+            # add VENUE track to update file, if it exists
+            update_midi = MidiFile()
+            if song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid").is_file():
+                print("cool, update track exists - add venue to it")
+                old_upd_midi = MidiFile(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+                for track in old_upd_midi.tracks:
+                    update_midi.tracks.append(track)
+                for track in key_midi.tracks:
+                    if "VENUE" in track.name:
+                        update_midi.tracks.append(track)
+                update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+            else:
+                print("update track does not exist - copy venue to it")
+                for track in key_midi.tracks:
+                    if pro_song.stem in track.name or "VENUE" in track.name:
+                        update_midi.tracks.append(track)
+                song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
+                update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+
         elif pro_file.suffix == ".mogg":
             print(pro_file.name)
             song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
