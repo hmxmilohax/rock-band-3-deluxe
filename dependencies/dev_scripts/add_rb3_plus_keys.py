@@ -118,13 +118,13 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                 for track in old_upd_midi.tracks:
                     update_midi.tracks.append(track)
                 for track in key_midi.tracks:
-                    if "VENUE" in track.name:
+                    if "REAL_KEYS_E" in track.name or "VENUE" in track.name:
                         update_midi.tracks.append(track)
                 update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
             else:
                 print("update track does not exist - copy venue to it")
                 for track in key_midi.tracks:
-                    if pro_song.stem in track.name or "VENUE" in track.name:
+                    if pro_song.stem in track.name or "REAL_KEYS_E" in track.name or "VENUE" in track.name:
                         update_midi.tracks.append(track)
                 song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
                 update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
