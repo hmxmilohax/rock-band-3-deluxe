@@ -32,24 +32,6 @@ vanilla_dta = parse_song_dta(root_dir.joinpath("_ark/songs/dta_sections/vanilla.
 merged_songs = {}
 
 song_update_path = root_dir.joinpath("_ark/songs/updates")
-song_upgrade_path = root_dir.joinpath("_ark/songs_upgrades/rb3_plus.dta")
-song_upgrade_dta = [line for line in open(song_upgrade_path, "r")]
-overwrite_rb3_plus_dta = False
-
-def shortname_upgrade_check(shortname: str):
-    for line in song_upgrade_dta:
-        if f"({shortname}" in line:
-            return True
-    return False
-
-def get_song_id(shortname: str):
-    if "song_id" in all_the_song_info["songs"][shortname]:
-        return all_the_song_info["songs"][shortname]["song_id"]
-    elif "song_id" in vanilla_dta['songs'][shortname]:
-        return vanilla_dta['songs'][shortname]['song_id']
-    else:
-        print("ERROR: song id not found")
-        exit()
 
 # traverse through rb3_plus/Pro Keys and find mid, mogg, and songs.dta
 for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
@@ -69,66 +51,36 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             merged_songs[pro_song.stem]["song"]["cores"] = song_keys_dict["songs"][pro_song.stem]["song"]["cores"]
             merged_songs[pro_song.stem]["rank"] = song_keys_dict["songs"][pro_song.stem]["rank"]
             merged_songs[pro_song.stem]["version"] = 30
-            merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"
-            # if this song doesn't currently have an entry in rb3_plus.dta, add one
-            if not shortname_upgrade_check(pro_song.stem):
-                song_upgrade_dta.append(f"({pro_song.stem}\n   (upgrade_version 1)\n")
-                song_upgrade_dta.append(f"   (midi_file \"songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid\")\n")
-                song_upgrade_dta.append(f"   (song_id {get_song_id(pro_song.stem)})\n)\n")
-                overwrite_rb3_plus_dta = True               
+            merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"         
         elif pro_file.suffix == ".mid":
             print(pro_file.name)
             key_midi = MidiFile(pro_file)
             final_midi = MidiFile()
             # for track in key_midi.tracks:
             #     print(track.name)
-            # if a _plus mid exists in the rb3_plus path, append the key tracks to it
-            if root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid").is_file():
-                print("this song has an upgrade file already - must merge")
-                pro_str_midi = MidiFile(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
-                for track in pro_str_midi.tracks:
-                    if "KEYS" not in track.name and "VENUE" not in track.name:
-                        final_midi.tracks.append(track)
-                    # print(track.name)
-                for track in key_midi.tracks:
-                    if pro_song.stem not in track.name and "VENUE" not in track.name:
-                        final_midi.tracks.append(track)
-                        # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
-                        # blame RB3 for this, not me
-                        if "REAL_KEYS" in track.name:
-                            final_midi.tracks.append(track)
-                final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
-            # else, copy the _plus mid into it directly
-            else:
-                print("this song doesn't have an upgrade file - will duplicate real key tracks and move file over")
-                for track in key_midi.tracks:
-                    if "VENUE" not in track.name:
-                        final_midi.tracks.append(track)
-                        # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
-                        # blame RB3 for this, not me
-                        if "REAL_KEYS" in track.name:
-                            final_midi.tracks.append(track)
-                final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
-
-            # add VENUE track to update file, if it exists
-            update_midi = MidiFile()
+            # if an update mid exists, append the key tracks to it
             if song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid").is_file():
-                print("cool, update track exists - add venue to it")
-                old_upd_midi = MidiFile(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+                print("this song has an update file, will merge")
+                old_upd_midi = MidiFile(root_dir.joinpath(f"_ark/songs/updates/{pro_song.stem}/{pro_song.stem}_update.mid"))
                 for track in old_upd_midi.tracks:
-                    update_midi.tracks.append(track)
+                    final_midi.tracks.append(track)
                 for track in key_midi.tracks:
-                    if "REAL_KEYS_E" in track.name or "VENUE" in track.name:
-                        update_midi.tracks.append(track)
-                update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+                    if pro_song.stem not in track.name:
+                        final_midi.tracks.append(track)
+                        # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
+                        # blame RB3 for this, not me
+                        if "REAL_KEYS" in track.name:
+                            final_midi.tracks.append(track)
+                final_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+            # else, just straight up copy the mid to the update location
             else:
-                print("update track does not exist - copy venue to it")
                 for track in key_midi.tracks:
-                    if pro_song.stem in track.name or "REAL_KEYS_E" in track.name or "VENUE" in track.name:
-                        update_midi.tracks.append(track)
-                song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
-                update_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
-
+                    final_midi.tracks.append(track)
+                    # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
+                    # blame RB3 for this, not me
+                    if "REAL_KEYS" in track.name:
+                        final_midi.tracks.append(track)
+                final_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
         elif pro_file.suffix == ".mogg":
             print(pro_file.name)
             song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
@@ -142,7 +94,7 @@ with open(root_dir.joinpath(f"_ark/songs/dta_sections/keys.dta"), "w") as f:
 missing_song_data_path = root_dir.joinpath("_ark/songs/missing_song_data.dta")
 missing_song_data = [line for line in open(missing_song_data_path, "r")]
 
-# overwrite rb3_plus.dta and uncomment keys.dta
+# uncomment keys.dta
 overwritten = False
 for i in range(len(missing_song_data)):
     if ";#include dta_sections/keys.dta" in missing_song_data[i]:
@@ -153,7 +105,3 @@ for i in range(len(missing_song_data)):
 if overwritten:
     with open(missing_song_data_path, "w") as f:
         f.writelines(missing_song_data)
-
-if overwrite_rb3_plus_dta:
-    with open(song_upgrade_path, "w") as f:
-        f.writelines(song_upgrade_dta)
