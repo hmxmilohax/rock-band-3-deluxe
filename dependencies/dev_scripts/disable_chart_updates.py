@@ -1,3 +1,4 @@
+# enable_stock_pad.py
 from pathlib import Path
 
 def main():
