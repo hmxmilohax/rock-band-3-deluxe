@@ -35,6 +35,7 @@ song_update_path = root_dir.joinpath("_ark/songs/updates")
 song_upgrade_path = root_dir.joinpath("_ark/songs_upgrades/rb3_plus.dta")
 song_upgrade_dta = [line for line in open(song_upgrade_path, "r")]
 overwrite_rb3_plus_dta = False
+venue_update_dta = []
 
 def shortname_upgrade_check(shortname: str):
     for line in song_upgrade_dta:
@@ -68,8 +69,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             merged_songs[pro_song.stem]["song"]["vols"] = song_keys_dict["songs"][pro_song.stem]["song"]["vols"]
             merged_songs[pro_song.stem]["song"]["cores"] = song_keys_dict["songs"][pro_song.stem]["song"]["cores"]
             merged_songs[pro_song.stem]["rank"] = song_keys_dict["songs"][pro_song.stem]["rank"]
-            merged_songs[pro_song.stem]["version"] = 30
-            merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"
+            venue_update_dta.append(f"({pro_song.stem} (version 30))\n")
             # if this song doesn't currently have an entry in rb3_plus.dta, add one
             if not shortname_upgrade_check(pro_song.stem):
                 song_upgrade_dta.append(f"({pro_song.stem}\n   (upgrade_version 1)\n")
@@ -114,25 +114,15 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             destination_path = song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mogg")
             destination_path.write_bytes(pro_file.read_bytes())
 
+# add (version 30) to missing song updates to ensure we're using the new style venues
+with open(root_dir.joinpath(f"_ark/songs/dta_sections/key_venue_updates.dta"), "w") as f_upd:
+    f_upd.writelines(venue_update_dta)
+
 with open(root_dir.joinpath(f"_ark/songs/dta_sections/keys.dta"), "w") as f:
     for line in song_dict_to_dta(merged_songs):
         f.write(f"{line}\n")
 
-missing_song_data_path = root_dir.joinpath("_ark/songs/missing_song_data.dta")
-missing_song_data = [line for line in open(missing_song_data_path, "r")]
-
-# overwrite rb3_plus.dta and uncomment keys.dta
-overwritten = False
-for i in range(len(missing_song_data)):
-    if ";#include dta_sections/keys.dta" in missing_song_data[i]:
-        missing_song_data[i] = missing_song_data[i].replace(";#include", "#include")
-        overwritten = True
-        break
-
-if overwritten:
-    with open(missing_song_data_path, "w") as f:
-        f.writelines(missing_song_data)
-
+# overwrite rb3_plus.dta
 if overwrite_rb3_plus_dta:
     with open(song_upgrade_path, "w") as f:
         f.writelines(song_upgrade_dta)
