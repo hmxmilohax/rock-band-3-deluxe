@@ -37,6 +37,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Default difficulty on first load is Expert
 * Song title always visible modifier
 * Keys on Guitar unlocked without meeting requirements
+* Manual calibration adjusts by 1ms instad of 5ms
 
 
 ### Authoring
