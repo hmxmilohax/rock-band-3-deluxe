@@ -3,8 +3,11 @@ from pathlib import Path
 from mido import MidiFile
 from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
+from add_rb3_plus_pro_strings import add_strings
 import json
 import git
+
+add_strings()
 
 print("Downloading/enabling additional rb3_plus song data, this may take some time.")
     
@@ -85,7 +88,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             #     print(track.name)
             # if a _plus mid exists in the rb3_plus path, append the key tracks to it
             if root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid").is_file():
-                print("this song has an upgrade file already - must merge")
+                # print("this song has an upgrade file already - must merge")
                 pro_str_midi = MidiFile(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
                 for track in pro_str_midi.tracks:
                     if "KEYS" not in track.name and "VENUE" not in track.name:
@@ -101,7 +104,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                 final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
             # else, copy the _plus mid into it directly
             else:
-                print("this song doesn't have an upgrade file - will duplicate real key tracks and move file over")
+                # print("this song doesn't have an upgrade file - will duplicate real key tracks and move file over")
                 for track in key_midi.tracks:
                     final_midi.tracks.append(track)
                     # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
