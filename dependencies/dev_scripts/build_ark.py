@@ -4,6 +4,7 @@ from subprocess import CalledProcessError
 from sys import platform
 import subprocess
 from check_git_updated import check_git_updated
+from add_rb3_plus_pro_strings import add_strings
 
 def rm_tree(pth):
     pth = Path(pth)
@@ -23,6 +24,9 @@ def make_executable_binaries():
 # if xbox is true, build the Xbox ARK
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool):
+
+    add_strings()
+
     # directories used in this script
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
