@@ -9,5 +9,5 @@ print("Building RB3DX for Xenia...")
 
 if build_patch_ark(True):
     print("Ready to run RB3DX in Xenia.")
-    cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default_xenia.xex"
+    cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"
     subprocess.run(cmd_xenia, shell=True, cwd="..")
