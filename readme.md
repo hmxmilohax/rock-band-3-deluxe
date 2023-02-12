@@ -37,6 +37,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Default difficulty on first load is Expert
 * Song title always visible modifier
 * Keys on Guitar unlocked without meeting requirements
+* Manual calibration adjusts by 1ms instad of 5ms
 
 
 ### Authoring
@@ -59,6 +60,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Post processing toggle - disables/reenables post processing in-game, or in menus
 * Screensaver mode - remove UI elements from menus to view the background vingette unobstructed (it will softlock your game, so be careful!)
 * Nice (69%) and Awesome Choke (98-99%) callouts on solo completion
+* New main menu music pulled from other Rock Band titles
 * No crowd modifier
 * No whammy effect modifier
 * No sustain trails modifier
