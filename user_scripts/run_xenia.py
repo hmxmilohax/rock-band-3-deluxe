@@ -13,7 +13,7 @@ from check_git_updated import check_git_updated
 cwd = Path().absolute()
 root_dir = Path(__file__).parents[1] # root directory of the repo
 
-cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default_xenia.xex"
+cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"
 
 if check_git_updated():
     res = True
