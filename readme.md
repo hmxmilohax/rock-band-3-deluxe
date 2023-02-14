@@ -116,6 +116,8 @@ then just navigate to `user_scripts` and run `build_xenia.py` to automatically b
 
 ### RPCS3-Emulator
 
+**NOTE: Do not overwrite any disc files for your main game. DX is not made to overwrite the disc 1.0 vanilla files. DX goes in the location that updates are installed to on the PS3**
+
 To install on rpcs3, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
 
 If the folder does not exist, create it. The game will need the included .bin file, and a built .ark/.hdr to function. The folder format in `/_build/ps3` matches how it should be installed.
@@ -127,6 +129,8 @@ Run the build script again to pull any new updates committed to the repo and reb
 ### PS3-Hardware
 
 **NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear**
+
+**NOTE: Do not overwrite any disc files for your main game. DX is not made to overwrite the disc 1.0 vanilla files. DX goes in the location that updates are installed to on the PS3**
 
 To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 first to register the update in your system.
 
