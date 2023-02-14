@@ -3,20 +3,25 @@
 ![Header Image](dependencies/header.png)
 
 # Table of Contents  
-* [Introduction](#introduction)
-* [Features](#features)
-* [Setup](#setup)
-* [Builds](#actions)
-* [Repo Setup](#repo-setup)
-* [Install](#install)
-* [Install Xenia](#xenia-emulator)
-* [Install RPCS3](#rpcs3-emulator)
-* [Install PS3](#ps3-hardware)
-* [Install Xbox](#xbox)
-* [Optional install custom highways](#optional-install-custom-highways)
-* [Optional rb3_plus Keys Upgrades](#optional-rb3_plus-keys-upgrades)
-* [Songs](#songs)
-* [Dependencies](#dependencies)
+- [Rock-Band-3-Deluxe](#rock-band-3-deluxe)
+- [Table of Contents](#table-of-contents)
+- [Introduction](#introduction)
+  - [Features](#features)
+    - [Quality of Life](#quality-of-life)
+    - [Authoring](#authoring)
+    - [Additional Modifications](#additional-modifications)
+  - [Setup](#setup)
+    - [Actions](#actions)
+    - [Repo-Setup](#repo-setup)
+  - [Install](#install)
+    - [Xenia-Emulator](#xenia-emulator)
+    - [RPCS3-Emulator](#rpcs3-emulator)
+    - [PS3-Hardware](#ps3-hardware)
+    - [Xbox](#xbox)
+  - [Optional-rb3\_plus-Keys-Upgrades](#optional-rb3_plus-keys-upgrades)
+  - [Optional-Install-Custom-Highways](#optional-install-custom-highways)
+  - [Songs](#songs)
+  - [Dependencies](#dependencies)
 
 # Introduction
 
@@ -104,7 +109,7 @@ From then on simply run the build .py corresponding to the platform you are buil
 
 ### Xenia-Emulator
 
-To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `_xenia/gen`
+To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `\_build\xbox\gen`
 
 then just navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe.
 
