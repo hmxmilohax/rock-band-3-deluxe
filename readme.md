@@ -72,6 +72,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Rock Band 2 Sustain look modifier
 * Upgrades/fixes for tons of songs from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
+* Fast start, Song Blacklist, UGC Demo, Anti Debugger patches from [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) Embedded directly into DX binaries.
 
 ## Setup
 
@@ -79,14 +80,14 @@ NOTE: You WILL need a modded/hacked console to play this mod on console. I hope 
 
 ### Actions
 
-There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
+There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo, as well as the [Nightly](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main) link. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
 
 * RB3DX-*platform*-Base - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-original-mids - Rock Band 3 Deluxe, but without any harmonies or chart updates
 * RB3DX-*platform*-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where GHWT and Rock Revolution kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 real hardware.
 
-If using pre built actions, skip down to the `Install` section and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
+If using pre built actions, skip down to the [Install](#install) section of this readme and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
 
 ### Repo-Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
