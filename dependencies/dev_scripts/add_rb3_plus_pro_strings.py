@@ -1,6 +1,11 @@
 # add_rb3_plus_pro_strings.py
 from pathlib import Path
-import git
+import subprocess
+try:
+    import git
+except:
+    cmd_install = "pip install gitpython".split()
+    subprocess.run(cmd_install)
 
 def add_strings():
 

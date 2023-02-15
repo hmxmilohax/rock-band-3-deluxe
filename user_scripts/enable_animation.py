@@ -1,7 +1,12 @@
 # enable_animation.py
 from pathlib import Path
 from sys import platform
-import git
+import subprocess
+try:
+    import git
+except:
+    cmd_install = "pip install gitpython".split()
+    subprocess.run(cmd_install)
 
 # get the current working directory
 cwd = Path().absolute()

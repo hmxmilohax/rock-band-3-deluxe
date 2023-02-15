@@ -5,7 +5,12 @@ from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
 from add_rb3_plus_pro_strings import add_strings
 import json
-import git
+import subprocess
+try:
+    import git
+except:
+    cmd_install = "pip install gitpython".split()
+    subprocess.run(cmd_install)
 
 add_strings()
 
