@@ -3,20 +3,25 @@
 ![Header Image](dependencies/header.png)
 
 # Table of Contents  
-* [Introduction](#introduction)
-* [Features](#features)
-* [Setup](#setup)
-* [Builds](#actions)
-* [Repo Setup](#repo-setup)
-* [Install](#install)
-* [Install Xenia](#xenia-emulator)
-* [Install RPCS3](#rpcs3-emulator)
-* [Install PS3](#ps3-hardware)
-* [Install Xbox](#xbox)
-* [Optional install custom highways](#optional-install-custom-highways)
-* [Optional rb3_plus Keys Upgrades](#optional-rb3_plus-keys-upgrades)
-* [Songs](#songs)
-* [Dependencies](#dependencies)
+- [Rock-Band-3-Deluxe](#rock-band-3-deluxe)
+- [Table of Contents](#table-of-contents)
+- [Introduction](#introduction)
+  - [Features](#features)
+    - [Quality of Life](#quality-of-life)
+    - [Authoring](#authoring)
+    - [Additional Modifications](#additional-modifications)
+  - [Setup](#setup)
+    - [Actions](#actions)
+    - [Repo-Setup](#repo-setup)
+  - [Install](#install)
+    - [Xenia-Emulator](#xenia-emulator)
+    - [RPCS3-Emulator](#rpcs3-emulator)
+    - [PS3-Hardware](#ps3-hardware)
+    - [Xbox](#xbox)
+  - [Optional-rb3\_plus-Keys-Upgrades](#optional-rb3_plus-keys-upgrades)
+  - [Optional-Install-Custom-Highways](#optional-install-custom-highways)
+  - [Songs](#songs)
+  - [Dependencies](#dependencies)
 
 # Introduction
 
@@ -67,6 +72,7 @@ This Repo contains everything you need to build an ark for Rock Band 3 Deluxe fo
 * Rock Band 2 Sustain look modifier
 * Upgrades/fixes for tons of songs from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
+* Fast start, Song Blacklist, UGC Demo, Anti Debugger patches from [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) Embedded directly into DX binaries.
 
 ## Setup
 
@@ -74,14 +80,14 @@ NOTE: You WILL need a modded/hacked console to play this mod on console. I hope 
 
 ### Actions
 
-There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
+There are now pre compiled ARK files available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo, as well as the [Nightly](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main) link. These are ready to install files for RB3DX per platform. These arks have the following pre-built parameters.
 
 * RB3DX-*platform*-Base - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-original-mids - Rock Band 3 Deluxe, but without any harmonies or chart updates
 * RB3DX-*platform*-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where GHWT and Rock Revolution kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 real hardware.
 
-If using pre built actions, skip down to the `Install` section and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
+If using pre built actions, skip down to the [Install](#install) section of this readme and assume any mention of `_build` is the contents of your zip file you downloaded from the Actions tab.
 
 ### Repo-Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
@@ -104,11 +110,13 @@ From then on simply run the build .py corresponding to the platform you are buil
 
 ### Xenia-Emulator
 
-To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `_xenia/gen`
+To install on Xenia, copy your vanilla Xbox 360 1.0 arks to `\_build\xbox\gen`
 
 then just navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe.
 
 ### RPCS3-Emulator
+
+**NOTE: Do not overwrite any disc files for your main game. DX is not made to overwrite the disc 1.0 vanilla files. DX goes in the location that updates are installed to on the PS3**
 
 To install on rpcs3, copy all files/folders in `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`
 
@@ -121,6 +129,8 @@ Run the build script again to pull any new updates committed to the repo and reb
 ### PS3-Hardware
 
 **NOTE: You WILL need a modded/hacked console to play this mod on console. I hope this is clear**
+
+**NOTE: Do not overwrite any disc files for your main game. DX is not made to overwrite the disc 1.0 vanilla files. DX goes in the location that updates are installed to on the PS3**
 
 To install on real PS3, you will have to install vanilla patch 1.05 on your ps3 first to register the update in your system.
 

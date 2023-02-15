@@ -24,13 +24,14 @@ def make_executable_binaries():
 # if xbox is true, build the Xbox ARK
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool):
-
-    add_strings()
-
     # directories used in this script
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
+
+    # only do this if keys.dta is empty to prevent key entries in rb3_plus.dta from being overwritten
+    if root_dir.joinpath("_ark/songs/dta_sections/keys.dta").stat().st_size == 0:
+        add_strings()
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
     if platform == "win32":
