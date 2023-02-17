@@ -1,11 +1,16 @@
 # add_rb3_plus_keys.py
 from pathlib import Path
-from mido import MidiFile
 from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
 from add_rb3_plus_pro_strings import add_strings
 import json
 import subprocess
+try:
+    import mido
+    from mido import MidiFile
+except:
+    cmd_mido = "pip install mido".split()
+    subprocess.run(cmd_mido)
 try:
     import git
 except:
