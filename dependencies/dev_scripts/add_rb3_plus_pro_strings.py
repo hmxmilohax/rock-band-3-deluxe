@@ -12,7 +12,8 @@ def add_strings():
     print("Downloading/enabling additional rb3_plus song data, this may take some time.")
         
     # get the current working directory
-    cwd = Path().absolute()
+    cwd = Path(__file__).parent
+    print(cwd)
     # get the root directory of the repo
     root_dir = Path(__file__).parents[2]
     print(root_dir)
