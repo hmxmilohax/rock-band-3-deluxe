@@ -23,10 +23,10 @@ print("Downloading/enabling additional rb3_plus song data, this may take some ti
     
 # get the current working directory
 cwd = Path(__file__).parent
-print(cwd)
+# print(cwd)
 # get the root directory of the repo
 root_dir = Path(__file__).parents[2]
-print(root_dir)
+# print(root_dir)
 
 # clone/pull rb3_plus
 rb3_plus_path = cwd.joinpath("rb3_plus")
@@ -68,10 +68,10 @@ def get_song_id(shortname: str):
 
 # traverse through rb3_plus/Pro Keys and find mid, mogg, and songs.dta
 for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
-    print(pro_song.stem)
+    # print(pro_song.stem)
     for pro_file in pro_song.glob("*"):
         if pro_file.name == "songs.dta":
-            print(pro_file.name)
+            # print(pro_file.name)
             song_keys_dict = parse_song_dta(pro_file)
             # print(song_keys_dict)
             merged_songs[pro_song.stem] = {}
@@ -91,7 +91,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                 song_upgrade_dta.append(f"   (song_id {get_song_id(pro_song.stem)})\n)\n")
                 overwrite_rb3_plus_dta = True               
         elif pro_file.suffix == ".mid":
-            print(pro_file.name)
+            # print(pro_file.name)
             key_midi = MidiFile(pro_file)
             final_midi = MidiFile()
             # for track in key_midi.tracks:
@@ -123,7 +123,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                         final_midi.tracks.append(track)
                 final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
         elif pro_file.suffix == ".mogg":
-            print(pro_file.name)
+            # print(pro_file.name)
             song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
             destination_path = song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mogg")
             destination_path.write_bytes(pro_file.read_bytes())

@@ -13,10 +13,10 @@ def add_strings():
         
     # get the current working directory
     cwd = Path(__file__).parent
-    print(cwd)
+    # print(cwd)
     # get the root directory of the repo
     root_dir = Path(__file__).parents[2]
-    print(root_dir)
+    # print(root_dir)
 
     # clone/pull rb3_plus
     rb3_plus_path = cwd.joinpath("rb3_plus")
@@ -31,7 +31,7 @@ def add_strings():
 
     # traverse through rb3_plus/Pro Strings and find both _plus.mid and upgrades.dta
     for pro_song in rb3_plus_path.glob("Pro Strings/*/*"):
-        print(pro_song.stem)
+        # print(pro_song.stem)
         for pro_file in pro_song.glob("*"):
             # if working with a dta, append it to the mega dta in here
             if pro_file.name == "upgrades.dta":

@@ -35,13 +35,18 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
     # convert images to .png_xbox/ps3 and move them to output_path
     for new_texture in input_path.glob("*"):
         if new_texture.suffix == ".png":
+            # first, convert image from png to png_xbox
             if platform == "win32":
-                cmd_xbox = f"dependencies\superfreq.exe png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+                cmd_xbox = f"dependencies\windows\superfreq.exe png2tex {input_path}\{new_texture.name} {output_path}\{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+            elif platform == "darwin":
+                cmd_xbox = f"dependencies/macos/superfreq png2tex {input_path}/{new_texture.name} {output_path}/{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
             else:
+                # if on linux/other OS, make binary executable
                 cmd_chmod_superfreq = "chmod +x dependencies/superfreq".split()
                 subprocess.run(cmd_chmod_superfreq, shell=(platform == "win32"), cwd="..")
-                cmd_xbox = f"dependencies/superfreq png2tex {input_path}/{new_texture.name} {output_path}/{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
+                cmd_xbox = f"dependencies/linux/superfreq png2tex {input_path}/{new_texture.name} {output_path}/{new_texture.stem}.png_xbox --platform x360 --miloVersion 26".split()
             subprocess.run(cmd_xbox, shell=(platform == "win32"), cwd="..")
+            # now, convert png_xboxes to png_ps3s
             if platform == "win32":
                 cmd_ps3 = f"python dependencies\dev_scripts\swap_rb_art_bytes.py {output_path}\{new_texture.stem}.png_xbox {output_path}\{new_texture.stem}.png_ps3".split()
             else:
