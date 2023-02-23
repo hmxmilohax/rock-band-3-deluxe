@@ -141,7 +141,7 @@ Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build
 
 If it opens to a black screen, that means you don't have your vanilla Rock Band 3 disc's `gen` folder extracted to `\_build\xbox\gen`.
 
-### **`_build/xbox/gen` should now look like this:**
+**`_build/xbox/gen` should now look like this:**
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
 
@@ -160,7 +160,7 @@ If the `BLUS30463` folder does not exist, create it.
 
 If you are asked to overwrite any files, click `Yes`.
 
-### **`/dev_hdd0/game/BLUS30463/` should now look like this:**
+**`/dev_hdd0/game/BLUS30463/` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -188,7 +188,7 @@ If the folder does not exist, that means you have not installed Rock Band 3 vers
 
 If you are asked to overwrite any files, click `Yes`.
 
-### **`/dev_hdd0/game/BLUS30463/` should now look like this:**
+**`/dev_hdd0/game/BLUS30463/` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -200,7 +200,7 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can c
 
 On Xbox, copy the contents of `_build/xbox/` to the location where your vanilla copy of Rock Band 3 is.
 
-### **Your `gen` folder should now look like this:**
+**Your `gen` folder should now look like this:**
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
 
