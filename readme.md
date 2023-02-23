@@ -10,6 +10,7 @@
     - [Quality of Life](#quality-of-life)
     - [Authoring](#authoring)
     - [Additional Modifications](#additional-modifications)
+  - [Prerequisites](#prerequisites)
   - [Setup](#setup)
     - [Pre-Built Versions](#pre-built-versions)
     - [Repo Setup](#repo-setup)
