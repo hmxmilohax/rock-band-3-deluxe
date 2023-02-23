@@ -127,7 +127,7 @@ From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py
 
 *If any of these open and immediately close, make sure you have all the required dependencies installed.*
 
-After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`.
+After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen\` or `\_build\ps3\USRDIR\gen\`.
 
 # Install
 
@@ -137,13 +137,13 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 Xenia is the most convenient way for us to test our mods, and we recommend you do so if you ever decide to contribute to this project.
 
-To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder in `\_build\xbox\gen`.
+To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder in `\_build\xbox\gen\`.
 
 Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe. If it opens and immediately closes, make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
 
-*If it opens to a black screen, that means you don't have your vanilla Rock Band 3 disc's `gen` folder extracted to `\_build\xbox\gen`.*
+*If it opens to a black screen, that means you don't have your vanilla Rock Band 3 disc's `gen` folder extracted to `\_build\xbox\gen\`.*
 
-**`_build/xbox/gen` should now look like this:**
+**`\_build\xbox\gen\` should now look like this:**
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
 
@@ -156,13 +156,13 @@ Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build
 
 To install on RPCS3, first extract your vanilla Rock Band 3 game disc and place it in the `games` folder in your RPCS3 directory. **Do NOT touch this folder once it's installed, it is needed to run Rock Band 3 Deluxe as it installs as a PS3 update and must be installed in its own respective folder, shown below.*
 
-Then, copy the contents of `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`.
+Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 
 *If the `BLUS30463` folder does not exist, create it.*
 
 *If you are asked to overwrite any files, click `Yes`.*
 
-**`/dev_hdd0/game/BLUS30463/` should now look like this:**
+**`\dev_hdd0\game\BLUS30463\` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -180,17 +180,17 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can
 
 **NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.*
 
-**If you are using a Guitar Hero or Rock Revolution drum kit, navigate to `_ark\config` and delete `joypad.dta` or head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.**
+**If you are using a Guitar Hero or Rock Revolution drum kit, navigate to `\_ark\config\` and delete `joypad.dta` or head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.**
 
 To install on a real PS3, first you need to make sure you have Rock Band 3 version `1.05` installed on your system. You can check this by inserting your disc, pressing `Triangle`, and scrolling down to `Check for Update`. If it asks you to update, do so here.
 
-Then, copy the contents of `_build/ps3/` to `/dev_hdd0/game/BLUS30463/`.
+Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 
 *If the folder does not exist, that means you have not installed Rock Band 3 version `1.05`.*
 
 *If you are asked to overwrite any files, click `Yes`.*
 
-**`/dev_hdd0/game/BLUS30463/` should now look like this:**
+**`\dev_hdd0\game\BLUS30463\` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -200,7 +200,7 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can c
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear**
 
-On Xbox, copy the contents of `_build/xbox/` to the location where your vanilla copy of Rock Band 3 is.
+On Xbox, copy the contents of `\_build\xbox\` to the location where your vanilla copy of Rock Band 3 is.
 
 **Your `gen` folder should now look like this:**
 
@@ -216,7 +216,7 @@ To clear your system cache, navigate to `System Settings > Storage` and press `Y
 
 Also, make sure to `disable` updates for Rock Band 3 in Aurora. Rock Band 3 Deluxe rolls `TU5` into its base installation.
 
-If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `/_build/_optional-xbox-rb3e-rawfiles/` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
+If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `\_build\_optional-xbox-rb3e-rawfiles\` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
@@ -240,9 +240,9 @@ This repo also supports the import of custom highways and groove/spotlights via 
 
 Rock Band 3 Deluxe includes a variety of custom highways by default, available in the `RB3DX Settings` menu in-game, but you can also add your own with the following steps.
 
-Simply drag in a .jpg/.png/.bmp into the `highways` folder in `custom_textures`, then navigate back to `user_scripts` and run `process_textures_highway.py`.
+Simply drag in a .jpg/.png/.bmp into `\custom_textures\highways\`, then navigate back to `user_scripts` and run `process_textures_highway.py`.
 
-Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in `custom_textures`, then navigate back to `user_scripts` and run `process_textures_spotlight.py`.
+Or, drag in a .jpg/.png/.bmp into `\custom_textures\spotlights`, then navigate back to `user_scripts` and run `process_textures_spotlight.py`.
 
 This will size your images accordingly, including those with arbitrary resolutions, and convert them to the proper format for Rock Band 3 Deluxe to read. Spotlights will be set to 50% opacity.
 
