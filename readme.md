@@ -180,9 +180,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
-***NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.***
+**NOTE: If you are using a Guitar Hero or Rock Revolution drum kit, navigate to `\_ark\config\`, delete `joypad.dta`, and rebuild Rock Band 3 Deluxe, or head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.**
 
-**If you are using a Guitar Hero or Rock Revolution drum kit, navigate to `\_ark\config\` and delete `joypad.dta` or head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.**
+***NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.***
 
 To install on a real PS3, first you need to make sure you have Rock Band 3 version `1.05` installed on your system. You can check this by inserting your disc, pressing `Triangle`, and scrolling down to `Check for Update`. If it asks you to update, do so here.
 
