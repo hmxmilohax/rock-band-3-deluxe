@@ -118,6 +118,9 @@ In addition to this, you will also need to install [Python](https://www.python.o
 
 Once they are all installed, in **an empty folder**, run `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux. This will pull the repo down for you and make sure you're completely up to date. This will take some time. If it opens and immediately closes, make sure you have [Git for Windows](https://gitforwindows.org/) installed.
 
+**The folder should now look like this.**
+![Repo Folder](dependencies/images/repofolder.png)
+
 From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py`, `build_xbox.py`, or `build_xenia.py` depending on your platform to stay updated and build Rock Band 3 Deluxe.
 
 **If any of these open and immediately close, make sure you have all the required dependencies installed.**
@@ -136,7 +139,13 @@ Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build
 
 If it opens to a black screen, that means you don't have your vanilla Rock Band 3 disc's `gen` folder extracted to `\_build\xbox\gen`.
 
-NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and set `gpu` to `d3d12` and `d3d12_readback_resolve` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we reccomend using [RPCS3](#rpcs3-emulator) instead.
+**`_build/xbox/gen` should now look like this.**
+![Xbox Repo](dependencies/images/xboxrepo.png)
+
+NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we reccomend using [RPCS3](#rpcs3-emulator) instead.
+
+![D3D12](dependencies/images/d3d12.png)
+![Readback Resolve](dependencies/images/readbackresolve.png)
 
 ### RPCS3 Emulator
 
@@ -148,9 +157,16 @@ If the `BLUS30463` folder does not exist, create it.
 
 If you are asked to overwrite any files, click `Yes`.
 
+**`/dev_hdd0/game/BLUS30463/` should now look like this.**
+![RPCS3 Path](dependencies/images/rpcs3path.png)
+
 To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 NOTE: If you experience bugs regarding textures or models, right-click Rock Band 3 in your RPCS3 games list and create a custom configuration. Then, go to the `GPU` tab and enable `Write Color Buffers`. This will not affect the framerate nearly as much as it does on Xenia.
+
+![Custom Configuration](dependencies/images/customconfig.png)
+![GPU Tab](dependencies/images/gputab.png)
+![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
 ### PS3 Hardware
 
@@ -168,6 +184,9 @@ If the folder does not exist, that means you have not installed Rock Band 3 vers
 
 If you are asked to overwrite any files, click `Yes`.
 
+**`/dev_hdd0/game/BLUS30463/` should now look like this.**
+![RPCS3 Path](dependencies/images/rpcs3path.png)
+
 To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ### Xbox 360 Hardware
@@ -175,6 +194,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can c
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear**
 
 On Xbox, copy the contents of `_build/xbox/` to the location where your vanilla copy of Rock Band 3 is.
+
+**Your `gen` folder should now look like this.**
+![Xbox Repo](dependencies/images/xboxrepo.png)
 
 If you're installing Rock Band 3 Deluxe for the first time, it is reccomended that you rename the vanilla `default.xex` to `default_vanilla.xex` for safety.
 
