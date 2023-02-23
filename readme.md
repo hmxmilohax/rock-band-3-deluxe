@@ -14,7 +14,7 @@
 - [Setup](#setup)
   - [Pre-Built Versions](#pre-built-versions)
   - [Repo Setup](#repo-setup)
-- [Install](#install)
+- [Installation](#installation)
   - [Xenia Emulator](#xenia-emulator)
   - [RPCS3 Emulator](#rpcs3-emulator)
   - [PS3 Hardware](#ps3-hardware)
@@ -129,7 +129,9 @@ From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py
 
 After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`.
 
-# Install
+# Installation
+
+**If you're jumping here from somewhere and you haven't read the above, make sure you follow [Pre-Built Versions](#pre-built-versions) or [Repo Setup](#repo-setup) first.**
 
 ## Xenia Emulator
 
