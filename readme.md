@@ -88,9 +88,9 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 
 # Setup
 
-There are a couple different ways you can set up Rock Band 3 Deluxe, you can download a [Pre-Built Version](#pre-built-versions) or [set up the Repo](#repo-setup).
+*There are a couple different ways you can set up Rock Band 3 Deluxe, you can download a [Pre-Built Version](#pre-built-versions) or [set up the Repo](#repo-setup).*
 
-Pick which one is best for you.
+***Pick which one is best for you.***
 
 ## Pre-Built Versions
 
@@ -223,6 +223,8 @@ If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 # Optional Upgrades
+
+*These are some optional, but very handy additions you can make to your Rock Band 3 Deluxe installation.*
 
 ## Songs
 
