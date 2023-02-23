@@ -105,7 +105,7 @@ These are recommended if you have no way of setting up the repo (unspported plat
 * RB3DX-*platform*-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where Guitar Hero and Rock Revolution drum kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 hardware
 
-If you're going to be using a pre-built patch, skip down to the [Install](#install) section. Any mention of `_build` is the contents of the zip file you downloaded from the Actions tab or Nightly link.
+If you're going to be installing a pre-built version, skip down to the [Install](#install) section. Any mention of `_build` is the contents of the zip file you downloaded from the Actions tab or Nightly link.
 
 ## Repo Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
