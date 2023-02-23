@@ -78,7 +78,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 
 # Prerequisites
 
-You will need...
+### You will need...
 
 - **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC
 - For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we reccomend using FTP
@@ -96,7 +96,7 @@ There pre-compiled versions of Rock Band 3 Deluxe available in many flavors in t
 
 These are reccomended if you have no way of setting up the repo (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
 
-The different flavors are as follows:
+### The different flavors are as follows:
 
 * RB3DX-*platform*-Base - The default build of Rock Band 3 Deluxe
 * RB3DX-*platform*-original-mids - Rock Band 3 Deluxe, but without any harmonies or chart updates
