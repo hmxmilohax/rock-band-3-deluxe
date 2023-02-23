@@ -156,7 +156,7 @@ Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build
 
 ## RPCS3 Emulator
 
-To install on RPCS3, first extract your vanilla Rock Band 3 game disc and place it in the `games` folder in your RPCS3 directory. **Do NOT touch this folder once it's installed, it is needed to run Rock Band 3 Deluxe as it installs as a PS3 update and must be installed in its own respective folder, shown below.*
+To install on RPCS3, first extract your vanilla Rock Band 3 game disc and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's installed, it is needed to run Rock Band 3 Deluxe as it installs as a PS3 update and must be installed in its own respective folder, shown below.***
 
 Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 
@@ -180,7 +180,7 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
-**NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.*
+***NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.***
 
 **If you are using a Guitar Hero or Rock Revolution drum kit, navigate to `\_ark\config\` and delete `joypad.dta` or head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.**
 
