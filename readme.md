@@ -130,7 +130,7 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 ## Install
 
-### Xenia Emulator
+## Xenia Emulator
 
 Xenia is the most convenient way for us to test our mods, and we reccomend you do so if you ever decide to contribute to this project.
 
@@ -149,7 +149,7 @@ NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`,
 ![D3D12](dependencies/images/d3d12.png)
 ![Readback Resolve](dependencies/images/readbackresolve.png)
 
-### RPCS3 Emulator
+## RPCS3 Emulator
 
 To install on RPCS3, first extract your vanilla Rock Band 3 game disc and place it in the `games` folder in your RPCS3 directory. **Do NOT touch this folder once it's installed, it is needed to run Rock Band 3 Deluxe as it installs as a PS3 update and must be installed in its own respective folder, shown below.*
 
@@ -171,7 +171,7 @@ NOTE: If you experience bugs regarding textures or models, right-click Rock Band
 ![GPU Tab](dependencies/images/gputab.png)
 ![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
-### PS3 Hardware
+## PS3 Hardware
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
@@ -193,7 +193,7 @@ If you are asked to overwrite any files, click `Yes`.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-### Xbox 360 Hardware
+## Xbox 360 Hardware
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear**
 
