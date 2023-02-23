@@ -27,6 +27,8 @@
 
 # Introduction
 
+### Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod by [MiloHax](https://github.com/hmxmilohax)
+
 This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).
 
 ## Features
@@ -248,7 +250,7 @@ This will size your images accordingly, including those with arbitrary resolutio
 
 **You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.**
 
-## Dependencies
+# Dependencies
 
 [Git for Windows](https://gitforwindows.org/) - CLI application to allow auto updating Deluxe repo files
 
