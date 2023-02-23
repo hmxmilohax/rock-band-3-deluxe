@@ -10,19 +10,20 @@
     - [Quality of Life](#quality-of-life)
     - [Authoring](#authoring)
     - [Additional Modifications](#additional-modifications)
-  - [Prerequisites](#prerequisites)
-  - [Setup](#setup)
-    - [Pre-Built Versions](#pre-built-versions)
-    - [Repo Setup](#repo-setup)
-  - [Install](#install)
-    - [Xenia Emulator](#xenia-emulator)
-    - [RPCS3 Emulator](#rpcs3-emulator)
-    - [PS3 Hardware](#ps3-hardware)
-    - [Xbox 360 Hardware](#xbox-360-hardware)
-  - [Optional - rb3\_plus Keys Upgrades](#optional-rb3_plus-keys-upgrades)
-  - [Optional - Installing Custom Textures](#optional-installing-custom-textures)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+  - [Pre-Built Versions](#pre-built-versions)
+  - [Repo Setup](#repo-setup)
+- [Install](#install)
+  - [Xenia Emulator](#xenia-emulator)
+  - [RPCS3 Emulator](#rpcs3-emulator)
+  - [PS3 Hardware](#ps3-hardware)
+  - [Xbox 360 Hardware](#xbox-360-hardware)
+- [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
-  - [Dependencies](#dependencies)
+  - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
+  - [Installing Custom Textures](#installing-custom-textures)
+- [Dependencies](#dependencies)
 
 # Introduction
 
@@ -75,7 +76,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 * Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) for Xbox 360
 * Fast start, Song Blacklist, UGC Demo, Anti Debugger patches from [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) Embedded directly into DX binaries.
 
-## Prerequisites
+# Prerequisites
 
 You will need...
 
@@ -83,13 +84,13 @@ You will need...
 - For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we reccomend using FTP
 - For Emulator: A **mid-to-high-end PC** capable of running RPCS3 or Xenia
 
-## Setup
+# Setup
 
 There are a couple different ways you can set up Rock Band 3 Deluxe, you can download a [Pre-Built Version](#pre-built-versions) or [set up the Repo](#repo-setup).
 
 Pick which one is best for you.
 
-### Pre-Built Versions
+## Pre-Built Versions
 
 There pre-compiled versions of Rock Band 3 Deluxe available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are ready-to-install files for Rock Band 3 Deluxe for both platforms.
 
@@ -104,7 +105,7 @@ The different flavors are as follows:
 
 If you're going to be using a pre-built patch, skip down to the [Install](#install) section. Any mention of `_build` is the contents of the zip file you downloaded from the Actions tab or Nightly link.
 
-### Repo Setup
+## Repo Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
@@ -128,7 +129,7 @@ From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py
 
 After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen` or `\_build\ps3\USRDIR\gen`.
 
-## Install
+# Install
 
 ## Xenia Emulator
 
@@ -217,13 +218,21 @@ If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-## Optional-rb3_plus Keys Upgrades
+# Optional Upgrades
+
+## Songs
+
+You can find song packs compatible with all Rock Band titles for both platforms on this [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
+
+You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games.
+
+## [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) features optional Keys and Pro Keys upgrades that you can install alongside Rock Band 3 Deluxe fairly easily. These upgrades include new audio files (.mogg's) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any Keys or Pro Keys player.
 
 You can download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main).
 
-## Optional-Installing Custom Textures
+## Installing Custom Textures
 
 This repo also supports the import of custom highways and groove/spotlights via the use of a script.
 
@@ -236,12 +245,6 @@ Or, drag in a .jpg/.png/.bmp into the `spotlights` folder in `custom_textures`, 
 This will size your images accordingly, including those with arbitrary resolutions, and convert them to the proper format for Rock Band 3 Deluxe to read. Spotlights will be set to 50% opacity.
 
 **You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.**
-
-## Songs
-
-You can find song packs compatible with all Rock Band titles for both platforms on this [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
-
-You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games.
 
 ## Dependencies
 
