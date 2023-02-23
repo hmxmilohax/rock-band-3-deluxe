@@ -94,7 +94,7 @@ Pick which one is best for you.
 
 There pre-compiled versions of Rock Band 3 Deluxe available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are ready-to-install files for Rock Band 3 Deluxe for both platforms.
 
-These are reccomended if you have no way of setting up the repo (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
+These are recommended if you have no way of setting up the repo (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
 
 ### The different flavors are as follows:
 
@@ -113,7 +113,7 @@ Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/rel
 
 Included on the release are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime). **These are both required in order to properly build Rock Band 3 Deluxe**.
 
-In addition to this, you will also need to install [Python](https://www.python.org/downloads/). We reccomend version **3.9 or later**.
+In addition to this, you will also need to install [Python](https://www.python.org/downloads/). We recommend version **3.9 or later**.
 
 **Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instaed.
 
@@ -131,11 +131,11 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 # Install
 
-**If you're jumping here from somewhere and you haven't read the above, make sure you follow [Setup](#setup) first.**
+*If you're jumping here from somewhere and you haven't read the above, make sure you follow [Setup](#setup) first.*
 
 ## Xenia Emulator
 
-Xenia is the most convenient way for us to test our mods, and we reccomend you do so if you ever decide to contribute to this project.
+Xenia is the most convenient way for us to test our mods, and we recommend you do so if you ever decide to contribute to this project.
 
 To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder in `\_build\xbox\gen`.
 
@@ -147,7 +147,7 @@ Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
 
-*NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we reccomend using [RPCS3](#rpcs3-emulator) instead.*
+*NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.*
 
 ![D3D12](dependencies/images/d3d12.png)
 ![Readback Resolve](dependencies/images/readbackresolve.png)
