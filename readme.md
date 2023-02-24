@@ -178,7 +178,7 @@ After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463
 
 **If you're having issues**, refer to the [Troubleshooting](#rpcs3-troubleshooting) section and find your issue.
 
-**To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+**To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and the latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ## PS3 Hardware
 
@@ -196,7 +196,7 @@ After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463
 
 **If you're having issues**, refer to the [Troubleshooting](#ps3-troubleshooting) section and find your issue.
 
-**To update Rock Band 3 Deluxe**, repeat [the above steps](#ps3-hardware) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+**To update Rock Band 3 Deluxe**, repeat [the above steps](#ps3-hardware) (minus installing the vanilla game and the latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ## Xbox 360 Hardware
 
