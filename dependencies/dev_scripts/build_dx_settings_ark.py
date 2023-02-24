@@ -41,6 +41,7 @@ def build_dxsl_ark():
     if platform == "win32":
         arkhelperwin_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/windows//arkhelper.exe")
     else:
+        arkhelpermac_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/macOS//arkhelper")
         arkhelperlinux_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/linux//arkhelper")
         # build the binaries if on linux/other OS
         if platform != "darwin":
