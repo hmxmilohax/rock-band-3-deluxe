@@ -223,7 +223,7 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You 
 
 ## General
 
-***The `.bat`/`.py` files open and immediately close!***
+### ***The `.bat`/`.py` files open and immediately close!***
 * You don't have all the required dependencies installed. Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
 
 ## Xenia
