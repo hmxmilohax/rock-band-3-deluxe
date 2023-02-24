@@ -323,7 +323,9 @@ These will resize your images accordingly, including those with arbitrary resolu
        * *If it doesn't download, right-click it and select `Save link as...` If your browser says it "can't be downloaded safely", ignore it and select `Keep`.*
 
 ### ***Rock Band 3 no longer shows up in the game list!***
-* You are not supposed to touch any of the files where your vanilla game disc is installed. Re-extract your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
+* You are not supposed to touch any of the files where your vanilla game disc is installed.
+    * Re-extract your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`.
+        * If it's installed correctly, it will look like this:
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -343,10 +345,12 @@ These will resize your images accordingly, including those with arbitrary resolu
 ## PS3
 
 ### ***I don't see `BLUS30463` in `\dev_hdd0\game\`!***
-* You do not have the latest update for Rock Band 3 installed on your system. You can check for updates by inserting your disc, pressing `Triangle`, and selecting `Check for Update`. Update to version `1.05` if it asks you.
+* You do not have the latest update for Rock Band 3 installed on your system.
+    * You can check for updates by inserting your disc, pressing `Triangle`, and selecting `Check for Update`. Update to version `1.05` if it asks you.
 
 ### ***The game shows up as "Unsupported Data"!***
-* You are not supposed to touch any of the files where your vanilla game disc is installed. Re-dump your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
+* You are not supposed to touch any of the files where your vanilla game disc is installed.
+    * Re-dump your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
@@ -354,7 +358,9 @@ These will resize your images accordingly, including those with arbitrary resolu
 * Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 
 ### ***My Guitar Hero/Rock Revolution drum kit shows up as the wrong instrument!***
-* This is intentional and exists for RPCS3 pro instrument autoplay purposes. If you want to revert this, navigate to `\_ark\config\`, delete `joypad.dta`, and rebuild Rock Band 3 Deluxe. OR head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.
+* This is intentional and exists for RPCS3 pro instrument autoplay purposes.
+    * If you want to revert this, navigate to `\_ark\config\`, delete `joypad.dta`, and rebuild Rock Band 3 Deluxe.
+        * OR head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.
 
 ## Xbox 360
 
