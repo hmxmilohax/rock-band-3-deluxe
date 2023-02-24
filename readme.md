@@ -159,7 +159,7 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 First, **extract your vanilla Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own seprate folder, shown below.***
 
-Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
+Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it. *If it doesn't download, right-click it and select `Save link as...`. If your browser says it "can't be downloaded safely, ignore it and select `Keep`.*
 
 Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in your RPCS3 directory. Click `Yes` to overwrite the files.
 
@@ -318,7 +318,7 @@ This will size your images accordingly, including those with arbitrary resolutio
 ## RPCS3
 
 ### ***I can't find `BLUS30463` in `\dev_hdd0\game\`!***
-* You do not have the latest update for Rock Band 3 installed in RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
+* You do not have the latest update for Rock Band 3 installed in RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it. *If it doesn't download, right-click it and select `Save link as...`. If your browser says it "can't be downloaded safely, ignore it and select `Keep`.*
 
 ### ***Rock Band 3 no longer shows up in the game list!***
 * You are not supposed to touch any of the files where your vanilla game disc is installed. Re-extract your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
