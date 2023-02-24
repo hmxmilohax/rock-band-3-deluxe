@@ -12,10 +12,10 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 - [Rock Band 3 Deluxe](#rock-band-3-deluxe)
 - [Introduction](#introduction)
 - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-    - [Quality of Life](#quality-of-life)
-    - [Authoring](#authoring)
-    - [Additional Modifications](#additional-modifications)
+- [Features](#features)
+  - [Quality of Life](#quality-of-life)
+  - [Authoring](#authoring)
+  - [Additional Modifications](#additional-modifications)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
   - [Pre-Built Versions](#pre-built-versions)
@@ -41,9 +41,9 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
   - [Xbox 360](#xbox-360)
 - [Dependencies](#dependencies)
 
-## Features
+# Features
 
-### Quality of Life
+## Quality of Life
 * Max song limit increased to 8000. Above 5000 can lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Settings", in game for additional modifications
@@ -59,7 +59,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 * Manual calibration adjusts by 1ms instad of 5ms
 
 
-### Authoring
+## Authoring
 * Autoplay modifier for chart demos
 * Gameplay watermarks to deter abuse of autoplay including -
     * Disabling autosave
@@ -69,7 +69,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 * Rock Revolution drums register as Pro Keys on PS3/RPCS3, to allow easy demos for pro instruments
 * Guitar Hero World Tour drums register as Pro Guitar/Bass on PS3/RPCS3, to allow easy demo for pro instruments
 
-### Additional Modifications
+## Additional Modifications
 * Selectable colors per fret/note/sustain (It works on Pro Drums/non-Pro Keys too!)
 * Selectable Overshell colors
 * Huge variety of custom song sources supported
