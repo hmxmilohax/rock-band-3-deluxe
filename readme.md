@@ -157,9 +157,9 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 To install on RPCS3, first extract your vanilla Rock Band 3 game disc and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's installed, it is needed to run Rock Band 3 Deluxe as it installs as a PS3 update and must be installed in its own respective folder, shown below.***
 
-Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
+Next, you will need Rock Band 3 version `1.05`. Get it [Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag it on top of the main RPCS3 window to install it.
 
-*If the `BLUS30463` folder does not exist, create it.*
+Then, go into your RPCS3 directory and copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 
 *If you are asked to overwrite any files, click `Yes`.*
 
@@ -179,11 +179,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can
 
 ***NOTE: Do NOT touch any of the contents of your vanilla game, Rock Band 3 Deluxe installs as a PS3 update and must be installed in its respective folder, shown below.***
 
-To install on a real PS3, first you need to make sure you have Rock Band 3 version `1.05` installed on your system. You can check this by inserting your disc, pressing `Triangle`, and scrolling down to `Check for Update`. If it asks you to update, do so here.
+First you need to make sure you have Rock Band 3 version `1.05` installed on your system. You can check this by inserting your disc, pressing `Triangle`, and scrolling down to `Check for Update`. If it asks you to update, do so here.
 
 Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
-
-*If the folder does not exist, that means you have not installed Rock Band 3 version `1.05`.*
 
 *If you are asked to overwrite any files, click `Yes`.*
 
@@ -258,6 +256,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You 
 
 ## RPCS3
 
+### ***I don't see `BLUS30463` in `\dev_hdd0\game\`!***
+* You have not installed Rock Band 3 version `1.05`. Get it [Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag it on top of the main RPCS3 window to install it.
+
 ### ***Rock Band 3 no longer shows up in the game list!***
 * You are not supposed to touch any of the files where your vanilla game disc is installed. Re-extract your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
 
@@ -277,6 +278,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You 
 ![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
 ## PS3
+
+### ***I don't see `BLUS30463` in `\dev_hdd0\game\`!***
+* You have not installed Rock Band 3 version `1.05`. Insert or mount your disc, press `Triangle`, and select `Check for Update`.
 
 ### ***The game shows up as "Unsupported Data"!***
 * You are not supposed to touch any of the files where your vanilla game disc is installed. Re-dump your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
