@@ -16,10 +16,16 @@ def rm_tree(pth):
     pth.rmdir()
 
 def make_executable_binaries():
-    cmd_chmod_arkhelper = "chmod +x dependencies/macOS//arkhelper".split()
-    subprocess.check_output(cmd_chmod_arkhelper, shell=(platform == "win32"), cwd="..")
-    cmd_chmod_dtab = "chmod +x dependencies/macOS//dtab".split()
-    subprocess.check_output(cmd_chmod_dtab, shell=(platform == "win32"), cwd="..")
+    if platform == "darwin":
+        cmd_chmod_arkhelper_mac = "chmod +x dependencies/macOS//arkhelper".split()
+        subprocess.check_output(cmd_chmod_arkhelper_mac, shell=(platform == "win32"), cwd="..")
+        cmd_chmod_dtab_mac = "chmod +x dependencies/macOS//dtab".split()
+        subprocess.check_output(cmd_chmod_dtab_mac, shell=(platform == "win32"), cwd="..")
+    else:
+        cmd_chmod_arkhelper_linux = "chmod +x dependencies/linux//arkhelper".split()
+        subprocess.check_output(cmd_chmod_arkhelper_linux, shell=(platform == "win32"), cwd="..")
+        cmd_chmod_dtab_linux = "chmod +x dependencies/linux//dtab".split()
+        subprocess.check_output(cmd_chmod_dtab_linux, shell=(platform == "win32"), cwd="..")
 
 # darwin: mac
 
