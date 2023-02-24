@@ -360,7 +360,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 ### ***My Guitar Hero/Rock Revolution drum kit shows up as the wrong instrument!***
 * This is intentional and exists for RPCS3 pro instrument autoplay purposes.
     * If you want to revert this, navigate to `\_ark\config\`, delete `joypad.dta`, and rebuild Rock Band 3 Deluxe.
-        * OR head back to [Pre-Built Versions](pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.
+        * OR head back to [Pre-Built Versions](#pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.
 
 ## Xbox 360
 
