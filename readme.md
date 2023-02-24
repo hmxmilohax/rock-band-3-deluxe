@@ -108,7 +108,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 
 There are **pre-compiled versions of Rock Band 3 Deluxe** available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are **ready-to-install** files for Rock Band 3 Deluxe for both platforms.
 
-These are **recommended if you have no way of setting up the repo** (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
+These are **recommended if you have no way of setting up the repo** (unspported platform, no administrator privelages, etc) or if you **get stuck at any point in [Repo Setup](#repo-setup)**.
 
 These are **not recommended for Xenia** as the repo is structured for you to easily build and run it.
 
@@ -129,6 +129,8 @@ These are **not recommended for Xenia** as the repo is structured for you to eas
 ## Repo Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
+
+*If you get stuck here at any point, try using the [Pre-Built Versions](#pre-built-versions) instead.*
 
 First, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo.
 
