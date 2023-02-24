@@ -32,7 +32,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
     - [Installing Songs on PS3](#installing-songs-on-ps3)
     - [Installing Songs on Xbox 360](#installing-songs-on-xbox-360)
   - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
-  - [Installing Custom Textures](#installing-custom-textures)
+  - [Custom Textures](#custom-textures)
 - [Troubleshooting](#troubleshooting)
   - [General](#general)
   - [Xenia](#xenia)
@@ -263,19 +263,17 @@ Download an Xbox 360 song pack of your choice, then copy it to its respective fo
 
 You can download a build of Rock Band 3 Deluxe containing these upgrades from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main).
 
-## Installing Custom Textures
+## Custom Textures
 
-This repo also supports the import of custom highways and groove/spotlights via the use of a script.
+Rock Band 3 Deluxe has a variety of custom textures, found in the in the `RB3DX Settings` menu in-game, as well as a way to import your own with relative ease.
 
-Rock Band 3 Deluxe includes a variety of custom highways by default, available in the `RB3DX Settings` menu in-game, but you can also add your own with the following steps.
+### Importing Your Own Textures
 
-Simply drag in a .jpg/.png/.bmp into `\custom_textures\highways\`, then navigate back to `user_scripts` and run `process_textures_highway.py`.
+**For highways**, copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\highways\`, then navigate back to `user_scripts` and run `process_textures_highway.py`. The process is the same for other texture types, just insert them to their according folder and run the according script.
 
-Or, drag in a .jpg/.png/.bmp into `\custom_textures\spotlights`, then navigate back to `user_scripts` and run `process_textures_spotlight.py`.
+These will resize your images accordingly, including those with arbitrary resolutions, and convert them to the proper format for Rock Band 3 Deluxe to read. *Spotlights will be set to 50% opacity.*
 
-This will size your images accordingly, including those with arbitrary resolutions, and convert them to the proper format for Rock Band 3 Deluxe to read. Spotlights will be set to 50% opacity.
-
-**You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.**
+***You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.***
 
 # Troubleshooting
 
