@@ -19,6 +19,12 @@
   - [RPCS3 Emulator](#rpcs3-emulator)
   - [PS3 Hardware](#ps3-hardware)
   - [Xbox 360 Hardware](#xbox-360-hardware)
+- [Troubleshooting](#troubleshooting)
+  - [General](#general)
+  - [Xenia](#xenia)
+  - [RPCS3](#rpcs3)
+  - [PS3](#ps3)
+  - [Xbox 360](#xbox-360)
 - [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
   - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
@@ -94,7 +100,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 
 ## Pre-Built Versions
 
-There pre-compiled versions of Rock Band 3 Deluxe available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are ready-to-install files for Rock Band 3 Deluxe for both platforms.
+There are pre-compiled versions of Rock Band 3 Deluxe available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are ready-to-install files for Rock Band 3 Deluxe for both platforms.
 
 These are recommended if you have no way of setting up the repo (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
 
@@ -119,15 +125,13 @@ In addition to this, you will also need to install [Python](https://www.python.o
 
 **Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instaed.
 
-Once they are all installed, in **an empty folder**, run `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux. This will pull the repo down for you and make sure you're completely up to date. This will take some time. If it opens and immediately closes, make sure you have [Git for Windows](https://gitforwindows.org/) installed.
+Once they are all installed, in **an empty folder**, run `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux. This will pull the repo down for you and make sure you're completely up to date. This will take some time.
 
 ### **The folder should now look like this:**
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
 From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py`, `build_xbox.py`, or `build_xenia.py` depending on your platform to stay updated and build Rock Band 3 Deluxe.
-
-*If any of these open and immediately close, make sure you have all the required dependencies installed.*
 
 After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen\` or `\_build\ps3\USRDIR\gen\`.
 
@@ -139,20 +143,13 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 Xenia is the most convenient way for us to test our mods, and we recommend you do so if you ever decide to contribute to this project.
 
-To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder in `\_build\xbox\gen\`.
+To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
 
 Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe. If it opens and immediately closes, make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
-
-*If it opens to a black screen, that means you don't have your vanilla Rock Band 3 disc's `gen` folder extracted to `\_build\xbox\gen\`.*
 
 **`\_build\xbox\gen\` should now look like this:**
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
-
-*NOTE: If you experience bugs regarding textures or models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.*
-
-![D3D12](dependencies/images/d3d12.png)
-![Readback Resolve](dependencies/images/readbackresolve.png)
 
 ## RPCS3 Emulator
 
@@ -169,12 +166,6 @@ Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
-
-*NOTE: If you experience bugs regarding textures or models, right-click Rock Band 3 in your RPCS3 games list and create a custom configuration. Then, go to the `GPU` tab and enable `Write Color Buffers`. This will not affect the framerate nearly as much as it does on Xenia.*
-
-![Custom Configuration](dependencies/images/customconfig.png)
-![GPU Tab](dependencies/images/gputab.png)
-![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
 ## PS3 Hardware
 
@@ -202,7 +193,9 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can c
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear**
 
-On Xbox, copy the contents of `\_build\xbox\` to the location where your vanilla copy of Rock Band 3 is.
+First, dump or extract your Rock Band 3 game disc.
+
+Then, simply copy the contents of `\_build\xbox\` to the location you extracted your disc to.
 
 **Your `gen` folder should now look like this:**
 
@@ -216,11 +209,79 @@ To clear your song cache, navigate to `System Settings > Storage > Rock Band 3` 
 
 To clear your system cache, navigate to `System Settings > Storage` and press `Y` to clear the system cache.
 
-Also, make sure to `disable` updates for Rock Band 3 in Aurora. Rock Band 3 Deluxe rolls `TU5` into its base installation.
+And finally, **disable updates** for Rock Band 3 in Aurora. Rock Band 3 Deluxe rolls `TU5` into its base installation.
 
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `\_build\_optional-xbox-rb3e-rawfiles\` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+
+# Troubleshooting
+
+*If you're having issues with Rock Band 3 Deluxe, here's where you can look for common issues and try to solve yours.*
+
+***Below every issue are most of the possible reasons they may be happening and how you can fix them.***
+
+## General
+
+***The `.bat`/`.py` files open and immediately close!***
+* You don't have all the required dependencies installed. Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
+
+## Xenia
+
+### ***My game opens to a black screen!***
+* You don't have a vanilla copy of Rock Band 3 installed. Extract your disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
+* Rock Band 3 Deluxe did not build properly, make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
+
+### ***The game doesn't get past the splash screens!***
+* You are not supposed to replace `default.xex` in `\_build\xbox\`, only the contents of the `gen` folder. Navigate to `user_scripts` and run `git_reset.py` to rebase your repo.
+
+### ***My controller isn't working even though I have x360ce set up!***
+* Navigate to `_xenia` and rename `xinput1_3.dll` to `xinput1_4.dll`.
+* Launch Rock Band 3 Deluxe, disconnect your controller from your PC and plug it back in. This is an issue that only happens with Rock Band 3 and Dance Central on Xenia.
+
+### ***The framerate is awful!***
+* Your PC is not capable of running Xenia and we haven't found any settings to help optimize it, sorry!
+
+### ***The character models don't look correct!***
+* Navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.
+
+![D3D12](dependencies/images/d3d12.png)
+![Readback Resolve](dependencies/images/readbackresolve.png)
+
+## RPCS3
+
+### ***Rock Band 3 no longer shows up in the game list!***
+* You are not supposed to touch any of the files where your vanilla game disc is installed. Re-extract your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
+
+![RPCS3 Path](dependencies/images/rpcs3path.png)
+
+### ***I'm getting an error about the game disc being dirty even on emulator!***
+* Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
+
+### ***The framerate is awful!***
+* Your PC is most likely not capable of running RPCS3, but you can try messing with the config and seeing what works best for you.
+
+### ***The character models don't look correct!***
+* Right-click Rock Band 3 in your RPCS3 games list and create a custom configuration. Then, go to the `GPU` tab and enable `Write Color Buffers`. This will not affect the framerate nearly as much as it does on Xenia.
+
+![Custom Configuration](dependencies/images/customconfig.png)
+![GPU Tab](dependencies/images/gputab.png)
+![Write Color Buffers](dependencies/images/writecolorbuffers.png)
+
+## PS3
+
+### ***The game shows up as "Unsupported Data"!***
+* You are not supposed to touch any of the files where your vanilla game disc is installed. Re-dump your disc and install Rock Band 3 Deluxe to `\dev_hdd0\game\BLUS30463\`. If it's installed correctly, it will look like this:
+
+![RPCS3 Path](dependencies/images/rpcs3path.png)
+
+### ***I'm getting an error about the game disc being dirty!***
+* Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
+
+## Xbox 360
+
+### ***The game doesn't get past the splash screens!***
+* Make sure you copy the **ENTIRE** contents of `\_build\xbox\` to where your vanilla copy of Rock Band 3 lives.
 
 # Optional Upgrades
 
