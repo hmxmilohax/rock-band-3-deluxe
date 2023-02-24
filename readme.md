@@ -21,6 +21,10 @@
   - [Xbox 360 Hardware](#xbox-360-hardware)
 - [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
+    - [Installing Songs on Xenia](#installing-songs-on-xenia)
+    - [Installing Songs on RPCS3](#installing-songs-on-rpcs3)
+    - [Installing Songs on PS3](#installing-songs-on-ps3)
+    - [Installing Songs on Xbox 360](#installing-songs-on-xbox-360)
   - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
   - [Installing Custom Textures](#installing-custom-textures)
 - [Troubleshooting](#troubleshooting)
@@ -143,6 +147,8 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 First, **extract your vanilla Rock Band 3 game disc** and copy **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
 
+Navigate to `_xenia` and **map your controller wtih x360ce**. If it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
+
 Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically update, build, and run Rock Band 3 Deluxe.** You need to run this script every time you want to play. `run_xenia.py`, however, will not automatically build and update the game and will only run it.
 
 ***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#xenia) section and find your issue.
@@ -205,7 +211,41 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware) (minu
 
 You can find song packs compatible with all Rock Band titles for both platforms on this [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
 
-You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games. Converting custom songs from games like Clone Hero is incredibly easy.
+You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games or convert Xbox 360 packs to PS3, and vise versa. Converting custom songs from games like Clone Hero is a breeze.
+
+### Installing Songs on Xenia
+
+Download an Xbox 360 song pack of your choice and open Xenia. Navigate to `File > Install Content`, and select your song pack(s) of choice. You can select more than one at a time. Xenia supports both CON and LIVE files.
+
+![Xenia Songs](dependencies/images/xenia_installcontent.png)
+
+### Installing Songs on RPCS3
+
+Download a PS3 song pack of your choice and open RPCS3. Drag and drop the song pack you want to install on top of the main RPCS3 window and select `Yes` to install it.
+
+![RPCS3 PKG](dependencies/images/rpcs3_pkg.png)
+
+### Installing Songs on PS3
+
+Download a PS3 song pack of your choice and put it on the root of a USB drive. Then, open `Package Manager` and select the song pack you want to install.
+
+![PS3 PKG](dependencies/images/ps3_pkg.png)
+
+### Installing Songs on Xbox 360
+
+Download an Xbox 360 song pack of your choice, then copy it to its respective folder.
+
+***For RB3 LIVE files, install them to:***
+
+![RB3 LIVE](dependencies/images/360_rb3live.png)
+
+***For RB3 CON files, install them to:***
+
+![RB3 CON](dependencies/images/360_rb3con.png)
+
+***For RB2 LIVE files, install them to:***
+
+![RB2 LIVE](dependencies/images/360_rb2live)
 
 ## [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
 
