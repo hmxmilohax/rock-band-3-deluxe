@@ -93,7 +93,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 ### You will need...
 
 - **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC
-- For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we reccomend using FTP
+- For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we recommend using FTP
 - For Emulator: A **mid-to-high-end PC** capable of running RPCS3 or Xenia
 
 # Setup
@@ -151,7 +151,7 @@ Navigate to `_xenia` and **map your controller wtih x360ce**. If it asks you to 
 
 Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically update, build, and run Rock Band 3 Deluxe.** You need to run this script every time you want to play. `run_xenia.py`, however, will not automatically build and update the game and will only run it.
 
-***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
+***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **If you're having issues**, refer to the [Troubleshooting](#xenia) section and find your issue.
 
@@ -163,7 +163,7 @@ Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Ge
 
 Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in your RPCS3 directory. Click `Yes` to overwrite the files.
 
-***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
+***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **If you're having issues**, refer to the [Troubleshooting](#rpcs3) section and find your issue.
 
@@ -179,7 +179,7 @@ First, you will need the **latest update of Rock Band 3** installed on your syst
 
 Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Click `Yes` to overwrite the files.
 
-***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
+***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **If you're having issues**, refer to the [Troubleshooting](#ps3) section and find your issue.
 
@@ -193,7 +193,7 @@ First, **dump or extract your Rock Band 3 game disc** to a place where Aroura ca
 
 Then, copy the contents of `\_build\xbox\` to the location you extracted your disc to. Select `Yes` to overwrite the files.
 
-If you're installing Rock Band 3 Deluxe for the first time, it is reccomended that you **rename the vanilla `default.xex` to `default_vanilla.xex`** for safety.
+If you're installing Rock Band 3 Deluxe for the first time, it is recommended that you **rename the vanilla `default.xex` to `default_vanilla.xex`** for safety.
 
 Make sure you **clear your song cache**, as well as your **system cache**.
 
@@ -205,7 +205,7 @@ And finally, **disable updates** for Rock Band 3 in Aurora. Rock Band 3 Deluxe r
 
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `\_build\_optional-xbox-rb3e-rawfiles\` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
-***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
+***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **If you're having issues**, refer to the [Troubleshooting](#xbox-360) section and find your issue.
 
