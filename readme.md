@@ -34,11 +34,11 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
   - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
   - [Custom Textures](#custom-textures)
 - [Troubleshooting](#troubleshooting)
-  - [General](#general)
-  - [Xenia](#xenia)
-  - [RPCS3](#rpcs3)
-  - [PS3](#ps3)
-  - [Xbox 360](#xbox-360)
+  - [General Troubleshooting](#general-troubleshooting)
+  - [Xenia Troubleshooting](#xenia-troubleshooting)
+  - [RPCS3 Troubleshooting](#rpcs3-troubleshooting)
+  - [PS3 Troubleshooting](#ps3-rroubleshooting)
+  - [Xbox 360 Troubleshooting](#xbox-360-troubleshooting)
 - [Dependencies](#dependencies)
 
 # Features
@@ -281,12 +281,12 @@ These will resize your images accordingly, including those with arbitrary resolu
 
 ***Below every issue are most of the possible reasons they may be happening and how you can fix them.***
 
-## General
+## General Troubleshooting
 
 ### ***The `.bat`/`.py` files open and immediately close!***
 * You don't have all the required dependencies installed. Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
 
-## Xenia
+## Xenia Troubleshooting
 
 ### ***My game opens to a black screen!***
 * You don't have a vanilla copy of Rock Band 3 installed.
@@ -315,7 +315,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 ![D3D12](dependencies/images/d3d12.png)
 ![Readback Resolve](dependencies/images/readbackresolve.png)
 
-## RPCS3
+## RPCS3 Troubleshooting
 
 ### ***I can't find `BLUS30463` in `\dev_hdd0\game\`!***
 * You do not have the latest update for Rock Band 3 installed in RPCS3.
@@ -342,7 +342,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 ![GPU Tab](dependencies/images/gputab.png)
 ![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
-## PS3
+## PS3 Troubleshooting
 
 ### ***I don't see `BLUS30463` in `\dev_hdd0\game\`!***
 * You do not have the latest update for Rock Band 3 installed on your system.
@@ -363,7 +363,7 @@ These will resize your images accordingly, including those with arbitrary resolu
     * If you want to revert this, navigate to `\_ark\config\`, delete `joypad.dta`, and rebuild Rock Band 3 Deluxe.
         * OR head back to [Pre-Built Versions](#pre-built-versions) and download `RB3DX-PS3-stock-instrument-mapping`.
 
-## Xbox 360
+## Xbox 360 Troubleshooting
 
 ### ***The game doesn't get past the splash screens!***
 * Make sure you copy the **ENTIRE** contents of `\_build\xbox\` to where your vanilla copy of Rock Band 3 lives.
