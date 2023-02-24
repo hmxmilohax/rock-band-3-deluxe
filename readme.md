@@ -145,11 +145,13 @@ Xenia is the most convenient way for us to test our mods, and we recommend you d
 
 To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
 
-Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe. If it opens and immediately closes, make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
+Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe!
 
 **`\_build\xbox\gen\` should now look like this:**
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
+
+***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#xenia) section and find your issue.
 
 ## RPCS3 Emulator
 
@@ -164,6 +166,8 @@ Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 **`\dev_hdd0\game\BLUS30463\` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
+
+***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#rpcs3) section and find your issue.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
@@ -186,6 +190,8 @@ Then, copy the contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
 **`\dev_hdd0\game\BLUS30463\` should now look like this:**
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
+
+***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#ps3) section and find your issue.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
@@ -212,6 +218,8 @@ To clear your system cache, navigate to `System Settings > Storage` and press `Y
 And finally, **disable updates** for Rock Band 3 in Aurora. Rock Band 3 Deluxe rolls `TU5` into its base installation.
 
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `\_build\_optional-xbox-rb3e-rawfiles\` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
+
+***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#xbox-360) section and find your issue.
 
 To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
