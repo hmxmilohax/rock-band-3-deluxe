@@ -303,9 +303,9 @@ This will size your images accordingly, including those with arbitrary resolutio
 
 ### ***My controller isn't working even though I have x360ce set up!***
 * Navigate to `_xenia` and rename `xinput1_3.dll` to `xinput1_4.dll`.
-* Launch Rock Band 3 Deluxe, disconnect your controller from your PC and plug it back in. (This is an issue that only happens with Rock Band 3.)
+* Every time you launch Rock Band 3 Deluxe, disconnect your controller from your PC and plug it back in. (This is an issue that only happens with Rock Band 3)
 
-### ***The framerate is awful!***
+### ***The framerate is awful (below 60)!***
 * Your PC is most likely not capable of running Xenia and we haven't found any settings to help optimize it.
     * You can try using [RPCS3](#rpcs3-emulator) instead, but you may get similar results.
 
