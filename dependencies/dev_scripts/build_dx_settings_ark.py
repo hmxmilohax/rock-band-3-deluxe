@@ -33,12 +33,15 @@ def build_dxsl_ark():
 
     print("Building DX Settings Loader...")
 
+
+    ark_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_ark")
+    build_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/gen")
+    
     if platform == "win32":
-        build_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/gen")
-        arkhelper_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/windows//arkhelper.exe")
-        ark_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_ark")
+        arkhelperwin_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/windows//arkhelper.exe")
     else:
-        build_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build/xbox/gen")
+        arkhelpermac_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/macOS//arkhelper")
+        arkhelperlinux_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/linux//arkhelper")
         # build the binaries if on linux/other OS
         if platform != "darwin":
             make_executable_binaries()
@@ -54,11 +57,11 @@ def build_dxsl_ark():
     failed = False
     try:
         if platform == "win32":
-            cmd_build = f"{arkhelper_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
+            cmd_build = f"{arkhelperwin_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
         elif platform == "darwin":
-            cmd_build = f"dependencies/dev_scripts/dx-settings-loader/dependencies/macos/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"{arkhelpermac_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 6".split()
         else:
-            cmd_build = f"dependencies/dev_scripts/dx-settings-loader/dependencies/linux/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"{arkhelperlinux_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 6".split()
         subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
     except CalledProcessError as e:
         print(e.output)
