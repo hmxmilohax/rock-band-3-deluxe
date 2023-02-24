@@ -355,8 +355,8 @@ These will resize your images accordingly, including those with arbitrary resolu
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
 ### ***I'm getting a disc read error!***
-* If you're loading your base copy of Rock Band 3 from the disc, actually check the disc.
 * Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` (including EBOOT.BIN).
+* If you're loading your base copy of Rock Band 3 from the disc itself, actually check the disc.
 
 ### ***My Guitar Hero/Rock Revolution drum kit shows up as the wrong instrument!***
 * This is intentional and exists for RPCS3 pro instrument autoplay purposes.
