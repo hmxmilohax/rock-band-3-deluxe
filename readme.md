@@ -127,7 +127,7 @@ First, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/r
 
 Included on the release are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime). **These are both required in order to properly build Rock Band 3 Deluxe**.
 
-In addition to these, you will also &&need to install [Python](https://www.python.org/downloads/)**. We recommend version **3.9 or later**.
+In addition to these, you will also **need to install [Python](https://www.python.org/downloads/)**. We recommend version **3.9 or later**.
 
 **Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instaed.
 
@@ -139,7 +139,12 @@ Now, make a new **empty** folder, **drop `_init_repo` in, and run it**. This wil
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
-***The Rock Band 3 Deluxe repo is now set up.*** Head down to [Installing](#installing) and find your platform of choice to build and install.
+***The Rock Band 3 Deluxe repo is now set up.*** You are now ready to **build and install install** it for your platform of choice:
+
+  - [Xenia Emulator](#xenia-emulator)
+  - [RPCS3 Emulator](#rpcs3-emulator)
+  - [PS3 Hardware](#ps3-hardware)
+  - [Xbox 360 Hardware](#xbox-360-hardware)
 
 # Installing
 
