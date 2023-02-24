@@ -23,7 +23,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 - [Install](#install)
   - [Xenia Emulator](#xenia-emulator)
   - [RPCS3 Emulator](#rpcs3-emulator)
-  - [PlayStation 3 Hardware](#play-station-3-hardware)
+  - [PS3 Hardware](#ps3-hardware)
   - [Xbox 360 Hardware](#xbox-360-hardware)
 - [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
@@ -171,7 +171,7 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in 
 
 **To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-## PlayStation 3 Hardware
+## PS3 Hardware
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
