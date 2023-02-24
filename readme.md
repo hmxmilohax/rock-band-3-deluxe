@@ -197,7 +197,7 @@ To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware). You can c
 
 ## Xbox 360 Hardware
 
-**NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear**
+**NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear.**
 
 First, dump or extract your Rock Band 3 game disc.
 
