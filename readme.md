@@ -330,7 +330,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
 
 ### ***I'm getting a disc read error!***
-* Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`.
+* Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` (including EBOOT.BIN).
 
 ### ***The framerate is awful!***
 * Your PC is most likely not capable of running RPCS3, but you can try messing with the config and seeing what works best for you.
