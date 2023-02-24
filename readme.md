@@ -151,7 +151,9 @@ Navigate to `_xenia` and **map your controller wtih x360ce**. If it asks you to 
 
 Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically update, build, and run Rock Band 3 Deluxe.** You need to run this script every time you want to play. `run_xenia.py`, however, will not automatically build and update the game and will only run it.
 
-***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#xenia) section and find your issue.
+***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
+
+**If you're having issues**, refer to the [Troubleshooting](#xenia) section and find your issue.
 
 ## RPCS3 Emulator
 
@@ -161,9 +163,11 @@ Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Ge
 
 Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in your RPCS3 directory. Click `Yes` to overwrite the files.
 
-***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#rpcs3) section and find your issue.
+***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-To update Rock Band 3 Deluxe, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+**If you're having issues**, refer to the [Troubleshooting](#rpcs3) section and find your issue.
+
+**To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ## PS3 Hardware
 
@@ -175,9 +179,11 @@ First, you will need the **latest update of Rock Band 3** installed on your syst
 
 Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Click `Yes` to overwrite the files.
 
-***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#ps3) section and find your issue.
+***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-To update Rock Band 3 Deluxe, repeat [the above steps](#ps3-hardware) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+**If you're having issues**, refer to the [Troubleshooting](#ps3) section and find your issue.
+
+**To update Rock Band 3 Deluxe**, repeat [the above steps](#ps3-hardware) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ## Xbox 360 Hardware
 
@@ -199,9 +205,11 @@ And finally, **disable updates** for Rock Band 3 in Aurora. Rock Band 3 Deluxe r
 
 If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced), grab the optional folders in `\_build\_optional-xbox-rb3e-rawfiles\` and place the `config` and `ui` folders next to the `gen` folder on your Xbox.
 
-***Rock Band 3 Deluxe should now be installed!*** If you're having issues, refer to the [Troubleshooting](#xbox-360) section and find your issue.
+***Rock Band 3 Deluxe should now be installed!*** We highly reccommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-To update Rock Band 3 Deluxe, repeat [the above steps](#xbox-360-hardware) (minus installing the vanilla game). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+**If you're having issues**, refer to the [Troubleshooting](#xbox-360) section and find your issue.
+
+**To update Rock Band 3 Deluxe**, repeat [the above steps](#xbox-360-hardware) (minus installing the vanilla game). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 # Optional Upgrades
 
