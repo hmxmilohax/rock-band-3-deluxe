@@ -34,8 +34,8 @@ def build_dxsl_ark():
     print("Building DX Settings Loader...")
 
     if platform == "win32":
-        build_location = root_dir.joinpath("dependencies\dev_scripts\dx-settings-loader\_build\\xbox\gen")
-        arkhelper_location = root_dir.joinpath("dependencies\dev_scripts\dx-settings-loader\dependencies\windows\\arkhelper.exe")
+        build_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/gen")
+        arkhelper_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/windows//arkhelper.exe")
         ark_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_ark")
     else:
         build_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build/xbox/gen")
@@ -56,9 +56,9 @@ def build_dxsl_ark():
         if platform == "win32":
             cmd_build = f"{arkhelper_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
         elif platform == "darwin":
-            cmd_build = f"dependencies\dev_scripts\dx-settings-loader/dependencies/macos/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"dependencies/dev_scripts/dx-settings-loader/dependencies/macos/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
         else:
-            cmd_build = f"dependencies\dev_scripts/dx-settings-loader/dependencies/linux/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"dependencies/dev_scripts/dx-settings-loader/dependencies/linux/arkhelper dir2ark dependencies/dev_scripts/dx-settings-loader/dx-settings-loader/_ark {build_location} -n {patch_hdr_version} -e -v 6".split()
         subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
     except CalledProcessError as e:
         print(e.output)
@@ -67,14 +67,14 @@ def build_dxsl_ark():
     if not failed:
         print("Successfully built DX Settings Loader ARK.")
         print("Copying DX Settings Loader to final build path.")
-        source1_path = root_dir.joinpath("dependencies\dev_scripts\dx-settings-loader\_build\\xbox\gen\dxsl_xbox.hdr")
-        destination1_path = root_dir.joinpath("_build\\xbox\gen\dxsl_xbox.hdr")
+        source1_path = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/gen/dxsl_xbox.hdr")
+        destination1_path = root_dir.joinpath("_build//xbox/gen/dxsl_xbox.hdr")
         destination1_path.write_bytes(source1_path.read_bytes())
-        source2_path = root_dir.joinpath("dependencies\dev_scripts\dx-settings-loader\_build\\xbox\gen\dxsl_xbox_0.ark")
-        destination2_path = root_dir.joinpath("_build\\xbox\gen\dxsl_xbox_0.ark")
+        source2_path = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/gen/dxsl_xbox_0.ark")
+        destination2_path = root_dir.joinpath("_build//xbox/gen/dxsl_xbox_0.ark")
         destination2_path.write_bytes(source2_path.read_bytes())
-        source3_path = root_dir.joinpath("dependencies\dev_scripts\dx-settings-loader\_build\\xbox\dx-settings-loader.xex")
-        destination3_path = root_dir.joinpath("_build\\xbox\dx-settings-loader.xex")
+        source3_path = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/_build//xbox/dx-settings-loader.xex")
+        destination3_path = root_dir.joinpath("_build//xbox/dx-settings-loader.xex")
         destination3_path.write_bytes(source3_path.read_bytes())
         return True
     else:
