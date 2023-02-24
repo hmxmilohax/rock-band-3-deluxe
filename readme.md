@@ -269,7 +269,7 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the in the `RB3DX 
 
 ### Importing Your Own Textures
 
-**For highways**, copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\highways\`, then navigate back to `user_scripts` and run `process_textures_highway.py`. The process is the same for other texture types, just insert them to their according folder and run the according script.
+**For highways**, copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\highways\`, then navigate back to `user_scripts` and run `process_textures_highway.py`. **The process is the same for other texture types**, just insert them to their according folder and run the according script.
 
 These will resize your images accordingly, including those with arbitrary resolutions, and convert them to the proper format for Rock Band 3 Deluxe to read. *Spotlights will be set to 50% opacity.*
 
