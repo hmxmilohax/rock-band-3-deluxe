@@ -141,7 +141,7 @@ After that, everything you need to run the mod (minus the vanilla game) will be 
 
 # Install
 
-*If you're jumping here from somewhere and you haven't read the above, make sure you follow [Setup](#setup) first.*
+*Make sure you follow [Setup](#setup) first!*
 
 ## Xenia Emulator
 
