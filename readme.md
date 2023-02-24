@@ -145,7 +145,7 @@ Xenia is the most convenient way for us to test our mods, and we recommend you d
 
 To install on Xenia, first extract your vanilla Rock Band 3 game disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
 
-Then, navigate to `user_scripts` and run `build_xenia.py` to automatically build and run Rock Band 3 Deluxe!
+Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically update, build, and run Rock Band 3 Deluxe.**
 
 **`\_build\xbox\gen\` should now look like this:**
 
