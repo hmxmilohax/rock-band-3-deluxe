@@ -123,23 +123,23 @@ If you're going to be installing a pre-built version, skip down to the [Installi
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
 As well, it is designed to allow you to automatically receive updates as the repo is updated.
 
-Simply go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases) of this repo and grab the `_init_repo` script for your platform. Currently there is a `.bat` file for Windows and a `.sh` file for linux, as well as a specific one for the Wii branch.
+First, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo.
 
 Included on the release are a couple dependencies, [Git for Windows](https://gitforwindows.org/), and [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime). **These are both required in order to properly build Rock Band 3 Deluxe**.
 
-In addition to this, you will also need to install [Python](https://www.python.org/downloads/). We recommend version **3.9 or later**.
+In addition to these, you will also &&need to install [Python](https://www.python.org/downloads/)**. We recommend version **3.9 or later**.
 
 **Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instaed.
 
-Once they are all installed, in **an empty folder**, run `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux. This will pull the repo down for you and make sure you're completely up to date. This will take some time.
+Next, download `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux.
 
-### **The folder should now look like this:**
+Now, make a new **empty** folder, **drop `_init_repo` in, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+
+### ***The folder should look like this once it's done:***
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
-From then on, navigate to the `user_scripts` folder and simply run `build_ps3.py`, `build_xbox.py`, or `build_xenia.py` depending on your platform to stay updated and build Rock Band 3 Deluxe.
-
-After that, everything you need to run the mod (minus the vanilla game) will be in `\_build\xbox\gen\` or `\_build\ps3\USRDIR\gen\`.
+***The Rock Band 3 Deluxe repo is now set up.*** Head down to [Installing](#installing) and find your platform of choice to build and install.
 
 # Installing
 
@@ -165,7 +165,9 @@ Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Ge
 
 *If it doesn't download, right-click it and select `Save link as...` If your browser says it "can't be downloaded safely", ignore it and select `Keep`.*
 
-Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in your RPCS3 directory. Click `Yes` to overwrite the files.
+Then, if you set up the repo, navigate to `user_scripts` and **run `build_ps3.py`**.
+
+After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in your RPCS3 directory. Click `Yes` to overwrite the files.
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
@@ -181,7 +183,9 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in 
 
 First, you will need the **latest update of Rock Band 3** installed on your system. You can check for updates by inserting your disc, pressing `Triangle`, and selecting `Check for Update`. Update to version `1.05` if it asks you.
 
-Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Click `Yes` to overwrite the files.
+Then, if you set up the repo, navigate to `user_scripts` and **run `build_ps3.py`**.
+
+After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Click `Yes` to overwrite the files.
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
@@ -195,7 +199,9 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Cl
 
 First, **dump or extract your Rock Band 3 game disc** to a place where Aroura can see it.
 
-Then, copy the contents of `\_build\xbox\` to the location you extracted your disc to. Select `Yes` to overwrite the files.
+Then, if you set up the repo, navigate to `user_scripts` and **run `build_xbox.py`**.
+
+After that, **copy the contents** of `\_build\xbox\` to the location you extracted your disc to. Select `Yes` to overwrite the files.
 
 If you're installing Rock Band 3 Deluxe for the first time, it is recommended that you **rename the vanilla `default.xex` to `default_vanilla.xex`** for safety.
 
