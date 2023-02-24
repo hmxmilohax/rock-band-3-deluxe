@@ -255,7 +255,7 @@ Download an Xbox 360 song pack of your choice, then copy it to its respective fo
 
 ***For RB2 LIVE files, install them to:***
 
-![RB2 LIVE](dependencies/images/360_rb2live)
+![RB2 LIVE](dependencies/images/360_rb2live.png)
 
 ## [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
 
