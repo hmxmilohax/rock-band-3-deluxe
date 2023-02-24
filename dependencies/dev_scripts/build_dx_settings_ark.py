@@ -64,9 +64,9 @@ def build_dxsl_ark():
         if platform == "win32":
             cmd_build = f"{arkhelperwin_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
         elif platform == "darwin":
-            cmd_build = f"{arkhelpermac_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"{arkhelpermac_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
         else:
-            cmd_build = f"{arkhelperlinux_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 6".split()
+            cmd_build = f"{arkhelperlinux_location} dir2ark {ark_location} {build_location} -n {patch_hdr_version} -e -v 5".split()
         subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
     except CalledProcessError as e:
         print(e.output)
