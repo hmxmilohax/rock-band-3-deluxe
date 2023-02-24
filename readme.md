@@ -153,7 +153,7 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-**If you're having issues**, refer to the [Troubleshooting](#xenia) section and find your issue.
+**If you're having issues**, refer to the [Troubleshooting](#xenia-troubleshooting) section and find your issue.
 
 ## RPCS3 Emulator
 
@@ -167,7 +167,7 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in 
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-**If you're having issues**, refer to the [Troubleshooting](#rpcs3) section and find your issue.
+**If you're having issues**, refer to the [Troubleshooting](#rpcs3-troubleshooting) section and find your issue.
 
 **To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
@@ -183,7 +183,7 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\`. Cl
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-**If you're having issues**, refer to the [Troubleshooting](#ps3) section and find your issue.
+**If you're having issues**, refer to the [Troubleshooting](#ps3-troubleshooting) section and find your issue.
 
 **To update Rock Band 3 Deluxe**, repeat [the above steps](#ps3-hardware) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
@@ -209,7 +209,7 @@ If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
 ***Rock Band 3 Deluxe should now be installed!*** We highly recommend you check out [Optional Upgrades](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
-**If you're having issues**, refer to the [Troubleshooting](#xbox-360) section and find your issue.
+**If you're having issues**, refer to the [Troubleshooting](#xbox-360-troubleshooting) section and find your issue.
 
 **To update Rock Band 3 Deluxe**, repeat [the above steps](#xbox-360-hardware) (minus installing the vanilla game). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
