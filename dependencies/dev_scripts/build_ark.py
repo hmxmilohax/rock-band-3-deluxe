@@ -27,6 +27,7 @@ def make_executable_binaries():
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool):
     # directories used in this script
+    print("Building RB3DX patch arks...")
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
