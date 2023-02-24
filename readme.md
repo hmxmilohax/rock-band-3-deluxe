@@ -6,7 +6,7 @@
 
 ### Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod by [MiloHax](https://github.com/hmxmilohax)
 
-This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).
+This repo contains everything you need to build Rock Band 3 Deluxe for PlayStation 3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).
 
 # Table of Contents  
 - [Rock Band 3 Deluxe](#rock-band-3-deluxe)
@@ -23,7 +23,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PS3 or Xb
 - [Install](#install)
   - [Xenia Emulator](#xenia-emulator)
   - [RPCS3 Emulator](#rpcs3-emulator)
-  - [PS3 Hardware](#ps3-hardware)
+  - [PlayStation 3 Hardware](#play-station-3-hardware)
   - [Xbox 360 Hardware](#xbox-360-hardware)
 - [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
@@ -171,7 +171,7 @@ Then, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` in 
 
 **To update Rock Band 3 Deluxe**, repeat [the above steps](#rpcs3-emulator) (minus installing the vanilla game and latest update). You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-## PS3 Hardware
+## PlayStation 3 Hardware
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
