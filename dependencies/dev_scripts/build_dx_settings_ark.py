@@ -16,9 +16,11 @@ def rm_tree(pth):
     pth.rmdir()
 
 def make_executable_binaries():
-    cmd_chmod_arkhelper = "chmod +x dx-settings-loader/dependencies/linux/arkhelper".split()
+    arkhelpermac_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/macOS//arkhelper")
+    dtabmac_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/macOS//dtab")
+    cmd_chmod_arkhelper = "chmod +x {arkhelpermac_location}".split()
     subprocess.check_output(cmd_chmod_arkhelper, shell=(platform == "win32"), cwd="..")
-    cmd_chmod_dtab = "chmod +x dx-settings-loader/dependencies/linux/dtab".split()
+    cmd_chmod_dtab = "chmod +x {dtabmac_location}".split()
     subprocess.check_output(cmd_chmod_dtab, shell=(platform == "win32"), cwd="..")
 
 # darwin: mac
@@ -29,7 +31,6 @@ def build_dxsl_ark():
     # directories used in this script
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
-    ark_dir = root_dir.joinpath("dependencies/dx-settings-loader/_ark")
 
     print("Building DX Settings Loader...")
 
@@ -40,7 +41,6 @@ def build_dxsl_ark():
     if platform == "win32":
         arkhelperwin_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/windows//arkhelper.exe")
     else:
-        arkhelpermac_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/macOS//arkhelper")
         arkhelperlinux_location = root_dir.joinpath("dependencies/dev_scripts/dx-settings-loader/dependencies/linux//arkhelper")
         # build the binaries if on linux/other OS
         if platform != "darwin":
