@@ -6,7 +6,9 @@
 
 ### Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod by [MiloHax](https://github.com/hmxmilohax)
 
-This repo contains everything you need to build Rock Band 3 Deluxe for PlayStation 3 or Xbox 360. For Wii, see the [Wii Branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).
+This repo contains everything you need to build Rock Band 3 Deluxe for PlayStation 3 or Xbox 360.
+
+*There is also a (no longer supported) Wii version available at [this branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).*
 
 # Table of Contents  
 - [Rock Band 3 Deluxe](#rock-band-3-deluxe)
