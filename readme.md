@@ -106,9 +106,11 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 
 ## Pre-Built Versions
 
-There are pre-compiled versions of Rock Band 3 Deluxe available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are ready-to-install files for Rock Band 3 Deluxe for both platforms.
+There are **pre-compiled versions of Rock Band 3 Deluxe** available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are **ready-to-install** files for Rock Band 3 Deluxe for both platforms.
 
-These are recommended if you have no way of setting up the repo (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
+These are **recommended if you have no way of setting up the repo** (unspported platform, no administrator privelages, etc) or if you get stuck at any point.
+
+These are **not recommended for Xenia** as the repo is structured for you to easily build and run it.
 
 ### The different flavors are as follows:
 
@@ -117,7 +119,12 @@ These are recommended if you have no way of setting up the repo (unspported plat
 * RB3DX-*platform*-keys - A build of Rock Band 3 Deluxe with included additional keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus)
 * RB3DX-PS3-stock-instrument-mapping - A build of Rock Band 3 Deluxe where Guitar Hero and Rock Revolution drum kits on PS3 are restored to their correct controller mapping. Only useful if you have either of these two instruments and are playing on PS3 hardware
 
-**If you're going to be installing a pre-built version**, skip down to the [Installing](#installing) section. *Mentions of the repo can be disregarded, and mentions of `_build` are referring to the contents of the `.zip` file you downloaded from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab or [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main).*
+**If you're going to be installing a pre-built version**, skip down to the [Installing](#installing) section. *Mentions of the repo and `build_x.py` can be disregarded, and mentions of `_build` are referring to the contents of the `.zip` file you downloaded from the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab or [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main).*
+
+  - [Xenia Emulator](#xenia-emulator)
+  - [RPCS3 Emulator](#rpcs3-emulator)
+  - [PS3 Hardware](#ps3-hardware)
+  - [Xbox 360 Hardware](#xbox-360-hardware)
 
 ## Repo Setup
 Setting up the Rock Band 3 Deluxe repo for the first time is meant to be as easy as possible.
