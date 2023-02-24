@@ -289,21 +289,25 @@ This will size your images accordingly, including those with arbitrary resolutio
 ## Xenia
 
 ### ***My game opens to a black screen!***
-* You don't have a vanilla copy of Rock Band 3 installed. Extract your disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`. That folder should look like this after Rock Band 3 Deluxe is built:
+* You don't have a vanilla copy of Rock Band 3 installed.
+    * Extract your disc and extract **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`. That folder should look like this after Rock Band 3 Deluxe is built:
 
 ![Xbox Repo](dependencies/images/xboxrepo.png)
 
-* Rock Band 3 Deluxe did not build properly, make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
+* Rock Band 3 Deluxe did not build properly.
+    * Make sure you have [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime) installed.
 
 ### ***The game doesn't get past the splash screens!***
-* You are not supposed to replace `default.xex` in `\_build\xbox\`, only the contents of the `gen` folder. Navigate to `user_scripts` and run `git_reset.py` to rebase your repo.
+* You are not supposed to replace `default.xex` in `\_build\xbox\`, only the contents of the `gen` folder.
+    * Navigate to `user_scripts` and run `git_reset.py` to rebase your repo.
 
 ### ***My controller isn't working even though I have x360ce set up!***
 * Navigate to `_xenia` and rename `xinput1_3.dll` to `xinput1_4.dll`.
-* Launch Rock Band 3 Deluxe, disconnect your controller from your PC and plug it back in. This is an issue that only happens with Rock Band 3 and Dance Central on Xenia.
+* Launch Rock Band 3 Deluxe, disconnect your controller from your PC and plug it back in. (This is an issue that only happens with Rock Band 3.)
 
 ### ***The framerate is awful!***
-* Your PC is not capable of running Xenia and we haven't found any settings to help optimize it, sorry!
+* Your PC is most likely not capable of running Xenia and we haven't found any settings to help optimize it.
+    * You can try using [RPCS3](#rpcs3-emulator) instead, but you may get similar results.
 
 ### ***The character models don't look correct!***
 * Navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.
