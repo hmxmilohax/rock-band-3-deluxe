@@ -46,7 +46,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 # Features
 
 ## Quality of Life
-* Custom settings loader as a frontend for Xbox and Xenia
+* [Custom settings loader](https://github.com/hmxmilohax/dx-settings-loader) as a frontend for Xbox and Xenia
 * Max song limit increased to 8000. Above 5000 can lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
 * New menu, "RB3DX Settings", in game for additional modifications
