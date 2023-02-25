@@ -49,7 +49,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 * [Custom settings loader](https://github.com/hmxmilohax/dx-settings-loader) as a frontend for Xbox and Xenia
 * Max song limit increased to 8000. Above 5000 can lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
-* New menu, "RB3DX Settings", in game for additional modifications
+* New menu, "Deluxe Settings", in game for additional modifications
 * Selectable song speed and track speed by 5% increments
 * Selectable venue framerate up to 60fps
 * Selectable venues, including a "Black Venue" with decreased load times and system load
@@ -292,7 +292,7 @@ You can download a build of Rock Band 3 Deluxe containing these upgrades from th
 
 ## Custom Textures
 
-Rock Band 3 Deluxe has a variety of custom textures, found in the `RB3DX Settings` menu in-game, as well as a way to import your own with relative ease.
+Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
 
 ### Importing Your Own Textures
 
