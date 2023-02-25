@@ -9,7 +9,7 @@ except:
 # pass in the repo url and repo path, and this function will clone/pull from said repo
 # with the repo contents going in repo_path/(name of repo)
 # will return a Path object directed to (name of repo)
-def pull_repo(repo_url: str, repo_path: Path):
+def pull_repo(repo_url: str, repo_path: Path) -> Path:
     repo_name = repo_url.split("/")
     repo_name = repo_name[-1].replace(".git","")
     print(f"Pulling from repo {repo_name} - this may take some time.")

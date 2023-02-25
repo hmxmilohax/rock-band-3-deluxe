@@ -15,7 +15,7 @@ root_dir = Path(__file__).parents[1] # root directory of the repo
 
 cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"
 
-if check_git_updated():
+if check_git_updated(repo_url="https://github.com/hmxmilohax/rock-band-3-deluxe", repo_root_path=root_dir):
     res = True
     if not root_dir.joinpath("_build/xbox/gen/patch_xbox_0.ark").is_file():
         print("RB3DX ark not found, building it now...")

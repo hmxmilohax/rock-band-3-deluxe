@@ -47,7 +47,7 @@ def build_patch_ark(xbox: bool):
     patch_hdr_version = "patch_xbox" if xbox else "patch_ps3"
 
     # pull the latest changes from the RB3DX repo if necessary
-    if not check_git_updated():
+    if not check_git_updated(repo_url="https://github.com/hmxmilohax/rock-band-3-deluxe", repo_root_path=root_dir):
         cmd_pull = "git pull https://github.com/hmxmilohax/rock-band-3-deluxe main".split()
         subprocess.run(cmd_pull, shell=(platform == "win32"), cwd="..")
 
