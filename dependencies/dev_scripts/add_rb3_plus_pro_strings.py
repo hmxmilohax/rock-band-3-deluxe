@@ -1,5 +1,6 @@
 # add_rb3_plus_pro_strings.py
 from pathlib import Path
+from pull_repo import pull_repo
 import subprocess
 try:
     import git
@@ -7,10 +8,7 @@ except:
     cmd_install = "pip install gitpython".split()
     subprocess.run(cmd_install)
 
-def add_strings():
-
-    print("Downloading/enabling additional rb3_plus song data, this may take some time.")
-        
+def add_strings():        
     # get the current working directory
     cwd = Path(__file__).parent
     # print(cwd)
@@ -19,13 +17,7 @@ def add_strings():
     # print(root_dir)
 
     # clone/pull rb3_plus
-    rb3_plus_path = cwd.joinpath("rb3_plus")
-    try:
-        repo = git.Repo.clone_from("https://github.com/rjkiv/rb3_plus.git", rb3_plus_path, branch="main")
-    except:
-        repo = git.Repo(rb3_plus_path)
-        origin = repo.remotes.origin
-        origin.pull()
+    rb3_plus_path = pull_repo(repo_url="https://github.com/rjkiv/rb3_plus.git", repo_path=cwd)
 
     mega_upgrade_dta = []
 
