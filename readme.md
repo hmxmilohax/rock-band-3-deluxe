@@ -95,7 +95,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 
 ### You will need...
 
-- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC.
+- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC. The **USA** version is required for PS3 (`BLUS30463`)
 - For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we recommend using FTP
 - For Emulator: A **mid-to-high-end PC** capable of running RPCS3 or Xenia
 
@@ -174,7 +174,9 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 ## RPCS3 Emulator
 
-First, **extract your vanilla Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
+**NOTE: Rock Band 3 Deluxe only works with USA (`BLUS30463`) copies of the game on PS3.**
+
+First, **extract your vanilla USA (`BLUS30463`) Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
 Next, you will need the **latest update for Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
 
@@ -193,6 +195,8 @@ After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463
 ## PS3 Hardware
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
+
+**NOTE: Rock Band 3 Deluxe only works with USA (`BLUS30463`) copies of the game on PS3.**
 
 ***NOTE: Do NOT touch the contents of your vanilla game if you dumped it to your HDD, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
@@ -352,6 +356,9 @@ These will resize your images accordingly, including those with arbitrary resolu
         * If it's installed correctly, it will look like this:
 
 ![RPCS3 Path](dependencies/images/rpcs3path.png)
+
+### ***Rock Band 3 Deluxe did not install at all!***
+* Make sure your copy of Rock Band 3 is the **USA version (`BLUS30463`)**.
 
 ### ***I'm getting a disc read error!***
 * Make sure you copy the **ENTIRE** contents of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463\` (including EBOOT.BIN).
