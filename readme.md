@@ -139,7 +139,7 @@ Before you do anything else, you'll need to install [Git for Windows](https://gi
 
 **Install all three of these with their default options.** If you're unable to for whatever reason, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instead.
 
-Next, download `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux.
+Next, **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
 
 Now, make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
 
