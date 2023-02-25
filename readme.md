@@ -36,7 +36,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
   - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
   - [Custom Textures](#custom-textures)
 - [Troubleshooting](#troubleshooting)
-  - [General Troubleshooting](#general-troubleshooting)
+  - [Repo Troubleshooting](#repo-troubleshooting)
   - [Xenia Troubleshooting](#xenia-troubleshooting)
   - [RPCS3 Troubleshooting](#rpcs3-troubleshooting)
   - [PS3 Troubleshooting](#ps3-rroubleshooting)
@@ -154,7 +154,7 @@ Now, make a new **empty** folder, **put `_init_repo` in the folder, and run it**
   - [PS3 Hardware](#ps3-hardware)
   - [Xbox 360 Hardware](#xbox-360-hardware)
 
-**If you were not able to set up the repo properly**, refer to the [Troubleshooting](#general-troubleshooting) section or use a [Pre-Built Version](#pre-built-versions) instead.
+**If you were not able to set up the repo properly**, refer to the [Troubleshooting](#repo-troubleshooting) section or use a [Pre-Built Version](#pre-built-versions) instead.
 
 # Installing
 
@@ -304,10 +304,11 @@ These will resize your images accordingly, including those with arbitrary resolu
 
 ***Below every issue are most of the possible reasons they may be happening and how you can fix them.***
 
-## General Troubleshooting
+## Repo Troubleshooting
 
 ### ***The `.bat`/`.py` files open and immediately close!***
-* You don't have all the required dependencies installed. Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
+* You don't have all the required dependencies installed.
+    * Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
 
 ## Xenia Troubleshooting
 
