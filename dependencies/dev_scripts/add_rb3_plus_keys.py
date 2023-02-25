@@ -3,6 +3,7 @@ from pathlib import Path
 from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
 from add_rb3_plus_pro_strings import add_strings
+from pull_repo import pull_repo
 import json
 import subprocess
 try:
@@ -18,8 +19,6 @@ except:
     subprocess.run(cmd_install)
 
 add_strings()
-
-print("Downloading/enabling additional rb3_plus song data, this may take some time.")
     
 # get the current working directory
 cwd = Path(__file__).parent
@@ -29,13 +28,7 @@ root_dir = Path(__file__).parents[2]
 # print(root_dir)
 
 # clone/pull rb3_plus
-rb3_plus_path = cwd.joinpath("rb3_plus")
-try:
-    repo = git.Repo.clone_from("https://github.com/rjkiv/rb3_plus.git", rb3_plus_path, branch="main")
-except:
-    repo = git.Repo(rb3_plus_path)
-    origin = repo.remotes.origin
-    origin.pull()
+rb3_plus_path = pull_repo(repo_url="https://github.com/rjkiv/rb3_plus.git", repo_path=cwd)
 
 # load all the legacy song info from the pre-compiled json file
 with open(root_dir.joinpath("dependencies/song_info.json")) as json_file:

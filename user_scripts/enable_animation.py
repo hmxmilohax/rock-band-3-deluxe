@@ -1,6 +1,10 @@
 # enable_animation.py
 from pathlib import Path
 from sys import platform
+import sys
+sys.path.append("../dependencies/dev_scripts")
+from pull_repo import pull_repo
+
 import subprocess
 try:
     import git
@@ -14,13 +18,7 @@ root_dir = Path(__file__).parents[1] # root directory of the repo
 dependencies_dir = root_dir.joinpath("dependencies")
 
 # clone/pull rbdx_animated_textures
-rbdx_animated_textures_path = dependencies_dir.joinpath("rbdx_animated_textures")
-try:
-    repo = git.Repo.clone_from("https://github.com/hmxmilohax/rbdx_animated_textures.git", rbdx_animated_textures_path, branch="main")
-except:
-    repo = git.Repo(rbdx_animated_textures_path)
-    origin = repo.remotes.origin
-    origin.pull()
+rbdx_animated_textures_path = pull_repo(repo_url="https://github.com/hmxmilohax/rbdx_animated_textures.git", repo_path=dependencies_dir)
 
 animated_folder_list = ["animated_gems", "animated_smashers", "animated_surfaces"]
 for folder in animated_folder_list:
