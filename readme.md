@@ -58,7 +58,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 * Default difficulty on first load is Expert
 * Song title always visible modifier
 * Keys on Guitar unlocked without meeting requirements
-* Manual calibration adjusts by 1ms instad of 5ms
+* Manual calibration adjusts by 1ms instead of 5ms
 
 
 ## Authoring
@@ -79,7 +79,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 * Auto activating drum modifier (no fills mode)
 * Translations for Spanish, French, German
 * Post processing toggle - disables/reenables post processing in-game, or in menus
-* Screensaver mode - remove UI elements from menus to view the background vingette unobstructed (it will softlock your game, so be careful!)
+* Screensaver mode - remove UI elements from menus to view the background vignette unobstructed (it will softlock your game, so be careful!)
 * Nice (69%) and Awesome Choke (98-99%) callouts on solo completion
 * New main menu music pulled from other Rock Band titles
 * No crowd modifier
@@ -108,7 +108,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 
 There are **pre-compiled versions of Rock Band 3 Deluxe** available in many flavors in the [Actions](https://github.com/hmxmilohax/rock-band-3-deluxe/actions) tab of this repo and in the [Nightly link](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main). These are **ready-to-install** files for Rock Band 3 Deluxe for both platforms.
 
-These are **recommended if you have no way of setting up the repo** (unspported platform, no administrator privelages, etc) or if you **get stuck at any point in [Repo Setup](#repo-setup)**.
+These are **recommended if you have no way of setting up the repo** (unsupported platform, no administrator privileges, etc) or if you **get stuck at any point in [Repo Setup](#repo-setup)**.
 
 These are **not recommended for Xenia** as the repo is structured for you to easily build and run it.
 
@@ -138,7 +138,7 @@ Included on the release are a couple dependencies, [Git for Windows](https://git
 
 In addition to these, you will also **need to install [Python](https://www.python.org/downloads/)**. We recommend version **3.9 or later**.
 
-**Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instaed.
+**Install all three of these with their default options.** If you're unable to, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instead.
 
 Next, download `_init_repo.bat` if you're on Windows or `_init_repo.sh` if you're on Linux.
 
@@ -163,7 +163,7 @@ Now, make a new **empty** folder, **drop `_init_repo` in, and run it**. This wil
 
 First, **extract your vanilla Rock Band 3 game disc** and copy **ONLY** the *contents* of the `gen` folder to `\_build\xbox\gen\`.
 
-Navigate to `_xenia` and **map your controller wtih x360ce**. If it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
+Navigate to `_xenia` and **map your controller with x360ce**. If it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
 
 Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically update, build, and run Rock Band 3 Deluxe.** You need to run this script every time you want to play. `run_xenia.py`, however, will not automatically build and update the game and will only run it.
 
@@ -173,7 +173,7 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 ## RPCS3 Emulator
 
-First, **extract your vanilla Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own seprate folder, shown below.***
+First, **extract your vanilla Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
 Next, you will need the **latest update of Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
 
@@ -193,7 +193,7 @@ After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
-***NOTE: Do NOT touch the contents of your vanilla game if you dumped it to your HDD, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own seprate folder, shown below.***
+***NOTE: Do NOT touch the contents of your vanilla game if you dumped it to your HDD, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
 First, you will need the **latest update of Rock Band 3** installed on your system. You can check for updates by inserting your disc, pressing `Triangle`, and selecting `Check for Update`. Update to version `1.05` if it asks you.
 
@@ -211,7 +211,7 @@ After that, **copy the contents** of `\_build\ps3\` to `\dev_hdd0\game\BLUS30463
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear.**
 
-First, **dump or extract your Rock Band 3 game disc** to a place where Aroura can see it.
+First, **dump or extract your Rock Band 3 game disc** to a place where Aurora can see it.
 
 Then, if you set up the repo, navigate to `user_scripts` and **run `build_xbox.py`**.
 
@@ -243,7 +243,7 @@ If you are also running [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced)
 
 You can find song packs compatible with all Rock Band titles for both platforms on this [Spreadsheet](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
 
-You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games or convert Xbox 360 packs to PS3, and vise versa. Converting custom songs from games like Clone Hero is a breeze.
+You can also use [Onyx Music Game Toolkit](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games or convert Xbox 360 packs to PS3, and vice versa. Converting custom songs from games like Clone Hero is a breeze.
 
 ### Installing Songs on Xenia
 
@@ -287,7 +287,7 @@ You can download a build of Rock Band 3 Deluxe containing these upgrades from th
 
 ## Custom Textures
 
-Rock Band 3 Deluxe has a variety of custom textures, found in the in the `RB3DX Settings` menu in-game, as well as a way to import your own with relative ease.
+Rock Band 3 Deluxe has a variety of custom textures, found in the `RB3DX Settings` menu in-game, as well as a way to import your own with relative ease.
 
 ### Importing Your Own Textures
 
@@ -332,7 +332,7 @@ These will resize your images accordingly, including those with arbitrary resolu
     * You can try using [RPCS3](#rpcs3-emulator) instead, but you may get similar results.
 
 ### ***The character models don't look correct!***
-* Navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drasticly affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.
+* Navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drastically affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#rpcs3-emulator) instead.
 
 ![D3D12](dependencies/images/d3d12.png)
 ![Readback Resolve](dependencies/images/readbackresolve.png)
