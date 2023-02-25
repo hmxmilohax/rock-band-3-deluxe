@@ -54,7 +54,7 @@ def build_dxsl_ark():
 
     # pull the latest changes from the RB3DX repo if necessary
     if not check_git_updated():
-        cmd_pull = "git pull https://github.com/hmxmilohax/rock-band-3-deluxe main".split()
+        cmd_pull = "git pull https://github.com/hmxmilohax/dx-settings-loader main".split()
         subprocess.run(cmd_pull, shell=(platform == "win32"))
 
 
