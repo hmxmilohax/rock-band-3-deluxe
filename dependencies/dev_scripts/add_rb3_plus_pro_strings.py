@@ -47,7 +47,7 @@ def add_strings():
         ff.write("#include vanilla.dta\n")
         ff.write("#include rb3_plus.dta")
 
-    print(f"Successfully added rb3_plus pro string upgrades into the RB3DX ark.")
+    print(f"Successfully added rb3_plus pro string upgrades into the Rock Band 3 Deluxe ark.")
 
 if __name__ == "__main__":
     add_strings()

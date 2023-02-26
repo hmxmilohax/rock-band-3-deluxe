@@ -134,4 +134,4 @@ if overwrite_rb3_plus_dta:
     with open(song_upgrade_path, "w") as f:
         f.writelines(song_upgrade_dta)
 
-print(f"Successfully enabled key upgrades on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+print(f"Successfully enabled key upgrades on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")

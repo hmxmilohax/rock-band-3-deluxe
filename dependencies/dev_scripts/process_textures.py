@@ -113,10 +113,10 @@ def process_textures(which_texture: str):
     if which_texture == "emissive" or which_texture == "highway" or which_texture == "spotlight" or which_texture == "smasher" or which_texture == "gem" or which_texture == "keyboard":
         generate_dtas(input_path=root_dir.joinpath(f"custom_textures/{which_texture}s"), output_path=root_dir.joinpath(f"_ark/ui/track/{which_texture}s"), which_texture=which_texture)
         process_images(input_path=root_dir.joinpath(f"custom_textures/{which_texture}s"), output_path=root_dir.joinpath(f"_ark/ui/track/{which_texture}s/gen"), which_texture=which_texture)
-        print(f"Successfully implemented custom {which_texture} textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+        print(f"Successfully implemented custom {which_texture} textures on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")
     elif which_texture == "custom_track":
         process_images(input_path=root_dir.joinpath("custom_textures/custom_track_textures"), output_path=root_dir.joinpath("_ark/ui/track/custom_track_textures/gen"), which_texture="custom_track")
-        print("Successfully implemented custom track textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+        print("Successfully implemented custom track textures on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")
     elif which_texture == "overshell":
         process_images(input_path=root_dir.joinpath("custom_textures/overshell/rb4_early"), output_path=root_dir.joinpath("_ark/ui/overshell/rb4_early/gen"), which_texture="overshell")
-        print("Successfully implemented custom overshell textures on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+        print("Successfully implemented custom overshell textures on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")

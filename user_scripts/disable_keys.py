@@ -23,4 +23,4 @@ for filename in song_update_path.glob("*/*.mogg"):
     except:
         pass
 
-print(f"Successfully disabled key upgrades on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+print(f"Successfully disabled key upgrades on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")

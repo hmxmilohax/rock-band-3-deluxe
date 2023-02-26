@@ -46,4 +46,4 @@ for i in range(len(macro_contents)):
 with open(macros_path,"w") as f:
     f.writelines(macro_contents)
 
-print(f"Successfully enabled custom animations on the RB3DX ark. Please rebuild in order to see them reflected in-game.")
+print(f"Successfully enabled custom animations on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")

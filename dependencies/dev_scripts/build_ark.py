@@ -27,7 +27,7 @@ def make_executable_binaries():
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool):
     # directories used in this script
-    print("Building RB3DX patch arks...")
+    print("Building Rock Band 3 Deluxe patch arks...")
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
@@ -46,7 +46,7 @@ def build_patch_ark(xbox: bool):
             make_executable_binaries()
     patch_hdr_version = "patch_xbox" if xbox else "patch_ps3"
 
-    # pull the latest changes from the RB3DX repo if necessary
+    # pull the latest changes from the Rock Band 3 Deluxe repo if necessary
     if not check_git_updated(repo_url="https://github.com/hmxmilohax/rock-band-3-deluxe", repo_root_path=root_dir):
         cmd_pull = "git pull https://github.com/hmxmilohax/rock-band-3-deluxe main".split()
         subprocess.run(cmd_pull, shell=(platform == "win32"), cwd="..")
