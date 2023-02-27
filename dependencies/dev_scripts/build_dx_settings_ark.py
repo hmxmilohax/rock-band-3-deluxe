@@ -38,11 +38,10 @@ def build_dxsl_ark():
     print("Building DX Settings Loader...")
 
     ark_location = dx_settings_loader_path.joinpath("_ark")
-    relative_ark_location = f"dependencies{str(ark_location).split('dependencies', 1)[1]}"
-    # print(relative_ark_location)
     build_location = dx_settings_loader_path.joinpath("_build/xbox/gen")
-    relative_build_location = f"dependencies{str(build_location).split('dependencies', 1)[1]}"
-    # print(relative_build_location)
+
+    relative_ark_location = f"{str(ark_location).replace(str(root_dir),'')}"[1:]
+    relative_build_location = f"{str(build_location).replace(str(root_dir),'')}"[1:]
 
     # build the binaries if on linux/other OS
     if platform != "win32" and platform != "darwin":
