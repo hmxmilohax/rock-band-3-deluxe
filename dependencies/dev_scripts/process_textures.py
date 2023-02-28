@@ -86,32 +86,6 @@ def generate_dtas(input_path: Path, output_path: Path, which_texture: str):
         for asdf in texture_dta:
             dta_output.write(f"\"{asdf}\"\n")
 
-    # slot_states.dta stuff goes here
-    # open and write into slot_states.dta
-    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "r", encoding="ISO-8859=1") as f:
-        slot_states_dta = [line for line in f.readlines()]
-
-    for i in range(len(slot_states_dta)):
-        if f"; paste your {which_texture}s.dta contents here" in slot_states_dta[i]:
-            threshold_begin = i
-        elif f"; end {which_texture}s.dta contents" in slot_states_dta[i]:
-            threshold_end = i
-            break
-
-    leading_spaces = len(slot_states_dta[threshold_begin]) - len(slot_states_dta[threshold_begin].lstrip())
-    slot_state_additions = []
-    slot_state_additions.append(f"{' ' * leading_spaces}(\n")
-    for addition in texture_dta:
-        slot_state_additions.append(f"{' ' * (leading_spaces + 2)}\"{addition}\"\n")
-    slot_state_additions.append(f"{' ' * leading_spaces})\n")
-
-    new_slot_states_dta = slot_states_dta[:threshold_begin+1]
-    new_slot_states_dta.extend(slot_state_additions)
-    new_slot_states_dta.extend(slot_states_dta[threshold_end:])
-
-    with open(root_dir.joinpath("_ark/ui/overshell/slot_states.dta"), "w", encoding="ISO-8859=1") as ff:
-        ff.writelines(new_slot_states_dta)
-
 def process_textures(which_texture: str):
     root_dir = Path().absolute().parents[0] # root directory of the repo
 
