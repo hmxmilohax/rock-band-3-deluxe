@@ -80,6 +80,7 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                     # blame RB3 for this, not me
                     if "REAL_KEYS" in track.name:
                         final_midi.tracks.append(track)
+                song_update_path.joinpath(f"{pro_song.stem}").mkdir(parents=True, exist_ok=True)
                 final_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
         elif pro_file.suffix == ".mogg":
             # print(pro_file.name)
