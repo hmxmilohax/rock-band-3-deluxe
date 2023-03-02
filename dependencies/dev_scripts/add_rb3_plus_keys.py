@@ -2,9 +2,7 @@
 from pathlib import Path
 from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
-from add_rb3_plus_pro_strings import add_strings
 from pull_repo import pull_repo
-import json
 import subprocess
 try:
     import mido
@@ -17,8 +15,6 @@ try:
 except:
     cmd_install = "pip install gitpython".split()
     subprocess.run(cmd_install)
-
-add_strings()
     
 # get the current working directory
 cwd = Path(__file__).parent
@@ -30,34 +26,10 @@ root_dir = Path(__file__).parents[2]
 # clone/pull rb3_plus
 rb3_plus_path = pull_repo(repo_url="https://github.com/rjkiv/rb3_plus.git", repo_path=cwd)
 
-# load all the legacy song info from the pre-compiled json file
-with open(root_dir.joinpath("dependencies/song_info.json")) as json_file:
-    all_the_song_info = json.load(json_file)
-
-vanilla_dta = parse_song_dta(root_dir.joinpath("_ark/songs/dta_sections/vanilla.dta"))
-
 merged_songs = {}
 
 song_update_path = root_dir.joinpath("_ark/songs/updates")
-song_upgrade_path = root_dir.joinpath("_ark/songs_upgrades/rb3_plus.dta")
-song_upgrade_dta = [line for line in open(song_upgrade_path, "r")]
-overwrite_rb3_plus_dta = False
 venue_update_dta = []
-
-def shortname_upgrade_check(shortname: str):
-    for line in song_upgrade_dta:
-        if f"({shortname}" in line:
-            return True
-    return False
-
-def get_song_id(shortname: str):
-    if "song_id" in all_the_song_info["songs"][shortname]:
-        return all_the_song_info["songs"][shortname]["song_id"]
-    elif "song_id" in vanilla_dta['songs'][shortname]:
-        return vanilla_dta['songs'][shortname]['song_id']
-    else:
-        print("ERROR: song id not found")
-        exit()
 
 # traverse through rb3_plus/Pro Keys and find mid, mogg, and songs.dta
 for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
@@ -76,27 +48,22 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             merged_songs[pro_song.stem]["song"]["vols"] = song_keys_dict["songs"][pro_song.stem]["song"]["vols"]
             merged_songs[pro_song.stem]["song"]["cores"] = song_keys_dict["songs"][pro_song.stem]["song"]["cores"]
             merged_songs[pro_song.stem]["rank"] = song_keys_dict["songs"][pro_song.stem]["rank"]
-            venue_update_dta.append(f"({pro_song.stem} (version 30))\n")
-            # if this song doesn't currently have an entry in rb3_plus.dta, add one
-            if not shortname_upgrade_check(pro_song.stem):
-                song_upgrade_dta.append(f"({pro_song.stem}\n   (upgrade_version 1)\n")
-                song_upgrade_dta.append(f"   (midi_file \"songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid\")\n")
-                song_upgrade_dta.append(f"   (song_id {get_song_id(pro_song.stem)})\n)\n")
-                overwrite_rb3_plus_dta = True               
+            merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"
+            venue_update_dta.append(f"({pro_song.stem} (version 30))\n")          
         elif pro_file.suffix == ".mid":
             # print(pro_file.name)
             key_midi = MidiFile(pro_file)
+            upd_midi = MidiFile()
             final_midi = MidiFile()
-            # for track in key_midi.tracks:
-            #     print(track.name)
-            # if a _plus mid exists in the rb3_plus path, append the key tracks to it
-            if root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid").is_file():
-                # print("this song has an upgrade file already - must merge")
-                pro_str_midi = MidiFile(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
-                for track in pro_str_midi.tracks:
+
+            # check the songs/updates folder for an _update.mid
+            # if one exists:
+            if song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid").is_file():
+                # print(f"{pro_song.stem} - mid file exists")
+                upd_midi = MidiFile(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
+                for track in upd_midi.tracks:
                     if "KEYS" not in track.name and "VENUE" not in track.name:
                         final_midi.tracks.append(track)
-                    # print(track.name)
                 for track in key_midi.tracks:
                     if pro_song.stem not in track.name:
                         final_midi.tracks.append(track)
@@ -104,17 +71,16 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
                         # blame RB3 for this, not me
                         if "REAL_KEYS" in track.name:
                             final_midi.tracks.append(track)
-                final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
-            # else, copy the _plus mid into it directly
+                final_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
             else:
-                # print("this song doesn't have an upgrade file - will duplicate real key tracks and move file over")
+                # print(f"{pro_song.stem} - mid file does not exist")
                 for track in key_midi.tracks:
                     final_midi.tracks.append(track)
                     # we duplicate the real keys tracks to avoid oddities where key charts sometimes don't load
                     # blame RB3 for this, not me
                     if "REAL_KEYS" in track.name:
                         final_midi.tracks.append(track)
-                final_midi.save(root_dir.joinpath(f"_ark/songs_upgrades/rb3_plus/{pro_song.stem}_plus.mid"))
+                final_midi.save(song_update_path.joinpath(f"{pro_song.stem}/{pro_song.stem}_update.mid"))
         elif pro_file.suffix == ".mogg":
             # print(pro_file.name)
             song_update_path.joinpath(pro_song.stem).mkdir(parents=True, exist_ok=True)
@@ -128,10 +94,5 @@ with open(root_dir.joinpath(f"_ark/songs/dta_sections/key_venue_updates.dta"), "
 with open(root_dir.joinpath(f"_ark/songs/dta_sections/keys.dta"), "w") as f:
     for line in song_dict_to_dta(merged_songs):
         f.write(f"{line}\n")
-
-# overwrite rb3_plus.dta
-if overwrite_rb3_plus_dta:
-    with open(song_upgrade_path, "w") as f:
-        f.writelines(song_upgrade_dta)
 
 print(f"Successfully enabled key upgrades on the Rock Band 3 Deluxe ark. Please rebuild in order to see them reflected in-game.")
