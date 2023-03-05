@@ -74,9 +74,10 @@ def generate_dtas(input_path: Path, output_path: Path, which_texture: str):
                 texture_dta.append("rb4")
     elif which_texture == "keyboard":
         for texture in input_path.glob("*"):
-            final_texture_name = texture.stem.replace("gem_mash_prokeys_","").replace("gem_smasher_sharp_diffuse_nomip_","").replace("track_lanes_keyboard_","").replace("track_lanes_keyboard_press_","")
-            if final_texture_name not in texture_dta:
-                texture_dta.append(final_texture_name)
+            if (texture.stem.find("track_lanes_keyboard_") != -1) and (texture.stem.find("track_lanes_keyboard_press") == -1):
+                final_texture_name = texture.stem.replace("track_lanes_keyboard_","")
+                if final_texture_name not in texture_dta:
+                    texture_dta.append(final_texture_name)
     else:
         texture_dta = [texture.stem for texture in input_path.glob("*")]
 
