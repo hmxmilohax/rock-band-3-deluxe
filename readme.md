@@ -41,7 +41,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
   - [Repo Troubleshooting](#repo-troubleshooting)
   - [Xenia Troubleshooting](#xenia-troubleshooting)
   - [RPCS3 Troubleshooting](#rpcs3-troubleshooting)
-  - [PS3 Troubleshooting](#ps3-rroubleshooting)
+  - [PS3 Troubleshooting](#ps3-troubleshooting)
   - [Xbox 360 Troubleshooting](#xbox-360-troubleshooting)
 - [Dependencies](#dependencies)
 
