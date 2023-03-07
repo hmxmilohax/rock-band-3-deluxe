@@ -22,6 +22,8 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 - [Setup](#setup)
   - [Pre-Built Versions](#pre-built-versions)
   - [Repo Setup](#repo-setup)
+    - [Installing Required Dependencies](#installing-required-dependencies)
+    - [Initializing the Repo](#initializing-the-repo)
 - [Installing](#installing)
   - [Xenia Emulator](#xenia-emulator)
   - [RPCS3 Emulator](#rpcs3-emulator)
@@ -133,15 +135,23 @@ As well, it is designed to allow you to automatically receive updates as the rep
 
 *If you get stuck here at any point, try using the [Pre-Built Versions](#pre-built-versions) instead.*
 
-First, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo.
+### Installing Required Dependencies
 
-Before you do anything else, you'll need to install [Git for Windows](https://gitforwindows.org/), [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime), and [Python](https://www.python.org/downloads/) (version 3.9 or later). **These are ALL required in order to properly build Rock Band 3 Deluxe**.
+***Before you do anything***, you'll need to install a few things before you can properly set up and build Rock Band 3 Deluxe.
 
-**Install all three of these with their default options.** If you're unable to for whatever reason, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instead.
+[Git for Windows](https://gitforwindows.org/), [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime), and [Python](https://www.python.org/downloads/) (version 3.9 or later).
 
-Next, **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
+Install **Git** and **Dot Net 6.0 Runtime** with their default options, and ***select "Add python.exe to PATH"*** on the **Python** installer.
 
-Now, make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+![Python PATH](dependencies/images/pythonpath.png)
+
+Then, open a **new command prompt** (press `Win+R`, type `cmd` and press Enter), type in `pip install gitpython`, and press enter. Close the command prompt when it's done installing.
+
+### Initializing the Repo
+
+Now, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
+
+Then, make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
 
 ### ***The folder should look like this once it's done:***
 
@@ -312,7 +322,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 
 ### ***The `.bat`/`.py` files open and immediately close!***
 * You don't have all the required dependencies installed.
-    * Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
+    * Head back to [Installing Required Dependencies](#installing-required-dependencies) and make sure you followed the directions properly.
 
 ## Xenia Troubleshooting
 
