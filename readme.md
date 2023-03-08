@@ -188,7 +188,7 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 First, **extract your vanilla USA (`BLUS30463`) Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
-Next, you will need the **latest update for Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
+Next, you will need the **latest update for Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it. ***This is not the Deluxe download***, *but it is required to ensure you install everything to its proper place.*
 
 *If it doesn't download, right-click it and select `Save link as...` If your browser says it "can't be downloaded safely", ignore it and select `Keep`.*
 
