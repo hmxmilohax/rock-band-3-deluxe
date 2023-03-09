@@ -4,7 +4,6 @@ from subprocess import CalledProcessError
 from sys import platform
 import subprocess
 from check_git_updated import check_git_updated
-from add_rb3_plus_pro_strings import add_strings
 
 def rm_tree(pth):
     pth = Path(pth)
@@ -27,13 +26,10 @@ def make_executable_binaries():
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool):
     # directories used in this script
+    print("Building Rock Band 3 Deluxe patch arks...")
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
-
-    # only do this if keys.dta is empty to prevent key entries in rb3_plus.dta from being overwritten
-    if root_dir.joinpath("_ark/songs/dta_sections/keys.dta").stat().st_size == 0:
-        add_strings()
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
     if platform == "win32":
@@ -45,8 +41,8 @@ def build_patch_ark(xbox: bool):
             make_executable_binaries()
     patch_hdr_version = "patch_xbox" if xbox else "patch_ps3"
 
-    # pull the latest changes from the RB3DX repo if necessary
-    if not check_git_updated():
+    # pull the latest changes from the Rock Band 3 Deluxe repo if necessary
+    if not check_git_updated(repo_url="https://github.com/hmxmilohax/rock-band-3-deluxe", repo_root_path=root_dir):
         cmd_pull = "git pull https://github.com/hmxmilohax/rock-band-3-deluxe main".split()
         subprocess.run(cmd_pull, shell=(platform == "win32"), cwd="..")
 

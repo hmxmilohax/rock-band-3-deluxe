@@ -41,6 +41,45 @@ jobs:
           name: RB3DX-Xbox-Base
           path: _build/xbox
 
+  build_xbox_forceguitar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Set env
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/linux/arkhelper
+          chmod +x dependencies/linux/dtab
+          chmod +x dependencies/linux/superfreq
+          pip install gitpython
+          pip install mido
+      - name: Add rb3_plus pro strings into the patch ark
+        run: |
+          python dependencies/dev_scripts/add_rb3_plus_pro_strings.py
+      - name: Remove PS3 files
+        run: |
+          find . -name "*.*_ps3" -type f -delete
+      - name: Print build info
+        run: |
+          echo $GITHUB_SHA_SHORT
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
+          sed -i -e "s/;#define PAD_IS_ACTUAL_GUITAR (1)/#define PAD_IS_ACTUAL_GUITAR (1)/" _ark/config/macros.dta
+      - name: Build ARK
+        run: |
+          dependencies/linux/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Xbox-Base-Force-Guitar-Controller
+          path: _build/xbox
+
   build_xbox_original_mids:
     runs-on: ubuntu-latest
 
@@ -84,6 +123,52 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: RB3DX-Xbox-original-mids
+          path: _build/xbox
+
+  build_xbox_original_mids_forceguitar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Set env
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          chmod +x dependencies/linux/arkhelper
+          chmod +x dependencies/linux/dtab
+          chmod +x dependencies/linux/superfreq
+          pip install gitpython
+          pip install mido
+      - name: Revert mid updates to their originals
+        run: |
+          find _ark/songs/updates/ -name "*.mid" -type f -delete
+          find _ark/songs/updates/ -empty -type d -delete
+      - name: Disable mid updates in dta
+        run: |
+          python dependencies/dev_scripts/disable_chart_updates.py
+      - name: Add rb3_plus pro strings into the patch ark
+        run: |
+          python dependencies/dev_scripts/add_rb3_plus_pro_strings.py
+      - name: Remove PS3 files
+        run: |
+          find . -name "*.*_ps3" -type f -delete
+      - name: Print build info
+        run: |
+          echo $GITHUB_SHA_SHORT
+          python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
+          sed -i -e "s/;#define PAD_IS_ACTUAL_GUITAR (1)/#define PAD_IS_ACTUAL_GUITAR (1)/" _ark/config/macros.dta
+      - name: Build ARK
+        run: |
+          dependencies/linux/arkhelper dir2ark ./_ark ./_build/xbox/gen -n "patch_xbox" -e -v 6
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: RB3DX-Xbox-original-mids-Force-Guitar-Controller
           path: _build/xbox
 
   build_xbox_keys:

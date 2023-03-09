@@ -53,21 +53,75 @@
          (setup_text
             {do
                ($short_name
-                  {meta_performer song})
-			   {if
-                  {exists song.lbl}
-               {if_else {&& {modifier_mgr is_modifier_active mod_chmode} {!= $speedmod 1.0}}
-              {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nCH MODE"}} 
-			      {if_else {&& {modifier_mgr is_modifier_active mod_auto_play} {!= $speedmod 1.0}}
-				  {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nAUTOPLAY"}}
-              {if_else {modifier_mgr is_modifier_active mod_chmode}
-              {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nCH MODE"}}
-				  {if_else {modifier_mgr is_modifier_active mod_auto_play}
-				  {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nAUTOPLAY"}}
-				  {if_else {!= $speedmod 1.0}
-				  {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}}
-				  {song.lbl set_song_name $short_name}}}}}}}
+                  {meta_performer song}
+               )
+               ;inside the ark
+               #define SONGPATH
+               (
+                  {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"}
+               )
+               ;a dlc dta
+               #define SONGPATH2
+               (
+                  {song_mgr song_file_path {meta_performer song} "/../../songs.dta"}
+               )
+               ;internal Look Up Table
+               #define SONGPATH3
+               (
+                  {song_mgr song_file_path {meta_performer song} "/../../gen/vanilla_songs_lut.dtb"}
+               )
+               {if {exists song.lbl}
+                ;{set $debugmode TRUE}
+                  {set $testingvar 'author not found'}
+                  {if_else $debugmode
+                     {do
+                        {if {file_exists SONGPATH} {set $theactualpath SONGPATH}} ;inside the ark
+                        {if {file_exists SONGPATH2} {set $theactualpath SONGPATH2}} ;a dlc dta
+                        {if {file_exists SONGPATH3} {set $theactualpath SONGPATH3}} ;a dlc dta
+                        {unless {|| {file_exists SONGPATH} {file_exists SONGPATH2} {file_exists SONGPATH3}}
+                           {set $theactualpath {song_mgr song_file_path {meta_performer song} ""}}
+                        }
+                        {if_else {file_exists $theactualpath}
+                           {do
+                              {set $songdtareader {read_file $theactualpath}}
+                              {foreach $entry $songdtareader
+                                 {if {== {elem $entry 0} {basename $short_name}}
+                                    {if {find $entry author}
+                                       {set $testingvar {elem {find $entry author} 1}}
+                                    }
+                                 }
+                              }
+                           }
+                           {set $testingvar {sprint "failed - path is: " $theactualpath}}
+                        }
+                        {song.lbl set_token_fmt $testingvar}
+                     }
+                     {do
+                        {if_else {&& {modifier_mgr is_modifier_active mod_chmode} {!= $speedmod 1.0}}
+                           {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nCH MODE"}} 
+                           {if_else {&& {modifier_mgr is_modifier_active mod_auto_play} {!= $speedmod 1.0}}
+                              {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nAUTOPLAY"}}
+                              {if_else {modifier_mgr is_modifier_active mod_chmode}
+                                 {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nCH MODE"}}
+                                 {if_else {modifier_mgr is_modifier_active mod_auto_play}
+                                    {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nAUTOPLAY"}}
+                                    {if_else {!= $speedmod 1.0}
+                                       {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}}
+                                       {song.lbl set_song_name $short_name}
+                                    }
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
                {if
                   {exists artist.lbl}
-                  {artist.lbl set_artist_name_from_shortname $short_name}}
-            }))))
+                  {artist.lbl set_artist_name_from_shortname $short_name}
+               }
+            }
+         )
+      )
+   )
+)
