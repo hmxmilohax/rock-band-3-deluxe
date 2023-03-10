@@ -22,6 +22,8 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
 - [Setup](#setup)
   - [Pre-Built Versions](#pre-built-versions)
   - [Repo Setup](#repo-setup)
+    - [Installing Required Dependencies](#installing-required-dependencies)
+    - [Initializing the Repo](#initializing-the-repo)
 - [Installing](#installing)
   - [Xenia Emulator](#xenia-emulator)
   - [RPCS3 Emulator](#rpcs3-emulator)
@@ -39,7 +41,7 @@ This repo contains everything you need to build Rock Band 3 Deluxe for PlayStati
   - [Repo Troubleshooting](#repo-troubleshooting)
   - [Xenia Troubleshooting](#xenia-troubleshooting)
   - [RPCS3 Troubleshooting](#rpcs3-troubleshooting)
-  - [PS3 Troubleshooting](#ps3-rroubleshooting)
+  - [PS3 Troubleshooting](#ps3-troubleshooting)
   - [Xbox 360 Troubleshooting](#xbox-360-troubleshooting)
 - [Dependencies](#dependencies)
 
@@ -133,15 +135,23 @@ As well, it is designed to allow you to automatically receive updates as the rep
 
 *If you get stuck here at any point, try using the [Pre-Built Versions](#pre-built-versions) instead.*
 
-First, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo.
+### Installing Required Dependencies
 
-Before you do anything else, you'll need to install [Git for Windows](https://gitforwindows.org/), [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime), and [Python](https://www.python.org/downloads/) (version 3.9 or later). **These are ALL required in order to properly build Rock Band 3 Deluxe**.
+***Before you do anything***, you'll need to install a few things before you can properly set up and build Rock Band 3 Deluxe.
 
-**Install all three of these with their default options.** If you're unable to for whatever reason, head back to [Pre-Built Versions](#pre-built-versions) and follow those instructions instead.
+[Git for Windows](https://gitforwindows.org/), [Dot Net 6.0 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime), and [Python](https://www.python.org/downloads/) (version 3.9 or later).
 
-Next, **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
+Install **Git** and **Dot Net 6.0 Runtime** with their default options, and ***select "Add python.exe to PATH"*** on the **Python** installer.
 
-Now, make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+![Python PATH](dependencies/images/pythonpath.png)
+
+Then, open a **new command prompt** (press `Win+R`, type `cmd` and press Enter), type in `pip install gitpython`, and press enter. Close the command prompt when it's done installing.
+
+### Initializing the Repo
+
+Now, **go to the [Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
+
+Then, make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
 
 ### ***The folder should look like this once it's done:***
 
@@ -178,7 +188,7 @@ Then, navigate to `user_scripts` and **run `build_xenia.py` to automatically upd
 
 First, **extract your vanilla USA (`BLUS30463`) Rock Band 3 game disc** and place it in the `games` folder in your RPCS3 directory. ***Do NOT touch this folder once it's in `games`, Rock Band 3 Deluxe installs as a PS3 game update and installs in its own separate folder, shown below.***
 
-Next, you will need the **latest update for Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it.
+Next, you will need the **latest update for Rock Band 3** installed on RPCS3. [Get it Here](http://b0.ww.np.dl.playstation.net/tppkg/np/BLUS30463/BLUS30463_T4/e52d21c696ed0fcf/UP8802-BLUS30463_00-ROCKBAND3PATCH05-A0105-V0100-PE.pkg) and drag and drop it on top of the main RPCS3 window to install it. ***This is not the Deluxe download***, *but it is required to ensure you install everything to its proper place.*
 
 *If it doesn't download, right-click it and select `Save link as...` If your browser says it "can't be downloaded safely", ignore it and select `Keep`.*
 
@@ -312,7 +322,7 @@ These will resize your images accordingly, including those with arbitrary resolu
 
 ### ***The `.bat`/`.py` files open and immediately close!***
 * You don't have all the required dependencies installed.
-    * Head back to [Repo Setup](#repo-setup) and make sure you followed the directions properly.
+    * Head back to [Installing Required Dependencies](#installing-required-dependencies) and make sure you followed the directions properly.
 
 ## Xenia Troubleshooting
 

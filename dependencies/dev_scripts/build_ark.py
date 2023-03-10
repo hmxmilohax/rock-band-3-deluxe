@@ -4,7 +4,6 @@ from subprocess import CalledProcessError
 from sys import platform
 import subprocess
 from check_git_updated import check_git_updated
-from add_rb3_plus_pro_strings import add_strings
 
 def rm_tree(pth):
     pth = Path(pth)
@@ -31,10 +30,6 @@ def build_patch_ark(xbox: bool):
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
-
-    # only do this if keys.dta is empty to prevent key entries in rb3_plus.dta from being overwritten
-    if root_dir.joinpath("_ark/songs/dta_sections/keys.dta").stat().st_size == 0:
-        add_strings()
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
     if platform == "win32":
