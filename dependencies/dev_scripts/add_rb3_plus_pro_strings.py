@@ -5,8 +5,8 @@ import subprocess
 try:
     import git
 except:
-    cmd_install = "pip install gitpython".split()
-    subprocess.run(cmd_install)
+    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
 
 def add_strings():        
     # get the current working directory
