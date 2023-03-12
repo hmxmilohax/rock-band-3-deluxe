@@ -1,12 +1,5 @@
 # remove_rb3_plus_pro_strings.py
 from pathlib import Path
-from pull_repo import pull_repo
-import subprocess
-try:
-    import git
-except:
-    cmd_install = "pip install gitpython".split()
-    subprocess.run(cmd_install)
 
 def rm_tree(pth):
     pth = Path(pth)
