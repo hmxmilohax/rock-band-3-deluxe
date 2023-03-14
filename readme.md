@@ -147,6 +147,8 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#playstation-3) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
+***Sidenote:*** *if your Guitar Hero or Rock Revolution drum kit shows up as the wrong instrument, download* [***this build***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip) *instead.*
+
 ## Installing on Xbox 360
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear.**
