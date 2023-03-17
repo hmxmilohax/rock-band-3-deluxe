@@ -21,6 +21,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
   - [Installing on RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
   - [Installing on PS3](#installing-on-ps3)
   - [Installing on Xbox 360](#installing-on-xbox-360)
+  - [Installing on Xbox Series X/S (Xenia UWP)](#installing-on-xbox-series-xs-xenia-uwp)
   - [Installing on Xenia (Advanced)](#installing-on-xenia-advanced)
 - [Optional Upgrades](#optional-upgrades)
   - [Songs](#songs)
@@ -110,7 +111,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 # How to Install
 
-## Installing on RPCS3 (Recommended for PC)
+## Installing on [RPCS3](https://rpcs3.net/) (Recommended for PC)
 
 * **Install your North American copy of Rock Band 3** through the emulator. The [**official RPCS3 site covers this nicely**](https://rpcs3.net/quickstart).
   * Remember, **you need to be running** ***BLUS30463***. RPCS3 will tell you this in the game selection GUI under the `Serial` column.
@@ -168,6 +169,22 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 ***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#xbox-360) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+
+## Installing on Xbox Series X/S ([Xenia UWP](https://github.com/SirMangler/xenia/releases))
+
+**NOTE: You WILL need an Xbox Series X/S running in [Developer Mode](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation). We hope this is clear.**
+
+* **Extract and copy your vanilla copy of Rock Band 3** to your USB drive.
+  * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
+
+* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). Xenia UWP currently does not have guitar support so you need to download one of the `Series X/S Xenia` versions.
+  * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**. Select `Yes` to overwrite the files.
+
+***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
+
+**To update Rock Band 3 Deluxe**, [**re-download it**](#xbox-360) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
+
+***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *to prevent any character model issues.*
 
 ## Installing on Xenia (Advanced)
 
