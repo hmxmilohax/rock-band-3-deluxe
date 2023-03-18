@@ -178,13 +178,15 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
   * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
 
 * Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). Xenia UWP currently does not have guitar support so you need to download one of the `Series X/S Xenia` versions.
-  * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**. Select `Yes` to overwrite the files.
+  * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**. Click `Yes` to overwrite the files.
 
 ***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#xbox-360) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *to prevent any character model issues.*
+
+![UWP Readback Resolve](dependencies/images/uwp_readbackresolve.png)
 
 ## Installing on Xenia (Advanced)
 
@@ -219,19 +221,22 @@ You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite
 
 ### Installing Songs on RPCS3
 
-Download a PS3 song pack of your choice and open RPCS3. Drag and drop the song pack you want to install on top of the main RPCS3 window and select `Yes` to install it.
+* Download a PS3 song pack of your choice and open RPCS3.
+* Drag and drop the song pack you want to install on top of the main RPCS3 window and select `Yes` to install it.
 
 ![RPCS3 PKG](dependencies/images/rpcs3_pkg.png)
 
 ### Installing Songs on PS3
 
-Download a PS3 song pack of your choice and put it on the root of a USB drive. Then, open `Package Manager` and select the song pack you want to install.
+* Download a PS3 song pack of your choice and put it on the root of a USB drive.
+* Open `Package Manager` and select the song pack you want to install.
 
 ![PS3 PKG](dependencies/images/ps3_pkg.png)
 
 ### Installing Songs on Xbox 360
 
-Download an Xbox 360 song pack of your choice, then copy it to its respective folder.
+* Download an Xbox 360 song pack of your choice.
+* Copy it to its respective folder.
 
 ***For RB3 LIVE files, install them to:***
 
@@ -245,11 +250,15 @@ Download an Xbox 360 song pack of your choice, then copy it to its respective fo
 
 ![RB2 LIVE](dependencies/images/360_rb2live.png)
 
-### Installing Songs on Xenia
+### Installing Songs on Xenia (Desktop and UWP)
 
-Download an Xbox 360 song pack of your choice and open Xenia. Navigate to `File > Install Content`, and select your song pack(s) of choice. You can select more than one at a time. Xenia supports both CON and LIVE files.
+* Download an Xbox 360 song pack of your choice.
+* Open Xenia, navigate to `File > Install Content`, and select your song pack(s) of choice. You can select more than one at a time.
+  * Xenia supports both CON and LIVE files.
 
 ![Xenia Songs](dependencies/images/xenia_installcontent.png)
+
+* If you're on Xbox Series X/S, copy the entire `content` folder to your USB drive. Click `Yes` to overwrite the files if it asks you to.
 
 ## [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
 
