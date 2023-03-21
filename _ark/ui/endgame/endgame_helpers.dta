@@ -119,7 +119,54 @@
                   pop_screen
                   {gamemode get endgame_screen}}}}})}
 #define ENDGAME_PANEL_HANDLERS
-((set_results
+(
+   (fc_clip
+      {if_else {exists fc_clip}
+         {do
+            {delete fc_clip}
+            {new MoggClip fc_clip}
+         }
+         {new MoggClip fc_clip}
+      }
+      {fc_clip set file "sfx/streams/fc_clip.mogg"}
+      {fc_clip set loop FALSE}
+      {fc_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {fc_clip play}
+   )
+   (nice_clip
+      {if_else {exists nice_clip}
+         {do
+            {delete nice_clip}
+            {new MoggClip nice_clip}
+         }
+         {new MoggClip nice_clip}
+      }
+      {nice_clip set file "sfx/streams/nice_clip.mogg"}
+      {nice_clip set loop FALSE}
+      {nice_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -0}}
+      {nice_clip play}
+   )
+   (jurgen_clip
+      {if_else {exists jurgen_clip}
+         {do
+            {delete jurgen_clip}
+            {new MoggClip jurgen_clip}
+         }
+         {new MoggClip jurgen_clip}
+      }
+      {set $jurgennumber {random_int 0 4}}
+      {if {<= $jurgennumber 1}
+         {set $jurgennumber 1}
+      }
+      {if {>= $jurgennumber 3}
+         {set $jurgennumber 3}
+      }
+      {jurgen_clip set file {sprint "sfx/streams/jurgen_clip" $jurgennumber ".mogg"}}
+      {jurgen_clip set loop FALSE}
+      {jurgen_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {jurgen_clip play}
+   )
+(set_results
       {if_else
          {!= $speedmod 1}
          {song.lbl
@@ -201,6 +248,9 @@
                      5}}}
             {$this populate_instarank_data}}}
       {do
+         {set $someonefcd FALSE}
+         {set $someoneniced FALSE}
+         {set $someonejurgend FALSE}
          {foreach_int
             $slot
             0
@@ -241,6 +291,15 @@
                            ($award_sym
                               {coop_endgame_panel get_performance_award $slot})
                            {performance_award.lbl set text_token $award_sym}
+                           {if {== {/ {$player longest_streak} {$player get_gem_count}} 1.0}
+                              {set $someonefcd TRUE}
+                           }
+                           {if {== {int {'*' 100 {{$user player} notes_hit_fraction}}} 69}
+                              {set $someoneniced TRUE}
+                           }
+                           {if {== {int {'*' 100 {{$user player} notes_hit_fraction}}} 99}
+                              {set $someonejurgend TRUE}
+                           }
                            {challenge_bg.mesh
                               set_showing
                               {!= $award_sym ''}}}
@@ -347,7 +406,21 @@
                                           endgame_player_noteshit_fmt
                                           {int
                                              {'*' 100 $percentage}}}
-                                       {$colorAnim set frame $part}}}}}}}}}}}})
+                                       {$colorAnim set frame $part}}}}}}}}}}}
+                                    {if $someonefcd
+                                       {coop_endgame_panel fc_clip}
+                                    }
+                                    {unless {|| $someonefcd $someoneniced}
+                                       {if $someonejurgend
+                                          {coop_endgame_panel jurgen_clip}
+                                       }
+                                    }
+                                    {unless $someonefcd
+                                       {if $someoneniced
+                                          {coop_endgame_panel nice_clip}
+                                       }
+                                    }
+                                    })
    (setup_mics
       ($hasmic1 $hasmic2 $hasmic3)
       {if
