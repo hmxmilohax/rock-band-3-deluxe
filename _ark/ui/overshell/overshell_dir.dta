@@ -692,19 +692,30 @@
    (display_speed_msg
       ($mspd)
      {speed_msg set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $mspd 100}}}}})
+   (display_speedcap_msg
+      ($fspd)
+     {speed_msg set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $fspd 100}}}}})
    (display_fps_msg
       ($fps)
      {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $fps}}})
          (set_speeds
-         {do
-            {set $emulatefps {+ 1 {instruments.sld current}}}
-            {set $trackspeed {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
-            {set $speedmod {+ 1 {* {crowd.sld current} 0.05}}}
-            {set $leaderspeed $speedmod}}
-            {set $leaderspeed $speedmod}
-         {$this display_trackspeed_msg $trackspeed}
-         {$this display_speed_msg $speedmod}
-         {$this display_fps_msg $emulatefps})
+         {if_else $rb3eslider
+            {do
+               {set $emulatefps {+ 1 {instruments.sld current}}}
+               {set $trackspeed {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+               {set $speedmod {+ 1 {* {crowd.sld current} 0.05}}}
+               {set $leaderspeed $speedmod}
+               {set $leaderspeed $speedmod}
+               {$this display_trackspeed_msg $trackspeed}
+               {$this display_speed_msg $speedmod}
+               {$this display_fps_msg $emulatefps}
+            }
+            {if $rb3eslider_cap
+               {set $speedmod_cap {+ 1 {* {crowd.sld current} 0.05}}}
+               {if $rb3eslider_cap {$this display_speedcap_msg $speedmod_cap}}
+            }
+         }
+         )
          (update_slider
             ($component $options)
             {switch
@@ -738,13 +749,15 @@
                      set_current
                      {if_else $rb3eslider ; if using speed sliders,
                      {int {+ 0.5 {/ {- $speedmod 1} 0.05}}} ; set current song speed value
+                     {if_else $rb3eslider_cap ; if using speed sliders,
+                     {int {+ 0.5 {/ {- $speedmod_cap 1} 0.05}}} ; set current song speed value
                      {if_else $gemsliders $slot3_color ; set current gem color depending on selected slot
                      {if_else $fretsliders $fret3_color ; set current fret color depending on selected slot
                      {if_else $sussliders $sus3_color ; set current sustain color depending on selected slot
                      {if_else $drumgemsliders $drum3_color
                      {if_else $cymsliders $cym4_color
                      {if_else $smashersliders $smasher3_color
-                     {profile_mgr get_crowd_volume}}}}}}}}})
+                     {profile_mgr get_crowd_volume}}}}}}}}}})
                (sfx.sld
                   {$component
                      set_current
@@ -831,6 +844,8 @@
                (crowd.sld
                   {if_else $rb3eslider
                   {do {set $component current} {$this set_speeds}}
+                  {if_else $rb3eslider_cap
+                  {do {set $component current} {$this set_speeds}}
                   {if_else $gemsliders
                   {do {set $component current} {set $slot3_color {$this current}}} ;set gem color to slider value
                   {if_else $fretsliders
@@ -845,7 +860,7 @@
                   {do {set $component current} {set $smasher3_color {$this current}}}
                   {profile_mgr
                      set_crowd_volume
-                     {$component current}}}}}}}}})
+                     {$component current}}}}}}}}}})
                (sfx.sld
                   {if_else $gemsliders
                   {do {set $component current} {set $slot4_color {$this current}}} ;set gem color to slider value

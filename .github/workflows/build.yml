@@ -213,7 +213,7 @@ jobs:
           path: _build/xbox
 
   build_ps3_standard:
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v3
@@ -223,11 +223,6 @@ jobs:
           python-version: '3.9'
       - name: Set env
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/linux/arkhelper
-          chmod +x dependencies/linux/dtab
-          chmod +x dependencies/linux/superfreq
           pip install gitpython
           pip install mido
       - name: Add rb3_plus pro strings into the patch ark
@@ -235,23 +230,29 @@ jobs:
           python dependencies/dev_scripts/add_rb3_plus_pro_strings.py
       - name: Remove Xbox files
         run: |
-          find . -name "*.*_xbox" -type f -delete
+          Get-ChildItem _ark/ -recurse -include *.*_xbox | remove-item
       - name: Print build info
         run: |
-          echo $GITHUB_SHA_SHORT
+          $GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)".ToUpper()
           python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
-          dependencies/linux/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
-      
+          dependencies/windows/arkhelper.exe dir2ark _ark _build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+      - name: Build PKG
+        run: |
+          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
+          $content="UP8802-BLUS30463_00-RB3DXNITE"
+          $packageversion="1.05"
+          dependencies/ta_pkg_repacker_tools/make_package_npdrm_retail.exe --k-licensee 0x00000000000000000000000000000000 --drm-type Local --package-version $packageversion --content-type GameData --content-id ($content + $sha_short) dependencies/ta_pkg_repacker_tools/package.conf _build/ps3
+
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: RB3DX-PS3-Base
-          path: _build/ps3
+          path: '*.pkg'
 
   build_ps3_original_mids:
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v3
@@ -261,17 +262,12 @@ jobs:
           python-version: '3.9'
       - name: Set env
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/linux/arkhelper
-          chmod +x dependencies/linux/dtab
-          chmod +x dependencies/linux/superfreq
           pip install gitpython
           pip install mido
       - name: Revert mid updates to their originals
         run: |
-          find _ark/songs/updates/ -name "*.mid" -type f -delete
-          find _ark/songs/updates/ -empty -type d -delete
+          Get-ChildItem _ark/ -recurse -include *.mid | remove-item
+          Get-ChildItem -Recurse -Directory | ? { -Not ($_.EnumerateFiles('*',1) | Select-Object -First 1) } | Remove-Item -Recurse
       - name: Disable mid updates in dta
         run: |
           python dependencies/dev_scripts/disable_chart_updates.py
@@ -280,23 +276,29 @@ jobs:
           python dependencies/dev_scripts/add_rb3_plus_pro_strings.py
       - name: Remove Xbox files
         run: |
-          find . -name "*.*_xbox" -type f -delete
+          Get-ChildItem _ark/ -recurse -include *.*_xbox | remove-item
       - name: Print build info
         run: |
-          echo $GITHUB_SHA_SHORT
+          $GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)".ToUpper()
           python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
-          dependencies/linux/arkhelper dir2ark ./_ark ./_build/ps3/gen -n "patch_ps3" -e -v 6
-      
+          dependencies/windows/arkhelper.exe dir2ark _ark _build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+      - name: Build PKG
+        run: |
+          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
+          $content="UP8802-BLUS30463_00-RB3DXOMID"
+          $packageversion="1.05"
+          dependencies/ta_pkg_repacker_tools/make_package_npdrm_retail.exe --k-licensee 0x00000000000000000000000000000000 --drm-type Local --package-version $packageversion --content-type GameData --content-id ($content + $sha_short) dependencies/ta_pkg_repacker_tools/package.conf _build/ps3
+
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: RB3DX-PS3-original-mids
-          path: _build/ps3
+          path: '*.pkg'
 
   build_ps3_keys:
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v3
@@ -306,11 +308,6 @@ jobs:
           python-version: '3.9'
       - name: Set env
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/linux/arkhelper
-          chmod +x dependencies/linux/dtab
-          chmod +x dependencies/linux/superfreq
           pip install gitpython
           pip install mido
       - name: Add rb3_plus pro strings into the patch ark
@@ -321,33 +318,34 @@ jobs:
           python dependencies/dev_scripts/add_rb3_plus_keys.py
       - name: Remove Xbox files
         run: |
-          find . -name "*.*_xbox" -type f -delete
+          Get-ChildItem _ark/ -recurse -include *.*_xbox | remove-item
       - name: Print build info
         run: |
-          echo $GITHUB_SHA_SHORT
+          $GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)".ToUpper()
           python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
-          dependencies/linux/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+          dependencies/windows/arkhelper.exe dir2ark _ark _build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+      - name: Build PKG
+        run: |
+          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
+          $content="UP8802-BLUS30463_00-RB3DXKEYS"
+          $packageversion="1.05"
+          dependencies/ta_pkg_repacker_tools/make_package_npdrm_retail.exe --k-licensee 0x00000000000000000000000000000000 --drm-type Local --package-version $packageversion --content-type GameData --content-id ($content + $sha_short) dependencies/ta_pkg_repacker_tools/package.conf _build/ps3
       
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: RB3DX-PS3-keys
-          path: _build/ps3
+          path: '*.pkg'
 
   build_ps3_stock_inst_mapping:
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v3
       - name: Set env
         run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          chmod +x dependencies/linux/arkhelper
-          chmod +x dependencies/linux/dtab
-          chmod +x dependencies/linux/superfreq
           pip install mido
           pip install gitpython
       - name: Add rb3_plus pro strings into the patch ark
@@ -355,20 +353,26 @@ jobs:
           python dependencies/dev_scripts/add_rb3_plus_pro_strings.py
       - name: Remove Xbox files
         run: |
-          find . -name "*.*_xbox" -type f -delete
+          Get-ChildItem _ark/ -recurse -include *.*_xbox | remove-item
       - name: Restore stock instrument mapping
         run: |
           python dependencies/dev_scripts/enable_stock_pad.py
       - name: Print build info
         run: |
-          echo $GITHUB_SHA_SHORT
+          $GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)".ToUpper()
           python dependencies/dev_scripts/add_devbuild.py $GITHUB_SHA_SHORT
       - name: Build ARK
         run: |
-          dependencies/linux/arkhelper dir2ark ./_ark ./_build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+          dependencies/windows/arkhelper.exe dir2ark _ark _build/ps3/USRDIR/gen -n "patch_ps3" -e -v 6
+      - name: Build PKG
+        run: |
+          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
+          $content="UP8802-BLUS30463_00-RB3DXINST"
+          $packageversion="1.05"
+          dependencies/ta_pkg_repacker_tools/make_package_npdrm_retail.exe --k-licensee 0x00000000000000000000000000000000 --drm-type Local --package-version $packageversion --content-type GameData --content-id ($content + $sha_short) dependencies/ta_pkg_repacker_tools/package.conf _build/ps3
 
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: RB3DX-PS3-stock-instrument-mapping
-          path: _build/ps3
+          path: '*.pkg'

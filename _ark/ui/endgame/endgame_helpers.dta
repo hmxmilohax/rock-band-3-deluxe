@@ -128,7 +128,7 @@
          }
          {new MoggClip fc_clip}
       }
-      {fc_clip set file "sfx/streams/fc_clip.mogg"}
+      {fc_clip set file {if_else {== $fcsfx none} "sfx/streams/fc_clip.mogg" {sprint "sfx/streams/fc/" $fcsfx ".mogg"}}}
       {fc_clip set loop FALSE}
       {fc_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
       {fc_clip play}
@@ -286,7 +286,10 @@
                            set
                            icon
                            {$user get_track_icon}}
-                        {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "%"}} ;hard set the score percentage ourselves. 99% glitch fix even????
+                        {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}}
+                           {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "% - " {localize {switch {$user get_difficulty_sym} (easy easy_short) (medium medium_short) (hard hard_short) (expert expert_short)}}}} ;hard set the score percentage ourselves. 99% glitch fix even????
+                           {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "%"}} ;hard set the score percentage ourselves. 99% glitch fix even????
+                        }
                         {do
                            ($award_sym
                               {coop_endgame_panel get_performance_award $slot})
@@ -316,12 +319,16 @@
                            {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_play} ")"}} ;report autoplay with diff
                            {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
                               {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_chmode_short} ")"}} ;report ch mode for guitar and bass with diff
-                              {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
-                                 {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_kick} ")"}} ;report autokick for drum or pro drum
-                                 {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+                              {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}} ;check if drum or pro drum has auto kick
+                                 {difficulty_details.lbl set_token_fmt {sprint {localize mod_fastermode_topspeed} ": " {int {'+' 0.5 {'*' $speedmod_top 100}}} "%"}} ;report autokick for drum or pro drum
+                                 {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
+                                    {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_kick} ")"}} ;report autokick for drum or pro drum
+                                    {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+                                 }
                               }
                            }
                         }
+                        {set $speedmod_top $leaderspeed}
                         {if_else
                            {gamemode in_mode tour}
                            {do

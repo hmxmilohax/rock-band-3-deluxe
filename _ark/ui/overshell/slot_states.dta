@@ -1210,6 +1210,31 @@
   {choose_character.mesh set_local_scale_index 2 1}
   {choose_character.mesh set_local_pos_index 2 300}
   {online_options.grp remove_object choose_character.mesh}))
+
+(kState_RB3EFullComboSFXSelector
+ (view online_options)
+ (enter
+    {online_options.lst set circular 1}
+    {online_options.lst set_selected $fcsfx}
+    {online_options.lst set_data (#include ../endgame/fullcombo.dta)}
+ )
+   (SELECT_MSG
+       {set $fcsfx {$component selected_sym}}
+       {if_else {exists fc_preview_clip}
+          {do
+             {delete fc_preview_clip}
+             {new MoggClip fc_preview_clip}
+          }
+          {new MoggClip fc_preview_clip}
+       }
+       {fc_preview_clip set file {sprint "sfx/streams/fc/" $fcsfx ".mogg"}}
+       {fc_preview_clip set loop FALSE}
+       {fc_preview_clip set volume -8}
+       {fc_preview_clip play}
+    )
+ (on_cancel
+  {$this show_state kState_RB3EAppearanceMenu}))
+
 (kState_RB3ESpotlightSelector
  (view online_options)
  (enter
@@ -2449,6 +2474,7 @@
       os_venuefps
       os_trkspd
       os_sngspd
+      os_faster
    )})
   (update_view
       {handle
@@ -2495,6 +2521,8 @@
       {crowd.sld store}
       {crowd.sld set_showing TRUE}
       {$this set_focus crowd.sld})
+   (os_faster
+      {$this show_state kState_RB3EFasterMode})
    })
 (BUTTON_DOWN_MSG
       {if_else
@@ -2532,6 +2560,124 @@
   {set $rb3eslider FALSE})
  (on_cancel
   {$this show_game_options}))
+#define FASTER_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_fastermode} os_disable os_enable}
+   os_sngspdcap
+)
+(kState_RB3EFasterMode
+   (view options)
+   (on_cancel
+      {$this show_state kState_RB3ESpeedMenu})
+   (lst_reset
+      {options.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options.lst set_selected $fastermenuval}
+      }
+   )
+   (enter
+   {$this lst_reset}
+   {set $rb3eslider_cap TRUE}
+   {options.lst set_selected $fastermenuval}
+   {crowd.sld set_num_steps 31} ;number of steps for song speed slider
+   {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod_cap 1} 0.05}}}} ;set song speed slider based on current value
+   {speed_msg.lbl set_token_fmt {sprintf {localize speedcap_msg} {int {+ 0.5 {* $speedmod_cap 100}}}}} ;set song speed msg (or not, thanks rb3)
+   {options.lst set_data 
+   (
+      FASTER_DATA
+   )})
+  (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            crowd.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            sfx.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            voice_chat.sld
+            "")})
+   (SELECT_MSG
+   {set $fastermenuval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_sngspdcap
+      {set $songspeedcapslider TRUE}
+      {crowd.sld store}
+      {crowd.sld set_showing TRUE}
+      {$this set_focus crowd.sld})
+   (os_enable
+      {unless {modifier_mgr is_modifier_active mod_fastermode}
+         {modifier_mgr toggle_modifier_enabled mod_fastermode}
+         {options.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options.lst set_selected $fastermenuval}
+      }
+      }
+   )
+   (os_disable
+      {if {modifier_mgr is_modifier_active mod_fastermode}
+         {modifier_mgr toggle_modifier_enabled mod_fastermode}
+      }
+      {options.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options.lst set_selected $fastermenuval}
+      }
+      )
+   }
+   {$this lst_reset}
+   )
+(BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $fpsslider
+                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $songspeedcapslider
+                  {do {$this show_state kState_SongSpeedCapSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $trackspeedslider
+                  {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                  {$this set_focus options_audio.lst}}}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $rb3eslider_cap FALSE})
+ (on_cancel
+  {$this show_game_options}))
 (kState_VenueFPSSliderMsg
    (view confirm_action)
    (enter
@@ -2548,6 +2694,14 @@
    (SELECT_MSG
       {set $songspeedslider FALSE}
       {$this show_state kState_RB3ESpeedMenu}))
+(kState_SongSpeedCapSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_speedcap} {int {+ 0.5 {* $speedmod_cap 100}}}})})
+   (SELECT_MSG
+      {set $songspeedcapslider FALSE}
+      {$this show_state kState_RB3EFasterMode}))
 (kState_TrackSpeedSliderMsg
    (view confirm_action)
    (enter
@@ -2571,6 +2725,7 @@
    (
       os_uithm
       os_trkthm
+      os_fcaudio
       os_osthm
 	  os_fretboard
       os_spotlight
@@ -2607,6 +2762,8 @@
      {$this show_state kState_RB3ESmasherSelector})
    (os_animation
      {$this show_state kState_RB3AnimationMenu})
+   (os_fcaudio
+     {$this show_state kState_RB3EFullComboSFXSelector})
    (os_setcol
      {do {set $rb3eslider FALSE} {if_else {== {{$this get_user} get_controller_type} kControllerDrum}
      {$this show_state kState_RB3EDrumColorSelector} {if_else {== {{$this get_user} get_controller_type} kControllerKeys}

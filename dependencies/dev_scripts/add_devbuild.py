@@ -21,7 +21,7 @@ def main():
 
             for i in range(len(the_locale)):
                 if "devbuild" in the_locale[i]:
-                    the_locale[i] = the_locale[i].replace("devbuild", f"devbuild {commit}")
+                    the_locale[i] = the_locale[i].replace("devbuild", f"{commit}-nightly")
 
             with open(locale, "w", encoding="ISO-8859=1") as ff:
                 ff.writelines(the_locale)
