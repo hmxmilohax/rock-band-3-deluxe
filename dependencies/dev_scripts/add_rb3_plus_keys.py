@@ -8,13 +8,13 @@ try:
     import mido
     from mido import MidiFile
 except:
-    cmd_mido = "pip install mido".split()
-    subprocess.run(cmd_mido)
+    print("Mido not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
 try:
     import git
 except:
-    cmd_install = "pip install gitpython".split()
-    subprocess.run(cmd_install)
+    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
     
 # get the current working directory
 cwd = Path(__file__).parent

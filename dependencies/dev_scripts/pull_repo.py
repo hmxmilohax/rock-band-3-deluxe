@@ -3,8 +3,8 @@ from pathlib import Path
 try:
     import git
 except:
-    cmd_install = "pip install gitpython".split()
-    subprocess.run(cmd_install)
+    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
 
 # pass in the repo url and repo path, and this function will clone/pull from said repo
 # with the repo contents going in repo_path/(name of repo)
