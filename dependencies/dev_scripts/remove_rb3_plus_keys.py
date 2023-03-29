@@ -1,18 +1,16 @@
 # remove_rb3_plus_keys.py
 from pathlib import Path
-from pull_repo import pull_repo
-import subprocess
 try:
     import mido
     from mido import MidiFile
 except:
-    cmd_mido = "pip install mido".split()
-    subprocess.run(cmd_mido)
+    print("Mido not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
 try:
     import git
 except:
-    cmd_install = "pip install gitpython".split()
-    subprocess.run(cmd_install)
+    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
+    exit()
     
 # get the current working directory
 cwd = Path(__file__).parent
@@ -20,9 +18,6 @@ cwd = Path(__file__).parent
 # get the root directory of the repo
 root_dir = Path(__file__).parents[2]
 # print(root_dir)
-
-# clone/pull rb3_plus
-rb3_plus_path = pull_repo(repo_url="https://github.com/rjkiv/rb3_plus.git", repo_path=cwd)
 
 merged_songs = {}
 
