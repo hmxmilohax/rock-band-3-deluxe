@@ -4,6 +4,8 @@
 
 ## Introduction
 
+### Rock Band 3 Deluxe is no longer supported on Wii ###
+
 This Repo contains everything you need to build an ark for Rock Band 3 Deluxe for Wii.
 
 ## Features
