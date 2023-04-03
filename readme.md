@@ -1,6 +1,6 @@
 # Rock Band 3 Deluxe
 
-![Header Image](dependencies/header.png)
+![Header Image](dependencies/header.GIF)
 
 # Introduction
 
