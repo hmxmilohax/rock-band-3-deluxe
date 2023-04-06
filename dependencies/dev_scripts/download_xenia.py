@@ -29,6 +29,12 @@ def download_file(url, destination):
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
 
+def create_portable_file(directory):
+    portable_file = directory / "portable.txt"
+    if not portable_file.exists():
+        with open(portable_file, "w") as f:
+            pass
+
 def extract_zip(zip_path, destination):
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(destination)
@@ -56,6 +62,8 @@ def setup_xenia():
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent.parent
     destination_dir = repo_root / "_xenia"
+
+    create_portable_file(destination_dir)
 
     # Fetch the latest release information
     release_info = fetch_latest_release_info()
