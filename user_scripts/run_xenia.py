@@ -3,6 +3,8 @@ import sys
 import subprocess
 
 sys.path.append("../dependencies/dev_scripts")
+from download_xenia import setup_xenia
+
 from build_ark import build_patch_ark
 from build_dx_settings_ark import build_dxsl_ark
 from check_git_updated import check_git_updated
@@ -33,6 +35,8 @@ else:
     rb3dx_res = build_patch_ark(True)
     
 if dx_res:
+    print("Checking for updates to Xenia Canary")
+    setup_xenia()
     print("Ready to run DXSL in Xenia.")
     subprocess.run(cmd_xenia_loader, shell=True, cwd="..")
 # if rb3dx_res:

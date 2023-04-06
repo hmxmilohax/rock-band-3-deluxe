@@ -51,7 +51,7 @@ def modify_config_file(config_path):
             line = update_toml_line(line, "gpu =", "\"vulkan\"")
             f.write(line)
 
-def main():
+def setup_xenia():
     # Determine the destination directory
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent.parent
@@ -95,7 +95,7 @@ def main():
         else:
             print(f"Xenia Canary has been updated from {local_commit_hash} to {latest_commit_hash}.")
     else:
-        print("Latest version is already installed.")
+        print(f"Latest Xenia Canary {latest_commit_hash} is already installed.")
 
     # Check if xenia-canary.config.toml exists, if not, create it
     config_file_path = destination_dir / "xenia-canary.config.toml"
@@ -109,5 +109,5 @@ def main():
     # Modify the config file
     modify_config_file(config_file_path)
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__setup_xenia__":
+    setup_xenia()
