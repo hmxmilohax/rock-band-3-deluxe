@@ -35,6 +35,18 @@ def create_portable_file(directory):
         with open(portable_file, "w") as f:
             pass
 
+def download_patch_file(destination_dir):
+    url = "https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml"
+    response = requests.get(url)
+    response.raise_for_status()
+
+    patches_folder = destination_dir / "patches"
+    patches_folder.mkdir(parents=True, exist_ok=True)
+
+    patch_file_path = patches_folder / "45410914 - Rock Band 3.patch.toml"
+    with open(patch_file_path, "wb") as f:
+        f.write(response.content)
+
 def extract_zip(zip_path, destination):
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(destination)
@@ -64,6 +76,8 @@ def setup_xenia():
     destination_dir = repo_root / "_xenia"
 
     create_portable_file(destination_dir)
+
+    download_patch_file(destination_dir)
 
     # Fetch the latest release information
     release_info = fetch_latest_release_info()
