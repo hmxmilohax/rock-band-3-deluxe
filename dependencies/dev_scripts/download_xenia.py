@@ -36,6 +36,9 @@ def create_portable_file(directory):
             pass
 
 def download_patch_file(destination_dir):
+
+# https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
+# https://raw.githubusercontent.com/xenia-canary/game-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
     url = "https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml"
     response = requests.get(url)
     response.raise_for_status()
@@ -55,6 +58,21 @@ def update_toml_line(line, prefix, desired_value):
     if line.startswith(prefix):
         return f"{prefix} {desired_value}\n"
     return line
+
+def update_patch_file(patch_file_path):
+    lines_to_update = ["    is_enabled = true"]
+
+    with open(patch_file_path, "r") as f:
+        lines = f.readlines()
+
+    with open(patch_file_path, "w") as f:
+        for i, line in enumerate(lines):
+            if line.strip() == 'author = "InvoxiPlayGames"' and i < len(lines) - 1:
+                next_line = lines[i + 1].strip()
+                if next_line != "is_enabled = true":
+                    lines[i + 1] = "    is_enabled = true\n"
+
+            f.write(lines[i])
 
 def modify_config_file(config_path):
     with open(config_path, "r") as f:
@@ -78,6 +96,9 @@ def setup_xenia():
     create_portable_file(destination_dir)
 
     download_patch_file(destination_dir)
+
+    patch_file_path = destination_dir / "patches" / "45410914 - Rock Band 3.patch.toml"
+    update_patch_file(patch_file_path)
 
     # Fetch the latest release information
     release_info = fetch_latest_release_info()
