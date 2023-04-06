@@ -1,0 +1,113 @@
+import os
+import re
+import zipfile
+from pathlib import Path
+import subprocess
+import shutil
+import time
+
+# Check if requests is installed and install it if necessary
+try:
+    import requests
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "requests"])
+    import requests
+
+XENIA_CANARY_REPO = "https://api.github.com/repos/xenia-canary/xenia-canary/releases/latest"
+EXE_NAME = "xenia_canary.exe"
+
+def fetch_latest_release_info():
+    response = requests.get(XENIA_CANARY_REPO)
+    response.raise_for_status()
+    return response.json()
+
+def download_file(url, destination):
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+def extract_zip(zip_path, destination):
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
+        zip_ref.extractall(destination)
+
+def update_toml_line(line, prefix, desired_value):
+    if line.startswith(prefix):
+        return f"{prefix} {desired_value}\n"
+    return line
+
+def modify_config_file(config_path):
+    with open(config_path, "r") as f:
+        lines = f.readlines()
+
+    with open(config_path, "w") as f:
+        for line in lines:
+            line = update_toml_line(line, "max_queued_frames =", "3")
+            line = update_toml_line(line, "allow_game_relative_writes =", "true")
+            line = update_toml_line(line, "writable_code_segments =", "true")
+            line = update_toml_line(line, "license_mask =", "1")
+            line = update_toml_line(line, "gpu =", "\"vulkan\"")
+            f.write(line)
+
+def main():
+    # Determine the destination directory
+    script_dir = Path(__file__).resolve().parent
+    repo_root = script_dir.parent.parent
+    destination_dir = repo_root / "_xenia"
+
+    # Fetch the latest release information
+    release_info = fetch_latest_release_info()
+    latest_commit_hash = release_info["target_commitish"]
+
+    # Check if the latest commit hash is already installed
+    local_commit_hash_file = destination_dir / "xenia_canary_commit_hash.txt"
+    if local_commit_hash_file.exists():
+        with open(local_commit_hash_file, "r") as f:
+            local_commit_hash = f.read().strip()
+    else:
+        local_commit_hash = None
+
+    if local_commit_hash != latest_commit_hash:
+        # Download the latest release
+        asset = next((asset for asset in release_info["assets"] if asset["name"] == "xenia_canary.zip"), None)
+        if asset is None:
+            raise ValueError("xenia_canary.zip not found in the release assets.")
+
+        tmp_dir = repo_root / "tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        download_path = tmp_dir / "xenia_canary.zip"
+        download_file(asset["browser_download_url"], str(download_path))
+
+        # Extract the zip file
+        extract_zip(str(download_path), str(destination_dir))
+
+        # Update the commit hash file
+        with open(local_commit_hash_file, "w") as f:
+            f.write(latest_commit_hash)
+
+        # Clean up the tmp directory
+        shutil.rmtree(tmp_dir)
+
+        if local_commit_hash is None:
+            print(f"Xenia Canary {latest_commit_hash} has been installed.")
+        else:
+            print(f"Xenia Canary has been updated from {local_commit_hash} to {latest_commit_hash}.")
+    else:
+        print("Latest version is already installed.")
+
+    # Check if xenia-canary.config.toml exists, if not, create it
+    config_file_path = destination_dir / "xenia-canary.config.toml"
+    if not config_file_path.exists():
+        exe_path = destination_dir / EXE_NAME
+        process = subprocess.Popen(str(exe_path), close_fds=True)
+        time.sleep(1)  # Wait for 2 seconds before terminating the process
+        process.terminate()
+        process.wait()
+
+    # Modify the config file
+    modify_config_file(config_file_path)
+
+if __name__ == "__main__":
+    main()
