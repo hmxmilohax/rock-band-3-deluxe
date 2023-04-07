@@ -3,9 +3,11 @@ from pathlib import Path
 # Check if mido is installed and install it if necessary
 try:
     import mido
+    from mido import MidiFile
 except ImportError:
     subprocess.check_call(["python", "-m", "pip", "install", "mido"])
     import mido
+    from mido import MidiFile
 # Check if git is installed and install it if necessary
 try:
     import git
