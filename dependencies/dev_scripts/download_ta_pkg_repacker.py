@@ -1,8 +1,14 @@
 import os
-import requests
 import zipfile
 import shutil
 from pathlib import Path
+
+# Check if requests is installed and install it if necessary
+try:
+    import requests
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "requests"])
+    import requests
 
 def download_and_extract_ta_pkg_repacker(url, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
