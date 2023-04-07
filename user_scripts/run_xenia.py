@@ -3,9 +3,16 @@ import sys
 import subprocess
 
 sys.path.append("../dependencies/dev_scripts")
+from download_xenia import setup_xenia
+from download_mackiloha import download_mackiloha
 from build_ark import build_patch_ark
 from build_dx_settings_ark import build_dxsl_ark
 from check_git_updated import check_git_updated
+
+# Download and extract Mackiloha-suite-archive.zip
+if not download_mackiloha():
+    print("Failed to download and extract Mackiloha-suite-archive.zip. Exiting.")
+    sys.exit(1)
 
 # get the current working directory
 cwd = Path(__file__).parent
@@ -33,6 +40,8 @@ else:
     rb3dx_res = build_patch_ark(True)
     
 if dx_res:
+    print("Checking for updates to Xenia Canary")
+    setup_xenia()
     print("Ready to run DXSL in Xenia.")
     subprocess.run(cmd_xenia_loader, shell=True, cwd="..")
 # if rb3dx_res:

@@ -1,10 +1,11 @@
 # pull_repo.py
 from pathlib import Path
+# Check if git is installed and install it if necessary
 try:
     import git
-except:
-    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
-    exit()
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "gitpython"])
+    import git
 
 # pass in the repo url and repo path, and this function will clone/pull from said repo
 # with the repo contents going in repo_path/(name of repo)

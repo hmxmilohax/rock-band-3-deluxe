@@ -4,18 +4,21 @@ from parse_song_dta import parse_song_dta
 from song_dict_to_dta import song_dict_to_dta
 from pull_repo import pull_repo
 import subprocess
+# Check if mido is installed and install it if necessary
 try:
     import mido
     from mido import MidiFile
-except:
-    print("Mido not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
-    exit()
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "mido"])
+    import mido
+    from mido import MidiFile
+# Check if git is installed and install it if necessary
 try:
     import git
-except:
-    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
-    exit()
-    
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "gitpython"])
+    import git
+
 # get the current working directory
 cwd = Path(__file__).parent
 # print(cwd)
