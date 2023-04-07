@@ -11,47 +11,58 @@ except ImportError:
     subprocess.check_call(["python", "-m", "pip", "install", "requests"])
     import requests
 
-def download_and_extract_ta_pkg_repacker(url, output_dir):
-    output_dir.mkdir(parents=True, exist_ok=True)
-    print("Downloading TrueAncestor_PKG_Repacker_v2.45.zip...")
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+def download_and_extract_ta_pkg_repacker(url, output_dir, num_retries=3, retry_delay=5):
+    for i in range(num_retries):
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            print("Downloading TrueAncestor_PKG_Repacker_v2.45.zip...")
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+            }
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
 
-    ta_pkg_zip_path = output_dir / "TrueAncestor_PKG_Repacker_v2.45.zip"
-    with open(ta_pkg_zip_path, "wb") as f:
-        f.write(response.content)
+            ta_pkg_zip_path = output_dir / "TrueAncestor_PKG_Repacker_v2.45.zip"
+            with open(ta_pkg_zip_path, "wb") as f:
+                f.write(response.content)
 
-    with zipfile.ZipFile(ta_pkg_zip_path, "r") as zip_ref:
-        zip_ref.extractall(output_dir)
+            with zipfile.ZipFile(ta_pkg_zip_path, "r") as zip_ref:
+                zip_ref.extractall(output_dir)
 
-    os.remove(ta_pkg_zip_path)
-    print("Downloaded and extracted TrueAncestor_PKG_Repacker_v2.45.zip")
+            os.remove(ta_pkg_zip_path)
+            print("Downloaded and extracted TrueAncestor_PKG_Repacker_v2.45.zip")
 
-    data_dir = output_dir / "data"
-    history_txt = output_dir / "history.txt"
-    repacker_exe = output_dir / "repacker.exe"
-    tool_dir = output_dir / "tool"
-    ta_pkg_repacker_tools = output_dir.parent / "ta_pkg_repacker_tools"
+            data_dir = output_dir / "data"
+            history_txt = output_dir / "history.txt"
+            repacker_exe = output_dir / "repacker.exe"
+            tool_dir = output_dir / "tool"
+            ta_pkg_repacker_tools = output_dir.parent / "ta_pkg_repacker_tools"
 
-    if data_dir.exists():
-        shutil.rmtree(data_dir)
-    if history_txt.exists():
-        os.remove(history_txt)
-    if repacker_exe.exists():
-        os.remove(repacker_exe)
+            if data_dir.exists():
+                shutil.rmtree(data_dir)
+            if history_txt.exists():
+                os.remove(history_txt)
+            if repacker_exe.exists():
+                os.remove(repacker_exe)
 
-    ta_pkg_repacker_tools.mkdir(parents=True, exist_ok=True)
+            ta_pkg_repacker_tools.mkdir(parents=True, exist_ok=True)
 
-    if tool_dir.exists():
-        for item in tool_dir.iterdir():
-            shutil.move(str(item), str(ta_pkg_repacker_tools / item.name))
-        os.rmdir(tool_dir)
+            if tool_dir.exists():
+                for item in tool_dir.iterdir():
+                    shutil.move(str(item), str(ta_pkg_repacker_tools / item.name))
+                os.rmdir(tool_dir)
 
-    shutil.rmtree(output_dir)
+            shutil.rmtree(output_dir)
+            return
+
+        except Exception as e:
+            print(f"Error encountered while downloading and extracting TrueAncestor_PKG_Repacker_v2.45.zip: {e}")
+            if i == num_retries - 1:
+                raise
+            else:
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
 
     # Copy package.conf
     package_conf_src = repo_root / "dependencies/package.conf"
@@ -66,5 +77,5 @@ repo_root = Path(script_path).parents[1]
 output_dir = repo_root / "dependencies/TrueAncestor_PKG_Repacker_v2.45"
 
 # Download TrueAncestor_PKG_Repacker_2.00.zip
-ta_pkg_url = "https://archive.org/download/true-ancestor-pkg-repacker-v-2.45/TrueAncestor_PKG_Repacker_v2.45.zip"
+ta_pkg_url = "https://cdn.discordapp.com/attachments/961395552329818142/1093745384775491704/TrueAncestor_PKG_Repacker_v2.45.zip"
 download_and_extract_ta_pkg_repacker(ta_pkg_url, output_dir)
