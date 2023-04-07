@@ -53,6 +53,11 @@ def download_and_extract_ta_pkg_repacker(url, output_dir, num_retries=3, retry_d
                     shutil.move(str(item), str(ta_pkg_repacker_tools / item.name))
                 os.rmdir(tool_dir)
 
+            # Copy package.conf
+            package_conf_src = repo_root / "dependencies" / "package.conf"
+            package_conf_dst = ta_pkg_repacker_tools / "package.conf"
+            shutil.copy(package_conf_src, package_conf_dst)
+
             shutil.rmtree(output_dir)
             return
 
