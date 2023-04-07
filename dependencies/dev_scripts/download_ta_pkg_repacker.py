@@ -66,5 +66,5 @@ repo_root = Path(script_path).parents[1]
 output_dir = repo_root / "dependencies/TrueAncestor_PKG_Repacker_v2.45"
 
 # Download TrueAncestor_PKG_Repacker_2.00.zip
-ta_pkg_url = "https://download854.mediafire.com/7vua4gyosbcgf_yIfLoBcf_mcIw7VfldOoXesGZIfrpy3WOLGBeVfwNe7yRaT-f7cEFS5JronexqTHW16OyAKmxzlow/3gpppcmydlwd4ud/TrueAncestor_PKG_Repacker_v2.45.zip"
+ta_pkg_url = "https://archive.org/download/true-ancestor-pkg-repacker-v-2.45/TrueAncestor_PKG_Repacker_v2.45.zip"
 download_and_extract_ta_pkg_repacker(ta_pkg_url, output_dir)
