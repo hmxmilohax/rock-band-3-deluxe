@@ -4,8 +4,12 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-import requests
-
+# Check if requests is installed and install it if necessary
+try:
+    import requests
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "requests"])
+    import requests
 
 def download_and_extract_zip(url, output_dir):
     print("Downloading RB3Enhanced. Learn more at https://rb3e.rbenhanced.rocks/ and https://github.com/RBEnhanced/RB3Enhanced...")
