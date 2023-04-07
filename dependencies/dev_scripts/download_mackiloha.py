@@ -2,7 +2,12 @@ import os
 import zipfile
 import shutil
 from pathlib import Path
-import requests
+# Check if requests is installed and install it if necessary
+try:
+    import requests
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "requests"])
+    import requests
 
 def download_and_extract_mackiloha_suite(url, output_dir):
     print("Downloading Mackiloha-suite-archive.zip...")
