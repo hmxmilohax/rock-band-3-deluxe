@@ -82,5 +82,5 @@ repo_root = Path(script_path).parents[1]
 output_dir = repo_root / "dependencies/TrueAncestor_PKG_Repacker_v2.45"
 
 # Download TrueAncestor_PKG_Repacker_2.00.zip
-ta_pkg_url = "https://cdn.discordapp.com/attachments/961395552329818142/1093745384775491704/TrueAncestor_PKG_Repacker_v2.45.zip"
+ta_pkg_url = "https://www.newgrounds.com/dump/download/3e81199977d984b586c8e081a680f371"
 download_and_extract_ta_pkg_repacker(ta_pkg_url, output_dir)
