@@ -116,6 +116,9 @@ def setup_xenia():
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent.parent
     destination_dir = repo_root / "_xenia"
+    
+    # Create the destination directory if it doesn't exist
+    destination_dir.mkdir(parents=True, exist_ok=True)
 
     create_portable_file(destination_dir)
 
