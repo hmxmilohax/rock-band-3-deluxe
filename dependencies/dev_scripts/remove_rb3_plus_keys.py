@@ -1,16 +1,17 @@
 # remove_rb3_plus_keys.py
 from pathlib import Path
+# Check if mido is installed and install it if necessary
 try:
     import mido
-    from mido import MidiFile
-except:
-    print("Mido not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
-    exit()
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "mido"])
+    import mido
+# Check if git is installed and install it if necessary
 try:
     import git
-except:
-    print("GitPython not found. Run the install_python_dependencies.bat file to install them, and then run this script again.")
-    exit()
+except ImportError:
+    subprocess.check_call(["python", "-m", "pip", "install", "gitpython"])
+    import git
     
 # get the current working directory
 cwd = Path(__file__).parent
