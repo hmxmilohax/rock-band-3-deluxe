@@ -1,6 +1,7 @@
 import os
 import zipfile
 import shutil
+import time
 from pathlib import Path
 
 # Check if requests is installed and install it if necessary
@@ -10,21 +11,29 @@ except ImportError:
     subprocess.check_call(["python", "-m", "pip", "install", "requests"])
     import requests
 
-def download_and_extract_ta_pkg_repacker(url, output_dir):
-    output_dir.mkdir(parents=True, exist_ok=True)
-    print("Downloading TrueAncestor_PKG_Repacker_v2.45.zip...")
-    response = requests.get(url)
-    response.raise_for_status()
+def download_and_extract_ta_pkg_repacker(url, output_dir, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            print("Downloading TrueAncestor_PKG_Repacker_v2.45.zip...")
+            response = requests.get(url)
+            response.raise_for_status()
 
-    ta_pkg_zip_path = output_dir / "TrueAncestor_PKG_Repacker_v2.45.zip"
-    with open(ta_pkg_zip_path, "wb") as f:
-        f.write(response.content)
+            ta_pkg_zip_path = output_dir / "TrueAncestor_PKG_Repacker_v2.45.zip"
+            with open(ta_pkg_zip_path, "wb") as f:
+                f.write(response.content)
 
-    with zipfile.ZipFile(ta_pkg_zip_path, "r") as zip_ref:
-        zip_ref.extractall(output_dir)
+            with zipfile.ZipFile(ta_pkg_zip_path, "r") as zip_ref:
+                zip_ref.extractall(output_dir)
 
-    os.remove(ta_pkg_zip_path)
-    print("Downloaded and extracted TrueAncestor_PKG_Repacker_v2.45.zip")
+            os.remove(ta_pkg_zip_path)
+            print("Downloaded and extracted TrueAncestor_PKG_Repacker_v2.45.zip")
+            break
+        except (requests.exceptions.RequestException, zipfile.BadZipFile) as e:
+            print(f"Error during download or extraction (attempt {attempt + 1}): {e}")
+            if attempt + 1 == max_retries:
+                raise
+            time.sleep(5)  # Wait for 5 seconds before retrying
 
     data_dir = output_dir / "data"
     history_txt = output_dir / "history.txt"
