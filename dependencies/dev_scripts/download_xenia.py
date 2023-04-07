@@ -88,6 +88,12 @@ def modify_config_file(config_path):
             f.write(line)
 
 def download_and_extract_x360ce(url, output_dir):
+    source_txt = output_dir / "x360ce_source.txt"
+
+    if source_txt.is_file():
+        print("x360ce_source.txt exists, skipping download")
+        return
+
     print("Downloading x360ce_x64.zip...")
     response = requests.get(url)
     response.raise_for_status()
@@ -101,6 +107,9 @@ def download_and_extract_x360ce(url, output_dir):
 
     os.remove(x360ce_zip_path)
     print("Downloaded x360ce_x64")
+
+    with open(source_txt, "w") as f:
+        f.write(url)
 
 def setup_xenia():
     # Determine the destination directory
