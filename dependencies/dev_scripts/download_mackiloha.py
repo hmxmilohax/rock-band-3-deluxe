@@ -14,19 +14,30 @@ def download_and_extract_mackiloha_suite(url, output_dir):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
     }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    max_retries = 3
+    retry_count = 0
+    while retry_count < max_retries:
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
 
-    mackiloha_zip_path = output_dir / "Mackiloha-suite-archive.zip"
-    with open(mackiloha_zip_path, "wb") as f:
-        f.write(response.content)
+            mackiloha_zip_path = output_dir / "Mackiloha-suite-archive.zip"
+            with open(mackiloha_zip_path, "wb") as f:
+                f.write(response.content)
 
-    with zipfile.ZipFile(mackiloha_zip_path, "r") as zip_ref:
-        zip_ref.extractall(output_dir)
+            with zipfile.ZipFile(mackiloha_zip_path, "r") as zip_ref:
+                zip_ref.extractall(output_dir)
 
-    os.remove(mackiloha_zip_path)
-    print("Downloaded and extracted Mackiloha-suite-archive.zip")
-    return True
+            os.remove(mackiloha_zip_path)
+            print("Downloaded and extracted Mackiloha-suite-archive.zip")
+            return True
+        except Exception as e:
+            print(f"Error downloading {url} ({str(e)}), retrying in 5 seconds...")
+            time.sleep(5)
+            retry_count += 1
+    print(f"Failed to download {url} after {max_retries} attempts.")
+    return False
+
 
 def check_extracted_contents(output_dir: Path) -> bool:
     # List the expected extracted contents
