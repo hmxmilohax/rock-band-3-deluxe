@@ -1,5 +1,6 @@
 # remove_rb3_plus_keys.py
 from pathlib import Path
+import subprocess
 # Check if mido is installed and install it if necessary
 try:
     import mido

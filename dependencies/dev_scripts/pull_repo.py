@@ -1,6 +1,7 @@
 # pull_repo.py
 from pathlib import Path
 # Check if git is installed and install it if necessary
+import subprocess
 try:
     import git
 except ImportError:

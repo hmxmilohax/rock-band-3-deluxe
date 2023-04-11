@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import shutil
 import time
-
+import subprocess
 # Check if requests is installed and install it if necessary
 try:
     import requests
