@@ -4,6 +4,7 @@ from subprocess import CalledProcessError
 from sys import platform
 import subprocess
 from check_git_updated import check_git_updated
+import os
 
 def rm_tree(pth):
     pth = Path(pth)
