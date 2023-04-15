@@ -313,6 +313,10 @@
                   {$this show_state kState_RestartConfirm}})
             (overshell_change_diff
                {$this begin_override_flow kOverrideFlow_SongSettings})
+            (overshell_change_inst
+               {do
+                  {set $changeinst TRUE}
+                  {$this begin_override_flow kOverrideFlow_SongSettings}})
             (overshell_practice_new_section
                {ui_event_mgr trigger_event go_to_practice_screen})
             (overshell_metronome
@@ -1055,9 +1059,6 @@
             set_data
                (overshell_credits
                 overshell_linking_code
-				overshell_guitar
-				overshell_bass
-				overshell_drums
                 #ifdef HX_XBOX
                 overshell_audition
                 #endif)})
@@ -1103,12 +1104,7 @@
             #else
             {$this leave_options}
             #endif)
-		 (overshell_guitar
-            {$this select_part kTrackGuitar})
-         (overshell_bass
-            {$this select_part kTrackBass})
-         (overshell_drums
-            {$this select_part kTrackDrum})})
+	  })
    (on_cancel
       {$this show_game_options}))
 (kState_AuditionNoHardDriveConfirm
@@ -3438,7 +3434,8 @@
    (os_cam
     {$this show_state kState_RB3ECameraMenu})
    (os_fx
-    {$this show_state kState_RB3EFXMenu})})
+    {$this show_state kState_RB3EFXMenu})
+	})
 	(on_cancel
        ;restore original online_options upon exit
 	   {do
@@ -4720,18 +4717,14 @@
       {choose_part.lst set_selected $focus_item})
    (enter
       {$this update_part_select_list}
-   #ifndef RB3E
-      {if {== {{$this get_user} get_controller_type} kControllerGuitar}
+  {if {== {{$this get_user} get_controller_type} kControllerGuitar}
   {choose_part.lst
    set_data
    (overshell_guitar
     overshell_bass
-    overshell_keys)}}
-      {if {== {{$this get_user} get_controller_type} kControllerDrum}
-  {choose_part.lst
-   set_data
-   (overshell_drums
-    overshell_drums_pro)}}
+    overshell_keys
+	overshell_vocal_solo
+    overshell_vocal_harmony)}}
       {if {== {{$this get_user} get_controller_type} kControllerVocals}
   {choose_part.lst
    set_data
@@ -4740,8 +4733,40 @@
     overshell_guitar
     overshell_bass
     overshell_keys
-    overshell_drums)}}
-    #endif
+	overshell_real_keys
+	overshell_real_guitar
+	overshell_real_bass
+    overshell_drums
+	overshell_drums_pro
+	)}}
+	{if {== {{$this get_user} get_controller_type} kControllerDrum}
+  {choose_part.lst
+   set_data
+   (overshell_drums
+	overshell_drums_pro
+	overshell_guitar
+    overshell_bass
+    overshell_keys
+	overshell_real_keys
+	overshell_real_guitar
+	overshell_real_bass
+	overshell_vocal_solo
+    overshell_vocal_harmony
+	)}}
+	{if {== {{$this get_user} get_controller_type} kControllerKeys}
+  {choose_part.lst
+   set_data
+   (overshell_keys
+	overshell_real_keys
+	overshell_guitar
+	overshell_bass
+	overshell_drums
+	overshell_drums_pro
+	overshell_real_guitar
+	overshell_real_bass
+	overshell_vocal_solo
+    overshell_vocal_harmony
+	)}}
     )
    (SELECT_MSG
       {switch
@@ -5013,13 +5038,30 @@
          ($this set_confirm_message overshell_cymbals_in_options_msg)})
    (SELECT_MSG
       {$this dismiss_cymbal_message}))
+#define DIFFDATA
+(overshell_easy overshell_medium overshell_hard overshell_expert)
+#define INSTSELECT
+(
+   overshell_keys
+   overshell_real_keys
+   overshell_guitar
+   overshell_bass
+   overshell_drums
+   overshell_vocal_solo
+   overshell_vocal_harmony
+)
 (kState_ChooseDiff
    (view choose_diff)
    (song_settings_flow TRUE)
    (shows_extended_mic_arrows TRUE)
-   (enter {if {! $firstdiff}
-	     {set $firstdiff TRUE}
-		 {choose_diff.lst set_selected 3}})
+   (enter
+      {if_else $changeinst
+	     {choose_diff.lst set_data (INSTSELECT)}
+		 {do
+            {choose_diff.list set_data (DIFFDATA)}
+            {if {! $firstdiff}
+               {set $firstdiff TRUE}
+               {choose_diff.lst set_selected 3}}}})
    (SELECT_MSG
       {switch
          {choose_diff.lst selected_sym}
@@ -5032,14 +5074,46 @@
          (overshell_expert
             {if_else {modifier_mgr is_modifier_active mod_nobre}
             {{$this select_difficulty kDifficultyEasy} {do {set $imabigboy TRUE}}}
-            {$this select_difficulty kDifficultyExpert}})})
+            {$this select_difficulty kDifficultyExpert}})
+         (overshell_keys
+		    {do
+               {set $changeinst FALSE}			
+               {$this select_part kTrackKeys}})
+         (overshell_real_keys
+		    {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackRealKeys}})
+         (overshell_guitar
+		    {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackGuitar}})
+         (overshell_bass
+		    {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackBass}})
+         (overshell_drums
+		    {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackDrum}})
+         (overshell_vocal_solo
+            {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackVocals}
+               {$this select_vocal_part FALSE}})
+         (overshell_vocal_harmony
+            {do
+               {set $changeinst FALSE}
+               {$this select_part kTrackVocals}
+               {$this select_vocal_part TRUE}})})
    (update_remote_feedback
       ($focus_item)
       {choose_diff.lst set_selected $focus_item})
    (on_view_modify
       {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
    (on_cancel
-      {$this leave_choose_difficulty}))
+      {do
+         {set $changeinst FALSE}
+         {$this leave_choose_difficulty}}))
 (kState_ChooseDiffConfirm
    (view confirm_action)
    (song_settings_flow TRUE)
