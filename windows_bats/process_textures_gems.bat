@@ -14,7 +14,6 @@ move "%~dp0..\custom_textures\gems\gems.dta" "%~dp0..\_ark\ui\track\gems\gems.dt
 "%~dp0..\dependencies/sed.exe" -i -e "s/gem_mash_yellow_emmisive_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/gem_mash_blue_emmisive_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/gem_mash_orange_emmisive_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
-"%~dp0..\dependencies/sed.exe" -i -e "s/gem_tails_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/gliss_gems_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/prism_gem_keyboard_style_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/prism_gems_//g" "%~dp0..\_ark\ui\track\gems\gems.dta"
