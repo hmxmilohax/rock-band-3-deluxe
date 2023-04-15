@@ -33,7 +33,6 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 # Features
 
 ## Quality of Life
-* [Custom settings loader](https://github.com/hmxmilohax/dx-settings-loader) as a frontend for Xbox and Xenia
 * Max song limit increased to 8000. Above 5000 can lead to instability issues, use with caution.
 * Song select ambient noise modifier, default disabled
 * New menu, "Deluxe Settings", in game for additional modifications
