@@ -37,9 +37,7 @@ def create_portable_file(directory):
 
 def download_patch_file(destination_dir):
 
-# https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
-# https://raw.githubusercontent.com/xenia-canary/game-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
-    url = "https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203%20TU5.patch.toml"
+    url = "https://raw.githubusercontent.com/xenia-canary/game-patches/main/patches/45410914%20-%20Rock%20Band%203%20TU5.patch.toml"
     response = requests.get(url)
     response.raise_for_status()
 
