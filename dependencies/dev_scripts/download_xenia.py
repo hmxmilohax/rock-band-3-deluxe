@@ -37,16 +37,14 @@ def create_portable_file(directory):
 
 def download_patch_file(destination_dir):
 
-# https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
-# https://raw.githubusercontent.com/xenia-canary/game-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml
-    url = "https://raw.githubusercontent.com/jnackmclain/game-patches/rb3dx-rb3e-patches/patches/45410914%20-%20Rock%20Band%203.patch.toml"
+    url = "https://raw.githubusercontent.com/xenia-canary/game-patches/main/patches/45410914%20-%20Rock%20Band%203%20TU5.patch.toml"
     response = requests.get(url)
     response.raise_for_status()
 
     patches_folder = destination_dir / "patches"
     patches_folder.mkdir(parents=True, exist_ok=True)
 
-    patch_file_path = patches_folder / "45410914 - Rock Band 3.patch.toml"
+    patch_file_path = patches_folder / "45410914 - Rock Band 3 TU5.patch.toml"
     with open(patch_file_path, "wb") as f:
         f.write(response.content)
 
@@ -128,7 +126,7 @@ def setup_xenia():
     x360ce_url = "https://emutopia.com/index.php?option=com_cobalt&task=files.download&tmpl=component&id=12279&fid=20&fidx=3&rid=541&return=aHR0cHM6Ly9lbXV0b3BpYS5jb20vaW5kZXgucGhwL2VtdWxhdG9ycy9pdGVtLzI0MC1nYW1lcGFkcy81NDEteDM2MGNl"
     download_and_extract_x360ce(x360ce_url, destination_dir)
 
-    patch_file_path = destination_dir / "patches" / "45410914 - Rock Band 3.patch.toml"
+    patch_file_path = destination_dir / "patches" / "45410914 - Rock Band 3 TU5.patch.toml"
     update_patch_file(patch_file_path)
 
     # Fetch the latest release information
