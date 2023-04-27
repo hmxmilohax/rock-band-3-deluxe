@@ -8,6 +8,7 @@ for %%i in (*.png) do @echo "%%~ni">> voxarrow.dta
 for %%i in (*.jpg) do @echo "%%~ni">> voxarrow.dta
 move "%~dp0..\custom_textures\voxarrow\voxarrow.dta" "%~dp0..\_ark\ui\track\voxarrow\voxarrow.dta"
 "%~dp0..\dependencies/sed.exe" -i -e "s/arrow_lead_c_//g" "%~dp0..\_ark\ui\track\voxarrow\voxarrow.dta"
+"%~dp0..\dependencies/sed.exe" -i -e "s/arrow_lead_outline_//g" "%~dp0..\_ark\ui\track\voxarrow\voxarrow.dta"
 FOR /F "tokens=*" %%G IN ('dir /b *.png') DO "%~dp0..\dependencies/magick/magick.exe" convert "%~dp0..\custom_textures\voxarrow/%%G" "%~dp0..\custom_textures\voxarrow\%%~nG.png"
 FOR /F "tokens=*" %%G IN ('dir /b *.jpg') DO "%~dp0..\dependencies/magick/magick.exe" convert "%~dp0..\custom_textures\voxarrow/%%G" "%~dp0..\custom_textures\voxarrow\%%~nG.png"
 FOR /F "tokens=*" %%G IN ('dir /b *.bmp') DO "%~dp0..\dependencies/magick/magick.exe" convert "%~dp0..\custom_textures\voxarrow/%%G" "%~dp0..\custom_textures\voxarrow\%%~nG.png"
