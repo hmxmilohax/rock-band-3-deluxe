@@ -88,7 +88,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 ## PlayStation 3
 
-### [Rock Band 3 Deluxe (Base) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
+### [Rock Band 3 Deluxe (Standard) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
 
 [RB3DX (With rb3_plus Keys Upgrades) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip)
 
@@ -98,7 +98,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 ## Xbox 360
 
-### [Rock Band 3 Deluxe (Base) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
+### [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
 
 [RB3DX (With rb3_plus Keys Upgrades) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip)
 
