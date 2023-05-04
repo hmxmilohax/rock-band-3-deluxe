@@ -88,7 +88,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 ## PlayStation 3
 
-### [Rock Band 3 Deluxe (Base) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
+### [Rock Band 3 Deluxe (Standard) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
 
 [RB3DX (With rb3_plus Keys Upgrades) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip)
 
@@ -98,7 +98,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 ## Xbox 360
 
-### [Rock Band 3 Deluxe (Base) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
+### [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
 
 [RB3DX (With rb3_plus Keys Upgrades) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip)
 
@@ -188,15 +188,14 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 * **Extract your vanilla copy of Rock Band 3** and copy the contents of the `gen` folder to `\_build\xbox\gen\`.
 
-* Navigate to `_xenia` and **map your controller with x360ce**.
-  * When it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
-
 * Then, **navigate to `windows_bats`** if you're on Windows or **`user_scripts`** if you're on Linux and **run `build_xenia` to automatically update, build, and run Rock Band 3 Deluxe.**
   * *You need to run this script every time in order to play and update the game. `run_xenia` will run the game only and won't update and build it unless a new update is available, so you can use that if `build_xenia` takes too long.*
 
-***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
+* If your controller does not respond, navigate to the `_xenia` folder and **map your controller with x360ce**.
+  * When it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
+  * If your controller is mapped and recognized and still doesn't register any inputs, unplug it from your PC and plug it back in while Xenia is still open.
 
-***Sidenote:*** *if your guitar is mapped and recognized and still doesn't register any inputs, unplug it from your PC and plug it back in while Xenia is still open.*
+***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 ***Sidenote:*** *if you're experiencing issues regarding character models, navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice, and change `gpu` from `vulkan` to `d3d12` and `d3d12_readback_resolve` from `false` to `true` (you may need to press `CTRL + F` to find these). This will fix all texture issues but will drastically affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using* [***RPCS3***](#installing-on-rpcs3-recommended-for-pc) *instead.*
 
@@ -275,19 +274,17 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
 
 # Repo Setup (Advanced)
 
-### Installing Required Dependencies
+### Installing Python (Required)
 
-* Install [**Git for Windows**](https://gitforwindows.org/), [**Dot Net 6.0 Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/6.0/runtime), and [**Python**](https://www.python.org/downloads/) (version 3.9 or later).
-  * Install **Git** and **Dot Net 6.0 Runtime** with their default options, and ***select "Add python.exe to PATH"*** on the **Python** installer.
+* Head to the [**Python downloads**](https://www.python.org/downloads/), download and install Python (version 3.9 or later).
+  * ***Select "Add python.exe to PATH"*** on the installer.
 
 ![Python PATH](dependencies/images/pythonpath.png)
 
-* Open a **new command prompt** (press `Win+R`, type `cmd` and press Enter), type in `pip install gitpython`, and press enter. Close the command prompt when it's done installing.
-
 ### Initializing the Repo
 
-* Go to the **[Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `_init_repo.bat`** if you're on Windows or **`_init_repo.sh`** if you're on Linux.
-  * Make a new **empty** folder, **put `_init_repo` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+* Go to the **[Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `_init_repo.py`**.
+  * Make a new **empty** folder, **put `_init_repo.py` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
 
 ### ***The folder should look like this once it's done:***
 
