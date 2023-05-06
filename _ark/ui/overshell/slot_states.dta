@@ -817,7 +817,8 @@
 (kState_OptionsAudio
    (view options_audio)
    (on_cancel
-      {do INIT_MOD_WRITER}
+      {unless $dontsavemod
+         {do INIT_MOD_WRITER}}
       {$this show_options_av_settings})
    (lst_reset
       {options_audio.lst set_data (AUDIO_DATA)}
@@ -3386,7 +3387,7 @@
   {switch
    {$component selected_sym}
    (os_writesettings
-         {do INIT_DX_WRITER INIT_MOD_WRITER INIT_VAL_WRITER {$this show_state kState_SettingsSave}}
+         {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_state kState_SettingsSave}}
    )
    (os_spds
       {$this show_state kState_RB3ESpeedMenu})
@@ -3414,7 +3415,7 @@
             {push_back $options overshell_disconnect}
             {online_options.lst set_data $options}}
       {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
-         {do INIT_DX_WRITER INIT_MOD_WRITER INIT_VAL_WRITER {$this show_game_options}}
+         {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}
          {$this show_state kState_RB3ESaveWarn}}))
 (kState_RB3ESpeedMenu
    (view online_options)
@@ -4441,6 +4442,14 @@
             $modifier
                (modifier_enter_entry_name
                {$this show_modifier_unlock})
+               (mod_nohud
+                  {if {modifier_mgr is_modifier_active mod_nohud}
+                     {if {modifier_mgr is_modifier_active mod_fakejuke}
+                        {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+                        {modifier_mgr toggle_modifier_enabled mod_auto_play}
+                        {modifier_mgr toggle_modifier_enabled mod_nopause}}}
+                  {modifier_mgr toggle_modifier_enabled mod_nohud}
+                  {overshell update_all})
                (mod_nolanes
                   {if {modifier_mgr is_modifier_active mod_rb4lanes}
                      {modifier_mgr toggle_modifier_enabled mod_rb4lanes}}
@@ -4482,6 +4491,24 @@
                (mod_doublespeed
                   {modifier_mgr toggle_modifier_enabled mod_doublespeed}
                   {overshell update_all})
+               (mod_fakejuke
+               {do {session disconnect}
+               {session_mgr disconnect}}
+               {unless {{$this get_session_mgr} is_online_enabled}
+               {unless
+                  {modifier_mgr is_modifier_active mod_fakejuke}
+                  {$this show_state kState_FakeJukeWarn}}
+               {if
+                  {modifier_mgr is_modifier_active mod_fakejuke}
+                  {do
+                  {modifier_mgr toggle_modifier_enabled $modifier}
+                  {if {modifier_mgr is_modifier_active mod_auto_play}
+                     {modifier_mgr toggle_modifier_enabled mod_auto_play}}
+                  {if {modifier_mgr is_modifier_active mod_nohud}
+                     {modifier_mgr toggle_modifier_enabled mod_nohud}}
+                  {if {modifier_mgr is_modifier_active mod_nopause}
+                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
+                  {overshell update_all}}}})
                (mod_auto_play
                {do {session disconnect}
                {session_mgr disconnect}}
@@ -4493,6 +4520,10 @@
                   {modifier_mgr is_modifier_active mod_auto_play}
                   {do
                   {modifier_mgr toggle_modifier_enabled $modifier}
+                  {if {modifier_mgr is_modifier_active mod_fakejuke}
+                     {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+                     {modifier_mgr toggle_modifier_enabled mod_nohud}
+                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
                   {overshell update_all}}}})
                (mod_auto_kick
                {do
@@ -4555,7 +4586,8 @@
                {$this show_modifier_delayed_effect}}
             {overshell update_all}}})
    (on_cancel
-      {do INIT_MOD_WRITER}
+      {unless $dontsavemod
+         {do INIT_MOD_WRITER}}
       {modifiers.lst set scroll_time 0.25}
       {$this show_game_options}))
 (kState_AutoPlayWarn
@@ -4568,6 +4600,36 @@
       {switch {$component selected_sym}
       (overshell_continue
       {modifier_mgr toggle_modifier_enabled mod_auto_play}
+      {set $gotcha FALSE}
+      {saveload_mgr disable_autosave $user}
+      {overshell update_all}
+		{ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+(kState_FakeJukeWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions fakejuke_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {set $dontsavemod TRUE}
+      {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+         {unless {modifier_mgr is_modifier_active mod_auto_play}
+            {modifier_mgr toggle_modifier_enabled mod_auto_play}}
+         {unless {modifier_mgr is_modifier_active mod_nohud}
+            {modifier_mgr toggle_modifier_enabled mod_nohud}}
+         {unless {modifier_mgr is_modifier_active mod_nopause}
+            {modifier_mgr toggle_modifier_enabled mod_nopause}}
+         {if {modifier_mgr is_modifier_active mod_songtitle}
+            {modifier_mgr toggle_modifier_enabled mod_songtitle}}
+         {if {modifier_mgr is_modifier_active mod_drum_fills}
+            {modifier_mgr toggle_modifier_enabled mod_drum_fills}}
+         {if {modifier_mgr is_modifier_active mod_nointro}
+            {modifier_mgr toggle_modifier_enabled mod_nointro}}
       {set $gotcha FALSE}
       {saveload_mgr disable_autosave $user}
       {overshell update_all}
@@ -4594,7 +4656,7 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (os_save
-            {do INIT_DX_WRITER INIT_MOD_WRITER INIT_VAL_WRITER}
+            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER}
             {$this show_game_options})
          (os_dontsave
             {$this show_game_options})}))
