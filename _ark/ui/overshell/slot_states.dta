@@ -3387,7 +3387,9 @@
   {switch
    {$component selected_sym}
    (os_writesettings
-         {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_state kState_SettingsSave}}
+      {if_else $dxwritesseen
+         {$this show_state kState_SettingsSaveError}
+         {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_state kState_SettingsSave}}}
    )
    (os_spds
       {$this show_state kState_RB3ESpeedMenu})
@@ -3415,7 +3417,9 @@
             {push_back $options overshell_disconnect}
             {online_options.lst set_data $options}}
       {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
-         {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}
+         {if_else $dxwritesseen
+            {$this show_state kState_RB3ESaveWarnError}
+            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}}
          {$this show_state kState_RB3ESaveWarn}}))
 (kState_RB3ESpeedMenu
    (view online_options)
@@ -4656,15 +4660,36 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (os_save
-            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER}
-            {$this show_game_options})
+            {if_else $dxwritesseen
+            {$this show_state kState_RB3ESaveWarnError}
+            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}})
          (os_dontsave
+            {$this show_game_options})}))
+(kState_RB3ESaveWarnError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_game_options})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
             {$this show_game_options})}))
 (kState_SettingsSave
    (view confirm_action)
    (enter
       {handle
          ($this set_confirm_actions settings_save (overshell_continue))})
+   (SELECT_MSG
+      {$this show_state kState_RB3ESettings})
+   (on_cancel
+      {$this show_state kState_RB3ESettings}))
+(kState_SettingsSaveError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
    (SELECT_MSG
       {$this show_state kState_RB3ESettings})
    (on_cancel
