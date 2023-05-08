@@ -1,239 +1,148 @@
 #define TRACK_END_FRAME
 (1920)
+
 #define FASTERMODE_FASTER
 (
-   {if {modifier_mgr is_modifier_active mod_fastermode}
-      {unless {>= $speedmod $speedmod_cap}
-         {set $speedmod {+ $speedmod 0.002}}
-         {beatmatch set_music_speed $speedmod}
-         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-         {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         {if {> $speedmod $speedmod_top}
-            {set $speedmod_top $speedmod}
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {>= $speedmod $speedmod_cap} ;only run the following script if we are currently below our max speed cap
+         {set $speedmod {+ $speedmod 0.002}} ;add a small amount of speed to the current song speed on note hit
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current song speed
+         {if {> $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
+            {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
          }
       }
    }
 )
 #define FASTERMODE_SLOWER
 (
-   {if {modifier_mgr is_modifier_active mod_fastermode}
-      {unless {<= $speedmod $leaderspeed}
-         {set $speedmod {- $speedmod 0.004}}
-         {beatmatch set_music_speed $speedmod}
-         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-         {{{gamemode get track_panel} find mtv_overlay} setup_text}
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {<= $speedmod $leaderspeed} ;only run the following script if we are currently above our original speed
+         {set $speedmod {- $speedmod 0.004}} ;remove a greater amount of speed than we add, to the current song speed on note miss/pass
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current song speed
       }
    }
 )
 #define RESET_GEM_CALLBACK
 (
-   {set [num_gems_hit] 0}
-   {set [num_gems_miss] 0}
-   {set [num_gems_pass] 0}
-   {set [num_gems_combo] 0}
+   {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
 )
 #define FRAME_CATCHER
 (
-   {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
+   {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}} ;remove the FC ring and replace it with the normal ring (the player just missed)
 )
 #define MISS_CATCHER
 (
    {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-      {switch {$player instrument}
-         (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE} FRAME_CATCHER})
-         (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE} FRAME_CATCHER})
-         (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE} FRAME_CATCHER})
-         (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE} FRAME_CATCHER})
-         (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE} FRAME_CATCHER})
-         (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE} FRAME_CATCHER})
-         (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE} FRAME_CATCHER})
-         (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE} FRAME_CATCHER})
+      {switch {$player instrument} ;switch based off the currently loaded instrument
+         (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
       }
    }
 )
-(new Object fc_callback
-   (hit
-      {beatmatch foreach_active_player $player {switch {$player instrument}
-         (bass
-            {if {! $bass_firstnote} {set $bass_firstnote TRUE}}
-            {if {! $bass_milosong} {set $bass_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (real_guitar
-            {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}}
-            {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (real_bass
-            {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}}
-            {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (real_keys
-            {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}}
-            {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (keys
-            {if {! $keys_firstnote} {set $keys_firstnote TRUE}}
-            {if {! $keys_milosong} {set $keys_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (guitar
-            {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}}
-            {if {! $guitar_milosong} {set $guitar_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (drum
-            {if {! $drum_firstnote} {set $drum_firstnote TRUE}}
-            {if {! $drum_milosong} {set $drum_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-         (real_drum
-            {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}}
-            {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} RESET_GEM_CALLBACK}
-         )
-      }}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      FASTERMODE_FASTER
+(new Object fc_callback ;the main callback for all instruments
+   (hit ;when a note is hit
+      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+         {switch {$player instrument} ;switch based off the currently loaded instrument
+            (bass
+               {if {! $bass_firstnote} {set $bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $bass_milosong} {set $bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_guitar
+               {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_bass
+               {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_keys
+               {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (keys
+               {if {! $keys_firstnote} {set $keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $keys_milosong} {set $keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (guitar
+               {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $guitar_milosong} {set $guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (drum
+               {if {! $drum_firstnote} {set $drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $drum_milosong} {set $drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_drum
+               {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+         }
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
    )
-   (miss
-      {unless
-         {beatmatch foreach_active_player $player
-            {switch {$player instrument}
-               (bass {! $bass_firstnote})
-               (real_guitar {! $real_guitar_firstnote})
-               (real_bass {! $real_bass_firstnote})
-               (keys {! $keys_firstnote})
-               (real_keys {! $real_keys_firstnote})
-               (guitar {! $guitar_firstnote})
-               (drum {! $drum_firstnote})
-               (real_drum {! $real_drum_firstnote})
+   (miss ;when a note is missed (overstrum)
+      {unless ;do not run the following code unless the first note of the current track has been hit/missed/passed
+         {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+            {switch {$player instrument} ;switch based off the currently loaded instrument
+               (bass {! $bass_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_guitar {! $real_guitar_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_bass {! $real_bass_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (keys {! $keys_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_keys {! $real_keys_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (guitar {! $guitar_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (drum {! $drum_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_drum {! $real_drum_firstnote}) ;if the first note has not been hit/missed/passed yet
             }
          }
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         MISS_CATCHER
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
          FASTERMODE_SLOWER
       }
    )
-   (pass
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      MISS_CATCHER
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
       FASTERMODE_SLOWER
    )
    (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0} ;check that if we add our notes passed and notes missed together, it still equals 0 (fc)
+         {set $fc TRUE} ;tell the logic that we are still fc'ing
       }
    )
    (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         MISS_CATCHER
+      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0} ;check that if we add our notes passed and notes missed together, it is any number higher than 0 (non fc)
+         MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
       }
    )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
 )
-#define TRACK_PANEL_HANDLERS
+#define TRACK_TEXTURE_HANDLER
 (
-   (enter
-      {if_else $fcringonce
-         {do
-            {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
-            {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}
-            {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-            {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-         }
-         {do
-            {set $fcringonce TRUE}
-            {new Tex fcframe.tex}
-            {new Tex multframe.tex}
-            {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-               {do
-                  {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
-                  {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}
-               }
-         }
-      }
-      {game add_sink $this}
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {switch {$player instrument}
-            (bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-         }
-      }
-      {$this set_showing {! {gamemode in_mode practice}}}
-   )
-   (exit
-      {if {exists animated_gems} ;check if the above task is running
-         {delete animated_gems} ;delete the task if running
-      }
-      {if {exists animated_smashers} ;check if the above task is running
-         {delete animated_smashers} ;delete the task if running
-      }
-      {if {exists animated_highway} ;check if the above task is running
-         {delete animated_highway} ;delete the task if running
-      }
-      {game remove_sink $this}
-   )
-   (unison_hit)
-   (set_track_out)
-   (set_track_in)
-   (animate_track
-      ($start $end $period $units)
-   )
-   (animate_track_out)
-   (animate_track_out_fast)
-   (animate_track_in_fast)
-   (finish_load
-      {$this set_showing FALSE}
-      {$this set_track_out}
-   )
-   (intro_start
-      {$this track_reset}
-      {$this set_showing TRUE}
-      {$this set_track_in}
-   )
-   (intro_skip
-      {$this track_reset}
-      {$this set_showing TRUE}
-      {$this set_track_out}
-      {if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy}
-         {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
-            {set $imabigboy FALSE}
-            {set $already_restarted TRUE}
-            {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert}
-            {game_restart}
-         }
-      }
-   )
-   (on_reset
-      {beatmatch foreach_active_player $m {$m on_new_track}}
-   )
-;here is where we setup the custom track
-   (on_extend
-      {if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy}
-         {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
-            {do
-               {set $imabigboy FALSE}
-               {set $already_restarted TRUE}
-               {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert}
-               {game_restart}
-            }
-         }
-      }
-
 ;populate animated smasher bitmaps
 {if $animatedsmasherscustomtexture ;if we have an animated smasher update queued
    {if $animatedsmashers ;if we have animated smashers enabled
@@ -387,6 +296,24 @@
          {if {>= $highframecount 60} {set $highframecount 0}} ;only run the task until the variable reaches 60
          {$task loop} ;loop the task
       )
+   }
+}
+
+{if_else $fcringonce ;check if we have already generated new textures for the fc ring
+   {do ;if we have
+      {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the multiplier texture to the second ring material
+   }
+   {do ;if we havent
+      {set $fcringonce TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
+      {new Tex fcframe.tex} ;generate a new texture to hold the fc indicator
+      {new Tex multframe.tex} ;generate a new texture to hold the non fc texture
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}} ;load texture onto the generated texture
    }
 }
 
@@ -844,6 +771,15 @@
       }
    }
 }
+
+;watermarking for ch mode via coloring the rails
+{if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
+   {rails.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
+   {rails_keyboard.tex "set_bitmap ui/track/custom_track_textures/rails_drunk.png"}
+   {rails_rg.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
+   {smasher_plate_bracket.tex set_bitmap "ui/track/custom_track_textures/smasher_plate_bracket_drunk.png"}
+}
+
 ;after all of the queued texture updates are completed, set them to false so they do not run again until a new texture is queued via overshell
 {set $rb2uicustomtexture FALSE}
 {set $rb4uicustomtexture FALSE}
@@ -856,46 +792,96 @@
 {set $spotlightcustomtexture FALSE}
 {set $emissivecustomtexture FALSE}
 {set $keyboardcustomtexture FALSE}
-
-;watermarking for ch mode via coloring the rails
-{if {modifier_mgr is_modifier_active mod_chmode}
-   {rails.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
-   {rails_keyboard.tex "set_bitmap ui/track/custom_track_textures/rails_drunk.png"}
-   {rails_rg.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
-   {smasher_plate_bracket.tex set_bitmap "ui/track/custom_track_textures/smasher_plate_bracket_drunk.png"}
-}
-
-      {$this play_intro}
-      {if
-         {&&
-            {exists gamemode}
-            {gamemode get play_track_intro_sfx}}
-         {$this play_seq track_beg.cue}
-#ifdef HX_XBOX
+)
+#define NO_BRE_HANDLER
+(
+   {if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy} ;check if we have no bre active, and we havent restarted already on this song
+      {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
+         {do ;do
+            {set $imabigboy FALSE} ;tell the logic we have restarted once to switch to expert
+            {set $already_restarted TRUE} ;also tell the logic we
+            {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert} ;since we have entered the track on easy, set the player to expert to enable no bre behavior
+            {game_restart} ;quick restart the song
+         }
+      }
+   }
+)
+#define TRACK_PANEL_HANDLERS
+(
+   (enter ;when the track is entered
+      {game add_sink $this} ;set up the game with the vanilla sinks
+      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+         {switch {$player instrument} ;switch based off the currently loaded instrument
+            (bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+         }
+      }
+      {$this set_showing {! {gamemode in_mode practice}}}
+   )
+   (exit ;when the track is exited
+      {if {exists animated_gems} ;check if the above task is running
+         {delete animated_gems} ;delete the task if running
+      }
+      {if {exists animated_smashers} ;check if the above task is running
+         {delete animated_smashers} ;delete the task if running
+      }
+      {if {exists animated_highway} ;check if the above task is running
+         {delete animated_highway} ;delete the task if running
+      }
+      {game remove_sink $this} ;remove the vanilla sinks
+   )
+   (unison_hit)
+   (set_track_out)
+   (set_track_in)
+   (animate_track
+      ($start $end $period $units)
+   )
+   (animate_track_out)
+   (animate_track_out_fast)
+   (animate_track_in_fast)
+   (finish_load
+      {$this set_showing FALSE}
+      {$this set_track_out}
+   )
+   (intro_start
+      {$this track_reset}
+      {$this set_showing TRUE}
+      {$this set_track_in}
+   )
+   (intro_skip
+      {$this track_reset}
+      {$this set_showing TRUE}
+      {$this set_track_out}
+      NO_BRE_HANDLER ;restart the game, and switch to expert if in no bre mode
+   )
+   (on_reset
+      {beatmatch foreach_active_player $m {$m on_new_track}}
+   )
+   (on_extend
+      NO_BRE_HANDLER ;restart the game, and switch to expert if in no bre mode
+      TRACK_TEXTURE_HANDLER ;here is where we setup the custom track
+      {$this play_intro} ;play the intro to the track
+      {if {&& {exists gamemode}{gamemode get play_track_intro_sfx}} ;if we are allowed to play the track intro sound effects for this track entry
+         {$this play_seq track_beg.cue} ;play the track sound effects
          {unless
-            {||
+            {|| ;check for a vareity of game modes where song speed is not allowed to be adjusted
                {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
                {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
                {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
                {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-               {gamemode in_mode audition} {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+               #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+               {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
             }
-            {beatmatch set_music_speed $speedmod}
+            {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
          }
-#else
-         {unless
-            {||
-               {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-               {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-               {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-               {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-               {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-            }
-            {beatmatch set_music_speed $speedmod}
-         }
-#endif
-         {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-            {beatmatch set_music_speed $modifier}
+         {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
+            {beatmatch set_music_speed $modifier} ;apply the practice specific speed selection in game
          }
       }
    )
