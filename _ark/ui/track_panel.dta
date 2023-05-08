@@ -1,1203 +1,725 @@
 #define TRACK_END_FRAME
 (1920)
-(new Object fc_guitar_callback ;remove FC groove on guitar miss/pass
-   (hit
-      {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}}
-     {if {! $guitar_milosong} {set $guitar_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
+
+#define FASTERMODE_FASTER
+(
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {>= $speedmod $speedmod_cap} ;only run the following script if we are currently below our max speed cap
+         {set $speedmod {+ $speedmod 0.002}} ;add a small amount of speed to the current song speed on note hit
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current song speed
+         {if {> $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
+            {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
          }
       }
-   )
-   (miss
-      {unless {! $guitar_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $guitar_caughtmissed}
-            {set $guitar_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}}
-      {if {! $guitar_milosong} {set $guitar_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $guitar_caughtmissed}
-         {set $guitar_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $guitar_caughtmissed}
-            {set $guitar_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+   }
 )
-(new Object fc_real_guitar_callback ;remove FC groove on real_guitar miss/pass
-   (hit
-      {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}}
-      {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
+#define FASTERMODE_SLOWER
+(
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {<= $speedmod $leaderspeed} ;only run the following script if we are currently above our original speed
+         {set $speedmod {- $speedmod 0.004}} ;remove a greater amount of speed than we add, to the current song speed on note miss/pass
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current song speed
       }
-     )
-   (miss
-      {unless {! $real_guitar_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $real_guitar_caughtmissed}
-            {set $real_guitar_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}}
-      {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $real_guitar_caughtmissed}
-         {set $real_guitar_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $real_guitar_caughtmissed}
-            {set $real_guitar_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+   }
 )
-(new Object fc_real_drum_callback ;remove FC groove on real_drum miss/pass
-   (hit
-      {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}}
-     {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
-      }
-     )
-   (miss
-      {unless {! $real_drum_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $real_drum_caughtmissed}
-            {set $real_drum_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}}
-      {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $real_drum_caughtmissed}
-         {set $real_drum_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $real_drum_caughtmissed}
-            {set $real_drum_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+#define RESET_GEM_CALLBACK
+(
+   {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+   {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
 )
-(new Object fc_bass_callback ;remove FC groove on bass miss/pass
-   (hit
-      {if {! $bass_firstnote} {set $bass_firstnote TRUE}}
-     {if {! $bass_milosong} {set $bass_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
-      }
-     )
-   (miss
-      {unless {! $bass_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $bass_caughtmissed}
-            {set $bass_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $bass_firstnote} {set $bass_firstnote TRUE}}
-      {if {! $bass_milosong} {set $bass_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $bass_caughtmissed}
-         {set $bass_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $bass_caughtmissed}
-            {set $bass_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+#define FRAME_CATCHER
+(
+   {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}} ;remove the FC ring and replace it with the normal ring (the player just missed)
 )
-(new Object fc_real_bass_callback ;remove FC groove on real_bass miss/pass
-   (hit
-      {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}}
-     {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
+#define MISS_CATCHER
+(
+   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+      {switch {$player instrument} ;switch based off the currently loaded instrument
+         (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
+         (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
       }
-     )
-   (miss
-      {unless {! $real_bass_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $real_bass_caughtmissed}
-            {set $real_bass_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}}
-      {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $real_bass_caughtmissed}
-         {set $real_bass_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $real_bass_caughtmissed}
-            {set $real_bass_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
+   }
 )
-(new Object fc_keys_callback ;remove FC groove on keys miss/pass
-   (hit
-      {if {! $keys_firstnote} {set $keys_firstnote TRUE}}
-     {if {! $keys_milosong} {set $keys_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
-      }
-     )
-   (miss
-      {unless {! $keys_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $keys_caughtmissed}
-            {set $keys_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $keys_firstnote} {set $keys_firstnote TRUE}}
-      {if {! $keys_milosong} {set $keys_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $keys_caughtmissed}
-         {set $keys_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $keys_caughtmissed}
-            {set $keys_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
-)
-(new Object fc_real_keys_callback ;remove FC groove on real_keys miss/pass
-   (hit
-      {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}}
-     {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
-      }
-     )
-   (miss
-      {unless {! $real_keys_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $real_keys_caughtmissed}
-            {set $real_keys_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}}
-      {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $real_keys_caughtmissed}
-         {set $real_keys_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $real_keys_caughtmissed}
-            {set $real_keys_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
-)
-(new Object fc_drum_callback ;remove FC groove on drum miss/pass
-   (hit
-      {if {! $drum_firstnote} {set $drum_firstnote TRUE}}
-     {if {! $drum_milosong} {set $drum_milosong TRUE} {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0}}
-      {$this check_fc}
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}}
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {>= $speedmod $speedmod_cap}
-            {set $speedmod {+ $speedmod 0.002}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            {if {> $speedmod $speedmod_top}
-               {set $speedmod_top $speedmod}
-            }
-         }
-      }
-     )
-   (miss
-      {unless {! $drum_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}}
-         {set [num_gems_combo] 0}
-         {$this check_missed}
-         {if {! $drum_caughtmissed}
-            {set $drum_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {unless {<= $speedmod $leaderspeed}
-               {set $speedmod {- $speedmod 0.004}}
-               {beatmatch set_music_speed $speedmod}
-               {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-               {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-               {{{gamemode get track_panel} find mtv_overlay} setup_text}
-            }
-         }
-      }
-   )
-   (pass
-      {if {! $drum_firstnote} {set $drum_firstnote TRUE}}
-      {if {! $drum_milosong} {set $drum_milosong TRUE} {set [num_gems_hit] 1} {set [num_gems_miss] 1} {set [num_gems_pass] 1} {set [num_gems_combo] 1}}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}}
-      {set [num_gems_combo] 0}
-      {$this check_missed}
-      {if {! $drum_caughtmissed}
-         {set $drum_caughtmissed TRUE}
-         {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-      }
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {unless {<= $speedmod $leaderspeed}
-            {set $speedmod {- $speedmod 0.004}}
-            {beatmatch set_music_speed $speedmod}
-            {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;implement track speed modifier
-            {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}}
-            {{{gamemode get track_panel} find mtv_overlay} setup_text}
-         }
-      }
-   )
-   (check_fc
-      {$this check_missed}
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
-         {set $fc TRUE}
-      }
-   )
-   (check_missed
-      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0}
-         {if {! $drum_caughtmissed}
-            {set $drum_caughtmissed TRUE}
-            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}}
-         }
-      }
-   )
-   (num_gems_hit 0)
-   (num_gems_combo 0)
-   (num_gems_miss 0)
-   (num_gems_pass 0)
-)
-#define TRACK_PANEL_HANDLERS
-((enter
-         {if_else $fcringonce
-            {do
-               {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
-               {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}
-               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-               {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-               {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-            }
-            {do
-               {set $fcringonce TRUE}
-               {new Tex fcframe.tex}
-               {new Tex multframe.tex}
-               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-                  {do
-                     {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
-                     {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}
-                  }
-            }
-         }
-      {game add_sink $this}
+(new Object fc_callback ;the main callback for all instruments
+   (hit ;when a note is hit
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {switch {$player instrument}
-            (bass {$player add_sink fc_bass_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_guitar {$player add_sink fc_real_guitar_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_bass {$player add_sink fc_real_bass_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (keys {$player add_sink fc_keys_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_keys {$player add_sink fc_real_keys_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (guitar {$player add_sink fc_guitar_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (drum {$player add_sink fc_drum_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
-            (real_drum {$player add_sink fc_real_drum_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+         {switch {$player instrument} ;switch based off the currently loaded instrument
+            (bass
+               {if {! $bass_firstnote} {set $bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $bass_milosong} {set $bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_guitar
+               {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_bass
+               {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_keys
+               {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (keys
+               {if {! $keys_firstnote} {set $keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $keys_milosong} {set $keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (guitar
+               {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $guitar_milosong} {set $guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (drum
+               {if {! $drum_firstnote} {set $drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $drum_milosong} {set $drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
+            (real_drum
+               {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+               {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+            )
          }
       }
-      {$this
-         set_showing
-         {!
-            {gamemode in_mode practice}}})
-   (exit
-      {if {exists animated_gems} ;check if the above task is running
-   {delete animated_gems} ;delete the task if running
-}
-      {game remove_sink $this})
-   (unison_hit)
-   (set_track_out)
-   (set_track_in)
-   (animate_track
-      ($start $end $period $units))
-   (animate_track_out)
-   (animate_track_out_fast)
-   (animate_track_in_fast)
-   (finish_load
-      {$this set_showing FALSE}
-      {$this set_track_out})
-   (intro_start
-      {$this track_reset}
-      {$this set_showing TRUE}
-      {$this set_track_in})
-   (intro_skip
-      {$this track_reset}
-      {$this set_showing TRUE}
-      {$this set_track_out}
-{if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy}
-         {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
-            {do
-               {set $imabigboy FALSE}
-               {set $already_restarted TRUE}
-               {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert}
-               {game_restart}
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless ;do not run the following code unless the first note of the current track has been hit/missed/passed
+         {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+            {switch {$player instrument} ;switch based off the currently loaded instrument
+               (bass {! $bass_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_guitar {! $real_guitar_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_bass {! $real_bass_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (keys {! $keys_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_keys {! $real_keys_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (guitar {! $guitar_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (drum {! $drum_firstnote}) ;if the first note has not been hit/missed/passed yet
+               (real_drum {! $real_drum_firstnote}) ;if the first note has not been hit/missed/passed yet
             }
          }
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
+         FASTERMODE_SLOWER
       }
    )
-   (on_reset
-      {beatmatch
-         foreach_active_player
-         $m
-         {$m on_new_track}})
-   (on_extend
-{if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy}
-         {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
-            {do
-               {set $imabigboy FALSE}
-               {set $already_restarted TRUE}
-               {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert}
-               {game_restart}
-            }
-         }
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0} ;check that if we add our notes passed and notes missed together, it still equals 0 (fc)
+         {set $fc TRUE} ;tell the logic that we are still fc'ing
       }
-
-
-;populate texture array if an animated smasher texture modifier is on
-{if $animatedsmasherscustomtexture
-{if $animatedsmashers
-{if {== {$user get_track_type} kTrackDrum} 
-{set $drumframearray (drumframe0.tex drumframe1.tex drumframe2.tex drumframe3.tex drumframe4.tex drumframe5.tex drumframe6.tex
-drumframe7.tex drumframe8.tex drumframe9.tex drumframe10.tex drumframe11.tex drumframe12.tex drumframe13.tex drumframe14.tex
-drumframe15.tex drumframe16.tex drumframe17.tex drumframe18.tex drumframe19.tex drumframe20.tex drumframe21.tex drumframe22.tex
-drumframe23.tex drumframe24.tex drumframe25.tex drumframe26.tex drumframe27.tex drumframe28.tex drumframe29.tex drumframe30.tex
-drumframe31.tex drumframe32.tex drumframe33.tex drumframe34.tex drumframe35.tex drumframe36.tex drumframe37.tex drumframe38.tex
-drumframe39.tex drumframe40.tex drumframe41.tex drumframe42.tex drumframe43.tex drumframe44.tex drumframe45.tex drumframe46.tex
-drumframe47.tex drumframe48.tex drumframe49.tex drumframe50.tex drumframe51.tex drumframe52.tex drumframe53.tex drumframe54.tex
-drumframe55.tex drumframe56.tex drumframe57.tex drumframe58.tex drumframe59.tex drumframe60.tex)}}
-
-;populate texture array if an animated smasher texture modifier is on
-{|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys}
-{set $guitarframearray (guitarframe0.tex guitarframe1.tex guitarframe2.tex guitarframe3.tex guitarframe4.tex guitarframe5.tex guitarframe6.tex
-guitarframe7.tex guitarframe8.tex guitarframe9.tex guitarframe10.tex guitarframe11.tex guitarframe12.tex guitarframe13.tex guitarframe14.tex
-guitarframe15.tex guitarframe16.tex guitarframe17.tex guitarframe18.tex guitarframe19.tex guitarframe20.tex guitarframe21.tex guitarframe22.tex
-guitarframe23.tex guitarframe24.tex guitarframe25.tex guitarframe26.tex guitarframe27.tex guitarframe28.tex guitarframe29.tex guitarframe30.tex
-guitarframe31.tex guitarframe32.tex guitarframe33.tex guitarframe34.tex guitarframe35.tex guitarframe36.tex guitarframe37.tex guitarframe38.tex
-guitarframe39.tex guitarframe40.tex guitarframe41.tex guitarframe42.tex guitarframe43.tex guitarframe44.tex guitarframe45.tex guitarframe46.tex
-guitarframe47.tex guitarframe48.tex guitarframe49.tex guitarframe50.tex guitarframe51.tex guitarframe52.tex guitarframe53.tex guitarframe54.tex
-guitarframe55.tex guitarframe56.tex guitarframe57.tex guitarframe58.tex guitarframe59.tex guitarframe60.tex)}}}
-
-;populate texture array if an animated gem texture is selected
-{if $animatedgemscustomtexture
-{if $animatedgems
-{|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys}
-{set $gemframearray (gemframe0.tex gemframe1.tex gemframe2.tex gemframe3.tex gemframe4.tex gemframe5.tex gemframe6.tex
-gemframe7.tex gemframe8.tex gemframe9.tex gemframe10.tex gemframe11.tex gemframe12.tex gemframe13.tex gemframe14.tex
-gemframe15.tex gemframe16.tex gemframe17.tex gemframe18.tex gemframe19.tex gemframe20.tex gemframe21.tex gemframe22.tex
-gemframe23.tex gemframe24.tex gemframe25.tex gemframe26.tex gemframe27.tex gemframe28.tex gemframe29.tex gemframe30.tex
-gemframe31.tex gemframe32.tex gemframe33.tex gemframe34.tex gemframe35.tex gemframe36.tex gemframe37.tex gemframe38.tex
-gemframe39.tex gemframe40.tex gemframe41.tex gemframe42.tex gemframe43.tex gemframe44.tex gemframe45.tex gemframe46.tex
-gemframe47.tex gemframe48.tex gemframe49.tex gemframe50.tex gemframe51.tex gemframe52.tex gemframe53.tex gemframe54.tex
-gemframe55.tex gemframe56.tex gemframe57.tex gemframe58.tex gemframe59.tex gemframe60.tex)}
-
-;populate drum texture array if an animated texture modifier is on
-{if {== {$user get_track_type} kTrackDrum}
-{set $gemdrumframearray (gemdrumframe0.tex gemdrumframe1.tex gemdrumframe2.tex gemdrumframe3.tex gemdrumframe4.tex gemdrumframe5.tex gemdrumframe6.tex
-gemdrumframe7.tex gemdrumframe8.tex gemdrumframe9.tex gemdrumframe10.tex gemdrumframe11.tex gemdrumframe12.tex gemdrumframe13.tex gemdrumframe14.tex
-gemdrumframe15.tex gemdrumframe16.tex gemdrumframe17.tex gemdrumframe18.tex gemdrumframe19.tex gemdrumframe20.tex gemdrumframe21.tex gemdrumframe22.tex
-gemdrumframe23.tex gemdrumframe24.tex gemdrumframe25.tex gemdrumframe26.tex gemdrumframe27.tex gemdrumframe28.tex gemdrumframe29.tex gemdrumframe30.tex
-gemdrumframe31.tex gemdrumframe32.tex gemdrumframe33.tex gemdrumframe34.tex gemdrumframe35.tex gemdrumframe36.tex gemdrumframe37.tex gemdrumframe38.tex
-gemdrumframe39.tex gemdrumframe40.tex gemdrumframe41.tex gemdrumframe42.tex gemdrumframe43.tex gemdrumframe44.tex gemdrumframe45.tex gemdrumframe46.tex
-gemdrumframe47.tex gemdrumframe48.tex gemdrumframe49.tex gemdrumframe50.tex gemdrumframe51.tex gemdrumframe52.tex gemdrumframe53.tex gemdrumframe54.tex
-gemdrumframe55.tex gemdrumframe56.tex gemdrumframe57.tex gemdrumframe58.tex gemdrumframe59.tex gemdrumframe60.tex)}}
-
-;populate keys texture array if an animated texture modifier is on
-{if {== {$user get_track_type} kTrackRealKeys}
-{set $gemkeysframearray (gemkeysframe0.tex gemkeysframe1.tex gemkeysframe2.tex gemkeysframe3.tex gemkeysframe4.tex gemkeysframe5.tex gemkeysframe6.tex
-gemkeysframe7.tex gemkeysframe8.tex gemkeysframe9.tex gemkeysframe10.tex gemkeysframe11.tex gemkeysframe12.tex gemkeysframe13.tex gemkeysframe14.tex
-gemkeysframe15.tex gemkeysframe16.tex gemkeysframe17.tex gemkeysframe18.tex gemkeysframe19.tex gemkeysframe20.tex gemkeysframe21.tex gemkeysframe22.tex
-gemkeysframe23.tex gemkeysframe24.tex gemkeysframe25.tex gemkeysframe26.tex gemkeysframe27.tex gemkeysframe28.tex gemkeysframe29.tex gemkeysframe30.tex
-gemkeysframe31.tex gemkeysframe32.tex gemkeysframe33.tex gemkeysframe34.tex gemkeysframe35.tex gemkeysframe36.tex gemkeysframe37.tex gemkeysframe38.tex
-gemkeysframe39.tex gemkeysframe40.tex gemkeysframe41.tex gemkeysframe42.tex gemkeysframe43.tex gemkeysframe44.tex gemkeysframe45.tex gemkeysframe46.tex
-gemkeysframe47.tex gemkeysframe48.tex gemkeysframe49.tex gemkeysframe50.tex gemkeysframe51.tex gemkeysframe52.tex gemkeysframe53.tex gemkeysframe54.tex
-gemkeysframe55.tex gemkeysframe56.tex gemkeysframe57.tex gemkeysframe58.tex gemkeysframe59.tex gemkeysframe60.tex)}}}}
-
-;populate texture array if an animated highway texture modifier is on
-{if $animatedhighwaycustomtexture
-{if $animatedhighway
-{set $highframearray (highframe0.tex highframe1.tex highframe2.tex highframe3.tex highframe4.tex highframe5.tex highframe6.tex
-highframe7.tex highframe8.tex highframe9.tex highframe10.tex highframe11.tex highframe12.tex highframe13.tex highframe14.tex
-highframe15.tex highframe16.tex highframe17.tex highframe18.tex highframe19.tex highframe20.tex highframe21.tex highframe22.tex
-highframe23.tex highframe24.tex highframe25.tex highframe26.tex highframe27.tex highframe28.tex highframe29.tex highframe30.tex
-highframe31.tex highframe32.tex highframe33.tex highframe34.tex highframe35.tex highframe36.tex highframe37.tex highframe38.tex
-highframe39.tex highframe40.tex highframe41.tex highframe42.tex highframe43.tex highframe44.tex highframe45.tex highframe46.tex
-highframe47.tex highframe48.tex highframe49.tex highframe50.tex highframe51.tex highframe52.tex highframe53.tex highframe54.tex
-highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex highframe60.tex)}}}
-
+   )
+   (check_missed
+      {if {> {'+' [num_gems_miss] [num_gems_pass]} 0} ;check that if we add our notes passed and notes missed together, it is any number higher than 0 (non fc)
+         MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+#define TRACK_TEXTURE_HANDLER
+(
 ;populate animated smasher bitmaps
-{if $animatedsmasherscustomtexture
-{if $animatedsmashers
-{set $framecountbit 0}
-{thread_task kTaskSeconds (script
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} {new Tex {sprint "guitarframe" $framecountbit ".tex"}}}
-{if {== {$user get_track_type} kTrackDrum} {new Tex {sprint "drumframe" $framecountbit ".tex"}}}
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} {{sprint "guitarframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_guitar_" $animatedsmashername "/gem_smasher_guitar_" $animatedsmashername "_" $framecountbit ".png"}}}
-{if {== {$user get_track_type} kTrackDrum} {{sprint "drumframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_drum_" $animatedsmashername "/gem_smasher_drum_" $animatedsmashername "_" $framecountbit ".png"}}}
-{set $framecountbit {+ $framecountbit 1}}
-{unless {>= $framecountbit 60} {$task loop}})}}}
+{if $animatedsmasherscustomtexture ;if we have an animated smasher update queued
+   {if $animatedsmashers ;if we have animated smashers enabled
+      {set $framecountbit 0} ;we need to ensure we start at 0 before running the following task
+      {thread_task kTaskSeconds ;create a new task
+         (script
+            {if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} ;check the currently loaded instrument
+               {new Tex {sprint "guitarframe" $framecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument smasher type
+               {sprint "guitarframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_guitar_" $animatedsmashername "/gem_smasher_guitar_" $animatedsmashername "_" $framecountbit ".png"} ;populate the currently created texture index with the selected animated smasher index for it's specific instrument smashers type
+            }
+            {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
+               {new Tex {sprint "drumframe" $framecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument smasher type
+               {{sprint "drumframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_drum_" $animatedsmashername "/gem_smasher_drum_" $animatedsmashername "_" $framecountbit ".png"}} ;populate the currently created texture index with the selected animated smasher index for it's specific instrument smashers type
+            }
+            {set $framecountbit {+ $framecountbit 1}} ;increment the variable to setup the next texture creation index
+            {unless {>= $framecountbit 60} ;only run the task until the variable reaches 60
+               {$task loop} ;loop the task if variable is below 60
+            }
+         )
+      }
+   }
+}
 
 ;apply animated smasher in game task
-{if $animatedsmashers
-{set $framecountdif 0}
-{thread_task kTaskSeconds (delay 0.4) (script
-{if {== {$user get_track_type} kTrackDrum} {gem_smasher_drum.mat set diffuse_tex {elem $drumframearray $framecountdif}}}
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} {gem_smasher_guitar.mat set diffuse_tex {elem $guitarframearray $framecountdif}}}
-{set $framecountdif {+ $framecountdif 1}}
-{$task sleep 0.016}
-{if {>= $framecountdif 60} {set $framecountdif 0}}
-{$task loop})}}
+{if {exists animated_smashers} ;check if the above task is running
+   {delete animated_smashers} ;delete the task if running
+}
+{if $animatedsmashers ;if we have animated smashers enabled
+   {set $framecountdif 0} ;we need to ensure we start at 0 before running the following task
+   {thread_task kTaskSeconds ;create a new task
+      (delay 0.4) ;delay the start of the task
+      (name animated_smashers) ;name the current task for deletion tracking
+      (script ;task contents
+         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
+            {gem_smasher_drum.mat set diffuse_tex {sprint 'drumframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+            {gem_smasher_drum.mat set emissive_map {sprint 'drumframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+            {gem_smasher_drum.mat set normal_map {sprint 'drumframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+         }
+         {if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} ;check the currently loaded instrument
+            {gem_smasher_guitar.mat set diffuse_tex {sprint 'guitarframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+            {gem_smasher_guitar.mat set emissive_map {sprint 'guitarframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+            {gem_smasher_guitar.mat set normal_map {sprint 'guitarframe' $framecountdif '.tex'}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
+         }
+         {set $framecountdif {+ $framecountdif 1}} ;increment the variable to setup the next texture application index
+         {$task sleep 0.016} ;delay the next step of the task for roughly 1 frame at 60fps
+         {if {>= $framecountdif 60} {set $framecountdif 0}} ;only run the task until the variable reaches 60
+         {$task loop} ;loop the task
+      )
+   }
+}
 
 ;populate memory with animated gems textures for replacement
-{if $animatedgemscustomtexture
-{if $animatedgems
-{set $gemframecounttex 0}
-{thread_task kTaskSeconds (script
-{if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} {new Tex {sprint "gemframe" $gemframecounttex ".tex"}}}
-{if {== {$user get_track_type} kTrackDrum} {new Tex {sprint "gemdrumframe" $gemframecounttex ".tex"}}}
-{if {== {$user get_track_type} kTrackRealKeys} {new Tex {sprint "gemkeysframe" $gemframecounttex ".tex"}}}
-{if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} {{sprint "gemframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gems_" $animatedgemname "/prism_gems_" $animatedgemname "_" $gemframecounttex ".png"}}}
-{if {== {$user get_track_type} kTrackDrum} {{sprint "gemdrumframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/gem_cymbal_diffuse_" $animatedgemname "/gem_cymbal_diffuse_" $animatedgemname "_" $gemframecounttex ".png"}}}
-{if {== {$user get_track_type} kTrackRealKeys} {{sprint "gemkeysframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gem_keyboard_style_" $animatedgemname "/prism_gem_keyboard_style_" $animatedgemname "_" $gemframecounttex ".png"}}}
-{set $gemframecounttex {+ $gemframecounttex 1}}
-{unless {>= $gemframecounttex 60} {$task loop}})}}}
+{if $animatedgemscustomtexture ;if we have an animated gem update queued
+   {if $animatedgems ;if we have animated gems enabled
+      {set $gemframecounttex 0} ;we need to ensure we start at 0 before running the following task
+      {thread_task kTaskSeconds ;create a new task
+         (script ;task contents
+            {if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
+               {new Tex {sprint "gemframe" $gemframecounttex ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
+               {{sprint "gemframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gems_" $animatedgemname "/prism_gems_" $animatedgemname "_" $gemframecounttex ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
+            }
+            {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
+               {new Tex {sprint "gemdrumframe" $gemframecounttex ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
+               {{sprint "gemdrumframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/gem_cymbal_diffuse_" $animatedgemname "/gem_cymbal_diffuse_" $animatedgemname "_" $gemframecounttex ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
+            }
+            {if {== {$user get_track_type} kTrackRealKeys} ;check the currently loaded instrument
+               {new Tex {sprint "gemkeysframe" $gemframecounttex ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
+               {{sprint "gemkeysframe" $gemframecounttex ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gem_keyboard_style_" $animatedgemname "/prism_gem_keyboard_style_" $animatedgemname "_" $gemframecounttex ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
+            }
+            {set $gemframecounttex {+ $gemframecounttex 1}} ;increment the variable to setup the next texture creation index
+            {unless {>= $gemframecounttex 60} ;only run the task until the variable reaches 60
+               {$task loop} ;loop the task if variable is below 60
+            }
+         )
+      }
+   }
+}
 
 ;apply animated gems in game task
 {if {exists animated_gems} ;check if the above task is running
    {delete animated_gems} ;delete the task if running
 }
-{if $animatedgems
-{set $gemframecountdif 0}
-{thread_task kTaskSeconds (name animated_gems) (delay 0.1) (script
-{if {== {$user get_track_type} kTrackDrum} {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set diffuse_tex {elem $gemdrumframearray $gemframecountdif}}}}
-{if {== {$user get_track_type} kTrackDrum} {gem_cymbal_ems.tex iterate_refs $ref {$ref set diffuse_tex {elem $gemdrumframearray $gemframecountdif}}}}
-{if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} {prism_gems.tex iterate_refs $ref {$ref set diffuse_tex {elem $gemframearray $gemframecountdif}}}}
-{if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} {prism_gem_emissive.tex iterate_refs $ref {$ref set diffuse_tex {elem $gemframearray $gemframecountdif}}}}
-{if {== {$user get_track_type} kTrackRealKeys} {prism_gem_keyboard_style.tex iterate_refs $ref {$ref set diffuse_tex {elem $gemkeysframearray $gemframecountdif}}}}
-{set $gemframecountdif {+ $gemframecountdif 1}}
-{$task sleep 0.016}
-{if {>= $gemframecountdif 60} {set $gemframecountdif 0}}
-{$task loop})}}
+{if $animatedgems ;if we have animated gem enabled
+   {set $gemframecountdif 0} ;we need to ensure we start at 0 before running the following task
+   {thread_task kTaskSeconds ;create a new task
+      (name animated_gems) ;name the current task for deletion tracking
+      (delay 0.1) ;delay the start of the task
+      (script ;task contents
+         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
+            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set emissive_map {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set normal_map {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {gem_cymbal_ems.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {gem_cymbal_ems.tex iterate_refs $ref {$ref set emissive_map {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {gem_cymbal_ems.tex iterate_refs $ref {$ref set normal_map {sprint 'gemdrumframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
+            {prism_gems.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gems.tex iterate_refs $ref {$ref set emissive_map {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gems.tex iterate_refs $ref {$ref set normal_map {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gem_emissive.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gem_emissive.tex iterate_refs $ref {$ref set emissive_map {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gem_emissive.tex iterate_refs $ref {$ref set normal_map {sprint 'gemframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {if {== {$user get_track_type} kTrackRealKeys} ;check the currently loaded instrument
+            {prism_gem_keyboard_style.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'gemkeysframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gem_keyboard_style.tex iterate_refs $ref {$ref set emissive_map {sprint 'gemkeysframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {prism_gem_keyboard_style.tex iterate_refs $ref {$ref set normal_map {sprint 'gemkeysframe' $gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {set $gemframecountdif {+ $gemframecountdif 1}} ;increment the variable to setup the next texture application index
+         {$task sleep 0.016} ;delay the next step of the task for roughly 1 frame at 60fps
+         {if {>= $gemframecountdif 60} {set $gemframecountdif 0}} ;only run the task until the variable reaches 60
+         {$task loop} ;loop the task
+      )
+   }
+}
 
 ;populate animated highway bitmaps
-{if $animatedhighwaycustomtexture
-{if $animatedhighway
-{set $highframecountbit 0}
-{thread_task kTaskSeconds (script
-{new Tex {sprint "highframe" $highframecountbit ".tex"}}
-{{sprint "highframe" $highframecountbit ".tex"} set_bitmap {sprint "ui/track/animated_surfaces/" $animatedhighwayname "/" $animatedhighwayname "_" $highframecountbit ".png"}}
-{set $highframecountbit {+ $highframecountbit 1}}
-{unless {>= $highframecountbit 60} {$task loop}})}}}
+{if $animatedhighwaycustomtexture ;if we have an animated highway update queued
+   {if $animatedhighway ;if we have animated highway enabled
+      {set $highframecountbit 0} ;we need to ensure we start at 0 before running the following task
+      {thread_task kTaskSeconds ;create a new task
+         (script ;task contents
+            {new Tex {sprint "highframe" $highframecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable
+            {{sprint "highframe" $highframecountbit ".tex"} set_bitmap {sprint "ui/track/animated_surfaces/" $animatedhighwayname "/" $animatedhighwayname "_" $highframecountbit ".png"}} ;populate the currently created texture index with the selected animated highway index
+            {set $highframecountbit {+ $highframecountbit 1}} ;increment the variable to setup the next texture creation index
+            {unless {>= $highframecountbit 60} ;only run the task until the variable reaches 60
+               {$task loop} ;loop the task if variable is below 60
+            }
+         )
+      }
+   }
+}
 
+{if {exists animated_highway} ;check if the above task is running
+   {delete animated_highway} ;delete the task if running
+}
 ;apply animated highway in game task
-{if $animatedhighway
-{set $highframecount 0}
-{thread_task kTaskSeconds (delay 0.1) (script
-{if {! $highwaykill}
-{set $highwaykill TRUE}
-{if {|| {$user get_track_type} kTrackBass kTrackGuitar kTrackRealBass kTrackRealGuitar} {watermark_bass.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}}}
-{if {|| {$user get_track_type} kTrackBass kTrackGuitar kTrackRealBass kTrackRealGuitar} {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}}}
-{if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}}}
-{if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}}}
+{if $animatedhighway ;if we have animated highway enabled
+   {set $highframecount 0} ;we need to ensure we start at 0 before running the following task
+   {thread_task kTaskSeconds ;create a new task
+      (name animated_highway) ;name the current task for deletion tracking
+      (delay 0.1) ;delay the start of the task
+      (script ;task contents
+         {if {|| {$user get_track_type} kTrackBass kTrackGuitar kTrackRealBass kTrackRealGuitar} ;check the currently loaded instrument
+            {watermark_bass.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren't using during animated highway mode
+            {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren't using during animated highway mode
+            {watermark_bass.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
+            {watermark_guitar.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
+            {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_bass.tex iterate_refs $ref {$ref set emissive_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_bass.tex iterate_refs $ref {$ref set normal_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_guitar.tex iterate_refs $ref {$ref set normal_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
+            {watermark_drum.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren't using during animated highway mode
+            {watermark_drum.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
+            {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_drum.tex iterate_refs $ref {$ref set emissive_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_drum.tex iterate_refs $ref {$ref set normal_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
+            {watermark_keys.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren't using during animated highway mode
+            {watermark_keys.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
+            {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_keys.tex iterate_refs $ref {$ref set emissive_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+            {watermark_keys.tex iterate_refs $ref {$ref set normal_map {sprint 'highframe' $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
+         }
+         {set $highframecount {+ $highframecount 1}} ;increment the variable to setup the next texture application index
+         {$task sleep 0.041} ;delay the next step of the task for roughly 1 frame at 30fps
+         {if {>= $highframecount 60} {set $highframecount 0}} ;only run the task until the variable reaches 60
+         {$task loop} ;loop the task
+      )
+   }
+}
 
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackRealBass kTrackRealGuitar} {watermark_bass.tex iterate_refs $ref {$ref set prelit FALSE}}}
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackRealBass kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set prelit FALSE}}}
-{if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set prelit FALSE}}}
-{if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set prelit FALSE}}}}
+{if_else $fcringonce ;check if we have already generated new textures for the fc ring
+   {do ;if we have
+      {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the multiplier texture to the second ring material
+      {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the multiplier texture to the second ring material
+      {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the multiplier texture to the second ring material
+   }
+   {do ;if we havent
+      {set $fcringonce TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
+      {new Tex fcframe.tex} ;generate a new texture to hold the fc indicator
+      {new Tex multframe.tex} ;generate a new texture to hold the non fc texture
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the fc texture to the ring material
+      {{coop_track_panel find fcframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}} ;load texture onto the generated texture
+      {{coop_track_panel find multframe.tex} set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}} ;load texture onto the generated texture
+   }
+}
 
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackRealBass kTrackRealGuitar} {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex {elem $highframearray $highframecount}}}}
-{if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackRealBass kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex {elem $highframearray $highframecount}}}}
-{if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex {elem $highframearray $highframecount}}}}
-{if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex {elem $highframearray $highframecount}}}}
-{set $highframecount {+ $highframecount 1}}
-{$task sleep 0.041}
-{if {>= $highframecount 60} {set $highframecount 0}}
-{$task loop})}}
+;setup emissive textures per instrument to use later
+#define GTR_EMISSIVE_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+      {spotlight_guitar_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivegtr ".png"}} ;load selected texture into tex memory
+      {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track_emissive.tex}} ;load the tex into the material
+      {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_guitar_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}} ;apply the custom color selected to the material
+      {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-;{if {modifier_mgr is_modifier_active mod_rb2ui}
-;   {scoreboard_frame.tex set_bitmap ui/track/custom_track_textures/scoreboard_frame_rb2.png}
-;   {scoreboard_lens.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {crowd_meter_frame.tex set_bitmap ui/track/custom_track_textures/crowd_meter_frame_rb2.png}
-;   {crowd_meter_lens.tex set_bitmap "ui/track/highways/_no_highway.png"}
-;   {overdrive_meter_background_fill.tex set_bitmap ui/track/custom_track_textures/overdrive_meter_background_fill_rb2.png}
-;   {overdrive_meter_glass_nomip.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {streak_meter_bg.tex set_bitmap "ui/track/custom_track_textures/streak_meter_bg_rb2.png"}
-;   {streak_meter_lens.tex set_bitmap "ui/track/highways/_no_highway.png"}
-;   {score_star_frame.tex set_bitmap ui/track/custom_track_textures/score_star_frame_rb2.png}
-;   {score_star_gold.tex set_bitmap ui/track/custom_track_textures/score_star_gold_rb2.png}}
+#define BASS_EMISSIVE_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+      {spotlight_bass_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivebass ".png"}} ;load selected texture into tex memory
+      {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track_emissive.tex}} ;load the tex into the material
+      {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}} ;apply the custom color selected to the material
+      {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-;{if $rb4uicustomtexture
-;{if {modifier_mgr is_modifier_active mod_rb4ui}
-;      {score_star_frame.tex set_bitmap ui/track/custom_track_textures/score_star_frame.png}
-;      {score_star_gold.tex set_bitmap ui/track/custom_track_textures/score_star_gold.png}
-;      {score_meter_wipe.tex set_bitmap ui/track/custom_track_textures/score_meter_wipe.png}
-;      {rb3_icons.tex set_bitmap ui/track/custom_track_textures/rb3_icons.png}
-;      {scoreboard_frame.tex set_bitmap ui/track/custom_track_textures/scoreboard_frame.png}
-;      {scoreboard_lens.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;      {crowd_meter_frame.tex set_bitmap ui/track/custom_track_textures/crowd_meter_frame.png}
-;      {crowd_meter_lens.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}}}
+#define DRUM_EMISSIVE_HANDLER
+(
+   {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+      {spotlight_drums_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivedrum ".png"}} ;load selected texture into tex memory
+      {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drums_track_emissive.tex}} ;load the tex into the material
+      {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}} ;apply the custom color selected to the material
+      {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
+#define KEYS_EMISSIVE_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+      {spotlight_keys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}} ;load selected texture into tex memory
+      {spotlight_prokeys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}} ;load selected texture into tex memory
+      {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track_emissive.tex}} ;load the tex into the material
+      {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track_emissive.tex}} ;load the tex into the material
+      {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_prokeys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}} ;apply the custom color selected to the material
+      {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}} ;apply the custom color selected to the material
+      {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+      {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-;{if $rb2trkcustomtexture
-;{if {modifier_mgr is_modifier_active mod_rb2trk}
-;      {flare_gtr_style.tex set_bitmap ui/track/custom_track_textures/flare_style.png}
-;      {flare_gtr_inner.tex set_bitmap ui/track/custom_track_textures/flare_style.png}}}
+{if $emissivecustomtexture ;if we are queued to update an emissive texture
+   {unless {== $emissive none} ;check the texture is not set to default
+      {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+         {set $emissivedrum $emissive} ;set the per instrument emissive temporarily to the overall emissive selected
+         {set $emissivedrumcustomtexture TRUE} ;queue an update to the per instrument emissive of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+         {set $emissivebass $emissive} ;set the per instrument emissive temporarily to the overall emissive selected
+         {set $emissivebasscustomtexture TRUE} ;queue an update to the per instrument emissive of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+         {set $emissivegtr $emissive} ;set the per instrument emissive temporarily to the overall emissive selected
+         {set $emissivegtrcustomtexture TRUE} ;queue an update to the per instrument emissive of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $emissivekeys $emissive} ;set the per instrument emissive temporarily to the overall emissive selected
+         {set $emissivekeyscustomtexture TRUE} ;queue an update to the per instrument emissive of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $emissivekeys $emissive} ;set the per instrument emissive temporarily to the overall emissive selected
+         {set $emissivekeyscustomtexture TRUE} ;queue an update to the per instrument emissive of a currently loaded instrument
+      }
+   }
+}
 
-;{if $rb4trkcustomtexture
-;{if {modifier_mgr is_modifier_active mod_rb4trk}
-;      {fx_smasher_smoke.tex set_bitmap "ui/track/custom_track_textures/fx_smasher_smoke_rb4.png"}
-;      {sparks_vertical.tex set_bitmap "ui/track/custom_track_textures/sparks_vertical_rb4.png"}
-;      {sparks_radial.tex set_bitmap "ui/track/custom_track_textures/sparks_radial_rb4.png"}
-;      {sparks.tex set_bitmap "ui/track/custom_track_textures/sparks_rb4.png"}
-;      {smasher_plate_bracket.tex set_bitmap "ui/track/custom_track_textures/smasher_plate_bracket_rb4.png"}
-;      {streak_meter_lens.tex set_bitmap "ui/track/custom_track_textures/streak_meter_lens_rb4.png"}
-;      {streak_meter_bg.tex set_bitmap "ui/track/custom_track_textures/streak_meter_bg_rb4.png"}
-;      {overdrive_meter_glass.tex set_bitmap "ui/track/custom_track_textures/overdrive_meter_glass_rb4.png"}
-;      {overdrive_meter_background_fill.tex set_bitmap "ui/track/custom_track_textures/overdrive_meter_background_fill_rb4.png"}
-;      {multiplier_meter.tex set_bitmap "ui/track/custom_track_textures/multiplier_meter_rb4.png"}
-;      {multiplier_meter_glow.tex set_bitmap "ui/track/custom_track_textures/multiplier_meter_glow_rb4.png"}
-;      {rails.tex set_bitmap "ui/track/custom_track_textures/rails_rb4.png"}
-;      {scoreboard_frame.tex set_bitmap "ui/track/custom_track_textures/scoreboard_frame_rb4.png"}
-;      {scoreboard_lens.tex set_bitmap "ui/track/custom_track_textures/scoreboard_lens_rb4.png"}
-;      {crowd_meter_frame.tex set_bitmap "ui/track/custom_track_textures/crowd_meter_frame_rb4.png"}
-;      {crowd_meter_lens.tex set_bitmap "ui/track/custom_track_textures/crowd_meter_lens_rb4.png"}
-;      {streak_meter_lens_vox.tex set_bitmap "ui/track/custom_track_textures/streak_meter_lens_vox_rb4.png"}
-;      {streak_meter_bg_vox.tex set_bitmap "ui/track/custom_track_textures/streak_meter_bg_vox_rb4.png"}
-;      {arrow_lead.tex set_bitmap "ui/track/custom_track_textures/arrow_lead_c_rb4.png"}
-;      {vocal_bg_combined.tex set_bitmap "ui/track/custom_track_textures/vocal_bg_combined_rb4.png"}
-;      {vocal_bg_notonic.tex set_bitmap "ui/track/custom_track_textures/vocal_bg_notonic_rb4.png"}
-;      {player_meter_long_lens.tex set_bitmap "ui/track/custom_track_textures/player_meter_long_lens_rb4.png"}
-;      {player_meter_long.tex set_bitmap "ui/track/custom_track_textures/player_meter_long_rb4.png"}
-;      {star_multiplier_meter_frame.tex set_bitmap "ui/track/custom_track_textures/star_multiplier_meter_frame_rb4.png"}
-;      {star_multiplier_meter_lens.tex set_bitmap "ui/track/custom_track_textures/star_multiplier_meter_lens_rb4.png"}
-;      {radial_shockwave.tex set_bitmap "ui/track/custom_track_textures/radial_shockwave_rb4.png"}
-;      {flare_style.tex set_bitmap "ui/track/custom_track_textures/flare_outer_rb4.png"}
-;      {flare_outer.tex set_bitmap "ui/track/custom_track_textures/flare_style_rb4.png"}
-      ;{flare_inner.tex set_bitmap "ui/track/custom_track_textures/flare_style_rb4.png"}
-;      {flare_gtr_outer.tex set_bitmap "ui/track/custom_track_textures/flare_outer_rb4.png"}
-;      {flare_gtr_style.tex set_bitmap "ui/track/custom_track_textures/flare_outer_rb4.png"}
-;      {fx_rising_sun.tex set_bitmap "ui/track/custom_track_textures/fx_rising_sun_rb4.png"}
-;      {fx_peak_stripes.tex set_bitmap "ui/track/custom_track_textures/fx_peak_stripes_rb4.png"}
-;      {talky_mask.tex set_bitmap "ui/track/custom_track_textures/talky_mask.png"}
-;      {plain.tex set_bitmap "ui/track/custom_track_textures/plain.png"}
-;      {gem_tails.tex set_bitmap "ui/track/custom_track_textures/gem_tails_rb4.png"}
-;      {gem_cap.tex set_bitmap "ui/track/custom_track_textures/gem_cap_rb4.png"}
-;      {gliss_gems.tex set_bitmap "ui/track/custom_track_textures/gliss_gems_rb4.png"}
-;      {score_star_frame.tex set_bitmap "ui/track/custom_track_textures/score_star_frame_rb4.png"}
-;      {score_star_gold.tex set_bitmap "ui/track/custom_track_textures/score_star_gold_rb4.png"}
-;      {tour_icon.tex set_bitmap "ui/track/custom_track_textures/tour_icon_rb4.png"}
-;      {gem_mash_green_emmisive.tex set_bitmap "ui/track/custom_track_textures/gem_mash_green_emmisive_rb4.png"}
-;      {gem_mash_red_emmisive.tex set_bitmap "ui/track/custom_track_textures/gem_mash_red_emmisive_rb4.png"}
-;      {gem_mash_yellow_emmisive.tex set_bitmap "ui/track/custom_track_textures/gem_mash_yellow_emmisive_rb4.png"}
-;      {gem_mash_blue_emmisive.tex set_bitmap "ui/track/custom_track_textures/gem_mash_blue_emmisive_rb4.png"}
-;      {gem_mash_orange_emmisive.tex set_bitmap "ui/track/custom_track_textures/gem_mash_orange_emmisive_rb4.png"}
-      ;{gem_smashers_guitar.tex iterate_refs $ref {$ref set prelit false}}
-      ;{gem_smashers_guitar_.tex iterate_refs $ref {$ref set prelit false}}
-      ;{gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set prelit false}}
-      ;{gem_snashers.tex iterate_refs $ref {$ref set diffuse_tex gem_smashers.tex}}
-      ;{gem_smashers_guitar.tex iterate_refs $ref {$ref set diffuse_tex gem_smashers_guitar.tex}}
-      ;{gem_smashers_guitar.tex iterate_refs $ref {$ref set diffuse_tex gem_smashers_guitar_nomip.tex}}
-      ;{gem_snashers.tex iterate_refs $ref {$ref set diffuse_tex gem_smashers.tex}}
-;      {broken_glass01.tex set_bitmap ui/track/custom_track_textures/broken_glass01.png}
-;      {broken_glass01_neg.tex set_bitmap ui/track/custom_track_textures/broken_glass01_neg.png}
-;      {broken_glass02.tex set_bitmap ui/track/custom_track_textures/broken_glass02.png}}}
+{if $emissivegtrcustomtexture ;if we are queued to update a per instrument emissive texture
+   {unless {== $emissivegtr none} ;check the texture is not set to default
+      GTR_EMISSIVE_HANDLER ;apply the emissive to the instrument if available
+      {unless {== $emissive none} ;if we came here from all instrument emissive
+         {set $emissivegtr none} ;reset per inst emissive
+      }
+   }
+}
 
-;{if {modifier_mgr is_modifier_active mod_noflames}
-;   {radial_shockwave.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {fx_smasher_smoke.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}}
+{if $emissivebasscustomtexture ;if we are queued to update a per instrument emissive texture
+   {unless {== $emissivebass none} ;check the texture is not set to default
+      BASS_EMISSIVE_HANDLER ;apply the emissive to the instrument if available
+      {unless {== $emissive none} ;if we came here from all instrument emissive
+         {set $emissivebass none} ;reset per inst emissive
+      }
+   }
+}
 
-;{if {modifier_mgr is_modifier_active mod_noflares}
-;   {flare_gtr_inner.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {flare_gtr_outer.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {flare_gtr_style.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {flare_inner.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {flare_outer.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {flare_style.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}}
+{if $emissivedrumcustomtexture ;if we are queued to update a per instrument emissive texture
+   {unless {== $emissivedrum none} ;check the texture is not set to default
+      DRUM_EMISSIVE_HANDLER ;apply the emissive to the instrument if available
+      {unless {== $emissive none} ;if we came here from all instrument emissive
+         {set $emissivedrum none} ;reset per inst emissive
+      }
+   }
+}
 
-;{if {modifier_mgr is_modifier_active mod_nopart}
-;   {gem_cap.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {broken_glass01.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {broken_glass01_neg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {broken_glass02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {spark.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {sparks_radial.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-;   {sparks_vertical.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}}
+{if $emissivekeyscustomtexture ;if we are queued to update a per instrument emissive texture
+   {unless {== $emissivekeys none} ;check the texture is not set to default
+      KEYS_EMISSIVE_HANDLER ;apply the emissive to the instrument if available
+      {unless {== $emissive none} ;if we came here from all instrument emissive
+         {set $emissivekeys none} ;reset per inst emissive
+      }
+   }
+}
 
-{if $emissivecustomtexture
-{unless {== $emissive none}
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drums_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissive ".png"}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissive ".png"}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissive ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissive ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissive ".png"}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track_emissive.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track_emissive.tex}}}}}
+;setup spotlight textures per instrument to use later
+#define GTR_SPOTLIGHT_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+      {spotlight_guitar_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightgtr ".png"}} ;load selected texture into tex memory
+      {spotlight_guitar_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track.tex}} ;load the tex into the material
+      {spotlight_guitar_track.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_guitar_track.tex iterate_refs $ref {$ref set normal_map spotlight_guitar_track.tex}} ;apply the emissive map as well so it looks proper
+      ;{spotlight_guitar_track.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}} ;apply the custom color selected to the material
+      ;{spotlight_guitar_track.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-{if $emissivegtrcustomtexture
-{unless {== $emissivegtr none}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivegtr ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track_emissive.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track_emissive.tex}}}}}
+#define BASS_SPOTLIGHT_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+      {spotlight_bass_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightbass ".png"}} ;load selected texture into tex memory
+      {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
+      {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+      ;{spotlight_bass_track.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}} ;apply the custom color selected to the material
+      ;{spotlight_bass_track.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-{if $emissivebasscustomtexture
-{unless {== $emissivebass none}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivebass ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track_emissive.tex}}}
+#define DRUM_SPOTLIGHT_HANDLER
+(
+   {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+      {spotlight_drums_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightdrum ".png"}} ;load selected texture into tex memory
+      {spotlight_drum_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track.tex}} ;load the tex into the material
+      {spotlight_drum_track.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_drum_track.tex iterate_refs $ref {$ref set normal_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
+      ;{spotlight_drum_track.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}} ;apply the custom color selected to the material
+      ;{spotlight_drum_track.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
+#define KEYS_SPOTLIGHT_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+      {spotlight_prokeys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}} ;load selected texture into tex memory
+      {spotlight_keys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}} ;load selected texture into tex memory
+      {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}} ;load the tex into the material
+      {spotlight_keys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track.tex}} ;load the tex into the material
+      {spotlight_keys_track.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track.tex}} ;load the tex into the material
+      {spotlight_prokeys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_keys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track.tex}} ;apply the emissive map as well so it looks proper
+      {spotlight_keys_track.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track.tex}} ;apply the emissive map as well so it looks proper
+      ;{spotlight_prokeys_track.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}} ;apply the custom color selected to the material
+      ;{spotlight_keys_track.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}} ;apply the custom color selected to the material
+      ;{spotlight_prokeys_track.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+      ;{spotlight_keys_track.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+   }
+)
 
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track_emissive.tex}}}}}
+{if $spotlightcustomtexture ;if we are queued to update an spotlight texture
+   {unless {== $spotlight none} ;check the texture is not set to default
+      {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+         {set $spotlightdrum $spotlight} ;set the per instrument spotlight temporarily to the overall spotlight selected
+         {set $spotlightdrumcustomtexture TRUE} ;queue an update to the per instrument spotlight of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+         {set $spotlightbass $spotlight} ;set the per instrument spotlight temporarily to the overall spotlight selected
+         {set $spotlightbasscustomtexture TRUE} ;queue an update to the per instrument spotlight of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+         {set $spotlightgtr $spotlight} ;set the per instrument spotlight temporarily to the overall spotlight selected
+         {set $spotlightgtrcustomtexture TRUE} ;queue an update to the per instrument spotlight of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $spotlightkeys $spotlight} ;set the per instrument spotlight temporarily to the overall spotlight selected
+         {set $spotlightkeyscustomtexture TRUE} ;queue an update to the per instrument spotlight of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $spotlightkeys $spotlight} ;set the per instrument spotlight temporarily to the overall spotlight selected
+         {set $spotlightkeyscustomtexture TRUE} ;queue an update to the per instrument spotlight of a currently loaded instrument
+      }
+   }
+}
 
-{if $emissivedrumcustomtexture
-{unless {== $emissivedrum none}
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drums_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivedrum ".png"}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track_emissive.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track_emissive.tex}}}}}
+{if $spotlightgtrcustomtexture ;if we are queued to update a per instrument spotlight texture
+   {unless {== $spotlightgtr none} ;check the texture is not set to default
+      GTR_SPOTLIGHT_HANDLER ;apply the spotlight to the instrument if available
+      {unless {== $spotlight none} ;if we came here from all instrument spotlight
+         {set $spotlightgtr none} ;reset per inst spotlight
+      }
+   }
+}
 
-{if $emissivekeyscustomtexture
-{unless {== $emissivekeys none}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track_emissive.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track_emissive.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track_emissive.tex}}}}}
+{if $spotlightbasscustomtexture ;if we are queued to update a per instrument spotlight texture
+   {unless {== $spotlightbass none} ;check the texture is not set to default
+      BASS_SPOTLIGHT_HANDLER ;apply the spotlight to the instrument if available
+      {unless {== $spotlight none} ;if we came here from all instrument spotlight
+         {set $spotlightbass none} ;reset per inst spotlight
+      }
+   }
+}
 
-{if $spotlightcustomtexture
-{unless {== $spotlight none}
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drums_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlight ".png"}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlight ".png"}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlight ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlight ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlight ".png"}}}
+{if $spotlightdrumcustomtexture ;if we are queued to update a per instrument spotlight texture
+   {unless {== $spotlightdrum none} ;check the texture is not set to default
+      DRUM_SPOTLIGHT_HANDLER ;apply the spotlight to the instrument if available
+      {unless {== $spotlight none} ;if we came here from all instrument spotlight
+         {set $spotlightdrum none} ;reset per inst spotlight
+      }
+   }
+}
 
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track.tex}}}}}
+{if $spotlightkeyscustomtexture ;if we are queued to update a per instrument spotlight texture
+   {unless {== $spotlightkeys none}
+      KEYS_SPOTLIGHT_HANDLER ;apply the spotlight to the instrument if available
+      {unless {== $spotlight none} ;if we came here from all instrument spotlight
+         {set $spotlightkeys none} ;reset per inst spotlight
+      }
+   }
+}
 
-{if $spotlightgtrcustomtexture
-{unless {== $spotlightgtr none}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightgtr ".png"}}}
+#define GTR_HIGHWAY_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+      {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/" $highwaygtr ".png"}} ;load selected texture into tex memory
+      {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex watermark_guitar.tex}} ;load the tex into the material
+      {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_guitar.tex iterate_refs $ref {$ref set normal_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_guitar.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+   }
+)
+#define BASS_HIGHWAY_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+      {watermark_bass.tex set_bitmap {sprint "ui/track/highways/" $highwaybass ".png"}} ;load selected texture into tex memory
+      {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex watermark_bass.tex}} ;load the tex into the material
+      {watermark_bass.tex iterate_refs $ref {$ref set emissive_map watermark_bass.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_bass.tex iterate_refs $ref {$ref set normal_map watermark_bass.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_bass.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+   }
+)
+#define DRUM_HIGHWAY_HANDLER
+(
+   {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+      {watermark_drum.tex set_bitmap {sprint "ui/track/highways/" $highwaydrum ".png"}} ;load selected texture into tex memory
+      {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex watermark_drum.tex}} ;load the tex into the material
+      {watermark_drum.tex iterate_refs $ref {$ref set emissive_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_drum.tex iterate_refs $ref {$ref set normal_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_drum.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+   }
+)
+#define KEYS_HIGHWAY_HANDLER
+(
+   {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+      {watermark_keys.tex set_bitmap {sprint "ui/track/highways/" $highwaykeys ".png"}} ;load selected texture into tex memory
+      {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex watermark_keys.tex}} ;load the tex into the material
+      {watermark_keys.tex iterate_refs $ref {$ref set emissive_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_keys.tex iterate_refs $ref {$ref set normal_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
+      {watermark_keys.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+   }
+)
 
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {spotlight_guitar_track.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track.tex}}}}}
+{if $highwaycustomtexture ;if we are queued to update an highway texture
+   {unless {== $highway none} ;check the texture is not set to default
+      {if {== {$user get_track_type} kTrackDrum} ;check if the instrument is currently loaded on screen
+         {set $highwaydrum $highway} ;set the per instrument highway temporarily to the overall highway selected
+         {set $highwaydrumcustomtexture TRUE} ;queue an update to the per instrument highway of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} ;check if the instrument is currently loaded on screen
+         {set $highwaybass $highway} ;set the per instrument highway temporarily to the overall highway selected
+         {set $highwaybasscustomtexture TRUE} ;queue an update to the per instrument highway of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} ;check if the instrument is currently loaded on screen
+         {set $highwaydrum $highway} ;set the per instrument highway temporarily to the overall highway selected
+         {set $highwaydrumcustomtexture TRUE} ;queue an update to the per instrument highway of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $highwaykeys $highway} ;set the per instrument highway temporarily to the overall highway selected
+         {set $highwaykeyscustomtexture TRUE} ;queue an update to the per instrument highway of a currently loaded instrument
+      }
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check if the instrument is currently loaded on screen
+         {set $highwaykeys $highway} ;set the per instrument highway temporarily to the overall highway selected
+         {set $highwaykeyscustomtexture TRUE} ;queue an update to the per instrument highway of a currently loaded instrument
+      }
+   }
+}
 
-{if $spotlightbasscustomtexture
-{unless {== $spotlightbass none}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightbass ".png"}}}
+{if $highwaygtrcustomtexture ;if we are queued to update a per instrument highway texture
+   {unless {== $highwaygtr none} ;check the texture is not set to default
+      GTR_HIGHWAY_HANDLER ;apply the highway to the instrument if available
+      {unless {== $highway none} ;if we came here from all instrument highway
+         {set $highwaygtr none} ;reset per inst highway
+      }
+   }
+}
 
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}}}}}
+{if $highwaybasscustomtexture ;if we are queued to update a per instrument highway texture
+   {unless {== $highwaybass none} ;check the texture is not set to default
+      BASS_HIGHWAY_HANDLER ;apply the highway to the instrument if available
+      {unless {== $highway none} ;if we came here from all instrument highway
+         {set $highwaybass none} ;reset per inst highway
+      }
+   }
+}
 
-{if $spotlightdrumcustomtexture
-{unless {== $spotlightdrum none}
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drums_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightdrum ".png"}}}
+{if $highwaydrumcustomtexture ;if we are queued to update a per instrument highway texture
+   {unless {== $highwaydrum none} ;check the texture is not set to default
+      DRUM_HIGHWAY_HANDLER ;apply the highway to the instrument if available
+      {unless {== $highway none} ;if we came here from all instrument highway
+         {set $highwaydrum none} ;reset per inst highway
+      }
+   }
+}
 
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {spotlight_drum_track.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track.tex}}}}}
+{if $highwaykeyscustomtexture ;if we are queued to update a per instrument highway texture
+   {unless {== $highwaykeys none} ;check the texture is not set to default
+      KEYS_HIGHWAY_HANDLER ;apply the highway to the instrument if available
+      {unless {== $highway none} ;if we came here from all instrument highway
+         {set $highwaykeys none} ;reset per inst highway
+      }
+   }
+}
 
-{if $spotlightkeyscustomtexture
-{unless {== $spotlightkeys none}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track.tex}}}
-
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_prokeys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {spotlight_keys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track.tex}}}}}
-
-{if $highwaycustomtexture
-{unless {== $highway none}
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex set_bitmap {sprint "ui/track/highways/" $highway ".png"}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex set_bitmap {sprint "ui/track/highways/" $highway ".png"}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/" $highway ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex set_bitmap {sprint "ui/track/highways/" $highway ".png"}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex watermark_drum.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex watermark_bass.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex watermark_guitar.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex watermark_keys.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set emissive_map watermark_drum.tex}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set emissive_map watermark_bass.tex}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map watermark_guitar.tex}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set emissive_map watermark_keys.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}}}
-
-{if $highwaygtrcustomtexture
-{unless {== $highwaygtr none}
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/" $highwaygtr ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex watermark_guitar.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map watermark_guitar.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackGuitar kTrackRealGuitar} {watermark_guitar.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}}}
-
-{if $highwaybasscustomtexture
-{unless {== $highwaybass none}
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex set_bitmap {sprint "ui/track/highways/" $highwaybass ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex watermark_bass.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set emissive_map watermark_bass.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackBass kTrackRealBass} {watermark_bass.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}}}
-
-{if $highwaydrumcustomtexture
-{unless {== $highwaydrum none}
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex set_bitmap {sprint "ui/track/highways/" $highwaydrum ".png"}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex watermark_drum.tex}}}
-      
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set emissive_map watermark_drum.tex}}}
-
-      {if {== {$user get_track_type} kTrackDrum} {watermark_drum.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}}}
-
-{if $highwaykeyscustomtexture
-{unless {== $highwaykeys none}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex set_bitmap {sprint "ui/track/highways/" $highwaykeys ".png"}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex watermark_keys.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set emissive_map watermark_keys.tex}}}
-      
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {watermark_keys.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}}}}
-
-{if $crowdmetercustomtexture
-{unless {== $crowdmeter none}
+{if $crowdmetercustomtexture ;check if a new texture is queued
+   {unless {== $crowdmeter none} ;check the texture is not set to default
       {crowd_meter_frame.tex set_bitmap {sprint "ui/track/crowd_meter/crowd_meter_frame_" $crowdmeter ".png"}}
-      {crowd_meter_lens.tex set_bitmap {sprint "ui/track/crowd_meter/crowd_meter_lens_" $crowdmeter ".png"}}}}
+      {crowd_meter_lens.tex set_bitmap {sprint "ui/track/crowd_meter/crowd_meter_lens_" $crowdmeter ".png"}}
+   }
+}
 
-{if $multiringcustomtexture
-{unless {== $multiring none}
+{if $multiringcustomtexture ;check if a new texture is queued
+   {unless {== $multiring none} ;check the texture is not set to default
       {fx_peak_stripes.tex set_bitmap {sprint "ui/track/multiplier_ring/fx_peak_stripes_" $multiring ".png"}}
       {multiplier_meter_glow.tex set_bitmap {sprint "ui/track/multiplier_ring/multiplier_meter_glow_" $multiring ".png"}}
       {multiplier_meter.tex set_bitmap {sprint "ui/track/multiplier_ring/multiplier_meter_" $multiring ".png"}}
       {streak_meter_bg.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_bg_" $multiring ".png"}}
       {streak_meter_bg_vox.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_bg_vox_" $multiring ".png"}}
       {streak_meter_lens.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_lens_" $multiring ".png"}}
-   ;   {streak_meter_plate_fc.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
-      {streak_meter_plate.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}}}
+      ;{streak_meter_plate_fc.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $multiring ".png"}}
+      {streak_meter_plate.tex set_bitmap {sprint "ui/track/multiplier_ring/streak_meter_plate_" $multiring ".png"}}
+   }
+}
 
-{if $odbarcustomtexture
-{unless {== $odbar none}
+{if $odbarcustomtexture ;check if a new texture is queued
+   {unless {== $odbar none} ;check the texture is not set to default
       {fx_rising_sun.tex set_bitmap {sprint "ui/track/overdrive_bar/fx_rising_sun_" $odbar ".png"}}
       {overdrive_meter_background_fill.tex set_bitmap {sprint "ui/track/overdrive_bar/overdrive_meter_background_fill_" $odbar ".png"}}
       {overdrive_meter_glass.tex set_bitmap {sprint "ui/track/overdrive_bar/overdrive_meter_glass_" $odbar ".png"}}
       {player_meter_long_lens.tex set_bitmap {sprint "ui/track/overdrive_bar/player_meter_long_lens_" $odbar ".png"}}
-      {player_meter_long.tex set_bitmap {sprint "ui/track/overdrive_bar/player_meter_long_" $odbar ".png"}}}}
+      {player_meter_long.tex set_bitmap {sprint "ui/track/overdrive_bar/player_meter_long_" $odbar ".png"}}
+   }
+}
 
-{if $railscustomtexture
-{unless {== $rails none}
-      {smasher_plate_bracket.tex iterate_refs $ref {$ref set alpha_cut true}}
+{if $railscustomtexture ;check if a new texture is queued
+   {unless {== $rails none} ;check the texture is not set to default
+      {smasher_plate_bracket.tex iterate_refs $ref {$ref set alpha_cut true}} ;alpha_cut fixes some specific issues where the transparant part of one texture "cuts" into another texture in use
       {beat_marker.tex set_bitmap {sprint "ui/track/rails/beat_marker_" $rails ".png"}}
       {rails.tex set_bitmap {sprint "ui/track/rails/rails_" $rails ".png"}}
       {rails_keyboard.tex set_bitmap {sprint "ui/track/rails/rails_" $rails ".png"}}
       {rails_rg.tex set_bitmap {sprint "ui/track/rails/rails_" $rails ".png"}}
-      {smasher_plate_bracket.tex set_bitmap {sprint "ui/track/rails/smasher_plate_bracket_" $rails ".png"}}}}
+      {smasher_plate_bracket.tex set_bitmap {sprint "ui/track/rails/smasher_plate_bracket_" $rails ".png"}}
+   }
+}
 
-{if $scorecustomtexture
-{unless {== $scoretex none}
+{if $scorecustomtexture ;check if a new texture is queued
+   {unless {== $scoretex none} ;check the texture is not set to default
       {score_meter_wipe.tex set_bitmap {sprint "ui/track/score/score_meter_wipe_" $scoretex ".png"}}
       {score_star_frame.tex set_bitmap {sprint "ui/track/score/score_star_frame_" $scoretex ".png"}}
       {score_star_gold.tex set_bitmap {sprint "ui/track/score/score_star_gold_" $scoretex ".png"}}
@@ -1205,10 +727,12 @@ highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex 
       {scoreboard_lens.tex set_bitmap {sprint "ui/track/score/scoreboard_lens_" $scoretex ".png"}}
       {star_multiplier_meter_frame.tex set_bitmap {sprint "ui/track/score/star_multiplier_meter_frame_" $scoretex ".png"}}
       {star_multiplier_meter_lens.tex set_bitmap {sprint "ui/track/score/star_multiplier_meter_lens_" $scoretex ".png"}}
-      {tour_icon.tex set_bitmap {sprint "ui/track/score/tour_icon_" $scoretex ".png"}}}}
+      {tour_icon.tex set_bitmap {sprint "ui/track/score/tour_icon_" $scoretex ".png"}}
+   }
+}
 
-{if $flamescustomtexture
-{unless {== $flames none}
+{if $flamescustomtexture ;check if a new texture is queued
+   {unless {== $flames none} ;check the texture is not set to default
       {gem_cap.tex set_bitmap {sprint "ui/track/flames/gem_cap_" $flames ".png"}}
       {broken_glass01.tex set_bitmap {sprint "ui/track/flames/broken_glass01_" $flames ".png"}}
       {broken_glass01_neg.tex set_bitmap {sprint "ui/track/flames/broken_glass01_neg_" $flames ".png"}}
@@ -1223,10 +747,12 @@ highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex 
       {radial_shockwave.tex set_bitmap {sprint "ui/track/flames/radial_shockwave_" $flames ".png"}}
       {spark.tex set_bitmap {sprint "ui/track/flames/sparks_" $flames ".png"}}
       {sparks_radial.tex set_bitmap {sprint "ui/track/flames/sparks_radial_" $flames ".png"}}
-      {sparks_vertical.tex set_bitmap {sprint "ui/track/flames/sparks_vertical_" $flames ".png"}}}}
+      {sparks_vertical.tex set_bitmap {sprint "ui/track/flames/sparks_vertical_" $flames ".png"}}
+   }
+}
 
-{if $smashercustomtexture
-{unless {== $smasher none}
+{if $smashercustomtexture ;check if a new texture is queued
+   {unless {== $smasher none} ;check the texture is not set to default
       {gem_smashers_guitar_nomip.tex set_bitmap {sprint "ui/track/smashers/gem_smashers_guitar_" $smasher ".png"}}
       {gem_smashers_guitar.tex set_bitmap {sprint "ui/track/smashers/gem_smashers_guitar_" $smasher ".png"}}
       {gem_smashers_drum_nomip.tex set_bitmap {sprint "ui/track/smashers/gem_smashers_drum_" $smasher ".png"}}
@@ -1235,10 +761,12 @@ highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex 
       {square_smasher_bright_red.tex set_bitmap {sprint "ui/track/smashers/square_smasher_bright_red_" $smasher ".png"}}
       {square_smasher_bright_yellow.tex set_bitmap {sprint "ui/track/smashers/square_smasher_bright_yellow_" $smasher ".png"}}
       {square_smasher_bright_blue.tex set_bitmap {sprint "ui/track/smashers/square_smasher_bright_blue_" $smasher ".png"}}
-      {square_smasher_bright_orange.tex set_bitmap {sprint "ui/track/smashers/square_smasher_bright_orange_" $smasher ".png"}}}}
+      {square_smasher_bright_orange.tex set_bitmap {sprint "ui/track/smashers/square_smasher_bright_orange_" $smasher ".png"}}
+   }
+}
 
-{if $gemcustomtexture
-{unless {== $gem none}
+{if $gemcustomtexture ;check if a new texture is queued
+   {unless {== $gem none} ;check the texture is not set to default
       {gem_cymbal_diffuse.tex set_bitmap {sprint "ui/track/gems/gem_cymbal_diffuse_" $gem ".png"}}
       {gem_cymbal_ems.tex set_bitmap {sprint "ui/track/gems/gem_cymbal_ems_" $gem ".png"}}
       {gem_mash_green_emmisive.tex set_bitmap {sprint "ui/track/gems/gem_mash_green_emmisive_" $gem ".png"}}
@@ -1249,30 +777,52 @@ highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex 
       {gliss_gems.tex set_bitmap {sprint "ui/track/gems/gliss_gems_" $gem ".png"}}
       {prism_gems.tex set_bitmap {sprint "ui/track/gems/prism_gems_" $gem ".png"}}
       {prism_gem_emissive.tex set_bitmap {sprint "ui/track/gems/prism_gem_emissive_" $gem ".png"}}
-      {prism_gem_keyboard_style.tex set_bitmap {sprint "ui/track/gems/prism_gem_keyboard_style_" $gem ".png"}}}}
+      {prism_gem_keyboard_style.tex set_bitmap {sprint "ui/track/gems/prism_gem_keyboard_style_" $gem ".png"}}
+   }
+}
 
-{if $sustaincustomtexture
-{unless {== $sustain none}
-      {gem_tails.tex set_bitmap {sprint "ui/track/sustains/gem_tails_" $sustain ".png"}}}}
+{if $sustaincustomtexture ;check if a new texture is queued
+   {unless {== $sustain none} ;check the texture is not set to default
+      {gem_tails.tex set_bitmap {sprint "ui/track/sustains/gem_tails_" $sustain ".png"}}
+   }
+}
       
-{if $voxarrowcustomtexture
-{unless {== $voxarrow none}
+{if $voxarrowcustomtexture ;check if a new texture is queued
+   {unless {== $voxarrow none} ;check the texture is not set to default
       {pitch_arrow_lead_c.tex set_bitmap {sprint "ui/track/voxarrow/arrow_lead_c_" $voxarrow ".png"}}
-      {arrow_lead_outline.tex set_bitmap {sprint "ui/track/voxarrow/arrow_lead_outline_" $voxarrow ".png"}}}}
+      {arrow_lead_outline.tex set_bitmap {sprint "ui/track/voxarrow/arrow_lead_outline_" $voxarrow ".png"}}
+   }
+}
 
-{if $voxhwcustomtexture
-{unless {== $voxhw none}
+{if $voxhwcustomtexture ;check if a new texture is queued
+   {unless {== $voxhw none} ;check the texture is not set to default
       {talky_mask.tex set_bitmap {sprint "ui/track/voxhw/talky_mask_" $voxhw ".png"}}
       {vocals_bg_combined.tex set_bitmap {sprint "ui/track/voxhw/vocal_bg_combined_" $voxhw ".png"}}
-      {vocal_bg_notonic.tex set_bitmap {sprint "ui/track/voxhw/vocal_bg_notonic_" $voxhw ".png"}}}}
+      {vocal_bg_notonic.tex set_bitmap {sprint "ui/track/voxhw/vocal_bg_notonic_" $voxhw ".png"}}
+   }
+}
 
-{if $keyboardcustomtexture
-{unless {== $keyboard none}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {track_lanes_keyboard.tex set_bitmap {sprint "ui/track/keyboards/track_lanes_keyboard_" $keyboard ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {track_lanes_keyboard_press.tex set_bitmap {sprint "ui/track/keyboards/track_lanes_keyboard_press_" $keyboard ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {gem_smasher_sharp_diffuse_nomip.tex set_bitmap {sprint "ui/track/keyboards/gem_smasher_sharp_diffuse_nomip_" $keyboard ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {gem_mash_prokeys_ems.tex set_bitmap {sprint "ui/track/keyboards/gem_mash_prokeys_ems_" $keyboard ".png"}}}
-      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} {gem_mash_prokeys.tex set_bitmap {sprint "ui/track/keyboards/gem_mash_prokeys_" $keyboard ".png"}}}}}
+{if $keyboardcustomtexture ;check if a new texture is queued
+   {unless {== $keyboard none} ;check the texture is not set to default
+      {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys}
+         {track_lanes_keyboard.tex set_bitmap {sprint "ui/track/keyboards/track_lanes_keyboard_" $keyboard ".png"}}
+         {track_lanes_keyboard_press.tex set_bitmap {sprint "ui/track/keyboards/track_lanes_keyboard_press_" $keyboard ".png"}}
+         {gem_smasher_sharp_diffuse_nomip.tex set_bitmap {sprint "ui/track/keyboards/gem_smasher_sharp_diffuse_nomip_" $keyboard ".png"}}
+         {gem_mash_prokeys_ems.tex set_bitmap {sprint "ui/track/keyboards/gem_mash_prokeys_ems_" $keyboard ".png"}}
+         {gem_mash_prokeys.tex set_bitmap {sprint "ui/track/keyboards/gem_mash_prokeys_" $keyboard ".png"}}
+      }
+   }
+}
+
+;watermarking for ch mode via coloring the rails
+{if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
+   {rails.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
+   {rails_keyboard.tex "set_bitmap ui/track/custom_track_textures/rails_drunk.png"}
+   {rails_rg.tex set_bitmap "ui/track/custom_track_textures/rails_drunk.png"}
+   {smasher_plate_bracket.tex set_bitmap "ui/track/custom_track_textures/smasher_plate_bracket_drunk.png"}
+}
+
+;after all of the queued texture updates are completed, set them to false so they do not run again until a new texture is queued via overshell
 {set $rb2uicustomtexture FALSE}
 {set $rb4uicustomtexture FALSE}
 {set $rb2trkcustomtexture FALSE}
@@ -1284,57 +834,107 @@ highframe55.tex highframe56.tex highframe57.tex highframe58.tex highframe59.tex 
 {set $spotlightcustomtexture FALSE}
 {set $emissivecustomtexture FALSE}
 {set $keyboardcustomtexture FALSE}
-
-{if {modifier_mgr is_modifier_active mod_chmode}
-   {rails.tex set_bitmap ui/track/custom_track_textures/rails_drunk.png}
-   {rails_keyboard.tex set_bitmap ui/track/custom_track_textures/rails_drunk.png}
-   {rails_rg.tex set_bitmap ui/track/custom_track_textures/rails_drunk.png}
-   {smasher_plate_bracket.tex set_bitmap ui/track/custom_track_textures/smasher_plate_bracket_drunk.png}}
-
-{$this play_intro}
-      {if
-         {&&
-            {exists gamemode}
-            {gamemode get play_track_intro_sfx}}
-         {$this play_seq track_beg.cue}
-         #ifdef HX_XBOX
-         {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {gamemode in_mode audition} {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+)
+#define NO_BRE_HANDLER
+(
+   {if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy} ;check if we have no bre active, and we havent restarted already on this song
+      {if {! $already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
+         {do ;do
+            {set $imabigboy FALSE} ;tell the logic we have restarted once to switch to expert
+            {set $already_restarted TRUE} ;also tell the logic we
+            {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert} ;since we have entered the track on easy, set the player to expert to enable no bre behavior
+            {game_restart} ;quick restart the song
          }
-            {beatmatch set_music_speed $speedmod}}
-         #else
-         {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+      }
+   }
+)
+#define TRACK_PANEL_HANDLERS
+(
+   (enter ;when the track is entered
+      {game add_sink $this} ;set up the game with the vanilla sinks
+      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+         {switch {$player instrument} ;switch based off the currently loaded instrument
+            (bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_bass {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_keys {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (guitar {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
+            (real_drum {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}) ;add our custom fc checking callbacks to the currently loaded player
          }
-            {beatmatch set_music_speed $speedmod}}
-         #endif
-         {if
-            {&&
-               {gamemode in_mode practice}
-               {>
-                  {gamecfg get practice_speed}
-                  0}}
-            {beatmatch set_music_speed $modifier}}}
-))
+      }
+      {$this set_showing {! {gamemode in_mode practice}}}
+   )
+   (exit ;when the track is exited
+      {if {exists animated_gems} ;check if the above task is running
+         {delete animated_gems} ;delete the task if running
+      }
+      {if {exists animated_smashers} ;check if the above task is running
+         {delete animated_smashers} ;delete the task if running
+      }
+      {if {exists animated_highway} ;check if the above task is running
+         {delete animated_highway} ;delete the task if running
+      }
+      {game remove_sink $this} ;remove the vanilla sinks
+   )
+   (unison_hit)
+   (set_track_out)
+   (set_track_in)
+   (animate_track
+      ($start $end $period $units)
+   )
+   (animate_track_out)
+   (animate_track_out_fast)
+   (animate_track_in_fast)
+   (finish_load
+      {$this set_showing FALSE}
+      {$this set_track_out}
+   )
+   (intro_start
+      {$this track_reset}
+      {$this set_showing TRUE}
+      {$this set_track_in}
+   )
+   (intro_skip
+      {$this track_reset}
+      {$this set_showing TRUE}
+      {$this set_track_out}
+      NO_BRE_HANDLER ;restart the game, and switch to expert if in no bre mode
+   )
+   (on_reset
+      {beatmatch foreach_active_player $m {$m on_new_track}}
+   )
+   (on_extend
+      NO_BRE_HANDLER ;restart the game, and switch to expert if in no bre mode
+      TRACK_TEXTURE_HANDLER ;here is where we setup the custom track
+      {$this play_intro} ;play the intro to the track
+      {if {&& {exists gamemode}{gamemode get play_track_intro_sfx}} ;if we are allowed to play the track intro sound effects for this track entry
+         {$this play_seq track_beg.cue} ;play the track sound effects
+         {unless
+            {|| ;check for a vareity of game modes where song speed is not allowed to be adjusted
+               {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
+               {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
+               {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
+               {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
+               #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+               {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
+            }
+            {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
+         }
+         {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
+            {beatmatch set_music_speed $modifier} ;apply the practice specific speed selection in game
+         }
+      }
+   )
+)
 {new
    TrackPanel
    coop_track_panel
-   (file
-      "track/trackpanel.milo")
-   TRACK_PANEL_HANDLERS}
-{func
-   get_track_panel
-   {gamemode get track_panel}}
-{set
-   $playback_file
-   ""}
+   (file "track/trackpanel.milo")
+   TRACK_PANEL_HANDLERS
+}
+{func get_track_panel
+   {gamemode get track_panel}
+}
+{set $playback_file ""}

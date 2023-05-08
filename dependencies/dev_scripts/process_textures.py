@@ -15,7 +15,7 @@ def process_images(input_path: Path, output_path: Path, which_texture: str):
     if which_texture == "highway":
         addnl_params = "-resize 256x512! -filter Box"
     elif which_texture == "emissive":
-        addnl_params = "-resize 256x512! -filter Box -alpha set -background none -channel A -evaluate multiply 0.5 +channel"
+        addnl_params = "-resize 256x512! -filter Box -alpha set -background none -channel A -evaluate multiply 1.0 +channel"
     elif which_texture == "spotlight":
         addnl_params = "-resize 256x512! -filter Box -alpha set -background none +channel"
     else:
