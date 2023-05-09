@@ -96,6 +96,7 @@
                               {if_else {file_exists $theactualpath}
                                  {do
                                     {set $songdtareader {read_file $theactualpath}}
+                                    {set $additionalreader {read_file {song_mgr song_file_path {meta_performer song} "/../../gen/songs_updates.dtb"}}}
                                     {if_else {|| {== $theactualpath SONGPATH} {== $theactualpath SONGPATH3}}
                                        {set $authorvar "Harmonix"}
                                        {foreach $entry $songdtareader
@@ -113,17 +114,53 @@
                                           }
                                        }
                                     }
-                                    {foreach $entry $songdtareader
-                                       {if {== {elem $entry 0} {basename $short_name}}
-                                          {if {find $entry year_released}
-                                             {set $yearvar {elem {find $entry year_released} 1}}
+                                    {if_else {== $theactualpath SONGPATH3} ;if we are an on disc update
+                                       {foreach $entry $songdtareader ;first probe the internal look up table
+                                          {if {== {elem $entry 0} {basename $short_name}}
+                                             {if_else {find $entry year_released} ;check if we find a year value
+                                                {set $yearvar {elem {find $entry year_released} 1}} ;if we do, hooray!
+                                                {do 
+                                                   {foreach $entry $additionalreader ;if we didnt find year there, we need to scan our updates dta
+                                                      {if {== {elem $entry 0} {basename $short_name}}
+                                                         {if {find $entry year_released} ;check for year again
+                                                            {set $yearvar {elem {find $entry year_released} 1}} ;hooray we found a year!
+                                                         }
+                                                      }
+                                                   }
+                                                }
+                                             }
+                                          }
+                                       }
+                                       {foreach $entry $songdtareader ;if we are reading on disc, or dlc, we can just read the damn year
+                                          {if {== {elem $entry 0} {basename $short_name}}
+                                             {if {find $entry year_released} ;you better be there
+                                                {set $yearvar {elem {find $entry year_released} 1}} ;hooray we foud a year
+                                             }
                                           }
                                        }
                                     }
-                                    {foreach $entry $songdtareader
-                                       {if {== {elem $entry 0} {basename $short_name}}
-                                          {if {find $entry album_name}
-                                             {set $albumvar {elem {find $entry album_name} 1}}
+                                    {if_else {== $theactualpath SONGPATH3}
+                                       {foreach $entry $songdtareader
+                                          {if {== {elem $entry 0} {basename $short_name}}
+                                             {if_else {find $entry album_name}
+                                                {set $albumvar {elem {find $entry album_name} 1}}
+                                                {do
+                                                   {foreach $entry $additionalreader
+                                                      {if {== {elem $entry 0} {basename $short_name}}
+                                                         {if {find $entry album_name}
+                                                            {set $albumvar {elem {find $entry album_name} 1}}
+                                                         }
+                                                      }
+                                                   }
+                                                }
+                                             }
+                                          }
+                                       }
+                                       {foreach $entry $songdtareader
+                                          {if {== {elem $entry 0} {basename $short_name}}
+                                             {if {find $entry album_name}
+                                                {set $albumvar {elem {find $entry album_name} 1}}
+                                             }
                                           }
                                        }
                                     }
