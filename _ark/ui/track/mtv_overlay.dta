@@ -5,57 +5,68 @@
             (show
                script
                (script
-                  {if
-                     {exists fade.anim}
-                     {fade.anim set_frame 50}}))
+                  {if {exists fade.anim}
+                     {fade.anim set_frame 50}
+                  }
+               )
+            )
             (hide
                script
                (script
-                  {if
-                     {exists fade.anim}
-                     {fade.anim set_frame 0}}))
+                  {if {exists fade.anim}
+                     {fade.anim set_frame 0}
+                  }
+               )
+            )
             (play
                script
                (script
-                  {if
-                     {exists fade.anim}
-                     {fade.anim animate}})))
+                  {if {exists fade.anim}
+                     {fade.anim animate}
+                  }
+               )
+            )
+         )
          (enter
-            {$this set_pos}
-            {if
-               {exists game}
-               {game
-                  add_sink
-                  $this
-                  (intro_end)}
-               {$this setup_text}
-               {if
-                  {exists fade.anim}
-               {if_else {modifier_mgr is_modifier_active mod_songtitle}
-			   {fade.anim set_frame 50}
-			   {fade.anim set_frame 0}}}})
+            {$this set_pos} ;set the custom position of the mtv_overlay on enter
+            {if {exists game}
+               {game add_sink $this (intro_end)}
+               {$this setup_text} ;setup the text with all parameters we currently have enabled
+               {if {exists fade.anim}
+                  {if_else {modifier_mgr is_modifier_active mod_songtitle} ;if song title always is enable
+                     {fade.anim set_frame 50} ;set the current frame of the fade animation to 50, which is all the way on
+                     {fade.anim set_frame 0} ;set the current frame of the fade animation to 0, which is invisible
+                  }
+               }
+            }
+         )
          (set_pos
-            {if_else {modifier_mgr is_modifier_active mod_fakejuke}
-               {Group.grp set_local_pos 0 -30 -136}
-               {Group.grp set_local_pos $mtvpos_0 $mtvpos_1 $mtvpos_2}}
+            {if_else {modifier_mgr is_modifier_active mod_fakejuke} ;check if fake jukebox mode is enabled
+               {Group.grp set_local_pos 0 -30 -136} ;if it is, hard set the location of the mtv overlay for style
+               {Group.grp set_local_pos $mtvpos_0 $mtvpos_1 $mtvpos_2} ;otherwise put it in the custom location
+            }
          )
          (exit
-            {if
-               {exists game}
-               {game remove_sink $this}})
+            {if {exists game}
+               {game remove_sink $this}
+            }
+         )
          (intro_end
             {if
                {&&
                   {exists game}
                   {gamemode get show_mtv_overlay}
-                  {exists fade.anim}}
-               {$this setup_text}
-			   {if
                   {exists fade.anim}
-               {if_else {modifier_mgr is_modifier_active mod_songtitle}
-			   {fade.anim set_frame 50}
-			   {fade.anim animate}}}
-               })
+               }
+               {$this setup_text} ;setup the text with all parameters we currently have enabled
+               {if {exists fade.anim}
+                  {if_else {modifier_mgr is_modifier_active mod_songtitle} ;if song title always is enable
+                     {fade.anim set_frame 50} ;set the current frame of the fade animation to 50, which is all the way on
+                     {fade.anim animate} ;otherwise animate the entire animation from off, to on, to off again
+                  }
+               }
+            }
+         )
          (setup_text
             {do
                ($short_name
@@ -64,21 +75,21 @@
                ;inside the ark
                #define SONGPATH
                (
-                  {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"}
+                  {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
                )
                ;a dlc dta
                #define SONGPATH2
                (
-                  {song_mgr song_file_path {meta_performer song} "/../../songs.dta"}
+                  {song_mgr song_file_path {meta_performer song} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
                )
                ;on disc update
                #define SONGPATH3
                (
-                  {song_mgr song_file_path {meta_performer song} "/../../gen/vanilla_songs_lut.dtb"}
+                  {song_mgr song_file_path {meta_performer song} "/../../gen/vanilla_songs_lut.dtb"} ;if we loaded a dlc song that has an on disc update, we have to probe our lookup table
                )
                {if {exists song.lbl}
                 ;{set $debugmode TRUE}
-                  {set $authorvar FALSE}
+                  {set $authorvar FALSE} ;clears out the variables used for song information to be populated again
                   {set $artistvar FALSE}
                   {set $yearvar FALSE}
                   {set $albumvar FALSE}
@@ -87,109 +98,107 @@
                         {if {file_exists SONGPATH} {set $theactualpath SONGPATH}} ;inside the ark
                         {if {file_exists SONGPATH2} {set $theactualpath SONGPATH2}} ;a dlc dta
                         {if {file_exists SONGPATH3} {set $theactualpath SONGPATH3}} ;on disc update
-                        {unless {|| {file_exists SONGPATH} {file_exists SONGPATH2} {file_exists SONGPATH3}}
-                           {set $theactualpath {song_mgr song_file_path {meta_performer song} ""}}
+                        {unless {|| {file_exists SONGPATH} {file_exists SONGPATH2} {file_exists SONGPATH3}} ;if we couldn't find a path that exists
+                           {set $theactualpath {song_mgr song_file_path {meta_performer song} ""}} ;we need to set our var to an invalid state
                         }
-                        ;{if_else {== $theactualpath SONGPATH3}
-                           ;{set $authorvar "Harmonix"}
-                           {do
-                              {if_else {file_exists $theactualpath}
-                                 {do
-                                    {set $songdtareader {read_file $theactualpath}}
-                                    {set $additionalreader {read_file {song_mgr song_file_path {meta_performer song} "/../../gen/songs_updates.dtb"}}}
-                                    {if_else {|| {== $theactualpath SONGPATH} {== $theactualpath SONGPATH3}}
-                                       {set $authorvar "Harmonix"}
-                                       {foreach $entry $songdtareader
-                                          {if {== {elem $entry 0} {basename $short_name}}
-                                             {if {find $entry author}
-                                                {set $authorvar {elem {find $entry author} 1}}
-                                             }
+                        {do
+                           {if_else {file_exists $theactualpath} ;if we found a path that is valid
+                              {do
+                                 {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
+                                 {if {file_exists SONGPATH3} ;if we are specifically in on disc updates
+                                    {set $additionalreader {read_file {song_mgr song_file_path {meta_performer song} "/../../gen/songs_updates.dtb"}}} ;we need to load our additional dta information file
+                                 }
+                                 {if_else {|| {== $theactualpath SONGPATH} {== $theactualpath SONGPATH3}} ;if we are inside the disc ark, disc songs or updated songs
+                                    {set $authorvar "Harmonix"} ;assume the author is Harmonix
+                                    {foreach $entry $songdtareader ;otherwise scan our loaded dta
+                                       {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                          {if {find $entry author} ;check if we have an author tag in the dta
+                                             {set $authorvar {elem {find $entry author} 1}} ;apply the author tag to our tracked variable
                                           }
                                        }
                                     }
-                                    {foreach $entry $songdtareader
+                                 }
+                                 {foreach $entry $songdtareader ;artist we have to read for every song, and SHOULD always be included in any loaded dta
+                                    {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                       {if {find $entry artist} ;check if we have an artist tag in the dta
+                                          {set $artistvar {elem {find $entry artist} 1}} ;apply the artist tag to our tracked variable
+                                       }
+                                    }
+                                 }
+                                 {if_else {== $theactualpath SONGPATH3} ;if we SPECIFICALLY are an on disc update
+                                    {foreach $entry $songdtareader ;first probe the internal look up table
                                        {if {== {elem $entry 0} {basename $short_name}}
-                                          {if {find $entry artist}
-                                             {set $artistvar {elem {find $entry artist} 1}}
-                                          }
-                                       }
-                                    }
-                                    {if_else {== $theactualpath SONGPATH3} ;if we are an on disc update
-                                       {foreach $entry $songdtareader ;first probe the internal look up table
-                                          {if {== {elem $entry 0} {basename $short_name}}
-                                             {if_else {find $entry year_released} ;check if we find a year value
-                                                {set $yearvar {elem {find $entry year_released} 1}} ;if we do, hooray!
-                                                {do 
-                                                   {foreach $entry $additionalreader ;if we didnt find year there, we need to scan our updates dta
-                                                      {if {== {elem $entry 0} {basename $short_name}}
-                                                         {if {find $entry year_released} ;check for year again
-                                                            {set $yearvar {elem {find $entry year_released} 1}} ;hooray we found a year!
-                                                         }
+                                          {if_else {find $entry year_released} ;check if we find a year value
+                                             {set $yearvar {elem {find $entry year_released} 1}} ;if we do, hooray!
+                                             {do 
+                                                {foreach $entry $additionalreader ;if we didnt find year there, we need to scan our updates dta
+                                                   {if {== {elem $entry 0} {basename $short_name}}
+                                                      {if {find $entry year_released} ;check for year again
+                                                         {set $yearvar {elem {find $entry year_released} 1}} ;hooray we found a year!
                                                       }
                                                    }
                                                 }
                                              }
                                           }
                                        }
-                                       {foreach $entry $songdtareader ;if we are reading on disc, or dlc, we can just read the damn year
-                                          {if {== {elem $entry 0} {basename $short_name}}
-                                             {if {find $entry year_released} ;you better be there
-                                                {set $yearvar {elem {find $entry year_released} 1}} ;hooray we foud a year
-                                             }
+                                    }
+                                    {foreach $entry $songdtareader ;if we are reading on disc, or dlc, we can just read the damn year
+                                       {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                          {if {find $entry year_released} ;you better be there
+                                             {set $yearvar {elem {find $entry year_released} 1}} ;hooray we found a year!
                                           }
                                        }
                                     }
-                                    {if_else {== $theactualpath SONGPATH3}
-                                       {foreach $entry $songdtareader
-                                          {if {== {elem $entry 0} {basename $short_name}}
-                                             {if_else {find $entry album_name}
-                                                {set $albumvar {elem {find $entry album_name} 1}}
-                                                {do
-                                                   {foreach $entry $additionalreader
-                                                      {if {== {elem $entry 0} {basename $short_name}}
-                                                         {if {find $entry album_name}
-                                                            {set $albumvar {elem {find $entry album_name} 1}}
-                                                         }
+                                 }
+                                 {if_else {== $theactualpath SONGPATH3} ;if we SPECIFICALLY are an on disc update
+                                    {foreach $entry $songdtareader ;first probe the internal look up table
+                                       {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                          {if_else {find $entry album_name} ;check if we find an album_name value
+                                             {set $albumvar {elem {find $entry album_name} 1}} ;if we do, hooray!
+                                             {do
+                                                {foreach $entry $additionalreader ;if we didnt find album_name there, we need to scan our updates dta
+                                                   {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                                      {if {find $entry album_name} ;check for album_name again
+                                                         {set $albumvar {elem {find $entry album_name} 1}} ;hooray we found an album_name!
                                                       }
                                                    }
                                                 }
                                              }
                                           }
                                        }
-                                       {foreach $entry $songdtareader
-                                          {if {== {elem $entry 0} {basename $short_name}}
-                                             {if {find $entry album_name}
-                                                {set $albumvar {elem {find $entry album_name} 1}}
-                                             }
+                                    }
+                                    {foreach $entry $songdtareader ;if we are reading on disc, or dlc, we can just read the damn album_name
+                                       {if {== {elem $entry 0} {basename $short_name}} ;find the current song's shortname
+                                          {if {find $entry album_name} ;check for album_name
+                                             {set $albumvar {elem {find $entry album_name} 1}} ;hooray we found a year!
                                           }
                                        }
                                     }
                                  }
                               }
-                              ;{set $authorvar FALSE}
-                              ;{set $authorvar {sprint "failed - path is: " $theactualpath}}
+                              {set $authorvar {sprint "failed - path is: " $theactualpath}} ;if we couldn't find a file to load at all, we fucked up
                            }
-                        ;}
+                        }
                         ;{song.lbl set_token_fmt $authorvar}
                      }
                      {do
-                        {if_else {&& {modifier_mgr is_modifier_active mod_fakejuke} {!= $speedmod 1.0}}
-                           {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" " "}}
-                           {if_else {&& {modifier_mgr is_modifier_active mod_chmode} {!= $speedmod 1.0}}
-                              {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nDRUNK MODE"}}
-                              {if_else {&& {modifier_mgr is_modifier_active mod_auto_play} {!= $speedmod 1.0}}
-                                 {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nAUTOPLAY"}}
-                                 {if_else {modifier_mgr is_modifier_active mod_fakejuke}
-                                    {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " "}}
-                                    {if_else {modifier_mgr is_modifier_active mod_chmode}
-                                       {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nDRUNK MODE"}}
-                                       {if_else {modifier_mgr is_modifier_active mod_auto_play}
-                                          {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nAUTOPLAY"}}
-                                          {if_else {modifier_mgr is_modifier_active mod_fastermode}
-                                             {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\n" {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}}
-                                             {if_else {!= $speedmod 1.0}
-                                                {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}}
-                                                {song.lbl set_song_name $short_name}
+                        {if_else {&& {modifier_mgr is_modifier_active mod_fakejuke} {!= $speedmod 1.0}} ;fake jukebox and speed not equal to 100%
+                           {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" " "}} ;print for jukebox speedups
+                           {if_else {&& {modifier_mgr is_modifier_active mod_chmode} {!= $speedmod 1.0}} ;ch mode and speed not equal to 100%
+                              {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nDRUNK MODE"}} ;print for ch mode speedups
+                              {if_else {&& {modifier_mgr is_modifier_active mod_auto_play} {!= $speedmod 1.0}} ;autoplay and speed not equal to 100%
+                                 {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nAUTOPLAY"}} ;print for autoplay speedups
+                                 {if_else {modifier_mgr is_modifier_active mod_fakejuke} ;fake jukebox
+                                    {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " "}} ;print for fake jukebox
+                                    {if_else {modifier_mgr is_modifier_active mod_chmode} ;ch mode
+                                       {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nDRUNK MODE"}} ;print ch mode
+                                       {if_else {modifier_mgr is_modifier_active mod_auto_play} ;autoplay
+                                          {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\nAUTOPLAY"}} ;print autoplay
+                                          {if_else {modifier_mgr is_modifier_active mod_fastermode} ;acceleration mode
+                                             {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} "\n" {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}} ;print acceleration mode as well as the current speed
+                                             {if_else {!= $speedmod 1.0} ;if purely song speed is not 100%
+                                                {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}} ;print speed if only speed is changed
+                                                {song.lbl set_song_name $short_name} ;if nothing else needs to be reported at all. just print the shortname
                                              }
                                           }
                                        }
@@ -199,20 +208,21 @@
                            }
                         }
                      }
-                  ;}
+                 ;}
                }
-               {if
-                  {exists artist.lbl}
-                  {if {modifier_mgr is_modifier_active mod_fakejuke} {set $authorvar FALSE}}
-                  {if_else {modifier_mgr is_modifier_active mod_songtitlestats}
-                     {if_else $authorvar
-                        {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar "\n" {localize author} ": " $authorvar}}
-                        {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar}}
+               {if {exists artist.lbl}
+                  {if {modifier_mgr is_modifier_active mod_fakejuke} ;if fake jukebox mode is enabled
+                     {set $authorvar FALSE} ;just completely disregard the author so our next script lands in the correct spot
+                  }
+                  {if_else {modifier_mgr is_modifier_active mod_songtitlestats} ;if we have detailed song info enabled
+                     {if_else $authorvar ;check if we have a valid author currently loaded
+                        {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar "\n" {localize author} ": " $authorvar}} ;if yes to author and detailed info, print everything we have
+                        {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar}} ;if detailed but no author present (fake jukebox) print what we do have
                      }
-                     {if_else $authorvar
-                        {artist.lbl set_token_fmt {sprint $artistvar "\n" {localize author} ": " $authorvar}}
-                        {artist.lbl set_token_fmt {sprint $artistvar}}
-                        ;{artist.lbl set_artist_name_from_shortname $short_name}
+                     {if_else $authorvar ;if we are not in detailed song info, check for author
+                        {artist.lbl set_token_fmt {sprint $artistvar "\n" {localize author} ": " $authorvar}} ;if we have an author, print it
+                        {artist.lbl set_token_fmt {sprint $artistvar}} ;if we have no author, just print the artist
+                        ;{artist.lbl set_artist_name_from_shortname $short_name} ;this is the vanilla function for setting the author line we no longer use
                      }
                   }
                }
