@@ -1,0 +1,271 @@
+(kState_RB3ESettings
+   (view options)
+   (enter
+   {options.lst set_selected $rb3esettingsval}
+   {online_options.lst set circular 0}
+   {options.lst set_data
+   (
+      os_spds
+      os_venuesel
+      os_thm
+      os_cam
+      os_audiomenu
+   )})
+   (SELECT_MSG
+      {set $rb3esettingsval {$component selected_sym}}
+   {switch
+   {$component selected_sym}
+   (os_spds
+      {$this show_state kState_RB3ESpeedMenu})
+   (os_thm
+      {$this show_state kState_RB3EAppearanceMenu})
+   (os_venuesel
+    {$this show_state kState_RB3EVenueSelector})
+   (os_cam
+    {$this show_state kState_RB3ECameraMenu})
+   (os_audiomenu
+    {$this show_state kState_RB3EAudioMenu})
+   })
+	(on_cancel
+       ;restore original online_options upon exit
+	   {do
+         ($options
+            {array 0})
+            {push_back $options overshell_invite}
+            #ifdef HX_XBOX {push_back $options overshell_invite_xbox_party} #endif
+            #ifdef HX_PS3 {push_back $options overshell_check_invites} #endif
+            {push_back $options overshell_kick}
+            {push_back
+               $options
+               #ifdef HX_XBOX overshell_gamercard #else
+               overshell_mute #endif}
+            {push_back $options overshell_disconnect}
+            {online_options.lst set_data $options}}
+      {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
+         {if_else $settingserror
+            {$this show_state kState_RB3ESaveWarnError}
+            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}}
+         {$this show_state kState_RB3ESaveWarn}}))
+
+(kState_RB3EVenueSelector
+   (view options_audio)
+   (enter
+      {do
+         ($venue_array
+            {array
+               (VENUES VENUES_VIDEO)})
+         {insert_elem $venue_array 0 none}
+		   {insert_elem $venue_array 1 random}
+         {options_audio.lst set_data $venue_array}
+         {options_audio.lst set scroll_time 0}
+         {options_audio.lst set circular 1}
+         {options_audio.lst set_selected $rb3evenueval}
+         {$this update_venue_selection}})
+   (update_venue_selection
+      {options_extras.lst
+         set_selected
+         {{set $force TRUE} {set $venue {options_audio.lst selected_sym}} {ui goto_screen meta_loading_main_screen}}})
+   (SELECT_MSG
+      {set $rb3evenueval {$component selected_sym}}
+      {set $force TRUE} {set $venue {options_audio.lst selected_sym}} {ui goto_screen meta_loading_main_screen}
+      {switch
+         {$component selected_sym}
+         (random
+            {set $force FALSE} {set $venue VENUES} {ui goto_screen meta_loading_main_screen})
+		 (none
+            {set $force TRUE} {set $venue BLACK_VENUE} {ui goto_screen meta_loading_main_screen})}
+      {$this show_state kState_RB3ESettings} {ui pop_screen})
+  (exit
+  {options_audio.lst set scroll_time 0.25}
+  {options_audio.lst set circular 0}
+  {options_audio.lst set_selected 0})
+  (on_cancel
+  {options.lst set_selected 2}
+  {$this show_state kState_RB3ESettings}))
+
+;save warnings
+
+(kState_SettingsWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_warning (overshell_continue))})
+   (SELECT_MSG
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_RB3ESaveWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions save_warning (os_save os_dontsave))})
+   (on_cancel
+      {$this show_game_options})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_save
+            {if_else $settingserror
+            {$this show_state kState_RB3ESaveWarnError}
+            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}})
+         (os_dontsave
+            {$this show_game_options})}))
+
+(kState_RB3ESaveWarnError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_game_options})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {$this show_game_options})}))
+
+(kState_RB3ESaveWarnErrorAV
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_options_av_settings})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {$this show_options_av_settings})}))
+
+(kState_SettingsSave
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_save (overshell_continue))})
+   (SELECT_MSG
+      {$this show_state kState_RB3ESettings})
+   (on_cancel
+      {$this show_state kState_RB3ESettings}))
+
+(kState_SettingsSaveError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (SELECT_MSG
+      {$this show_state kState_RB3ESettings})
+   (on_cancel
+      {$this show_state kState_RB3ESettings}))
+
+;modifier warnings
+
+(kState_AutoPlayWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions autoplay_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_auto_play}
+      {set $gotcha FALSE}
+      {saveload_mgr disable_autosave $user}
+      {overshell update_all}
+		{ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_FakeJukeWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions fakejuke_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {set $dontsavemod TRUE}
+      {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+         {unless {modifier_mgr is_modifier_active mod_auto_play}
+            {modifier_mgr toggle_modifier_enabled mod_auto_play}}
+         {unless {modifier_mgr is_modifier_active mod_nohud}
+            {modifier_mgr toggle_modifier_enabled mod_nohud}}
+         {unless {modifier_mgr is_modifier_active mod_nopause}
+            {modifier_mgr toggle_modifier_enabled mod_nopause}}
+         {unless {modifier_mgr is_modifier_active mod_songtitlestats}
+            {modifier_mgr toggle_modifier_enabled mod_songtitlestats}}
+         {if {modifier_mgr is_modifier_active mod_songtitle}
+            {modifier_mgr toggle_modifier_enabled mod_songtitle}}
+         {if {modifier_mgr is_modifier_active mod_drum_fills}
+            {modifier_mgr toggle_modifier_enabled mod_drum_fills}}
+         {if {modifier_mgr is_modifier_active mod_nointro}
+            {modifier_mgr toggle_modifier_enabled mod_nointro}}
+      {set $gotcha FALSE}
+      {saveload_mgr disable_autosave $user}
+      {overshell update_all}
+		{ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_RB3EVideoMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_videoconfirm)})
+   (SELECT_MSG
+      {$this show_state kState_Modifiers}))
+
+(kState_RB3ENoMusicVideos
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_nomvconfirm)})
+   (SELECT_MSG
+      {$this show_state kState_Modifiers}))
+
+(kState_CHModeWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions chmode_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_chmode}
+      {set $gotcha FALSE}
+      {saveload_mgr disable_autosave $user}
+      {overshell update_all}
+      {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_CalibrationWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions calibration_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_calibration}
+      {overshell update_all}
+      {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_ModifierSongLoad
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions modifier_song_load (overshell_confirm_yes overshell_confirm_no))})
+   (on_cancel
+      {$this show_modifiers})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_confirm_yes
+            {ui goto_screen meta_loading_main_screen})
+         (overshell_confirm_no
+            {$this show_modifiers})}))

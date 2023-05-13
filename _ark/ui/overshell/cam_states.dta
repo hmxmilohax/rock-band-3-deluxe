@@ -1,0 +1,134 @@
+(kState_RB3ECameraMenu
+   (view online_options)
+   (enter
+   {online_options.lst set_selected $rb3camval}
+   {options_audio.lst set circular 0}
+   {online_options.lst set_data 
+   (
+      os_menubg
+      overshell_freecam
+      overshell_postproc
+      os_reload
+      os_scrsvr
+   )})
+   (SELECT_MSG
+      {set $rb3camval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_menubg
+      {$this show_state kState_RB3EMenuBG})
+   (overshell_freecam
+      {if {&& {$this in_song} {modifier_mgr is_modifier_active mod_auto_play}} {cycle_free_camera}})
+   (overshell_postproc
+      {do
+      {if_else {&& {== $toggle_postfx FALSE} {== $toggledthisboot FALSE}}
+         {do
+            {set $toggledthisboot TRUE}
+            {set $toggle_postfx TRUE}
+         }
+         {if_else {&& {== $toggle_postfx TRUE} {== $toggledthisboot TRUE}}
+            {do
+               {set $toggledthisboot FALSE}
+               {set $toggle_postfx FALSE}
+            }
+            {if_else {&& {== $toggle_postfx TRUE} {{== $toggledthisboot FALSE}}}
+               {do
+                  {set $toggledthisboot FALSE}
+                  {set $toggle_postfx TRUE}
+               }
+               {do
+                  {set $toggledthisboot TRUE}
+                  {set $toggle_postfx FALSE}
+               }
+            }
+         }
+      }
+      {rnd toggle_all_postprocs}
+      }
+   )
+   (os_reload
+      {if_else {$this in_game}
+      {$this show_state kState_RB3EReloadDenyMsg}
+      {ui goto_screen meta_loading_main_screen}})
+   (os_scrsvr
+      {$this show_state kState_RB3EScreensaver})
+   })
+   (on_cancel
+      {options.lst set_selected 3}
+      {$this show_state kState_RB3ESettings}))
+
+(kState_RB3EMenuBG
+   (view options)
+   (enter
+   {options.lst set_selected $rb3bgval}
+   {options.lst set_data
+   (
+      os_bg8
+      os_bg3
+      os_bg4
+      os_bg5
+      os_bg2
+   )})
+   (SELECT_MSG
+      {set $rb3bgval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_bg8
+      {set $svnumber 8}
+      {$this show_state kState_RB3EMenuBGWarn})
+   (os_bg3
+      {set $svnumber 3}
+      {$this show_state kState_RB3EMenuBGWarn})
+   (os_bg2
+      {set $svnumber 2}
+      {$this show_state kState_RB3EMenuBGWarn})
+   (os_bg4
+      {set $svnumber 4}
+      {$this show_state kState_RB3EMenuBGWarn})
+   (os_bg5
+      {set $svnumber 5}
+      {$this show_state kState_RB3EMenuBGWarn})
+   })
+   (on_cancel
+      {$this show_state kState_RB3ECameraMenu}))
+
+(kState_RB3EMenuBGWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_bgwarn}})})
+   (SELECT_MSG
+      {set $fpsslider FALSE}
+      {$this show_state kState_RB3EMenuBG}))
+
+(kState_RB3EReloadDenyMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_reload_deny)})
+   (SELECT_MSG
+      {$this show_state kState_RB3ECameraMenu}))
+
+(kState_RB3EScreensaver
+ (view confirm_action)
+ (enter
+   {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions screensaver_warning (overshell_continue overshell_cancel))})
+ (SELECT_MSG
+  {switch
+   {$component selected_sym}
+   (overshell_continue
+   {set $screensaver FALSE}
+   {unless
+   {$this in_song}
+   {do
+    {ui goto_screen meta_loading_main_screen}
+    {overshell exit}}})
+   (overshell_cancel
+   {$this show_state kState_RB3ECameraMenu})
+   })
+ (on_cancel
+  {$this show_state kState_RB3ECameraMenu})
+ (exit
+ {options_end_game.lst set_selected 0}))

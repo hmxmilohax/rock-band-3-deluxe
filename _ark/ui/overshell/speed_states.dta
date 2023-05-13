@@ -1,0 +1,278 @@
+(kState_RB3ESpeedMenu
+   (view online_options)
+   (on_cancel
+      {options.lst set_selected 1}
+      {$this show_state kState_RB3ESettings})
+   (enter
+   {set $rb3eslider TRUE}
+   {online_options.lst set_selected $speedmenuval}
+   {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
+   {bg_music.sld set_num_steps 41} ;number of steps for note speed slider
+   {crowd.sld set_num_steps 31} ;number of steps for song speed slider
+   {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
+   {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+   {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
+   {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg (or not, thanks rb3)
+   {speed_msg.lbl set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg (or not, thanks rb3)
+   {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg (or not, thanks rb3)
+   {online_options.lst set_data 
+   (
+      os_venuefps
+      os_trkspd
+      os_sngspd
+      os_faster
+   )})
+  (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            crowd.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            sfx.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            voice_chat.sld
+            "")})
+   (SELECT_MSG
+   {set $speedmenuval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_venuefps
+      {set $fpsslider TRUE}
+      {instruments.sld store}
+      {instruments.sld set_showing TRUE}
+      {$this set_focus instruments.sld})
+   (os_trkspd
+    {set $trackspeedslider TRUE}
+    {bg_music.sld store}
+    {bg_music.sld set_showing TRUE}
+    {$this set_focus bg_music.sld})
+   (os_sngspd
+      {if_else {$this in_game}
+      {$this show_state kState_RB3ESpeedDenyMsg}
+      {do
+      {set $songspeedslider TRUE}
+      {crowd.sld store}
+      {crowd.sld set_showing TRUE}
+      {$this set_focus crowd.sld}
+      }
+      })
+   (os_faster
+      {$this show_state kState_RB3EFasterMode})
+   })
+(BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $fpsslider
+                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $songspeedslider
+                  {do {$this show_state kState_SongSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $trackspeedslider
+                  {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                  {$this set_focus options_audio.lst}}}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $rb3eslider FALSE})
+ (on_cancel
+  {$this show_game_options}))
+
+(kState_TrackSpeedSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_tspeed} {int {+ 0.5 {* $trackspeed 100}}}})})
+   (SELECT_MSG
+      {set $trackspeedslider FALSE}
+      {$this show_state kState_RB3ESpeedMenu}))
+
+(kState_SongSpeedSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_speed} {int {+ 0.5 {* $speedmod 100}}}})})
+   (SELECT_MSG
+      {set $songspeedslider FALSE}
+      {$this show_state kState_RB3ESpeedMenu}))
+
+(kState_VenueFPSSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_fps} {int $emulatefps}})})
+   (SELECT_MSG
+      {set $fpsslider FALSE}
+      {$this show_state kState_RB3ESpeedMenu}))
+
+(kState_RB3ESpeedDenyMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_speed_deny)})
+   (SELECT_MSG
+      {$this show_state kState_RB3ESpeedMenu}))
+
+;acceleration
+
+#define FASTER_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_fastermode} os_disable os_enable}
+   os_sngspdcap
+)
+(kState_RB3EFasterMode
+   (view options_extras)
+   (on_cancel
+      {$this show_state kState_RB3ESpeedMenu})
+   (lst_reset
+      {options_extras.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options_extras.lst set_selected $fastermenuval}
+      }
+   )
+   (enter
+   {$this lst_reset}
+   {set $rb3eslider_cap TRUE}
+   {options_extras.lst set_selected $fastermenuval}
+   {bg_music.sld set_num_steps 31} ;number of steps for song speed slider
+   {bg_music.sld set_current {int {+ 0.5 {/ {- $speedmod_cap 1} 0.05}}}} ;set song speed slider based on current value
+   {speed_msg.lbl set_token_fmt {sprintf {localize speedcap_msg} {int {+ 0.5 {* $speedmod_cap 100}}}}} ;set song speed msg (or not, thanks rb3)
+   {options_extras.lst set_data 
+   (
+      FASTER_DATA
+   )})
+  (update_view
+      {handle
+         ($this
+            update_slider
+            instruments.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            crowd.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            sfx.sld
+            "")}
+      {handle
+         ($this
+            update_slider
+            voice_chat.sld
+            "")})
+   (SELECT_MSG
+   {set $fastermenuval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_sngspdcap
+      {set $songspeedcapslider TRUE}
+      {bg_music.sld store}
+      {bg_music.sld set_showing TRUE}
+      {$this set_focus bg_music.sld})
+   (os_enable
+      {unless {modifier_mgr is_modifier_active mod_fastermode}
+         {modifier_mgr toggle_modifier_enabled mod_fastermode}
+         {options_extras.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options_extras.lst set_selected $fastermenuval}
+      }
+      }
+   )
+   (os_disable
+      {if {modifier_mgr is_modifier_active mod_fastermode}
+         {modifier_mgr toggle_modifier_enabled mod_fastermode}
+      }
+      {options_extras.lst set_data (FASTER_DATA)}
+      {if $fastermenuval
+         {options_extras.lst set_selected $fastermenuval}
+      }
+      )
+   }
+   {$this lst_reset}
+   )
+   (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("instruments.sld"
+               "bg_music.sld"
+               "crowd.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {if_else $fpsslider
+                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $songspeedcapslider
+                  {do {$this show_state kState_SongSpeedCapSliderMsg} {$this set_focus confirm_action.lst}}
+               {if_else $trackspeedslider
+                  {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                  {$this set_focus options_audio.lst}}}})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user})
+ (exit
+  {set $rb3eslider_cap FALSE})
+ (on_cancel
+  {$this show_game_options}))
+
+(kState_SongSpeedCapSliderMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_speedcap} {int {+ 0.5 {* $speedmod_cap 100}}}})})
+   (SELECT_MSG
+      {set $songspeedcapslider FALSE}
+      {$this show_state kState_RB3EFasterMode}))
