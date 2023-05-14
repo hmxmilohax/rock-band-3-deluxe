@@ -1,6 +1,6 @@
 <div align="center">
 
-![Header Image](dependencies/images/header.gif)
+<img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
 
 ## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and [Wii](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii)
 
@@ -8,26 +8,9 @@
 
 <br/>
 
-<img src="dependencies/images/rb3dx.gif" width="110%" alt="RB3DX">
+<img src="dependencies/images/rb3dx.gif" width="100%" alt="RB3DX">
 
 </div>
-
-# Table of Contents  
-- [What You'll Need](#-what-youll-need)
-- [Downloads](#-downloads)
-- [How to Install](#how-to-install)
-  - [Installing on RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
-  - [Installing on PS3](#installing-on-ps3)
-  - [Installing on Xbox 360](#installing-on-xbox-360)
-  - [Installing on Xbox Series X/S (Xenia UWP)](#installing-on-xbox-series-xs-xenia-uwp)
-  - [Installing on Xenia (Advanced)](#installing-on-xenia-advanced)
-- [Optional Upgrades](#optional-upgrades)
-  - [Songs](#songs)
-  - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
-  - [Custom Textures](#custom-textures)
-- [Repo Setup (Advanced)](#repo-setup-advanced)
-- [Dependencies](#dependencies)
-
 <br/>
 
 # ✍️ What You'll Need
@@ -64,17 +47,40 @@
 
 ### [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
 
+> The standard install, typical for most users.
+
 [RB3DX (With rb3_plus Keys Upgrades) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip)
+
+> Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#rb3_plus-keys-upgrades).
 
 [RB3DX (Without Chart Fixes) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids.zip)
 
+> By default, Rock Band 3 Deluxe has chart upgrades to fix things, this build does not contain those.
+
 [RB3DX (Series X/S Xenia) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base-Force-Guitar-Controller.zip)
+
+> Forces all instruments to be Guitar controllers since Xenia UWP does not support them at the moment.
 
 [RB3DX (Series X/S Xenia Without Chart Fixes) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids-Force-Guitar-Controller.zip)
 
+> See above two.
+
+## Wii (No Longer Supported)
+
+### [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/wii/RB3DX-Base-Wii-Rawfiles.zip)
+
+> The Wii version of Rock Band 3 Deluxe is no longer being maintained or supported.
+
 <br/>
 
-# How to Install
+# 📩 How to Install
+
+  - [RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
+  - [PlayStation 3](#installing-on-ps3)
+  - [Xbox 360](#installing-on-xbox-360)
+  - [Xbox Series X/S (Xenia UWP)](#installing-on-xbox-series-xs-xenia-uwp)
+  - [Xenia (Advanced)](#installing-on-xenia-advanced)
+<br/>
 
 ## Installing on [RPCS3](https://rpcs3.net/) (Recommended for PC)
 
@@ -158,7 +164,7 @@
 
 ## Installing on Xenia (Advanced)
 
-*Follow [**Repo Setup (Advanced)**](#repo-setup-advanced) first in order to properly follow this guide.*
+*Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
 
 * **Extract your vanilla copy of Rock Band 3** and copy the contents of the `gen` folder to `\_build\xbox\gen\`.
 
@@ -193,14 +199,14 @@ You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite
 * Download a PS3 song pack of your choice and open RPCS3.
 * Drag and drop the song pack you want to install on top of the main RPCS3 window and select `Yes` to install it.
 
-![RPCS3 PKG](dependencies/images/rpcs3_pkg.png)
+<img src="dependencies/images/rpcs3_pkg.png" alt="RPCS3 PKG">
 
 ### Installing Songs on PS3
 
 * Download a PS3 song pack of your choice and put it on the root of a USB drive.
 * Open `Package Manager` and select the song pack you want to install.
 
-![PS3 PKG](dependencies/images/ps3_pkg.png)
+<img src="dependencies/images/ps3_pkg.png" width="50%" alt="PS3 PKG">
 
 ### Installing Songs on Xbox 360
 
@@ -209,15 +215,15 @@ You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite
 
 ***For RB3 LIVE files, install them to:***
 
-![RB3 LIVE](dependencies/images/360_rb3live.png)
+<img src="dependencies/images/360_rb3live.png" width="50%" alt="RB3 LIVE">
 
 ***For RB3 CON files, install them to:***
 
-![RB3 CON](dependencies/images/360_rb3con.png)
+<img src="dependencies/images/360_rb3con.png" width="50%" alt="RB3 CON">
 
 ***For RB2 LIVE files, install them to:***
 
-![RB2 LIVE](dependencies/images/360_rb2live.png)
+<img src="dependencies/images/360_rb2live.png" width="50%" alt="RB2 LIVE">
 
 ### Installing Songs on Xenia (Desktop and UWP)
 
@@ -245,7 +251,7 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
 
 ### Importing Your Own Textures
 
-*Follow [**Repo Setup (Advanced)**](#repo-setup-advanced) first in order to properly follow this guide.*
+*Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
 
 * Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, then navigate back to `windows_bats` and run `process_textures_***.bat`.
   * These will make them show up in game, resize your images accordingly (including those with arbitrary resolutions), and convert them to the proper format for Rock Band 3 Deluxe to read.
@@ -254,7 +260,7 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
 
 <br/>
 
-# Repo Setup (Advanced)
+# 🔨 Building (Advanced)
 
 ### Installing Python (Required)
 
@@ -272,7 +278,15 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
-***The Rock Band 3 Deluxe repo is now set up!*** You can now return to [**Installing on Xenia (Advanced)**](#installing-on-xenia-advanced) or [**Custom Textures**](#custom-textures).
+***The Rock Band 3 Deluxe repo is now set up!***
+
+From here, you can make any personal modifications to the game or build it yourself.
+
+* Navigate to `windows_bats` if you're on Windows or `user_scripts` if you're on Linux.
+  * Run the `build_` script for your platform of choice to build Rock Band 3 Deluxe.
+  * Built contents will be in the `_build` folder on the root of the repo.
+
+You can now return to [**Installing on Xenia (Advanced)**](#installing-on-xenia-advanced) or [**Custom Textures**](#custom-textures).
 
 <br/>
 
