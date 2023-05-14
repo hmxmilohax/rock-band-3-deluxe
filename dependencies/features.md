@@ -44,4 +44,4 @@
 * Compatibility with [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) for Xbox 360
 * Fast start, Song Blacklist, UGC Demo, Anti Debugger patches from [RB3Enhanced](https://github.com/RBEnhanced/RB3Enhanced) Embedded directly into DX binaries.
 
-# 👉 [Download Here](https://github.com/hmxmilohax/rock-band-3-deluxe#what-youll-need)!
+# 👉 [Download Here!](https://github.com/hmxmilohax/rock-band-3-deluxe#what-youll-need)!
