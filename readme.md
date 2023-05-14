@@ -18,7 +18,7 @@ This guide contains full instructions on how to install Rock Band 3 Deluxe for P
 
 # Table of Contents  
 - [What You'll Need](#what-youll-need)
-- [Downloads](#📥-downloads)
+- [Downloads](#-downloads)
 - [How to Install](#how-to-install)
   - [Installing on RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
   - [Installing on PS3](#installing-on-ps3)
