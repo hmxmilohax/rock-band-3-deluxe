@@ -28,6 +28,8 @@
 - [Repo Setup (Advanced)](#repo-setup-advanced)
 - [Dependencies](#dependencies)
 
+<br/>
+
 # ✍️ What You'll Need
 
 ### Playing Rock Band 3 Deluxe requires these things:
@@ -35,6 +37,8 @@
 - **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC. The **USA** version is required for PS3 (`BLUS30463`)
 - For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we recommend using FTP
 - For Emulator: A **mid-to-high-end PC** capable of running RPCS3
+
+<br/>
 
 # 📥 Downloads
 
@@ -68,6 +72,8 @@
 
 [RB3DX (Series X/S Xenia Without Chart Fixes) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids-Force-Guitar-Controller.zip)
 
+<br/>
+
 # How to Install
 
 ## Installing on [RPCS3](https://rpcs3.net/) (Recommended for PC)
@@ -88,6 +94,8 @@
 ![GPU Tab](dependencies/images/gputab.png)
 ![Write Color Buffers](dependencies/images/writecolorbuffers.png)
 
+<br/>
+
 ## Installing on PS3
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
@@ -103,6 +111,8 @@
 **To update Rock Band 3 Deluxe**, [**re-download it**](#playstation-3) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
 ***Sidenote:*** *if your Guitar Hero or Rock Revolution drum kit shows up as the wrong instrument, download* [***this build***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip) *instead.*
+
+<br/>
 
 ## Installing on Xbox 360
 
@@ -124,6 +134,8 @@
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#xbox-360) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
+<br/>
+
 ## Installing on Xbox Series X/S ([Xenia UWP](https://github.com/SirMangler/xenia/releases))
 
 **NOTE: You WILL need an Xbox Series X/S running in [Developer Mode](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation). We hope this is clear.**
@@ -141,6 +153,8 @@
 ***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *to prevent any character model issues.*
 
 ![UWP Readback Resolve](dependencies/images/uwp_readbackresolve.png)
+
+<br/>
 
 ## Installing on Xenia (Advanced)
 
@@ -161,6 +175,8 @@
 
 ![D3D12](dependencies/images/d3d12.png)
 ![Readback Resolve](dependencies/images/readbackresolve.png)
+
+<br/>
 
 # Optional Upgrades
 
@@ -213,11 +229,15 @@ You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite
 
 * If you're on Xbox Series X/S, copy the entire `content` folder to your USB drive. Click `Yes` to overwrite the files if it asks you to.
 
+<br/>
+
 ## [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
 
 [rb3_plus](https://github.com/rjkiv/rb3_plus) features optional Keys and Pro Keys upgrades that you can install alongside Rock Band 3 Deluxe fairly easily. These upgrades include new audio files (.mogg's) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any Keys or Pro Keys player.
 
 You can download a build of Rock Band 3 Deluxe containing these upgrades for both [**PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip) and [**Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip).
+
+<br/>
 
 ## Custom Textures
 
@@ -231,6 +251,8 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
   * These will make them show up in game, resize your images accordingly (including those with arbitrary resolutions), and convert them to the proper format for Rock Band 3 Deluxe to read.
 
 ***You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.***
+
+<br/>
 
 # Repo Setup (Advanced)
 
@@ -251,6 +273,8 @@ Rock Band 3 Deluxe has a variety of custom textures, found in the `Deluxe Settin
 ![Repo Folder](dependencies/images/repofolder.png)
 
 ***The Rock Band 3 Deluxe repo is now set up!*** You can now return to [**Installing on Xenia (Advanced)**](#installing-on-xenia-advanced) or [**Custom Textures**](#custom-textures).
+
+<br/>
 
 # Dependencies
 
