@@ -67,7 +67,7 @@
 
 ## Wii (No Longer Supported)
 
-📥 ### [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/wii/RB3DX-Base-Wii-Rawfiles.zip)
+### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/wii/RB3DX-Base-Wii-Rawfiles.zip)
 
 > The Wii version of Rock Band 3 Deluxe is no longer being maintained or supported.
 
