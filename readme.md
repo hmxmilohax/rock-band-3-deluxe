@@ -6,8 +6,11 @@
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md)
 
-</div>
 <br/>
+
+![Readme GIF](dependencies/images/rb3dx.gif)
+
+</div>
 
 # Table of Contents  
 - [What You'll Need](#what-youll-need)
