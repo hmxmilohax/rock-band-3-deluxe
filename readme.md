@@ -2,17 +2,12 @@
 
 ![Header Image](dependencies/images/header.gif)
 
-## Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod for PlayStation 3 and Xbox 360
+## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and [Wii](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii)
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md)
 
 </div>
-
 <br/>
-
-This guide contains full instructions on how to install Rock Band 3 Deluxe for PlayStation 3 or Xbox 360.
-
-*There is also a (no longer supported) Wii version available in [this branch](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii).*
 
 # Table of Contents  
 - [What You'll Need](#what-youll-need)
