@@ -1,7 +1,10 @@
+<div align="center">
+
 # Rock Band 3 Deluxe
 
-<div align="center">
 ![Header Image](dependencies/images/header.gif)
+
+</div>
 
 # Introduction
 
