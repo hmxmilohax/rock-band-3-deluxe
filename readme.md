@@ -8,7 +8,7 @@
 
 <br/>
 
-<img src="dependencies/images/rb3dx.gif" width="120%" alt="RB3DX">
+<img src="dependencies/images/rb3dx.gif" width="110%" alt="RB3DX">
 
 </div>
 
