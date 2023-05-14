@@ -2,7 +2,7 @@
 
 ![Header Image](dependencies/images/header.gif)
 
-## Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod by [MiloHax](https://github.com/hmxmilohax)
+## Rock Band 3 Deluxe is a Massive Quality-of-Life Improvement Mod for PlayStation 3 and Xbox 360
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md)
 
