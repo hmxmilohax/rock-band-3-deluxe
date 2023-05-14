@@ -13,7 +13,7 @@
 </div>
 
 # Table of Contents  
-- [What You'll Need](#what-youll-need)
+- [What You'll Need](#-what-youll-need)
 - [Downloads](#-downloads)
 - [How to Install](#how-to-install)
   - [Installing on RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
@@ -28,7 +28,7 @@
 - [Repo Setup (Advanced)](#repo-setup-advanced)
 - [Dependencies](#dependencies)
 
-# What You'll Need
+# ✍️ What You'll Need
 
 ### Playing Rock Band 3 Deluxe requires these things:
 
@@ -42,11 +42,19 @@
 
 ### [Rock Band 3 Deluxe (Standard) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
 
-[RB3DX (With rb3_plus Keys Upgrades) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip)
+The standard install, typical for most users.
 
-[RB3DX (Without Chart Fixes) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-original-mids.zip)
+> [RB3DX (With rb3_plus Keys Upgrades) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip)
 
-[RB3DX (Stock Instrument Mapping) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip)
+Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#rb3_plus-keys-upgrades).
+
+> [RB3DX (Without Chart Fixes) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-original-mids.zip)
+
+By default, Rock Band 3 Deluxe has chart upgrades to fix things, this build does not contain those.
+
+> [RB3DX (Stock Instrument Mapping) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip)
+
+Use this if you're on a real PS3 and using a Guitar Hero or Rock Revolution drum kit.
 
 ## Xbox 360
 
