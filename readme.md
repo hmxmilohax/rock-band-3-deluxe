@@ -8,7 +8,7 @@
 
 <br/>
 
-![Readme GIF](dependencies/images/rb3dx.gif)
+<img src="dependencies/images/rb3dx.gif" width="120%" alt="RB3DX">
 
 </div>
 
