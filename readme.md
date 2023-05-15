@@ -90,8 +90,12 @@
 * **Install your North American copy of Rock Band 3** through the emulator. The [**official RPCS3 site covers this nicely**](https://rpcs3.net/quickstart).
   * Remember, **you need to be running** ***BLUS30463***. RPCS3 will tell you this in the game selection GUI under the `Serial` column.
 
+<img src="dependencies/images/serial.png" alt="Serial">
+
 * Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it. Select `Yes` to confirm.
+
+<img src="dependencies/images/rpcs3_dxpkg.png" alt="RPCS3 DX PKG">
 
 ***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
@@ -115,11 +119,13 @@
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Navigate to `Package Manager` and install it like any other package.
 
+<img src="dependencies/images/ps3_dxpkg.png" width="75%" alt="PS3 DX PKG">
+
 ***Rock Band 3 Deluxe is now installed!*** We highly recommend you check out [**Optional Upgrades**](#optional-upgrades) for songs and other cool stuff you can add to your game.
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#playstation-3) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-***Sidenote:*** *if your Guitar Hero or Rock Revolution drum kit shows up as the wrong instrument, download* [***this build***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip) *instead.*
+***Sidenote:*** *if you're using a Guitar Hero or Rock Revolution drum kit, download* [***this build***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip) *instead.*
 
 <br/>
 
