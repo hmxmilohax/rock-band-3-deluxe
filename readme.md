@@ -77,15 +77,15 @@
 
 ### Select your Platform of Choice
 
-  - [RPCS3 (Recommended for PC)](#installing-on-rpcs3-recommended-for-pc)
-  - [PlayStation 3](#installing-on-ps3)
-  - [Xbox 360](#installing-on-xbox-360)
-  - [Xbox Series X/S (Xenia UWP)](#installing-on-xbox-series-xs-xenia-uwp)
-  - [Xenia (Advanced)](#installing-on-xenia-advanced)
+  - [RPCS3 (Recommended for PC)](#-installing-on-rpcs3-recommended-for-pc)
+  - [PlayStation 3](#-installing-on-ps3)
+  - [Xbox 360](#-installing-on-xbox-360)
+  - [Xbox Series X/S (Xenia UWP)](#-installing-on-xbox-series-xs-xenia-uwp)
+  - [Xenia (Advanced)](#-installing-on-xenia-advanced)
   - [Wii (Unsupported)](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii#install)
 <br/>
 
-## Installing on [RPCS3](https://rpcs3.net/) (Recommended for PC)
+## 📩 Installing on [RPCS3](https://rpcs3.net/) (Recommended for PC)
 
 * **Install your North American copy of Rock Band 3** through the emulator. The [**official RPCS3 site covers this nicely**](https://rpcs3.net/quickstart).
   * Remember, **you need to be running** ***BLUS30463***. RPCS3 will tell you this in the game selection GUI under the `Serial` column.
@@ -105,7 +105,7 @@
 
 <br/>
 
-## Installing on PS3
+## 📩 Installing on PS3
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
@@ -123,7 +123,7 @@
 
 <br/>
 
-## Installing on Xbox 360
+## 📩 Installing on Xbox 360
 
 **NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear.**
 
@@ -145,7 +145,7 @@
 
 <br/>
 
-## Installing on Xbox Series X/S ([Xenia UWP](https://github.com/SirMangler/xenia/releases))
+## 📩 Installing on Xbox Series X/S ([Xenia UWP](https://github.com/SirMangler/xenia/releases))
 
 **NOTE: You WILL need an Xbox Series X/S running in [Developer Mode](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation). We hope this is clear.**
 
@@ -159,13 +159,13 @@
 
 **To update Rock Band 3 Deluxe**, [**re-download it**](#xbox-360) and repeat the above steps. You can click the `Watch` button (All Activity) to be notified about any updates that occur.
 
-***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *to prevent any character model issues.*
+***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *in Xenia settings to prevent any character model issues.*
 
 ![UWP Readback Resolve](dependencies/images/uwp_readbackresolve.png)
 
 <br/>
 
-## Installing on Xenia (Advanced)
+## 📩 Installing on Xenia (Advanced)
 
 *Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
 
@@ -189,9 +189,19 @@
 
 # Optional Upgrades
 
-*These are some optional, but very handy additions you can make to your Rock Band 3 Deluxe installation.*
+### These are some optional, but very handy additions you can make to your Rock Band 3 Deluxe installation.
 
-## Songs
+  - [Additional Songs](#-additional-songs)
+    - [RPCS3](#installing-songs-on-rpcs3)
+    - [PS3](#installing-songs-on-ps3)
+    - [Xbox 360](#installing-songs-on-xbox-360)
+    - [Xenia](#installing-songs-on-xenia-desktop-and-uwp)
+  - [rb3_plus Keys Upgrades](#rb3_plus-keys-upgrades)
+  - [Custom Textures](#custom-textures)
+
+<br/>
+
+## 🎵 Additional Songs
 
 You can find song packs compatible with all Rock Band titles for both platforms on [**This Spreadsheet**](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
 
