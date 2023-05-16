@@ -321,7 +321,7 @@ By default, Rock Band 3 Deluxe contains a variety of custom textures, found in t
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
-***The Rock Band 3 Deluxe repo is now set up!***
+### ✅ ***The Rock Band 3 Deluxe repo is now set up!***
 
 From here, you can make any personal modifications to the game or build it yourself.
 
