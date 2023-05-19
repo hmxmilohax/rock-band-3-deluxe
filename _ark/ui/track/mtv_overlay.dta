@@ -46,7 +46,10 @@
                {$this setup_text} ;setup the text with all parameters we currently have enabled
                {if {exists fade.anim}
                   {if_else {modifier_mgr is_modifier_active mod_songtitle} ;if song title always is enable
-                     {fade.anim set_frame 50} ;set the current frame of the fade animation to 50, which is all the way on
+                     {do
+                        {set $dx_mtvup TRUE}
+                        {fade.anim set_frame 50} ;set the current frame of the fade animation to 50, which is all the way on
+                     }
                      {fade.anim set_frame 0} ;set the current frame of the fade animation to 0, which is invisible
                   }
                }
@@ -214,30 +217,29 @@
                      kDataUnhandled
                      }
                      {do
-                        {if_else {&& {modifier_mgr is_modifier_active mod_fakejuke} {!= $speedmod 1.0}} ;fake jukebox and speed not equal to 100%
-                           {song.lbl set_token_fmt {sprint $song_title " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" " "}} ;print for jukebox speedups
-                           {if_else {&& {modifier_mgr is_modifier_active mod_chmode} {!= $speedmod 1.0}} ;ch mode and speed not equal to 100%
-                              {song.lbl set_token_fmt {sprint $song_title " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nDRUNK MODE"}} ;print for ch mode speedups
-                              {if_else {&& {modifier_mgr is_modifier_active mod_auto_play} {!= $speedmod 1.0}} ;autoplay and speed not equal to 100%
-                                 {song.lbl set_token_fmt {sprint $song_title " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" "\nAUTOPLAY"}} ;print for autoplay speedups
-                                 {if_else {modifier_mgr is_modifier_active mod_fakejuke} ;fake jukebox
-                                    {song.lbl set_token_fmt {sprint $song_title " "}} ;print for fake jukebox
-                                    {if_else {modifier_mgr is_modifier_active mod_chmode} ;ch mode
-                                       {song.lbl set_token_fmt {sprint $song_title "\nDRUNK MODE"}} ;print ch mode
-                                       {if_else {modifier_mgr is_modifier_active mod_auto_play} ;autoplay
-                                          {song.lbl set_token_fmt {sprint $song_title "\nAUTOPLAY"}} ;print autoplay
-                                          {if_else {modifier_mgr is_modifier_active mod_fastermode} ;acceleration mode
-                                             {song.lbl set_token_fmt {sprint $song_title "\n" {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}} ;print acceleration mode as well as the current speed
-                                             {if_else {!= $speedmod 1.0} ;if purely song speed is not 100%
-                                                {song.lbl set_token_fmt {sprint $song_title " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)"}} ;print speed if only speed is changed
-                                                {song.lbl set_song_name $short_name} ;if nothing else needs to be reported at all. just print the shortname
-                                             }
-                                          }
-                                       }
-                                    }
-                                 }
-                              }
-                           }
+                        {set $dx_tmp ""}
+                        {set $dx_tmp2 ""}
+                        {if {modifier_mgr is_modifier_active mod_fastermode}
+                           {set $dx_tmp2 {sprint $dx_tmp2 {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) " }}
+                        }
+                        {if {modifier_mgr is_modifier_active mod_chmode}
+                           {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "DRUNK MODE"}}
+                        }
+                        {if {&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+                           {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "AUTOPLAY"}}
+                        }
+                        {if {modifier_mgr is_modifier_active mod_dx_showbpm}
+                           {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "BPM: " $dx_current_bpm}}
+                        }
+                        {if {&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
+                           {set $dx_tmp {sprint $dx_tmp " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" }}
+                        }
+                        {if {!= $dx_tmp2 ""}
+                           {set $dx_tmp {sprint $dx_tmp "\n" $dx_tmp2}}
+                        }
+                        {if_else {!= $dx_tmp ""}
+                           {song.lbl set_token_fmt {sprint $song_title $dx_tmp}}
+                           {song.lbl set_song_name $short_name} ;if nothing else needs to be reported at all. just print the shortname
                         }
                      }
                  ;}
