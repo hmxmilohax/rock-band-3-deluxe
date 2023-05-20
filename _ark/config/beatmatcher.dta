@@ -14,7 +14,13 @@
    (beat
       {if {&& {modifier_mgr is_modifier_active mod_dx_showbpm} $dx_mtvup}
          {set $dx_current_beat_ms {beatmatch get_song_ms}}
-         {set $dx_current_bpm {int {+ 0.5 {* {* 60 {/ 1 {/ {- $dx_current_beat_ms $dx_last_beat_ms} 1000}}} $speedmod}}}}
+         {if_else {|| {== $dx_avg_ms_per_beat 0.0} {< $dx_current_beat_ms $dx_last_beat_ms}}
+            {set $dx_avg_ms_per_beat {beatmatch ms_per_beat}}
+            {do
+               {set $dx_tmp {/ 1 {* {/ 1 {/ {- $dx_current_beat_ms $dx_last_beat_ms} 1000}} 1.25}}}; averaging factor
+               {set $dx_avg_ms_per_beat {+ {* {- $dx_current_beat_ms $dx_last_beat_ms} $dx_tmp} {* $dx_avg_ms_per_beat {- 1 $dx_tmp}}}}
+            }
+         }
          {set $dx_last_beat_ms $dx_current_beat_ms}
          {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current bpm
       }
