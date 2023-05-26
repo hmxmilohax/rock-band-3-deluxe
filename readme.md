@@ -2,9 +2,9 @@
 
 <img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
 
-## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and [Wii](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii)
+## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and Wii
 
-### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md)
+### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
 <br/>
 
@@ -28,7 +28,7 @@
 *Rock Band 3 Deluxe recieves very frequent updates. You can click the `Watch` button (All Activity) to be notified about any updates that occur.*
 
 ## PlayStation 3
-
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe (Standard) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
 
 > The standard install, typical for most users.
@@ -46,7 +46,7 @@
 > Use this if you're on a real PS3 and using a Guitar Hero or Rock Revolution drum kit.
 
 ## Xbox 360
-
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
 
 > The standard install, typical for most users.
@@ -67,8 +67,8 @@
 
 > See above two.
 
-## Wii (No Longer Supported)
-
+## Wii
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/wii?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/wii/RB3DX-Base-Wii-Rawfiles.zip)
 
 > The Wii version of Rock Band 3 Deluxe is no longer being maintained or supported.
