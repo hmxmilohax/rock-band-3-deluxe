@@ -678,11 +678,11 @@
          (mod_auto_vocals
             {if_else
                {modifier_mgr is_modifier_active mod_auto_vocals}
-			   {do
-                  {$this attempt_toggle_auto_vocals}
-				  ;if AIM successfully turns off, proceed to remove extra vocalists
-				  {if {! {modifier_mgr is_modifier_active mod_auto_vocals}}
-                     ;Checks whether or not a player exists and if they're a vocalist on slots 0, 1, 3
+               {do
+                  {$this attempt_toggle_auto_vocals} ;vanilla function to turn off AIM
+                  ;if AIM successfully turns off, proceed to remove extra vocalists
+                  {if {! {modifier_mgr is_modifier_active mod_auto_vocals}}
+                     ;Checks whether or not a player exists and if they're a vocalist on slots 0, 1, 3 before removing them
                      {if 
                         {&&
                            {user_mgr get_user_from_slot 0}
@@ -706,7 +706,7 @@
                         {{overshell get_slot {user_mgr get_user_from_slot 3}} remove_user}}
                      {overshell update_all}}}
                {if_else
-                  ;Forces AIM to turn on, even if only a vocalist exists
+                  ;Forces AIM to turn on, even if only a vocalist exists and requirements are met
                   ;Otherwise, the vanilla function will be used to turn on AIM
                   {&&
                      {==
@@ -1582,50 +1582,68 @@
    (enter
       {choose_part.lst set scroll_time 0}
       {$this update_part_select_list}
-      {if {== {{$this get_user} get_controller_type} kControllerGuitar}
-  {choose_part.lst
-   set_data
-   (overshell_guitar
-    overshell_bass
-    overshell_keys)}
-   {choose_part.lst set_selected $default_guitar}}
-      {if {== {{$this get_user} get_controller_type} kControllerDrum}
-  {choose_part.lst
-   set_data
-   (overshell_drums
-    overshell_drums_pro)}
-   {choose_part.lst set_selected $default_drum}}
-      {if {== {{$this get_user} get_controller_type} kControllerVocals}
-  {choose_part.lst
-   set_data
-   (overshell_vocal_solo
-    overshell_vocal_harmony
-    overshell_guitar
-    overshell_bass
-    overshell_keys
-    overshell_drums)}
-   {choose_part.lst set_selected $default_vocals}}
-      {if {== {{$this get_user} get_controller_type} kControllerKeys}
-  {choose_part.lst
-   set_data
-   (overshell_keys
-    overshell_real_keys
-    overshell_guitar
-    overshell_bass
-    overshell_drums)}
-   {choose_part.lst set_selected $default_keys}}
-      {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
-  {choose_part.lst
-   set_data
-   (overshell_real_guitar
-    overshell_real_bass
-    overshell_guitar
-    overshell_bass)}
-   {choose_part.lst set_selected $default_real_guitar}}
-    )
+      {if_else
+         {modifier_mgr is_modifier_active mod_auto_play}
+         ;makes every instrument selectable when autoplay is on
+         {choose_part.lst
+            set_data
+               (overshell_vocal_solo
+               overshell_vocal_harmony
+               overshell_guitar
+               overshell_bass
+               overshell_drums
+               overshell_drums_pro
+               overshell_keys
+               overshell_real_keys
+               overshell_real_guitar
+               overshell_real_bass)}
+         ;otherwise set instrument selection normally
+         {do
+            {if {== {{$this get_user} get_controller_type} kControllerGuitar}
+               {choose_part.lst
+                  set_data
+                     (overshell_guitar
+                     overshell_bass
+                     overshell_keys)}
+               {choose_part.lst set_selected $default_guitar}}
+            {if {== {{$this get_user} get_controller_type} kControllerDrum}
+              {choose_part.lst
+                  set_data
+                     (overshell_drums
+                      overshell_drums_pro)}
+               {choose_part.lst set_selected $default_drum}}
+            {if {== {{$this get_user} get_controller_type} kControllerVocals}
+               {choose_part.lst
+                  set_data
+                     (overshell_vocal_solo
+                      overshell_vocal_harmony
+                      overshell_guitar
+                      overshell_bass
+                      overshell_keys
+                      overshell_drums)}
+               {choose_part.lst set_selected $default_vocals}}
+            {if {== {{$this get_user} get_controller_type} kControllerKeys}
+               {choose_part.lst
+                  set_data
+                     (overshell_keys
+                     overshell_real_keys
+                     overshell_guitar
+                     overshell_bass
+                     overshell_drums)}
+               {choose_part.lst set_selected $default_keys}}
+            {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
+               {choose_part.lst
+                  set_data
+                    (overshell_real_guitar
+                     overshell_real_bass
+                     overshell_guitar
+                     overshell_bass)}
+               {choose_part.lst set_selected $default_real_guitar}}}}
+   )
    (exit
       {choose_part.lst set scroll_time 0.25}
-      {do INIT_VAL_WRITER})
+      {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
+         {do INIT_VAL_WRITER}})
    (SELECT_MSG
       {switch
          {{$this get_user}
