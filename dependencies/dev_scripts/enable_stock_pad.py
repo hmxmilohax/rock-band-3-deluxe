@@ -8,7 +8,7 @@ def main():
     # get the root directory of the repo
     root_dir = Path(__file__).parents[2]
 
-    with open(root_dir.joinpath("_ark/config/macros.dta"), "r", encoding="ISO-8859=1") as f:
+    with open(root_dir.joinpath("_ark/config/dx_macros.dta"), "r", encoding="ISO-8859=1") as f:
         the_macros = [line for line in f.readlines()]
 
     for i in range(len(the_macros)):
@@ -16,7 +16,7 @@ def main():
             the_macros[i] = the_macros[i].replace(";#define STOCK_PAD", "#define STOCK_PAD")
             break
 
-    with open(root_dir.joinpath("_ark/config/macros.dta"), "w", encoding="ISO-8859=1") as ff:
+    with open(root_dir.joinpath("_ark/config/dx_macros.dta"), "w", encoding="ISO-8859=1") as ff:
         ff.writelines(the_macros)
 
 if __name__ == "__main__":
