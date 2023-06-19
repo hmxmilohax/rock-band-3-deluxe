@@ -7,11 +7,23 @@
 ;#define STORE_ENABLED (1) ;show music store on main menu
 #define DX_FILE_PATH
 (
-   {file_exists #ifdef HX_XBOX "GAME:/dx.dta" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx.dta" #endif}
+   #ifdef HX_XBOX "GAME:/dx.dta" #endif
+   #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx.dta" #endif
+)
+#define MOD_FILE_PATH
+(
+   #ifdef HX_XBOX "GAME:/mod.dta" #endif
+   #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/mod.dta" #endif
+)
+#define VAL_FILE_PATH
+(
+   #ifdef HX_XBOX "GAME:/val.dta" #endif
+   #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/val.dta" #endif
 )
 #define MENU_BACKGROUND_BIK_PATH
 (
-   #ifdef HX_XBOX "GAME:/main_background.bik" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/main_background.bik" #endif
+   #ifdef HX_XBOX "GAME:/main_background.bik" #endif
+   #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/main_background.bik" #endif
 )
 #define DX_BOOT_FILE_CHECKER
 (
@@ -168,6 +180,19 @@
       {saveload_mgr autosave}
    }
 )
+#define DX_SPEED_SETTER
+(
+   {set $speedmod $leaderspeed}
+   {set $speedmod_top $leaderspeed}
+   {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed}) kNetReliable}}
+)
+#define DX_TRACKSPEED_HANDLER
+(
+   (easy {* {'/' {if_else {modifier_mgr is_modifier_active mod_synced_track_speeds} 1.2 2.4} $trackspeed} $speedmod})
+   (medium {* {'/' {if_else {modifier_mgr is_modifier_active mod_synced_track_speeds} 1.2 2.0} $trackspeed} $speedmod})
+   (hard {* {'/' {if_else {modifier_mgr is_modifier_active mod_synced_track_speeds} 1.2 1.6} $trackspeed} $speedmod})
+   (expert {* {'/' 1.2 $trackspeed} $speedmod})
+)
 #define DX_DISCONNECT
 (
    {if
@@ -176,6 +201,9 @@
          {modifier_mgr is_modifier_active mod_auto_kick}
       }
       {do
+         {session send_msg_to_all {'`' (ui goto_screen meta_loading_main_screen) kNetReliable}}
+         {session send_msg_to_all {'`' (session disconnect) kNetReliable}}
+         {session send_msg_to_all {'`' (session_mgr disconnect) kNetReliable}}
          {session disconnect}
          {session_mgr disconnect}
       }
@@ -193,6 +221,33 @@
          {&&
             $dx_bot_4
             $dx_bot_5
+         }
+      }
+   }
+)
+#define DX_AUTOPLAYER_HANDLER
+(
+   {if_else {modifier_mgr is_modifier_active mod_auto_play}
+      {do
+         {if {>= {beatmatch num_active_players} 1}
+            {{beatmatch active_player 0} set_auto_play $dx_bot_1}
+         }
+         {if {>= {beatmatch num_active_players} 2}
+            {{beatmatch active_player 1} set_auto_play $dx_bot_2}
+         }
+         {if {>= {beatmatch num_active_players} 3}
+            {{beatmatch active_player 2} set_auto_play $dx_bot_3}
+         }
+         {if {>= {beatmatch num_active_players} 4}
+            {{beatmatch active_player 3} set_auto_play $dx_bot_4}
+         }
+         {if {>= {beatmatch num_active_players} 5}
+            {{beatmatch active_player 4} set_auto_play $dx_bot_5}
+         }
+      }
+      {do
+         {beatmatch foreach_active_player $player
+            {$player set_auto_play 0}
          }
       }
    }
@@ -260,16 +315,22 @@
 )
 #define DX_SET_SPEEDS
 (
-   {unless
-      {||
-         {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-         {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-         {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-         {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-         #ifdef HX_XBOX {gamemode in_mode audition} #endif {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+   {if {exists gamemode}
+      {unless
+         {|| ;check for a variety of game modes where song speed is not allowed to be adjusted
+            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
+            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
+            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
+            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
+            #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+            {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
+         }
+         {if {is_leader_local} {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}}
+         {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
       }
-      {if {is_leader_local} {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}}
-      {beatmatch set_music_speed $speedmod}
+      {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}} ;if we are in practice and selected something other than 100% speed
+         {beatmatch set_music_speed $modifier} ;apply the practice specific speed selection in game
+      }
    }
 )
 #define DX_ADDED_SOURCES
@@ -421,4 +482,44 @@
          $sus5_color
       }
    }
+)
+#define DX_GAME_RESET_HANDLER
+(
+    ;clears out the variables used for song information, sinks, and callbacks to be populated again
+   {set $guitar_milosong FALSE}
+   {set $bass_milosong FALSE}
+   {set $real_guitar_milosong FALSE}
+   {set $real_drum_milosong FALSE}
+   {set $real_bass_milosong FALSE}
+   {set $keys_milosong FALSE}
+   {set $real_keys_milosong FALSE}
+   {set $drum_milosong FALSE}
+
+   {set $real_guitar_caughtmissed FALSE}
+   {set $real_bass_caughtmissed FALSE}
+   {set $real_drum_caughtmissed FALSE}
+   {set $real_keys_caughtmissed FALSE}
+   {set $keys_caughtmissed FALSE}
+   {set $guitar_caughtmissed FALSE}
+   {set $bass_caughtmissed FALSE}
+   {set $drum_caughtmissed FALSE}
+
+   {set $bass_firstnote FALSE}
+   {set $guitar_firstnote FALSE}
+   {set $real_bass_firstnote FALSE}
+   {set $real_drum_firstnote FALSE}
+   {set $real_guitar_firstnote FALSE}
+   {set $keys_firstnote FALSE}
+   {set $real_keys_firstnote FALSE}
+   {set $drum_firstnote FALSE}
+
+   {set $bass_groove_active FALSE}
+   {set $drum_groove_active FALSE}
+   {set $guitar_groove_active FALSE}
+
+   {set $authorvar FALSE}
+   {set $artistvar FALSE}
+   {set $yearvar FALSE}
+   {set $albumvar FALSE}
+   {set $dx_readdtaonce FALSE}
 )
