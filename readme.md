@@ -6,7 +6,7 @@
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
-### 📥 [Download Now!](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#featureshttps://github.com/hmxmilohax/rock-band-3-deluxe#%EF%B8%8F-what-youll-need)
+### 📥 [Download Now!](https://github.com/hmxmilohax/rock-band-3-deluxe#%EF%B8%8F-what-youll-need)
 
 <br/>
 
