@@ -119,73 +119,20 @@
                   pop_screen
                   {gamemode get endgame_screen}}}}})}
 #define ENDGAME_PANEL_HANDLERS
-(
-   (fc_clip
-      {if_else {exists fc_clip}
-         {do
-            {delete fc_clip}
-            {new MoggClip fc_clip}
-         }
-         {new MoggClip fc_clip}
-      }
-      {fc_clip set file {if_else {== $fcsfx none} "sfx/streams/fc_clip.mogg" {sprint "sfx/streams/fc/" $fcsfx ".mogg"}}}
-      {fc_clip set loop FALSE}
-      {fc_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
-      {fc_clip play}
-   )
-   (nice_clip
-      {if_else {exists nice_clip}
-         {do
-            {delete nice_clip}
-            {new MoggClip nice_clip}
-         }
-         {new MoggClip nice_clip}
-      }
-      {nice_clip set file "sfx/streams/nice_clip.mogg"}
-      {nice_clip set loop FALSE}
-      {nice_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -0}}
-      {nice_clip play}
-   )
-   (jurgen_clip
-      {if_else {exists jurgen_clip}
-         {do
-            {delete jurgen_clip}
-            {new MoggClip jurgen_clip}
-         }
-         {new MoggClip jurgen_clip}
-      }
-      {set $jurgennumber {random_int 0 4}}
-      {if {<= $jurgennumber 1}
-         {set $jurgennumber 1}
-      }
-      {if {>= $jurgennumber 3}
-         {set $jurgennumber 3}
-      }
-      {unless {modifier_mgr is_modifier_active mod_nojurgen}
-      {jurgen_clip set file {sprint "sfx/streams/jurgen_clip" $jurgennumber ".mogg"}}}
-      {jurgen_clip set loop FALSE}
-      {jurgen_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
-      {jurgen_clip play}
-   )
-(set_results
-      {if_else
-         {!= $speedmod 1}
-         {song.lbl
-            set_token_fmt
+((set_results
+      {if_else {!= $speedmod 1}
+         {song.lbl set_token_fmt
             {sprint
-               {{song_mgr
-                     get_meta_data
-                     {meta_performer get_completed_song}}
-                  title}
+               {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
                " ("
-               {int
-                  {'+'
-                     0.5
-                     {'*' $speedmod 100}}}
-               "%)"}}
+               {int {'+' 0.5 {'*' $speedmod 100}}}
+               "%)"
+            }
+         }
          {song.lbl
             set_song_name
-            {meta_performer get_completed_song}}}
+            {meta_performer get_completed_song}}
+      }
       {if_else
          {gamemode in_mode tour}
          {do
@@ -287,21 +234,48 @@
                            set
                            icon
                            {$user get_track_icon}}
-                        {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}}
-                           {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "% - " {localize {switch {$user get_difficulty_sym} (easy easy_short) (medium medium_short) (hard hard_short) (expert expert_short)}}}} ;hard set the score percentage ourselves. 99% glitch fix even????
-                           {noteshit_details.lbl set_token_fmt {sprint {int {'*' 100 {{$user player} notes_hit_fraction}}} "%"}} ;hard set the score percentage ourselves. 99% glitch fix even????
+                        {if_else
+                           {&&
+                              {modifier_mgr is_modifier_active mod_fastermode} ; if we are in acceleration mode
+                              {||
+                                 {== {$user get_track_icon} "G"} ; acceleration mode is only supported in instruments, not vox
+                                 {== {$user get_track_icon} "B"}
+                                 {== {$user get_track_icon} "d"}
+                                 {== {$user get_track_icon} "D"}
+                              }
+                           }
+                           {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for acceleration mode
+                              {sprint
+                                 {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                                 "% - "
+                                 {localize
+                                    {switch {$user get_difficulty_sym}
+                                       (easy easy_short)
+                                       (medium medium_short)
+                                       (hard hard_short)
+                                       (expert expert_short)
+                                    }
+                                 }
+                              }
+                           }
+                           {noteshit_details.lbl set_token_fmt ;hard set the score percentage ourselves.
+                              {sprint
+                                 {int {'*' 100 {{$user player} notes_hit_fraction}}}
+                                 "%"
+                              }
+                           }
                         }
                         {do
                            ($award_sym
                               {coop_endgame_panel get_performance_award $slot})
                            {performance_award.lbl set text_token $award_sym}
-                           {if {== {/ {$player longest_streak} {$player get_gem_count}} 1.0}
+                           {if {== {/ {$player longest_streak} {$player get_gem_count}} 1.0} ; check for fc, 69% or less than 60% and prep the sound player vars
                               {set $someonefcd TRUE}
                            }
                            {if {== {int {'*' 100 {{$user player} notes_hit_fraction}}} 69}
                               {set $someoneniced TRUE}
                            }
-                           {if {== {int {'*' 100 {{$user player} notes_hit_fraction}}} 99}
+                           {if {<= {int {'*' 100 {{$user player} notes_hit_fraction}}} 60}
                               {set $someonejurgend TRUE}
                            }
                            {challenge_bg.mesh
@@ -315,21 +289,65 @@
                            {{$user player}
                               num_stars}
                            5}
-                        {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty first
+                        {difficulty_details.lbl
+                           set
+                           text_token
+                           {$user get_difficulty_sym}}
                         {if_else {modifier_mgr is_modifier_active mod_auto_play} ;check if in autoplay
-                           {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_play} ")"}} ;report autoplay with diff
+                           {difficulty_details.lbl set_token_fmt ;report autoplay with diff
+                              {sprint
+                                 {localize {$user get_difficulty_sym}}
+                                 " ("
+                                 {localize mod_auto_play}
+                                 ")"
+                              }
+                           }
                            {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
-                              {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_chmode_short} ")"}} ;report ch mode for guitar and bass with diff
+                              {difficulty_details.lbl set_token_fmt ;report ch mode for guitar and bass with diff
+                                 {sprint
+                                    {localize {$user get_difficulty_sym}}
+                                    " ("
+                                    {localize mod_chmode_short}
+                                    ")"
+                                 }
+                              }
                               {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}} ;check if drum or pro drum has auto kick
-                                 {difficulty_details.lbl set_token_fmt {sprint {localize mod_fastermode_topspeed} ": " {int {'+' 0.5 {'*' $speedmod_top 100}}} "%"}} ;report autokick for drum or pro drum
+                                 {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                                    {sprint
+                                       {localize mod_fastermode_topspeed}
+                                       ": "
+                                       {int {'+' 0.5 {'*' $speedmod_top 100}}}
+                                       "%"
+                                    }
+                                 }
                                  {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
-                                    {difficulty_details.lbl set_token_fmt {sprint {localize {$user get_difficulty_sym}} " (" {localize mod_auto_kick} ")"}} ;report autokick for drum or pro drum
+                                    {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                                       {sprint
+                                          {localize {$user get_difficulty_sym}}
+                                          " ("
+                                          {localize mod_auto_kick}
+                                          ")"
+                                       }
+                                    }
                                     {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
                                  }
                               }
                            }
                         }
                         {set $speedmod_top $leaderspeed}
+                        {if $someonefcd ;play our sounds based on the song results
+                           {coop_endgame_panel fc_clip}
+                        }
+                        {unless {|| $someonefcd $someoneniced}
+                           {if $someonejurgend
+                              {coop_endgame_panel jurgen_clip}
+                           }
+                        }
+                        {unless $someonefcd
+                           {if $someoneniced
+                              {coop_endgame_panel nice_clip}
+                           }
+                        }
                         {if_else
                            {gamemode in_mode tour}
                            {do
@@ -414,21 +432,54 @@
                                           endgame_player_noteshit_fmt
                                           {int
                                              {'*' 100 $percentage}}}
-                                       {$colorAnim set frame $part}}}}}}}}}}}
-                                    {if $someonefcd
-                                       {coop_endgame_panel fc_clip}
-                                    }
-                                    {unless {|| $someonefcd $someoneniced}
-                                       {if $someonejurgend
-                                          {coop_endgame_panel jurgen_clip}
-                                       }
-                                    }
-                                    {unless $someonefcd
-                                       {if $someoneniced
-                                          {coop_endgame_panel nice_clip}
-                                       }
-                                    }
-                                    })
+                                       {$colorAnim set frame $part}}}}}}}}}}}})
+   (fc_clip
+      {if_else {exists fc_clip}
+         {do
+            {delete fc_clip}
+            {new MoggClip fc_clip}
+         }
+         {new MoggClip fc_clip}
+      }
+      {fc_clip set file {if_else {== $fcsfx none} "sfx/streams/fc_clip.mogg" {sprint "sfx/streams/fc/" $fcsfx ".mogg"}}}
+      {fc_clip set loop FALSE}
+      {fc_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {fc_clip play}
+   )
+   (nice_clip
+      {if_else {exists nice_clip}
+         {do
+            {delete nice_clip}
+            {new MoggClip nice_clip}
+         }
+         {new MoggClip nice_clip}
+      }
+      {nice_clip set file "sfx/streams/nice_clip.mogg"}
+      {nice_clip set loop FALSE}
+      {nice_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -0}}
+      {nice_clip play}
+   )
+   (jurgen_clip
+      {if_else {exists jurgen_clip}
+         {do
+            {delete jurgen_clip}
+            {new MoggClip jurgen_clip}
+         }
+         {new MoggClip jurgen_clip}
+      }
+      {set $jurgennumber {random_int 0 4}}
+      {if {<= $jurgennumber 1}
+         {set $jurgennumber 1}
+      }
+      {if {>= $jurgennumber 3}
+         {set $jurgennumber 3}
+      }
+      {unless {modifier_mgr is_modifier_active mod_nojurgen}
+      {jurgen_clip set file {sprint "sfx/streams/jurgen_clip" $jurgennumber ".mogg"}}}
+      {jurgen_clip set loop FALSE}
+      {jurgen_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {jurgen_clip play}
+   )
    (setup_mics
       ($hasmic1 $hasmic2 $hasmic3)
       {if
