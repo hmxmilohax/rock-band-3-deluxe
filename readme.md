@@ -43,10 +43,6 @@
 
 > By default, Rock Band 3 Deluxe has chart upgrades to fix things, this build does not contain those.
 
-📥 [RB3DX (Stock Instrument Mapping) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip)
-
-> Use this if you're on a real PS3 and using a Guitar Hero or Rock Revolution drum kit.
-
 ## Xbox 360
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
@@ -132,10 +128,6 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 ### ✅ ***Rock Band 3 Deluxe is now installed!***
 
 We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
-
-<br/>
-
-***Sidenote:*** *if you're using a Guitar Hero or Rock Revolution drum kit, download the* [***Stock Instrument Mapping***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-stock-instrument-mapping.zip) *version of Deluxe instead.*
 
 <br/>
 
