@@ -39,9 +39,9 @@
 
 > Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#-rb3_plus-keys-upgrades).
 
-📥 [RB3DX (Without Chart Fixes) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-original-mids.zip)
+📥 [RB3DX (Original Song Updates) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-original-mids.zip)
 
-> By default, Rock Band 3 Deluxe has chart upgrades to fix things, this build does not contain those.
+> By default, Rock Band 3 Deluxe contains additional song updates. This version reverts them to vanilla.
 
 ## Xbox 360
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
@@ -53,15 +53,15 @@
 
 > Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#-rb3_plus-keys-upgrades).
 
-📥 [RB3DX (Without Chart Fixes) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids.zip)
+📥 [RB3DX (Original Song Updates) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids.zip)
 
-> By default, Rock Band 3 Deluxe has chart upgrades to fix things, this build does not contain those.
+> By default, Rock Band 3 Deluxe contains additional song updates. This version reverts them to vanilla.
 
 📥 [RB3DX (Series X/S Xenia) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base-Force-Guitar-Controller.zip)
 
 > Forces all instruments to be Guitar controllers since Xenia UWP does not support them at the moment.
 
-📥 [RB3DX (Series X/S Xenia Without Chart Fixes) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids-Force-Guitar-Controller.zip)
+📥 [RB3DX (Series X/S Xenia, Original Song Updates) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids-Force-Guitar-Controller.zip)
 
 > See above two.
 
