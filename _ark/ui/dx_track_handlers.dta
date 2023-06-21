@@ -77,12 +77,6 @@
    {if {exists animated_gems} ;check if the above task is running
       {delete animated_gems} ;delete the task if running
    }
-   {if {exists animated_smashers} ;check if the above task is running
-      {delete animated_smashers} ;delete the task if running
-   }
-   {if {exists animated_highway} ;check if the above task is running
-      {delete animated_highway} ;delete the task if running
-   }
 )
 ;setup emissive textures per instrument to use later
 #define GTR_EMISSIVE_HANDLER
@@ -235,48 +229,6 @@
 (
 {unless {modifier_mgr is_modifier_active mod_nohud} ;don't run anything if performance mode is enabled
 DX_ANIMATED_TASK_KILLER
-;populate animated smasher bitmaps
-{if $animatedsmasherscustomtexture ;if we have an animated smasher update queued
-   {if $animatedsmashers ;if we have animated smashers enabled
-      {set $framecountbit 0} ;we need to ensure we start at 0 before running the following task
-      {thread_task kTaskSeconds ;create a new task
-         (script
-            {if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} ;check the currently loaded instrument
-               {new Tex {sprint "guitarframe" $framecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument smasher type
-               {{sprint "guitarframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_guitar_" $animatedsmashername "/gem_smasher_guitar_" $animatedsmashername "_" $framecountbit ".png"}} ;populate the currently created texture index with the selected animated smasher index for it's specific instrument smashers type
-            }
-            {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
-               {new Tex {sprint "drumframe" $framecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument smasher type
-               {{sprint "drumframe" $framecountbit ".tex"} set_bitmap {sprint "ui/track/animated_smashers/gem_smasher_drum_" $animatedsmashername "/gem_smasher_drum_" $animatedsmashername "_" $framecountbit ".png"}} ;populate the currently created texture index with the selected animated smasher index for it's specific instrument smashers type
-            }
-            {set $framecountbit {+ $framecountbit 1}} ;increment the variable to setup the next texture creation index
-            {unless {>= $framecountbit 60} ;only run the task until the variable reaches 60
-               {$task loop} ;loop the task if variable is below 60
-            }
-         )
-      }
-   }
-}
-
-{if $animatedsmashers ;if we have animated smashers enabled
-   {set $framecountdif 0} ;we need to ensure we start at 0 before running the following task
-   {thread_task kTaskSeconds ;create a new task
-      (delay 0.4) ;delay the start of the task
-      (name animated_smashers) ;name the current task for deletion tracking
-      (script ;task contents
-         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
-            {gem_smasher_drum.mat set diffuse_tex {sprint "drumframe" $framecountdif ".tex"}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
-         }
-         {if {|| {$user get_track_type} kTrackGuitar kTrackBass kTrackKeys} ;check the currently loaded instrument
-            {gem_smasher_guitar.mat set diffuse_tex {sprint "guitarframe" $framecountdif ".tex"}} ;apply the currently selected animated texture index with the selected animated smasher index image we pre generated
-         }
-         {set $framecountdif {+ $framecountdif 1}} ;increment the variable to setup the next texture application index
-         {$task sleep 0.016} ;delay the next step of the task for roughly 1 frame at 60fps
-         {if {>= $framecountdif 60} {set $framecountdif 0}} ;only run the task until the variable reaches 60
-         {$task loop} ;loop the task
-      )
-   }
-}
 
 ;populate memory with animated gems textures for replacement
 {if $animatedgemscustomtexture ;if we have an animated gem update queued
@@ -330,64 +282,6 @@ DX_ANIMATED_TASK_KILLER
          {set $gemframecountdif {+ $gemframecountdif 1}} ;increment the variable to setup the next texture application index
          {$task sleep 0.016} ;delay the next step of the task for roughly 1 frame at 60fps
          {if {>= $gemframecountdif 60} {set $gemframecountdif 0}} ;only run the task until the variable reaches 60
-         {$task loop} ;loop the task
-      )
-   }
-}
-
-;populate animated highway bitmaps
-{if $animatedhighwaycustomtexture ;if we have an animated highway update queued
-   {if $animatedhighway ;if we have animated highway enabled
-      {set $highframecountbit 0} ;we need to ensure we start at 0 before running the following task
-      {thread_task kTaskSeconds ;create a new task
-         (script ;task contents
-            {new Tex {sprint "highframe" $highframecountbit ".tex"}} ;create a new texture with a numerical index of the currently tracked variable
-            {{sprint "highframe" $highframecountbit ".tex"} set_bitmap {sprint "ui/track/animated_surfaces/" $animatedhighwayname "/" $animatedhighwayname "_" $highframecountbit ".png"}} ;populate the currently created texture index with the selected animated highway index
-            {set $highframecountbit {+ $highframecountbit 1}} ;increment the variable to setup the next texture creation index
-            {unless {>= $highframecountbit 60} ;only run the task until the variable reaches 60
-               {$task loop} ;loop the task if variable is below 60
-            }
-         )
-      }
-   }
-}
-
-;apply animated highway in game task
-{if $animatedhighway ;if we have animated highway enabled
-   {set $highframecount 0} ;we need to ensure we start at 0 before running the following task
-   {thread_task kTaskSeconds ;create a new task
-      (name animated_highway) ;name the current task for deletion tracking
-      (delay 0.1) ;delay the start of the task
-      (script ;task contents
-         {if {|| {$user get_track_type} kTrackBass kTrackGuitar kTrackRealBass kTrackRealGuitar} ;check the currently loaded instrument
-            {watermark_bass.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren"t using during animated highway mode
-            {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren"t using during animated highway mode
-            {watermark_bass.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
-            {watermark_guitar.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
-            {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_bass.tex iterate_refs $ref {$ref set emissive_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_bass.tex iterate_refs $ref {$ref set normal_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_guitar.tex iterate_refs $ref {$ref set normal_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
-            {watermark_drum.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren"t using during animated highway mode
-            {watermark_drum.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
-            {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_drum.tex iterate_refs $ref {$ref set emissive_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_drum.tex iterate_refs $ref {$ref set normal_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {if {|| {$user get_track_type} kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
-            {watermark_keys.tex set_bitmap {sprint "ui/track/highways/_no_highway.png"}} ;hide the original texture that we aren"t using during animated highway mode
-            {watermark_keys.tex iterate_refs $ref {$ref set prelit FALSE}} ;setting prelit to false makes the highways pop visually
-            {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_keys.tex iterate_refs $ref {$ref set emissive_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {watermark_keys.tex iterate_refs $ref {$ref set normal_map {sprint "highframe" $highframecount '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {set $highframecount {+ $highframecount 1}} ;increment the variable to setup the next texture application index
-         {$task sleep 0.041} ;delay the next step of the task for roughly 1 frame at 30fps
-         {if {>= $highframecount 60} {set $highframecount 0}} ;only run the task until the variable reaches 60
          {$task loop} ;loop the task
       )
    }
@@ -790,6 +684,5 @@ DX_ANIMATED_TASK_KILLER
 {set $voxarrowcustomtexture FALSE}
 {set $voxhwcustomtexture FALSE}
 {set $animatedgemscustomtexture FALSE}
-{set $animatedsmasherscustomtexture FALSE}
 }
 )
