@@ -5,6 +5,12 @@
 #define CUSTOMSOURCE (1) ;we can use custom sources
 ; #define KEYS_ENABLED (1); toggle this for legacy key upgrades
 ;#define STORE_ENABLED (1) ;show music store on main menu
+#define DX_PS3_HW_DETECTION
+(
+   {if {file_exists "GD:/dev_hdd0/drm/marlin/nphome/HID.dat"} ; this file does not exist on rpcs3, we use it for hw detection
+      {set $dx_ps3hw TRUE}
+   }
+)
 #define DX_FILE_PATH
 (
    #ifdef HX_XBOX "GAME:/dx.dta" #endif
@@ -440,6 +446,24 @@
       (album_name {set $albumvar {elem {find $entry $dx_entry_finder} 1}})
    }
 )
+#define MTV_DTA_PREPPER
+(
+   {unless $dx_readdtaonce
+      {set $dx_readdtaonce TRUE}
+      {set $dx_readadditionaldtaonce FALSE}
+      {set $theactualpath FALSE}
+      {if_else {file_exists SONGPATH2}
+         {set $theactualpath SONGPATH2} ;a dlc dta
+         {if_else {file_exists SONGPATH3}
+            {set $theactualpath SONGPATH3} ;on disc update
+            {if {file_exists SONGPATH}
+               {set $theactualpath SONGPATH} ;inside the ark
+            }
+         }
+      }
+      {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
+   }
+)
 #define MTV_DTA_READER
 (
    {foreach $entry $songdtareader
@@ -513,6 +537,40 @@
                {artist.lbl set_token_fmt {sprint $artistvar}} ;if detailed but no author present (fake jukebox) print what we do have
                {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar "\n" {localize author} ": " $authorvar}} ;if detailed but no author present (fake jukebox) print what we do have
             }
+         }
+      }
+   }
+)
+#define MTV_WRITER_CHOOSER
+(
+   {unless $dx_ps3hw ; don't run on ps3 hardware
+      {do
+         {unless $dx_mtv_dta_reader_once
+         {set $dx_mtv_dta_reader_once TRUE}
+         {set $dx_entry_finder artist} MTV_DTA_READER
+         {set $dx_entry_finder author} MTV_DTA_READER
+         {if {|| {modifier_mgr is_modifier_active mod_songtitlestats} {modifier_mgr is_modifier_active mod_fakejuke}}
+               {set $dx_entry_finder year_released} MTV_DTA_READER
+               {set $dx_entry_finder album_name} MTV_DTA_READER
+            }
+         }
+         {if {exists song.lbl}
+            MTV_MOD_WRITER
+         }
+         {if {exists artist.lbl}
+            MTV_SONG_WRITER
+         }
+      }
+   }
+   {if $dx_ps3hw ; run on ps3 hardware
+      {do
+         {if
+            {exists song.lbl}
+            {song.lbl set_song_name $short_name}
+         }
+         {if
+            {exists artist.lbl}
+            {artist.lbl set_artist_name_from_shortname $short_name}
          }
       }
    }
