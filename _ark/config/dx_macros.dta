@@ -446,6 +446,24 @@
       (album_name {set $albumvar {elem {find $entry $dx_entry_finder} 1}})
    }
 )
+#define MTV_DTA_PREPPER
+(
+   {unless $dx_readdtaonce
+      {set $dx_readdtaonce TRUE}
+      {set $dx_readadditionaldtaonce FALSE}
+      {set $theactualpath FALSE}
+      {if_else {file_exists SONGPATH2}
+         {set $theactualpath SONGPATH2} ;a dlc dta
+         {if_else {file_exists SONGPATH3}
+            {set $theactualpath SONGPATH3} ;on disc update
+            {if {file_exists SONGPATH}
+               {set $theactualpath SONGPATH} ;inside the ark
+            }
+         }
+      }
+      {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
+   }
+)
 #define MTV_DTA_READER
 (
    {foreach $entry $songdtareader
@@ -522,6 +540,38 @@
          }
       }
    }
+)
+#define MTV_WRITER_CHOOSER
+(
+   {do
+      {unless $dx_mtv_dta_reader_once
+      {set $dx_mtv_dta_reader_once TRUE}
+      {set $dx_entry_finder artist} MTV_DTA_READER
+      {set $dx_entry_finder author} MTV_DTA_READER
+      {if {|| {modifier_mgr is_modifier_active mod_songtitlestats} {modifier_mgr is_modifier_active mod_fakejuke}}
+            {set $dx_entry_finder year_released} MTV_DTA_READER
+            {set $dx_entry_finder album_name} MTV_DTA_READER
+         }
+      }
+      {if {exists song.lbl}
+         MTV_MOD_WRITER
+      }
+      {if {exists artist.lbl}
+         MTV_SONG_WRITER
+      }
+   }
+   #ifdef HX_PS3
+   {do
+      {if
+         {exists song.lbl}
+         {song.lbl set_song_name $short_name}
+      }
+      {if
+         {exists artist.lbl}
+         {artist.lbl set_artist_name_from_shortname $short_name}
+      }
+   }
+   #endif
 )
 #define DX_ADDED_SOURCES
 (
