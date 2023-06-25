@@ -1,0 +1,164 @@
+#define DX_SONG_LBL_SETTER
+(
+   {song.lbl set_token_fmt
+      {sprint
+         {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
+         " ("
+         {int {'+' 0.5 {'*' $speedmod 100}}}
+         "%)"
+      }
+   }
+)
+#define DX_NOTESHIT_LBL_SETTER
+(
+   {if_else
+      {&&
+         {modifier_mgr is_modifier_active mod_fastermode} ; if we are in acceleration mode
+         {||
+            {== {$user get_track_icon} "G"} ; acceleration mode is only supported in instruments, not vox
+            {== {$user get_track_icon} "B"}
+            {== {$user get_track_icon} "d"}
+            {== {$user get_track_icon} "D"}
+         }
+      }
+      {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for acceleration mode
+         {sprint
+            {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+            "% - "
+            {localize
+               {switch {$user get_difficulty_sym}
+                  (easy easy_short)
+                  (medium medium_short)
+                  (hard hard_short)
+                  (expert expert_short)
+               }
+            }
+         }
+      }
+      {noteshit_details.lbl set_token_fmt ;hard set the score percentage ourselves.
+         {sprint
+            {int {'*' 100 {{$user player} notes_hit_fraction}}}
+            "%"
+         }
+      }
+   }
+)
+#define DX_DIFFICULTY_LBL_SETTER
+(
+   {if_else {modifier_mgr is_modifier_active mod_auto_play} ;check if in autoplay
+      {difficulty_details.lbl set_token_fmt ;report autoplay with diff
+         {sprint
+            {localize {$user get_difficulty_sym}}
+            " ("
+            {localize mod_auto_play}
+            ")"
+         }
+      }
+      {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
+         {difficulty_details.lbl set_token_fmt ;report ch mode for guitar and bass with diff
+            {sprint
+               {localize {$user get_difficulty_sym}}
+               " ("
+               {localize mod_chmode_short}
+               ")"
+            }
+         }
+         {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}} ;check if drum or pro drum has auto kick
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize mod_fastermode_topspeed}
+                  ": "
+                  {int {'+' 0.5 {'*' $speedmod_top 100}}}
+                  "%"
+               }
+            }
+            {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
+               {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                  {sprint
+                     {localize {$user get_difficulty_sym}}
+                     " ("
+                     {localize mod_auto_kick}
+                     ")"
+                  }
+               }
+               {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+            }
+         }
+      }
+   }
+)
+#define DX_ENDGAME_SFX_CHECKER_PLAYER
+(
+   {if {== {/ {$player longest_streak} {$player get_gem_count}} 1.0} ; check for fc, 69% or less than 60% and prep the sound player vars
+      {set $dx_someone_fcd TRUE}
+   }
+   {if {== {int {'*' 100 {{$user player} notes_hit_fraction}}} 69}
+      {set $dx_someone_niced TRUE}
+   }
+   {if {<= {int {'*' 100 {{$user player} notes_hit_fraction}}} 60}
+      {set $dx_someone_jurgend TRUE}
+   }
+   {if $dx_someone_fcd ;play our sounds based on the song results
+      {coop_endgame_panel fc_clip}
+   }
+   {unless {|| $dx_someone_fcd $dx_someone_niced}
+      {if $dx_someone_jurgend
+         {coop_endgame_panel jurgen_clip}
+      }
+   }
+   {unless $dx_someone_fcd
+      {if $dx_someone_niced
+         {coop_endgame_panel nice_clip}
+      }
+   }
+)
+#define DX_ENDGAME_SFX_HANDLERS
+(
+   (fc_clip
+      {if_else {exists fc_clip}
+         {do
+            {delete fc_clip}
+            {new MoggClip fc_clip}
+         }
+         {new MoggClip fc_clip}
+      }
+      {fc_clip set file {if_else {== $fcsfx none} "sfx/streams/fc_clip.mogg" {sprint "sfx/streams/fc/" $fcsfx ".mogg"}}}
+      {fc_clip set loop FALSE}
+      {fc_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {fc_clip play}
+   )
+   (nice_clip
+      {if_else {exists nice_clip}
+         {do
+            {delete nice_clip}
+            {new MoggClip nice_clip}
+         }
+         {new MoggClip nice_clip}
+      }
+      {nice_clip set file "sfx/streams/nice_clip.mogg"}
+      {nice_clip set loop FALSE}
+      {nice_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -0}}
+      {nice_clip play}
+   )
+   (jurgen_clip
+      {if_else {exists jurgen_clip}
+         {do
+            {delete jurgen_clip}
+            {new MoggClip jurgen_clip}
+         }
+         {new MoggClip jurgen_clip}
+      }
+      {set $jurgennumber {random_int 0 4}}
+      {if {<= $jurgennumber 1}
+         {set $jurgennumber 1}
+      }
+      {if {>= $jurgennumber 3}
+         {set $jurgennumber 3}
+      }
+      {unless {modifier_mgr is_modifier_active mod_nojurgen}
+      {jurgen_clip set file {sprint "sfx/streams/jurgen_clip" $jurgennumber ".mogg"}}}
+      {jurgen_clip set loop FALSE}
+      {jurgen_clip set volume {if_else {modifier_mgr is_modifier_active mod_fcclip} -99 -8}}
+      {jurgen_clip play}
+   )
+)
