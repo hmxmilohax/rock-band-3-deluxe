@@ -1,0 +1,421 @@
+#define DX_OS_OPEN_MSG
+(
+   ;opens player message panel on current player
+   {if {! {session is_in_game}}
+      {{overshell_player_message find show.trg} trigger}
+      {overshell_player_message set_showing TRUE}
+      {set $dx_no_message_sound TRUE}} ;prevents message sound from playing in menus
+)
+#define DX_OS_CLOSE_MSG
+(
+   ;closes player message panel on current player
+   {if {! {session is_in_game}}
+      {{overshell_player_message find show.trg} trigger}
+      {overshell_player_message set_showing FALSE}
+      {set $dx_no_message_sound FALSE}} ;re-allows message sound to play after closing
+)
+#define DX_MENU_DESC
+(
+   {if {! {session is_in_game}}
+      ($this setup_message_text
+         {sprint {$component selected_sym} "_desc"})} ;appends _desc to selected item for locale descriptions
+)
+#define DX_DISPLAY_MSG_HANDLER
+(
+   (display_trackspeed_msg ;why do these not work
+      ($tspd)
+      {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $tspd 100}}}}})
+   (display_speed_msg
+      ($mspd)
+     {speed_msg set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $mspd 100}}}}})
+   (display_speedcap_msg
+      ($fspd)
+     {speed_msg set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $fspd 100}}}}})
+   (display_fps_msg
+      ($fps)
+     {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $fps}}})
+   (set_speeds
+      {if_else $rb3eslider
+         {do
+            {set $emulatefps {+ 1 {instruments.sld current}}}
+            {set $trackspeed {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+            {set $speedmod {+ 1 {* {crowd.sld current} 0.05}}}
+            {set $leaderspeed $speedmod}
+            {set $leaderspeed $speedmod}
+            {$this display_trackspeed_msg $trackspeed}
+            {$this display_speed_msg $speedmod}
+            {$this display_fps_msg $emulatefps}
+         }
+         {if_else $rb3eslider_cap
+            {do
+               {set $speedmod_cap {+ 1 {* {bg_music.sld current} 0.05}}}
+               {if $rb3eslider_cap {$this display_speedcap_msg $speedmod_cap}}
+            }
+            {if $colorslider
+               {set $emissive_r {/ {+ 1 {instruments.sld current}}} 100}
+               {set $emissive_g {/ {+ 1 {bg_music.sld current}}} 100}
+               {set $emissive_b {/ {+ 1 {crowd.sld current}}} 100}
+            }
+         }
+      }
+   )
+)
+#define AUDIO_DATA
+(
+   overshell_audio_instruments
+   overshell_audio_bg_music
+   overshell_audio_crowd
+   overshell_audio_sfx
+   #ifdef HX_PS3
+   overshell_audio_voice_chat
+   #endif
+   {if_else {modifier_mgr is_modifier_active mod_nosfx}
+      os_audio_instsfx_on
+      os_audio_instsfx_off
+   }
+)
+#define DX_WARNING_HANDLER
+(
+   {if_else $ingameset
+      {handle ($this set_confirm_message ingame_warning)}
+      {if_else $author
+         {do
+            {set $author FALSE}
+            {handle ($this set_confirm_message author_warning)}
+         }
+         {if_else $autoplay
+            {do
+               {set $autoplay FALSE}
+               {handle ($this set_confirm_message autoplay_warning)}
+            }
+            {if_else $breakneck
+               {do
+                  {set $breakneck FALSE}
+                  {handle ($this set_confirm_message breakneck_warning)}
+               }
+               {handle
+                  ($this set_confirm_message disable_drum_surface_navigation_warning)}
+            }
+         }
+      }
+   }
+)
+#define OVERSHELL_RB4OS
+(
+   {background.tex set_bitmap "ui/overshell/rb4_early/background.png"}
+   {checked.tex set_bitmap "ui/overshell/rb4_early/checkmark.png"}
+   {checkbox.tex set_bitmap "ui/overshell/rb4_early/checkmark_bg.png"}
+   {connect_controller.tex set_bitmap "ui/overshell/rb4_early/connect_controller.png"}
+   {connect_controller_normal2.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {connect_controller_spec.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {pause_container.tex set_bitmap "ui/overshell/rb4_early/pause_container.png"}
+   {top_bg.tex set_bitmap "ui/overshell/rb4_early/top_bg.png"}
+   {help_bar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {top_help_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {top_help_bg02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {online_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {bottom_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {top_help_lowered.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {top_help_lowered02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {song_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {header_song_bg_normal_pma.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {side_piece.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {results_sidebar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
+   {top_bg.mesh set_local_scale .51 .25 .6}
+   {background.mesh set_local_scale_index 0 .675}
+   {background.mesh set_local_pos_index 0 1}
+   {background.mesh set_local_pos_index 2 -810}
+   {ingame_pause_bg.mat set color {pack_color 1.0 1.0 1.0}}
+   {ingame_pausebg.mat set color {pack_color 1.0 1.0 1.0}}
+)
+#define DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
+(
+   {if {> $dx_os_slot_counter 3}
+      {set $dx_os_slot_counter 0}
+   }
+   {if {== $dx_os_slot_counter 2}
+      {set $dx_os_slot_counter 3}
+   }
+   {if 
+      {&&
+         {user_mgr get_user_from_slot $dx_os_slot_counter}
+         {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerVocals}
+      }
+      {{overshell get_slot {user_mgr get_user_from_slot $dx_os_slot_counter}} remove_user}
+   }
+   {set $dx_os_slot_counter {+ $dx_os_slot_counter 1}}
+)
+#define DX_AUTO_VOCALS_HANDLER
+(
+   {if_else {modifier_mgr is_modifier_active mod_auto_vocals}
+      {do
+         {$this attempt_toggle_auto_vocals} ;vanilla function to turn off AIM
+         ;if AIM successfully turns off, proceed to remove extra vocalists
+         {if {! {modifier_mgr is_modifier_active mod_auto_vocals}}
+            ;Checks whether or not a player exists and if they're a vocalist on slots 0, 1, 3 before removing them
+            DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
+            DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
+            DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
+            {overshell update_all}
+         }
+      }
+      {if_else
+         ;Forces AIM to turn on, even if only a vocalist exists and requirements are met
+         ;Otherwise, the vanilla function will be used to turn on AIM
+         {&&
+            {== {user_mgr get_num_local_participants} 1}
+            {== {{$this get_user} get_controller_type} kControllerVocals}
+            {! {$this in_game}}
+            {session_mgr is_local}
+         }
+         {do
+            {modifier_mgr toggle_modifier_enabled mod_auto_vocals}
+            {overshell update_all}
+         }
+         {$this attempt_toggle_auto_vocals}
+      }
+   }
+)
+#define DX_NO_SFX_HANDLER
+(
+   (os_audio_instsfx_off
+      {unless {modifier_mgr is_modifier_active mod_nosfx}
+         {modifier_mgr toggle_modifier_enabled mod_nosfx}
+         {options_audio.lst set_data (AUDIO_DATA)}
+         {if $audiomenuval
+            {options_audio.lst set_selected $audiomenuval}
+         }
+      }
+   )
+   (os_audio_instsfx_on
+      {if {modifier_mgr is_modifier_active mod_nosfx}
+         {modifier_mgr toggle_modifier_enabled mod_nosfx}
+      }
+      {options_audio.lst set_data (AUDIO_DATA)}
+      {if $audiomenuval
+         {options_audio.lst set_selected $audiomenuval}
+      }
+   )
+)
+#define DX_MODIFIER_HANDLERS
+(
+   (mod_nohud
+      {if {modifier_mgr is_modifier_active mod_nohud}
+         {if {modifier_mgr is_modifier_active mod_fakejuke}
+            {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+            {modifier_mgr toggle_modifier_enabled mod_auto_play}
+            {modifier_mgr toggle_modifier_enabled mod_nopause}
+         }
+      }
+      {modifier_mgr toggle_modifier_enabled mod_nohud}
+      {overshell update_all}
+   )
+   (mod_nolanes
+      {if {modifier_mgr is_modifier_active mod_rb4lanes}
+         {modifier_mgr toggle_modifier_enabled mod_rb4lanes}
+      }
+      {modifier_mgr toggle_modifier_enabled mod_nolanes}
+      {set $nolanes {! $nolanes}}
+      {overshell update_all}
+   )
+   (mod_rb4lanes
+      {if {modifier_mgr is_modifier_active mod_nolanes}
+         {modifier_mgr toggle_modifier_enabled mod_nolanes}
+      }
+      {modifier_mgr toggle_modifier_enabled mod_rb4lanes}
+      {overshell update_all}
+   )
+   (mod_practiceoverdrive
+      {modifier_mgr toggle_modifier_enabled mod_practiceoverdrive}
+      {set $practiceoverdrive {! $practiceoverdrive}}
+      {overshell update_all}
+   )
+   (mod_nobre
+      {modifier_mgr toggle_modifier_enabled mod_nobre}
+      {overshell update_all}
+   )
+   (mod_fakebrutal
+      {modifier_mgr toggle_modifier_enabled mod_fakebrutal}
+      {set $fakebrutalmode {! $fakebrutalmode}}
+      {overshell update_all}
+   )
+   (mod_doublespeed
+      {modifier_mgr toggle_modifier_enabled mod_doublespeed}
+      {overshell update_all}
+   )
+   (mod_fakejuke
+      {do
+         {session disconnect}
+         {session_mgr disconnect}
+      }
+      {unless {{$this get_session_mgr} is_online_enabled}
+         {unless {modifier_mgr is_modifier_active mod_fakejuke}
+            {$this show_state kState_FakeJukeWarn}
+         }
+         {if {modifier_mgr is_modifier_active mod_fakejuke}
+            {do
+               {modifier_mgr toggle_modifier_enabled $modifier}
+               {if {modifier_mgr is_modifier_active mod_auto_play}
+                  {modifier_mgr toggle_modifier_enabled mod_auto_play}
+               }
+               {if {modifier_mgr is_modifier_active mod_nohud}
+                  {modifier_mgr toggle_modifier_enabled mod_nohud}
+               }
+               {if {modifier_mgr is_modifier_active mod_nopause}
+                  {modifier_mgr toggle_modifier_enabled mod_nopause}
+               }
+               {if {modifier_mgr is_modifier_active mod_dx_no_overdrive}
+                  {modifier_mgr toggle_modifier_enabled mod_dx_no_overdrive}
+               }
+               {overshell update_all}
+               {ui goto_screen meta_loading_main_screen}
+            }
+         }
+      }
+   )
+   (mod_auto_play
+      {do
+         {session disconnect}
+         {session_mgr disconnect}
+      }
+      {unless {{$this get_session_mgr} is_online_enabled}
+         {unless {modifier_mgr is_modifier_active mod_auto_play}
+            {$this show_state kState_AutoPlayWarn}
+         }
+         {if {modifier_mgr is_modifier_active mod_auto_play}
+            {do
+               {modifier_mgr toggle_modifier_enabled $modifier}
+               {if {modifier_mgr is_modifier_active mod_fakejuke}
+                  {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+                  {modifier_mgr toggle_modifier_enabled mod_nohud}
+                  {modifier_mgr toggle_modifier_enabled mod_nopause}
+               }
+               {overshell update_all}
+               {ui goto_screen meta_loading_main_screen}
+            }
+         }
+      }
+   )
+   (mod_auto_kick
+      {do
+         {session disconnect}
+         {session_mgr disconnect}
+         {modifier_mgr toggle_modifier_enabled $modifier}
+         {if {$this in_game}
+            {$this show_state kState_ModifierSongLoad}
+         }
+         {overshell update_all}
+      }
+   )
+   (mod_chmode
+      {unless {modifier_mgr is_modifier_active mod_chmode}
+         {$this show_state kState_CHModeWarn}
+      }
+      {if {modifier_mgr is_modifier_active mod_chmode}
+         {do
+            {modifier_mgr toggle_modifier_enabled $modifier}
+            {set $railscustomtexture TRUE}
+            {if {== $rails none}
+               {set $rails rb3}
+            }
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen}
+         }
+      }
+   )
+   (mod_whammyfx
+      {modifier_mgr toggle_modifier_enabled $modifier}
+      {if {$this in_game}
+         {$this show_state kState_ModifierSongLoad}
+      }
+      {overshell update_all}
+   )
+   (mod_nomv
+      {modifier_mgr toggle_modifier_enabled mod_nomv}
+      {overshell update_all}
+      {if_else {$this in_game}
+         {$this show_state kState_ModifierSongLoad}
+         {ui goto_screen meta_loading_main_screen}
+      }
+   )
+   (mod_noblur
+      {if_else {modifier_mgr is_modifier_active mod_noblur}
+         {do 
+            {set $blurisbackon TRUE}
+            {modifier_mgr toggle_modifier_enabled mod_noblur}
+         }
+         {do
+            {set $blurisbackon FALSE}
+            {modifier_mgr toggle_modifier_enabled mod_noblur}
+         }
+      }
+      {overshell update_all}
+   )
+   (mod_nocrust
+      {if_else {modifier_mgr is_modifier_active mod_nocrust}
+         {do 
+            {set $crustisbackon TRUE}
+            {modifier_mgr toggle_modifier_enabled mod_nocrust}
+         }
+         {do
+            {set $crustisbackon FALSE}
+            {modifier_mgr toggle_modifier_enabled mod_nocrust}
+         }
+      }
+      {overshell update_all}
+   )
+   (mod_blackmenu
+      {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+      {if_else {$this in_game}
+         {$this show_state kState_ModifierSongLoad}
+         {ui goto_screen meta_loading_main_screen}
+      }
+   )
+   (mod_calibration
+      {unless
+         {modifier_mgr is_modifier_active mod_calibration}
+         {$this show_state kState_CalibrationWarn}
+      }
+      {if
+         {modifier_mgr is_modifier_active mod_calibration}
+         {do
+            {modifier_mgr toggle_modifier_enabled $modifier}
+            {overshell update_all}
+         }
+      }
+   )
+)
+#define DX_PART_SELECT_HANDLERS
+(
+   {if_else {modifier_mgr is_modifier_active mod_auto_play}
+      ;makes every instrument selectable when autoplay is on
+      {choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_drums overshell_drums_pro overshell_keys overshell_real_keys overshell_real_guitar overshell_real_bass)}
+      ;otherwise set instrument selection normally
+      {do
+         {if {== {{$this get_user} get_controller_type} kControllerGuitar}
+            {choose_part.lst set_data (overshell_guitar overshell_bass overshell_keys)}
+         }
+         {if {== {{$this get_user} get_controller_type} kControllerDrum}
+           {choose_part.lst set_data (overshell_drums overshell_drums_pro)}
+         }
+         {if {== {{$this get_user} get_controller_type} kControllerVocals}
+            {choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_keys overshell_drums)}
+         }
+         {if {== {{$this get_user} get_controller_type} kControllerKeys}
+            {choose_part.lst set_data (overshell_keys overshell_real_keys overshell_guitar overshell_bass overshell_drums)}
+         }
+         {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
+            {choose_part.lst set_data (overshell_real_guitar overshell_real_bass overshell_guitar overshell_bass)}
+         }
+      }
+   }
+   ;Selects default instrument by slot number
+   {switch
+      {$this get_slot_num}
+      (0 {choose_part.lst set_selected $default_slot0})
+      (1 {choose_part.lst set_selected $default_slot1})
+      (2 {choose_part.lst set_selected $default_slot2})
+      (3 {choose_part.lst set_selected $default_slot3})
+      {fail {choose_part.lst set_selected $default_slot0}}
+   }
+)
