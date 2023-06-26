@@ -319,12 +319,12 @@
                      {!
                         {beatmatch get_paused}})
                   {beatmatch set_paused $new TRUE FALSE}})
-            (overshell_change_diff
-               {$this begin_override_flow kOverrideFlow_SongSettings})
             (overshell_choose_part
                {do
                   {$this begin_override_flow kOverrideFlow_SongSettings}
                   {$this show_state kState_ChoosePart}})
+            (overshell_change_diff
+               {$this begin_override_flow kOverrideFlow_SongSettings})
             (overshell_practice_new_section
                {ui_event_mgr trigger_event go_to_practice_screen})
             (overshell_metronome
@@ -474,7 +474,7 @@
       {$this show_options}))
 (kState_OnlineOptions
    (enter
-   {online_options.lst set circular 0})
+      {online_options.lst set circular 0})
    (view online_options)
    (update_view
       {do
@@ -678,53 +678,7 @@
       {switch
          {$component selected_sym}
          (mod_auto_vocals
-            {if_else
-               {modifier_mgr is_modifier_active mod_auto_vocals}
-               {do
-                  {$this attempt_toggle_auto_vocals} ;vanilla function to turn off AIM
-                  ;if AIM successfully turns off, proceed to remove extra vocalists
-                  {if {! {modifier_mgr is_modifier_active mod_auto_vocals}}
-                     ;Checks whether or not a player exists and if they're a vocalist on slots 0, 1, 3 before removing them
-                     {if 
-                        {&&
-                           {user_mgr get_user_from_slot 0}
-                           {==
-                              {{user_mgr get_user_from_slot 0} get_controller_type} 
-                              kControllerVocals}}
-                        {{overshell get_slot {user_mgr get_user_from_slot 0}} remove_user}}
-                     {if 
-                        {&&
-                           {user_mgr get_user_from_slot 1}
-                           {==
-                              {{user_mgr get_user_from_slot 1} get_controller_type} 
-                              kControllerVocals}}
-                        {{overshell get_slot {user_mgr get_user_from_slot 1}} remove_user}}
-                     {if 
-                        {&&
-                           {user_mgr get_user_from_slot 3}
-                           {==
-                              {{user_mgr get_user_from_slot 3} get_controller_type} 
-                              kControllerVocals}}
-                        {{overshell get_slot {user_mgr get_user_from_slot 3}} remove_user}}
-                     {overshell update_all}}}
-               {if_else
-                  ;Forces AIM to turn on, even if only a vocalist exists and requirements are met
-                  ;Otherwise, the vanilla function will be used to turn on AIM
-                  {&&
-                     {==
-                        {user_mgr get_num_local_participants}
-                        1}
-                     {==
-                        {{$this get_user}
-                           get_controller_type}
-                        kControllerVocals}
-                     {!
-                       {$this in_game}}
-                     {session_mgr is_local}}
-                  {do
-                     {modifier_mgr toggle_modifier_enabled mod_auto_vocals}
-                     {overshell update_all}}
-                  {$this attempt_toggle_auto_vocals}}})
+            DX_AUTO_VOCALS_HANDLER)
          (mod_no_fail_band
             {if_else
                {session_mgr is_leader_local}
@@ -761,13 +715,12 @@
             {$this show_options_av_settings})
          (overshell_extras
             {$this show_options_extras})
-         (overshell_modifiers
-            {$this show_modifiers})
          (overshell_rb3esettings
             {$this show_state kState_RB3ESettings})
          (overshell_dx_bot_settings
             {$this show_state dxState_BotSettings})
-         })
+         (overshell_modifiers
+            {$this show_modifiers})})
    (on_cancel
       {$this show_options}))
 (kState_ToggleNoFailDenial
@@ -809,7 +762,9 @@
             get_profile
             {$this get_user}}})
    (exit
-      DX_AUTOSAVE)
+      {unless
+         {$this in_game}
+      		DX_AUTOSAVE})
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -844,32 +799,23 @@
                      {if_else
                         {saveload_mgr is_autosave_enabled $user}
                         {$this show_saveloadmgr_autosave_confirm}
-						{unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
-                        {saveload_mgr enable_autosave $user}}}
+                        {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
+                           {saveload_mgr enable_autosave $user}}
+                     }
                      {overshell update_all}}
                   {$this show_saveloadmgr_not_idle}}
                {$this show_saveloadmgr_not_meta}})}))
-#define AUDIO_DATA
-(
-   overshell_audio_instruments
-   overshell_audio_bg_music
-   overshell_audio_crowd
-   overshell_audio_sfx
-   #ifdef HX_PS3
-   overshell_audio_voice_chat
-   #endif
-   {if_else {modifier_mgr is_modifier_active mod_nosfx}
-   os_audio_instsfx_on
-   os_audio_instsfx_off}
-)
 (kState_OptionsAudio
    (view options_audio)
    (on_cancel
-      {unless $dontsavemod
-         {do INIT_MOD_WRITER}}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnErrorAV}
-      {$this show_options_av_settings}})
+      {unless $dx_dont_save_mod
+         INIT_MOD_WRITER
+      }
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnErrorAV}
+         {$this show_options_av_settings}
+      }
+   )
    (lst_reset
       {options_audio.lst set_data (AUDIO_DATA)}
       {if $audiomenuval
@@ -923,6 +869,7 @@
          {== $component options_audio.lst}
          {switch
             {$component selected_sym}
+            DX_NO_SFX_HANDLER
             (overshell_audio_instruments
                {instruments.sld store}
                {instruments.sld set_showing TRUE}
@@ -942,20 +889,8 @@
             (overshell_audio_voice_chat
                {voice_chat.sld store}
                {voice_chat.sld set_showing TRUE}
-               {$this set_focus voice_chat.sld})
-            (os_audio_instsfx_off
-               {unless {modifier_mgr is_modifier_active mod_nosfx}
-                  {modifier_mgr toggle_modifier_enabled mod_nosfx}
-                  {options_audio.lst set_data (AUDIO_DATA)}
-               {if $audiomenuval
-                  {options_audio.lst set_selected $audiomenuval}}})
-            (os_audio_instsfx_on
-               {if {modifier_mgr is_modifier_active mod_nosfx}
-                  {modifier_mgr toggle_modifier_enabled mod_nosfx}}
-               {options_audio.lst set_data (AUDIO_DATA)}
-               {if $audiomenuval
-                  {options_audio.lst set_selected $audiomenuval}})}
-      {$this lst_reset}})
+               {$this set_focus voice_chat.sld})}
+         {$this lst_reset}})
    (BUTTON_DOWN_MSG
       {if_else
          {find_elem
@@ -987,21 +922,22 @@
 (kState_OptionsVocal
    (view options_vocal)
    (on_cancel
-      {do INIT_VAL_WRITER}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnError}
-      {$this show_game_options}})
+      INIT_VAL_WRITER
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnError}
+         {$this show_game_options}
+      }
+   )
    (enter
+      {static_vocals.chk set_showing 1}
+      {synapse.chk set_showing 1}
+      {options_vocal.lst set_data
+         (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)
+      }
       {vocal_track.sld set_num_steps 12}
       {vocal_sens1.sld set_num_steps 12}
       {vocal_sens2.sld set_num_steps 12}
-      {vocal_sens3.sld set_num_steps 12}
-         {static_vocals.chk set_showing 1}
-         {synapse.chk set_showing 1}
-         {options_vocal.lst
-            set_data
-               (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
-      )
+      {vocal_sens3.sld set_num_steps 12})
    (update_view
       {do
          ($options
@@ -1115,14 +1051,9 @@
       {$this on_slider_change $component $user}))
 (kState_OptionsExtras
    (view options_extras)
-      (enter
-         {options_extras.lst
-            set_data
-               (overshell_credits
-                overshell_linking_code
-                #ifdef HX_XBOX
-                overshell_audition
-                #endif)})
+   (enter
+      {options_extras.lst set_data (overshell_credits overshell_linking_code #ifdef HX_XBOX overshell_audition #endif)}
+   )
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -1274,7 +1205,6 @@
             ($this set_confirm_message linking_code_signin_error)}})
    (SELECT_MSG
       {$this show_options_extras}))
-
 (kState_SaveloadManagerNotIdle
    (view confirm_action)
    (enter
@@ -1313,12 +1243,16 @@
       {$this update_modifiers_list})
    (enter
       DX_OS_OPEN_MSG ;opens overshell_player_message
-      {modifiers.lst set scroll_time 0}) 
+      {modifiers.lst set scroll_time 0}
+   ) 
    (exit
       DX_OS_CLOSE_MSG ;closes overshell_player_message
-      DX_AUTOSAVE)
+      {unless
+         {$this in_game}
+         DX_AUTOSAVE})
    (SCROLL_MSG
-      DX_MENU_DESC) ;updates description with currently selected modifier
+      DX_MENU_DESC ;updates description with currently selected modifier
+   )
    (SELECT_MSG
       {do
          ($modifier
@@ -1327,152 +1261,7 @@
             $modifier
                (modifier_enter_entry_name
                {$this show_modifier_unlock})
-               (mod_nohud
-                  {if {modifier_mgr is_modifier_active mod_nohud}
-                     {if {modifier_mgr is_modifier_active mod_fakejuke}
-                        {modifier_mgr toggle_modifier_enabled mod_fakejuke}
-                        {modifier_mgr toggle_modifier_enabled mod_auto_play}
-                        {modifier_mgr toggle_modifier_enabled mod_nopause}}}
-                  {modifier_mgr toggle_modifier_enabled mod_nohud}
-                  {overshell update_all})
-               (mod_nolanes
-                  {if {modifier_mgr is_modifier_active mod_rb4lanes}
-                     {modifier_mgr toggle_modifier_enabled mod_rb4lanes}}
-                  {modifier_mgr toggle_modifier_enabled mod_nolanes}
-                  {set $nolanes {! $nolanes}}
-                  {overshell update_all})
-               (mod_rb4lanes
-                  {if {modifier_mgr is_modifier_active mod_nolanes}
-                     {modifier_mgr toggle_modifier_enabled mod_nolanes}}
-                  {modifier_mgr toggle_modifier_enabled mod_rb4lanes}
-                  {overshell update_all})
-               (mod_practiceoverdrive
-                  {modifier_mgr toggle_modifier_enabled mod_practiceoverdrive}
-                  {set $practiceoverdrive {! $practiceoverdrive}}
-                  {overshell update_all})
-               (mod_nobre
-                  {modifier_mgr toggle_modifier_enabled mod_nobre}
-                  {overshell update_all})
-               (mod_fakebrutal
-                  {modifier_mgr toggle_modifier_enabled mod_fakebrutal}
-                  {set $fakebrutalmode {! $fakebrutalmode}}
-                  {overshell update_all})
-               (mod_doublespeed
-                  {modifier_mgr toggle_modifier_enabled mod_doublespeed}
-                  {overshell update_all})
-               (mod_fakejuke
-               {do {session disconnect}
-               {session_mgr disconnect}}
-               {unless {{$this get_session_mgr} is_online_enabled}
-               {unless
-                  {modifier_mgr is_modifier_active mod_fakejuke}
-                  {$this show_state kState_FakeJukeWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_fakejuke}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {if {modifier_mgr is_modifier_active mod_auto_play}
-                     {modifier_mgr toggle_modifier_enabled mod_auto_play}}
-                  {if {modifier_mgr is_modifier_active mod_nohud}
-                     {modifier_mgr toggle_modifier_enabled mod_nohud}}
-                  {if {modifier_mgr is_modifier_active mod_nopause}
-                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
-                  {if {modifier_mgr is_modifier_active mod_dx_no_overdrive}
-                     {modifier_mgr toggle_modifier_enabled mod_dx_no_overdrive}}
-                  {overshell update_all}
-                  {ui goto_screen meta_loading_main_screen}}}})
-               (mod_auto_play
-               {do {session disconnect}
-               {session_mgr disconnect}}
-               {unless {{$this get_session_mgr} is_online_enabled}
-               {unless
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {$this show_state kState_AutoPlayWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {if {modifier_mgr is_modifier_active mod_fakejuke}
-                     {modifier_mgr toggle_modifier_enabled mod_fakejuke}
-                     {modifier_mgr toggle_modifier_enabled mod_nohud}
-                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
-                  {overshell update_all}
-                  {ui goto_screen meta_loading_main_screen}}}})
-               (mod_auto_kick
-               {do
-               {session disconnect}
-               {session_mgr disconnect}
-               {modifier_mgr toggle_modifier_enabled $modifier}
-               {if {$this in_game}
-                  {$this show_state kState_ModifierSongLoad}}
-               {overshell update_all}})
-               (mod_chmode
-               {unless
-                  {modifier_mgr is_modifier_active mod_chmode}
-                  {$this show_state kState_CHModeWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_chmode}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {set $railscustomtexture TRUE}
-                  {if {== $rails none} {set $rails rb3}}
-                  {overshell update_all}
-                  {ui goto_screen meta_loading_main_screen}}})
-               ;(mod_rrdrums
-               ;   {modifier_mgr toggle_modifier_enabled $modifier}
-               ;   {set $author TRUE} {$this show_modifiers_drum_warning}
-               ;   {saveload_mgr disable_autosave $user}
-               ;   {if {$this in_song} {ui goto_screen meta_loading_main_screen}}
-               ;   {overshell update_all})
-               ;(mod_ghdrums
-               ;   {modifier_mgr toggle_modifier_enabled $modifier}
-               ;   {set $author TRUE} {$this show_modifiers_drum_warning}
-               ;   {saveload_mgr disable_autosave $user}
-               ;   {if {$this in_song} {ui goto_screen meta_loading_main_screen}}
-               ;   {overshell update_all})
-               (mod_whammyfx
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {if {$this in_game}
-                     {$this show_state kState_ModifierSongLoad}}
-                  {overshell update_all}) ;whammy fx modifier
-               (mod_nomv
-                  {modifier_mgr toggle_modifier_enabled mod_nomv}
-                  {overshell update_all}
-                  {if_else {$this in_game}
-                     {$this show_state kState_ModifierSongLoad}
-                     {ui goto_screen meta_loading_main_screen}})
-               (mod_noblur
-                  {if_else {modifier_mgr is_modifier_active mod_noblur}
-                     {do 
-                        {set $blurisbackon TRUE}
-                        {modifier_mgr toggle_modifier_enabled mod_noblur}}
-                     {do
-                        {set $blurisbackon FALSE}
-                        {modifier_mgr toggle_modifier_enabled mod_noblur}}}
-                  {overshell update_all})
-               (mod_nocrust
-                  {if_else {modifier_mgr is_modifier_active mod_nocrust}
-                     {do 
-                        {set $crustisbackon TRUE}
-                        {modifier_mgr toggle_modifier_enabled mod_nocrust}}
-                     {do
-                        {set $crustisbackon FALSE}
-                        {modifier_mgr toggle_modifier_enabled mod_nocrust}}}
-                  {overshell update_all})
-               (mod_blackmenu
-                  {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-               {if_else {$this in_game}
-                  {$this show_state kState_ModifierSongLoad}
-                  {ui goto_screen meta_loading_main_screen}})
-            (mod_calibration
-               {unless
-                  {modifier_mgr is_modifier_active mod_calibration}
-                  {$this show_state kState_CalibrationWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_calibration}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {overshell update_all}}})
+               DX_MODIFIER_HANDLERS
 	           (mod_drum_surface_navigation
                {modifier_mgr toggle_modifier_enabled $modifier}
                {unless
@@ -1487,37 +1276,31 @@
                {$this show_modifier_delayed_effect}}
             {overshell update_all}}})
    (on_cancel
-      {unless $dontsavemod
-         {do INIT_MOD_WRITER}}
+      {unless $dx_dont_save_mod
+         INIT_MOD_WRITER
+      }
       {modifiers.lst set scroll_time 0.25}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnError}
-      {$this show_game_options}}))
-
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnError}
+         {$this show_game_options}
+      }
+   )
+)
 (kState_ModifiersDrumWarning
    (view confirm_action)
    (enter
-      {if_else $ingameset
-            {handle
-               ($this set_confirm_message ingame_warning)}
-      {if_else $author
-         {do {set $author FALSE}
-            {handle
-               ($this set_confirm_message author_warning)}}
-      {if_else $autoplay
-         {do {set $autoplay FALSE}
-            {handle
-               ($this set_confirm_message autoplay_warning)}}
-      {if_else $breakneck
-         {do {set $breakneck FALSE}
-            {handle
-               ($this set_confirm_message breakneck_warning)}}
-      {handle
-         ($this set_confirm_message disable_drum_surface_navigation_warning)}}}}})
+      DX_WARNING_HANDLER
+   )
    (SELECT_MSG
       {if_else $ingameset
-      {do {set $ingameset FALSE} {$this show_state kState_RB3ESettings}}
-      {$this show_modifiers}}))
+         {do
+            {set $ingameset FALSE}
+            {$this show_state kState_RB3ESettings}
+         }
+         {$this show_modifiers}
+      }
+   )
+)
 (kState_ModifierUnlock
    (view confirm_action)
    (enter
@@ -1589,71 +1372,14 @@
    (enter
       {choose_part.lst set scroll_time 0}
       {$this update_part_select_list}
-      {if_else
-         {modifier_mgr is_modifier_active mod_auto_play}
-         ;makes every instrument selectable when autoplay is on
-         {choose_part.lst
-            set_data
-               (overshell_vocal_solo
-               overshell_vocal_harmony
-               overshell_guitar
-               overshell_bass
-               overshell_drums
-               overshell_drums_pro
-               overshell_keys
-               overshell_real_keys
-               overshell_real_guitar
-               overshell_real_bass)}
-         ;otherwise set instrument selection normally
-         {do
-            {if {== {{$this get_user} get_controller_type} kControllerGuitar}
-               {choose_part.lst
-                  set_data
-                     (overshell_guitar
-                     overshell_bass
-                     overshell_keys)}}
-            {if {== {{$this get_user} get_controller_type} kControllerDrum}
-              {choose_part.lst
-                  set_data
-                     (overshell_drums
-                      overshell_drums_pro)}}
-            {if {== {{$this get_user} get_controller_type} kControllerVocals}
-               {choose_part.lst
-                  set_data
-                     (overshell_vocal_solo
-                      overshell_vocal_harmony
-                      overshell_guitar
-                      overshell_bass
-                      overshell_keys
-                      overshell_drums)}}
-            {if {== {{$this get_user} get_controller_type} kControllerKeys}
-               {choose_part.lst
-                  set_data
-                     (overshell_keys
-                     overshell_real_keys
-                     overshell_guitar
-                     overshell_bass
-                     overshell_drums)}}
-            {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
-               {choose_part.lst
-                  set_data
-                    (overshell_real_guitar
-                     overshell_real_bass
-                     overshell_guitar
-                     overshell_bass)}}}}
-      ;Selects default instrument by slot number
-      {switch
-         {$this get_slot_num}
-         (0 {choose_part.lst set_selected $default_slot0})
-         (1 {choose_part.lst set_selected $default_slot1})
-         (2 {choose_part.lst set_selected $default_slot2})
-         (3 {choose_part.lst set_selected $default_slot3})
-         {fail {choose_part.lst set_selected $default_slot0}}}
+      DX_PART_SELECT_HANDLERS
    )
    (exit
       {choose_part.lst set scroll_time 0.25}
       {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
-         {do INIT_VAL_WRITER}})
+         INIT_VAL_WRITER
+      }
+   )
    (SELECT_MSG
       ;Saves default instrument by slot number
       {switch
@@ -1662,7 +1388,8 @@
          (1 {set $default_slot1 {$component selected_sym}})
          (2 {set $default_slot2 {$component selected_sym}})
          (3 {set $default_slot3 {$component selected_sym}})
-         {fail {set $default_slot0 {$component selected_sym}}}}
+         {fail {set $default_slot0 {$component selected_sym}}}
+      }
       {switch
          {$component selected_sym}
          (overshell_guitar
@@ -1936,9 +1663,12 @@
    (view choose_diff)
    (song_settings_flow TRUE)
    (shows_extended_mic_arrows TRUE)
-   (enter {if {! $firstdiff}
-	     {set $firstdiff TRUE}
-		 {choose_diff.lst set_selected 3}})
+   (enter
+      {if {! $dx_first_diff} ; dx - hacky way to default to expert on first boot
+         {set $dx_first_diff TRUE}
+         {choose_diff.lst set_selected 3}
+      }
+   )
    (SELECT_MSG
       {switch
          {choose_diff.lst selected_sym}
@@ -1950,8 +1680,15 @@
             {$this select_difficulty kDifficultyHard})
          (overshell_expert
             {if_else {modifier_mgr is_modifier_active mod_nobre}
-            {{$this select_difficulty kDifficultyEasy} {do {set $imabigboy TRUE}}}
-            {$this select_difficulty kDifficultyExpert}})})
+               {do
+                  {$this select_difficulty kDifficultyEasy}
+                  {set $imabigboy TRUE}
+               }
+               {$this select_difficulty kDifficultyExpert}
+            }
+         )
+      }
+   )
    (update_remote_feedback
       ($focus_item)
       {choose_diff.lst set_selected $focus_item})

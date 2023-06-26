@@ -1,31 +1,3 @@
-#define OVERSHELL_RB4OS
-(
-                  {background.tex set_bitmap "ui/overshell/rb4_early/background.png"}
-                  {checked.tex set_bitmap "ui/overshell/rb4_early/checkmark.png"}
-                  {checkbox.tex set_bitmap "ui/overshell/rb4_early/checkmark_bg.png"}
-                  {connect_controller.tex set_bitmap "ui/overshell/rb4_early/connect_controller.png"}
-                  {connect_controller_normal2.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {connect_controller_spec.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {pause_container.tex set_bitmap "ui/overshell/rb4_early/pause_container.png"}
-                  {top_bg.tex set_bitmap "ui/overshell/rb4_early/top_bg.png"}
-                  {help_bar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_bg02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {online_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {bottom_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_lowered.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_lowered02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {song_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {header_song_bg_normal_pma.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {side_piece.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {results_sidebar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_bg.mesh set_local_scale .51 .25 .6}
-                  {background.mesh set_local_scale_index 0 .675}
-                  {background.mesh set_local_pos_index 0 1}
-                  {background.mesh set_local_pos_index 2 -810}
-                  {ingame_pause_bg.mat set color {pack_color 1.0 1.0 1.0}}
-                  {ingame_pausebg.mat set color {pack_color 1.0 1.0 1.0}}
-)
 {new
    OvershellPanel
    overshell
@@ -40,25 +12,23 @@
                (vocals)
                (guitar real_guitar keys))
             (auto_vocals
-               (guitar real_guitar keys vocals)
+               (guitar real_guitar keys vocals) ; dx - any instrument anywhere
                (drum vocals)
                (guitar real_guitar keys vocals)
                (guitar real_guitar keys vocals)))
          (joining_priority 0 3 2 1))
       (type
          (state_handlers
-            #include slot_states.dta
             #include dx_states.dta
             #include texture_states.dta
             #include appearance_states.dta
             #include cam_states.dta
             #include color_states.dta
             #include speed_states.dta
-            #include sfx_states.dta)
+            #include sfx_states.dta
+            #include slot_states.dta)
          (enter
-            {if {modifier_mgr is_modifier_active mod_rb4os}
-               OVERSHELL_RB4OS
-            }
+            #ifndef HX_WII {if {modifier_mgr is_modifier_active mod_rb4os} OVERSHELL_RB4OS} #endif
             DX_DISCONNECT
             {overshell_player_message set_showing FALSE})
          (exit)
@@ -160,7 +130,7 @@
                set_overshell_pause
                {&&
                   {session is_local}
-                  {! {modifier_mgr is_modifier_active mod_nopause}}
+                  {! {modifier_mgr is_modifier_active mod_nopause}} ; dx - don't pause the game if we are in party mode
                   {'||'
                      {$this should_pause}
                      {platform_mgr guide_showing}}}}
@@ -204,13 +174,10 @@
             {if
                {&&
                   $in_game
-                  {! $any_dialog_up}	
-                  {! {modifier_mgr is_modifier_active mod_nopause}}} ;hides "Press START" screen while in-game when pause is disabled
+                  {! {modifier_mgr is_modifier_active mod_nopause}} ;dx - hides "Press START" screen while in-game when pause is disabled
+                  {! $any_dialog_up}}
                {ui_event_mgr trigger_event zero_players}}
-            {if
-               $zero_players_dialog_up
-               {ui_event_mgr dismiss_dialog_event}}}
-         ;hides score and crowd meter if no players active
+            ;hides score and crowd meter if no players active
          {if_else
             {&&
                $zero_players
@@ -220,7 +187,10 @@
                hide_score}
             {{{get_track_panel}
                my_track_panel_dir} 
-               show_score}}}
+               show_score}}
+            {if
+               $zero_players_dialog_up
+               {ui_event_mgr dismiss_dialog_event}}}}
       {ui
          foreach_screen
          $screen
@@ -332,7 +302,7 @@
          {if_else
             {modifier_mgr is_modifier_active mod_auto_vocals}
             {slot_positions.anim set_frame 2}
-            {slot_positions.anim set_frame 2}} ;used to be 1, changed to always be two to fix "invisible" pause when using laned instruments in vox slot
+            {slot_positions.anim set_frame 2}} ; dx -used to be 1, changed to always be two to fix "invisible" pause when using laned instruments in vox slot
          {slot_positions.anim set_frame 0}})
    (set_position_frame
       ($frame)
