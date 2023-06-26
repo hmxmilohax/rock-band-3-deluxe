@@ -80,17 +80,37 @@
                update_character_from_char_list
                {characters.lst selected_pos}})})
    (SELECT_MSG
+      #ifdef HX_WII
+      {if_else
+         {!
+            {profile_mgr has_primary_profile}}
+         {do
+            {manage_band_panel clear_profile}
+            {$this check_for_kickout_condition}}
+         {do
+            #endif
       {switch
          $component
          (edit_band_name.btn
+      #ifdef HX_WII
+         {$this set_paused 1}
+                  {set
+                     $defaultName
+                     {$this get_default_vk_name TRUE}}
+      #endif
             {virtual_keyboard
                show_keyboard
                $user
                kBandNameLength
                {localize create_band_vk_title}
                {localize create_band_vk_desc}
+               #ifdef HX_WII
+               $defaultName
+               #else
                {$this get_default_vk_name TRUE}
-               $this})
+               #endif
+               $this
+               #ifdef HX_WII kVkNormalEntry #endif})
          (edit_logo.btn
             {closet_mgr set_no_user_mode TRUE}
             {critical_user_listener set_critical_user $user}
@@ -137,7 +157,9 @@
             {$this
                set_standin
                {characters.lst selected_pos}}
-            {$this set_state kManageBand_StandInsMenu})})
+            {$this set_state kManageBand_StandInsMenu})}
+            #ifdef HX_WII}}
+      #endif)
    (BUTTON_DOWN_MSG
       {switch
          $action
@@ -166,6 +188,7 @@
          {$this get_profile}})
    (get_default_vk_name
       ($band_name)
+      #ifndef HX_WII
       {do
          ($name
             {{$this get_profile}
@@ -174,12 +197,15 @@
             {{$this get_profile}
                has_band_name_been_set}
             $name
+      #endif
             {sprintf
                "%s %s"
                {localize
                   {name_generator get_random_name band_firstnames}}
                {localize
-                  {name_generator get_random_name band_secondnames}}}}})
+                  {name_generator get_random_name band_secondnames}}}
+                  #ifndef HX_WII}}
+                  #endif)
    (update_state
       ($new_state $old_state)
       {switch
@@ -249,6 +275,9 @@
    (panels meta practice_space_panel manage_band_panel accomplishments_status_panel)
    (focus manage_band_panel)
    (enter
+      #ifdef HX_WII
+      {overshell set_active_status kOvershellInactive}
+      #endif
       {manage_band_panel set_state kManageBand_StandInsMenu}
       {profile_mgr
          add_sink
@@ -257,7 +286,10 @@
    (exit
       {closet_mgr set_no_user_mode FALSE}
       {char_sync update_char_cache}
-      {profile_mgr remove_sink $this primary_profile_changed_msg})
+      {profile_mgr remove_sink $this primary_profile_changed_msg}
+      #ifdef HX_WII
+      {overshell set_active_status kOvershellInShell}
+      #endif)
    (primary_profile_changed_msg
       {if
          {profile_mgr has_primary_profile}
