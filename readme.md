@@ -182,7 +182,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 * Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip).
 * Copy the `rb3` folder to the root of your SD card. Click `Yes` to overwrite the files if it asks you to.
-* When you launch *RB3Enhanced*, Deluxe will be loaded as well.
+* When you launch *RB3Enhanced*, *Deluxe* will be loaded as well.
 
 ### ✅ ***Rock Band 3 Deluxe is now installed!***
 
