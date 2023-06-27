@@ -31,7 +31,7 @@
    {set $dx_joypad_type_keys kControllerKeys}
    {set $dx_joypad_type_vocals kControllerVocals}
 )
-#define DX_GET_NAV_TYPE
+#define DX_GET_NAV_TYPE ;selects navigation sfx based on controller, prevents crashing when swapping instrument type
 (
    {switch
       $nav_type
@@ -61,35 +61,47 @@
       (digital vocals)
       (analog vocals)
       (dualshock vocals)
-      (stagekit_xbox vocals)}
+      (stagekit_xbox vocals)
+      #ifdef HX_WII
+      (wii_remote vocals)
+      (wii_classic vocals)
+      (gamecube vocals)
+      (wii_guitar guitar)
+      (wii_guitar_rb2 guitar)
+      (wii_drums drum)
+      (wii_drums_rb2 drum)
+      (wii_roguitar guitar)
+      (wii_rodrums drum)
+      #endif
+   }
 )
-#define DX_RB3E_SETTINGS_LST
+#define DX_RB3E_SETTINGS_LIST
 (
-   {if_else
-      {||
-         {||
-            {== {{$this get_user} get_controller_type} kControllerGuitar}
-            {== {{$this get_user} get_controller_type} kControllerKeys}
-            {== {{$this get_user} get_controller_type} kControllerVocals}}
-         {||
-            {unless {$dx_joypad_type_guitar kControllerGuitar}}
-            {unless {$dx_joypad_type_keys kControllerKeys}}
-            {unless {$dx_joypad_type_vocals kControllerVocals}}}}
-      {
-            os_spds
-            os_venuesel
-            os_thm
-            os_cam
-            os_audiomenu
-            os_ctrlmenu
-      }
-      {
-            os_spds
-            os_venuesel
-            os_thm
-            os_cam
-            os_audiomenu
-      }
+   {do
+      ($options
+         {array 0})
+         {push_back $options os_spds}
+         {push_back $options os_venuesel}
+         {push_back $options os_thm}
+         {push_back $options os_cam}
+         {push_back $options os_audiomenu}
+         ;only show the controller menu
+         {if
+            {||
+               {||
+                  {== {{$this get_user} get_controller_type} kControllerGuitar}
+                  {== {{$this get_user} get_controller_type} kControllerKeys}
+                  {== {{$this get_user} get_controller_type} kControllerVocals}
+               }
+               {||
+                  {! {== $dx_joypad_type_guitar kControllerGuitar}}
+                  {! {== $dx_joypad_type_keys kControllerKeys}}
+                  {! {== $dx_joypad_type_vocals kControllerVocals}}
+               }
+            }
+            {do {push_back $options os_ctrlmenu}}
+         }
+         {options_audio.lst set_data $options}
    }
 )
 #define DX_DISPLAY_MSG_HANDLER
@@ -457,27 +469,78 @@
       }
    )
 )
+#define DX_PART_SELECT_GUITAR
+({choose_part.lst set_data (overshell_guitar overshell_bass overshell_keys)})
+#define DX_PART_SELECT_DRUMS
+(
+   {do
+      ($options
+         {array 0})
+      {if_else {== $dx_joypad_type_guitar kControllerDrum}
+         {
+            {do
+               {push_back $options overshell_guitar}
+               {push_back $options overshell_bass}
+               {push_back $options overshell_keys}
+            }
+         }
+            {if_else {== $dx_joypad_type_keys kControllerDrum}
+               {
+                  {do
+                     {push_back $options overshell_keys}
+                     {push_back $options overshell_real_keys}
+                     {push_back $options overshell_guitar}
+                     {push_back $options overshell_bass}
+                     {push_back $options overshell_drums}
+                  }
+               }
+               {
+                  {do
+                     {push_back $options overshell_drums}
+                     {push_back $options overshell_drums_pro}
+                  }
+               }
+            }
+      }
+      {choose_part.lst set_data $options}
+   }
+)
+#define DX_PART_SELECT_VOCALS
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options overshell_vocal_solo}
+      {push_back $options overshell_vocal_harmony}
+      {push_back $options overshell_guitar}
+      {push_back $options overshell_bass}
+      {push_back $options overshell_keys}
+      {if {== $dx_joypad_type_keys kControllerVocals}
+         {do {push_back $options overshell_real_keys}}}
+      {push_back $options overshell_drums}
+      {choose_part.lst set_data $options}
+   }
+)
+#define DX_PART_SELECT_KEYS
+({choose_part.lst set_data (overshell_keys overshell_real_keys overshell_guitar overshell_bass overshell_drums)})
+#define DX_PART_SELECT_REAL_GUITAR
+({choose_part.lst set_data (overshell_real_guitar overshell_real_bass overshell_guitar overshell_bass)})
+#define DX_PART_SELECT_AUTOPLAY
+({choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_drums overshell_drums_pro overshell_keys overshell_real_keys overshell_real_guitar overshell_real_bass)})
 #define DX_PART_SELECT_HANDLERS
 (
    {if_else {modifier_mgr is_modifier_active mod_auto_play}
       ;makes every instrument selectable when autoplay is on
-      {choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_drums overshell_drums_pro overshell_keys overshell_real_keys overshell_real_guitar overshell_real_bass)}
+      DX_PART_SELECT_AUTOPLAY
       ;otherwise set instrument selection normally
       {do
-         {if {== {{$this get_user} get_controller_type} kControllerGuitar}
-            {choose_part.lst set_data (overshell_guitar overshell_bass overshell_keys)}
-         }
-         {if {== {{$this get_user} get_controller_type} kControllerDrum}
-           {choose_part.lst set_data (overshell_drums overshell_drums_pro)}
-         }
-         {if {== {{$this get_user} get_controller_type} kControllerVocals}
-            {choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_keys overshell_drums)}
-         }
-         {if {== {{$this get_user} get_controller_type} kControllerKeys}
-            {choose_part.lst set_data (overshell_keys overshell_real_keys overshell_guitar overshell_bass overshell_drums)}
-         }
-         {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
-            {choose_part.lst set_data (overshell_real_guitar overshell_real_bass overshell_guitar overshell_bass)}
+         {switch {{$this get_user} get_controller_type}
+            (kControllerGuitar DX_PART_SELECT_GUITAR)
+            (kControllerDrum DX_PART_SELECT_DRUMS)
+            (kControllerVocals DX_PART_SELECT_VOCALS)
+            (kControllerKeys DX_PART_SELECT_KEYS)
+            (kControllerRealGuitar DX_PART_SELECT_REAL_GUITAR)
+            {fail "No choose part view for this controller type"}
          }
       }
    }
