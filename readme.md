@@ -4,7 +4,7 @@
 
 ## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and Wii.
 
-### With features like an FC indicator, custom track themes, an increased song limit, and harmony chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
+### With features like an FC indicator, custom track themes, an increased song limit, and various chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
