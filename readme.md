@@ -19,9 +19,10 @@
 
 ### Playing Rock Band 3 Deluxe requires these things:
 
-- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC. The **USA** version is required for PS3 (`BLUS30463`)
-- For Console: A **modded/hacked PS3 or Xbox 360** and a way to transfer files to it, we recommend using FTP
-- For Emulator: A **mid-to-high-end PC** capable of running RPCS3
+- **A vanilla copy of Rock Band 3** for PS3, Xbox 360, or Wii that you can extract onto your PC.
+    - The **USA** version is required for PS3 (`BLUS30463`) and Wii (`SZBE69`).
+- For Console: A **modded/hacked PS3, Xbox 360, or Wii** and a way to transfer files to it. An SD card is required for Wii.
+- For Emulator: A PC capable of running RPCS3 or Dolphin.
 
 <br/>
 
@@ -78,15 +79,15 @@ Continue to:
     - [Installing on Xbox Series X/S](#-installing-on-xbox-series-xs-xenia-uwp)
 
 ## Wii
-![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/wii?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/wii/RB3DX-Base-Wii-Rawfiles.zip)
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
+### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
-> The Wii version of Rock Band 3 Deluxe is no longer being maintained or supported.
+> The standard install, typical for most users.
 
 <br/>
 
 Continue to: 
-    - [Installing on Wii/Dolphin (Outdated)](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii#install)
+    - [Installing on Wii](#-installing-on-wii)
 
 <br/>
 
@@ -97,9 +98,9 @@ Continue to:
   - [RPCS3 (Recommended for PC)](#-installing-on-rpcs3)
   - [PlayStation 3](#-installing-on-ps3)
   - [Xbox 360](#-installing-on-xbox-360)
+  - [Wii](#-installing-on-wii)
   - [Xbox Series X/S (Xenia UWP)](#-installing-on-xbox-series-xs-xenia-uwp)
   - [Xenia (Advanced)](#-installing-on-xenia-advanced)
-  - [Wii (Unsupported)](https://github.com/hmxmilohax/rock-band-3-deluxe/tree/wii#install)
 <br/>
 
 ## 📩 Installing on [RPCS3](https://rpcs3.net/)
@@ -173,6 +174,22 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 <br/>
 
+## 📩 Installing on Wii
+
+**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii in order to play this mod on console. We hope this is clear.**
+
+**You need to have [RB3Enhanced](https://rb3e.rbenhanced.rocks/) installed before you do anything. Install that first and then come back.**
+
+* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip).
+* Copy the `rb3` folder to the root of your SD card. Click `Yes` to overwrite the files if it asks you to.
+* When you launch RB3Enhanced, Deluxe will be loaded as well.
+
+### ✅ ***Rock Band 3 Deluxe is now installed!***
+
+We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
+
+<br/>
+
 ## 📩 Installing on Xbox Series X/S ([Xenia UWP](https://github.com/SirMangler/xenia/releases))
 
 **NOTE: You WILL need an Xbox Series X/S running in [Developer Mode](https://learn.microsoft.com/en-us/windows/uwp/xbox-apps/devkit-activation). We hope this is clear.**
@@ -237,7 +254,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
     - [Xbox 360](#-installing-songs-on-xbox-360)
     - [Xenia](#-installing-songs-on-xenia-desktop-and-uwp)
   - [rb3_plus Keys Upgrades](#-rb3_plus-keys-upgrades)
-  - [Custom Textures](#-custom-textures)
+  - [Custom Textures](#-custom-textures-ps3360-only)
 
 <br/>
 
@@ -299,7 +316,7 @@ You can download a build of Rock Band 3 Deluxe containing these upgrades for bot
 
 <br/>
 
-## 🎨 Custom Textures
+## 🎨 Custom Textures (PS3/360 Only)
 
 By default, Rock Band 3 Deluxe contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
 
