@@ -10,7 +10,22 @@
             set_joining_user
             {user_mgr get_user_from_pad_num $pad_num}}
          #endif
-         {ui_event_mgr trigger_event invite_accepted})})
+         {ui_event_mgr trigger_event invite_accepted}
+         #ifdef HX_WII
+         {unless
+            {ui_event_mgr has_transition_event go_to_wiiprofilecreator}
+            {ui_event_mgr trigger_event invite_accepted}}
+         #else
+         {ui_event_mgr trigger_event invite_accepted}
+         #endif)})
+#ifdef HX_WII
+(show_net_error
+   ($text)
+   {ui_event_mgr
+      trigger_event
+      error_message
+      (dummy init $text)})
+#endif
 (ui_flows
    (kUIFlowType_Main
       (join_entry_point main_hub_screen))
@@ -25,7 +40,10 @@
       (on_finished_join
          {main_hub_panel advance kNetUI_WaitingTourFindPlayers}))
    (kUIFlowType_InGame)
-   (kUIFlowType_None))
+   (kUIFlowType_None)
+   #ifdef HX_WII
+   (kUIFlowType_InvitingFriends)
+   #endif)
 (ui_event_mgr
    (dialog_events
       (error_message
@@ -112,7 +130,7 @@
          (SELECT_MSG
             {if
                {== $component opt1.btn}
-               {platform_mgr signin 1 TRUE}})
+               {platform_mgr signin 1 TRUE #ifdef HX_WII $user #endif}})
          (SELECT_DONE_MSG
             {if
                {'||'
@@ -176,7 +194,14 @@
                            {localize $controller}
                            $name}
                         {'+' $pad_num 1})}
+                  #ifdef HX_WII
+                  {if_else
+                     {== vocals $controller}
+                     wii_error_remote_communications
+                     error_reconnect_controller}
+                  #else
                   error_reconnect_controller
+                  #endif
                   $quit_token
                   opt1.btn}})
          (lost_pad_user
@@ -232,6 +257,10 @@
                      {$this set_custom_3btn $dialog_msg $opt1 $opt2 $opt3 $focus})
                   ({!= $opt2 ''}
                      {$this set_custom $dialog_msg $opt1 $opt2 $focus})
+                  #ifdef HX_WII
+                  ({!= $opt1 ''}
+                     {$this set_custom_1btn $dialog_msg $opt1})
+                  #endif
                   {$this set_ok $dialog_msg}}})
          (SELECT_MSG
             {do
@@ -413,7 +442,51 @@
                      #endif
                      (kStoreErrorDroppedOut critical_user_drop_out)
                      (kStoreErrorNoMetadata store_error_no_metadata)
-                     (kStoreErrorNoEthernetCable error_ethernet_unplugged)})}))
+                     (kStoreErrorNoEthernetCable error_ethernet_unplugged)
+                     #ifdef HX_WII
+                     (kStoreErrorEcommerce
+                        {do
+                           ($code
+                              {commerce_mgr commerce_error_code})
+                           {if_else
+                              {== $code 0}
+                              {set $store_genericerror error_lost_server}
+                              {do
+                                 {if_else
+                                    {'||'
+                                       {== $code 204013}
+                                       {&&
+                                          {> $code 204900}
+                                          {< $code 204918}}
+                                       {&&
+                                          {> $code 204960}
+                                          {< $code 204964}}
+                                       {&&
+                                          {> $code 204964}
+                                          {< $code 204974}}
+                                       {&&
+                                          {> $code 207900}
+                                          {< $code 207918}}
+                                       {&&
+                                          {> $code 207900}
+                                          {< $code 207918}}
+                                       {&&
+                                          {> $code 49999}
+                                          {< $code 60000}}}
+                                    (store_disconnect_error_code
+                                       {commerce_mgr commerce_error_code})
+                                    (store_genericerror
+                                       {commerce_mgr commerce_error_code})}}}})
+                     (kStoreErrorNoEula
+                        (store_noeula
+                           {commerce_mgr commerce_error_code}))
+                     (kStoreErrorNeedBlocks store_cfgneedblocks)
+                     (kStoreErrorNeedINodes store_cfgneedindoes)
+                     (kStoreErrorIndexNeedINodes dlc_missing_inodes)
+                     (kStoreErrorIndexNeedBlocks
+                        (dlc_missing_space
+                           {store check_content_size}))
+                     #endif})}))
       (quit_early
          (next_screen meta_loading_quit_screen)
          (init
@@ -432,6 +505,15 @@
          (next_screen meta_loading_join_invite_screen))
       (go_to_calibration
          (next_screen meta_loading_calibration_screen))
+      #ifdef HX_WII
+      (go_to_wiispeak_options
+         (next_screen meta_loading_wiispeak_options_screen))
+      (go_to_wiiprofilecreator
+         (init
+            ($user)
+            {wiiprofile_panel set_user $user})
+         (next_screen meta_loading_wiiprofile_screen))
+      #endif
       (go_to_charactercreator
          (next_screen meta_loading_charactercreator_screen))
       (go_to_practice_screen

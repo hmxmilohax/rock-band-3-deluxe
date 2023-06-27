@@ -1,0 +1,522 @@
+#define kSplashScreen_Entered
+(0)
+#define kSplashScreen_ActivateSaveLoad
+(1)
+#define kSplashScreen_StartOvershell
+(2)
+#define kSplashScreen_WaitOvershell
+(3)
+#define kSplashScreen_EndOvershell
+(4)
+#ifdef HX_WII
+#define kSplashScreen_ImportFriends
+(6)
+#define kSplashScreen_PreEndOvershell
+(7)
+#define kSplashScreen_CheckFirstInstrument
+(8)
+#define kSplashScreen_WaitPushScreen
+(9)
+#endif
+#ifdef HX_WII
+{func
+   get_controller_type
+   ($con_type)
+   {switch
+      $con_type
+      (kJoypadWiiCore
+         "vocals")
+      (kJoypadWiiFS
+         "vocals")
+      (kJoypadWiiGuitar
+         "guitar")
+      (kJoypadWiiHxGuitar
+         "guitar")
+      (kJoypadWiiHxGuitarRb2
+         "guitar")
+      (kJoypadWiiCoreGuitar
+         "guitar")
+      (kJoypadWiiDrums
+         "drum")
+      (kJoypadWiiHxDrums
+         "drum")
+      (kJoypadWiiHxDrumsRb2
+         "drum")
+      (kJoypadWiiKeytar
+         "keyboard")
+      (kJoypadWiiButtonGuitar
+         "madcatz")
+      (kJoypadWiiRealGuitar22Fret
+         "squire")
+      (kJoypadWiiMidiBoxKeyboard
+         "midi")
+      (kJoypadWiiMidiBoxDrums
+         "midi")
+      "vocals"}}
+#endif
+{new
+   MoviePanel
+   intro_movie_panel
+   (preload FALSE)
+   (audio TRUE)
+   (loop FALSE)
+   (videos intro_movie)
+   (should_leave FALSE)
+   (should_leave_count 0)
+   (movie_done
+      {$this leave})
+   (enter
+      {ui goto_screen meta_loading_main_screen}) ; dx - skips the intro movie instantly
+   #ifndef HX_WII
+   (enter
+      {set
+         [should_leave]
+         FALSE}
+      {set
+         [should_leave_count]
+         0}
+      {platform_mgr disable_xmp}
+      kDataUnhandled)
+   #endif
+   (exit
+      #ifdef HX_PS3
+      {if
+         {elem
+            {find $syscfg system trophies}
+            1}
+         {register_trophy}}
+      #endif)
+   (BUTTON_DOWN_MSG
+      {if
+         {'||'
+            {== $action kAction_Start}
+            {== $action kAction_Confirm}}
+         {$this leave}})
+   (poll
+      #ifdef HX_WII
+      {if
+         {==
+            [should_leave_count]
+            20}
+         {do
+            {saveload_mgr create_vf_cache}
+            {saveload_mgr hide_save_icon}
+            {if_else
+               {content_mgr is_sdcard_inserted}
+               {do
+                  {startup_sdmode_screen set final_screen splash_screen}
+                  {ui goto_screen startup_sdmode_screen}}
+               {ui goto_screen splash_screen}}}}
+      {if
+         [should_leave]
+         {set
+            [should_leave_count]
+            {'+'
+               [should_leave_count]
+               1}}}
+      #endif)
+   (leave
+      #ifdef HX_WII
+      {if
+         {!
+            [should_leave]}
+         {saveload_mgr show_save_icon}}
+      {set
+         [should_leave]
+         TRUE}
+      #else
+      {ui goto_screen splash_screen}
+      #endif)}
+{new
+   BandScreen
+   intro_movie_helper
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen intro_movie_screen})}
+{new
+   BandScreen
+   intro_movie_screen
+   (panels intro_movie_panel)
+   (focus intro_movie_panel)
+   (block_char_cache TRUE)}
+{new
+   UIPanel
+   splash_panel
+   (file
+      "splash.milo")
+   (focus start.btn)
+   (last_user '')
+   (splash_state kSplashScreen_Entered)
+   #ifdef HX_WII
+   (show_online_restricted_message TRUE)
+   #endif
+   (load
+      {set
+         [splash_state]
+         kSplashScreen_Entered}
+      {overshell set_active_status kOvershellInactive}
+      {session clear})
+   (enter
+      #ifdef HX_PS3
+      {start.btn
+         set
+         text_token
+         {if_else
+            {trophy_registered}
+            shell_press_start_to_rock
+            trophy_initialization_please_wait}}
+      {saveload_mgr activate}
+      #endif
+      #ifdef HX_WII
+      {wiiprofile_panel req_delay}
+      {if
+         {&&
+            {platform_mgr is_online_restricted}
+            {$this get show_online_restricted_message}}
+         {do
+            {set
+               [show_online_restricted_message]
+               FALSE}
+            {ui push_screen wii_online_restricted_screen}}}
+      #endif
+      {loading.grp set_showing FALSE})
+   (TRANSITION_COMPLETE_MSG
+      #ifdef HX_WII
+      {if
+         {==
+            [splash_state]
+            kSplashScreen_PreEndOvershell}
+         {$this set_splash_state kSplashScreen_EndOvershell}}
+      #endif)
+   (poll
+      #ifdef HX_PS3
+      {if
+         {&&
+            {!=
+               {start.btn get text_token}
+               shell_press_start_to_rock}
+            {trophy_registered}}
+         {start.btn set text_token shell_press_start_to_rock}}
+      #endif
+      {if
+         {&&
+            {!
+               {ui in_transition}}
+            {==
+               {ui current_screen}
+               splash_screen}
+            #ifdef HX_PS3
+            {trophy_registered}
+            #endif}
+         #ifndef HX_WII
+         {cond
+            #ifdef HX_PS3
+            ({&&
+                  {elem
+                     {find $syscfg system trophies}
+                     1}
+                  {!
+                     {trophy_disk_space_error_screen get displayed}}
+                  {trophy_disk_space_error}}
+               {ui push_screen trophy_disk_space_error_screen})
+            #endif}
+         #endif}
+      {if
+         {==
+            [splash_state]
+            kSplashScreen_ActivateSaveLoad}
+         {if
+            {saveload_mgr is_idle}
+            {$this set_splash_state kSplashScreen_StartOvershell}}})
+   (BUTTON_DOWN_MSG
+      {cond
+         #ifdef HX_PS3
+         ({!
+               {trophy_registered}}
+            TRUE)
+         #endif
+         ({== $action kAction_Start}
+            {$this button_down $user $raw_button kAction_Confirm $pad_num})
+         (TRUE kDataUnhandled)})
+   (SELECT_MSG
+      {if
+         {&&
+            {!
+               {ui in_transition}}
+            {==
+               {ui current_screen}
+               splash_screen}}
+         {if
+            {==
+               [splash_state]
+               kSplashScreen_Entered}
+            {set
+               [last_user]
+               $user}
+            {$this set_splash_state kSplashScreen_ActivateSaveLoad}}})
+   (set_splash_state
+      ($state)
+      {set
+         [splash_state]
+         $state}
+      {switch
+         $state
+         (kSplashScreen_ActivateSaveLoad
+            {saveload_mgr activate}
+            {text.grp set_showing FALSE}
+            #ifdef HX_WII
+            {loading.grp set_showing TRUE}
+            #endif)
+         (kSplashScreen_StartOvershell
+            #ifdef HX_WII
+            {loading.grp set_showing FALSE}
+            #endif
+            {main_hub_panel
+               set
+               first_user
+               [last_user]}
+            {overshell
+               attempt_to_add_user
+               [last_user]}
+            {profile_mgr
+               set_primary_profile_by_user
+               [last_user]}
+            {overshell set_active_status kOvershellInShell}
+            {$this set_splash_state kSplashScreen_WaitOvershell}
+            {overshell update_all})
+         #ifdef HX_WII
+         ((kSplashScreen_CheckFirstInstrument)
+            {overshell set_active_status kOvershellInactive}
+            {if_else
+               {'||'
+                  {==
+                     {wiiprofile_panel is_active}
+                     TRUE}
+                  {platform_mgr
+                     is_user_a_wiiguest
+                     [last_user]}
+                  {!
+                     {profile_mgr
+                        get_has_seen_first_time_instruments
+                        [last_user]}}}
+               {do
+                  {set
+                     [splash_state]
+                     kSplashScreen_WaitPushScreen}
+                  {if_else
+                     {==
+                        {wiiprofile_panel is_active}
+                        TRUE}
+                     {set
+                        $type
+                        {{wiiprofile_panel get_user}
+                           get_pad_type}}
+                     {set
+                        $type
+                        {{splash_panel get last_user}
+                           get_pad_type}}}
+                  {first_time_instrument_panel set controller_type $type}
+                  {profile_mgr
+                     set_has_seen_first_time_instruments
+                     [last_user]
+                     TRUE}
+                  {ui push_screen first_time_instrument_screen}}
+               {do
+                  {handle_type
+                     ($this set_splash_state kSplashScreen_EndOvershell)}}})
+         ((kSplashScreen_EndOvershell)
+            {overshell set_active_status kOvershellInactive}
+            {if_else
+               {==
+                  {wiiprofile_panel is_active}
+                  TRUE}
+               {do
+                  {ui_event_mgr
+                     trigger_event
+                     go_to_wiiprofilecreator
+                     (dummy
+                        init
+                        [last_user])}
+                  {ui goto_screen main_hub_screen}}
+               {do
+                  {wiiprofile_panel clear_active}
+                  {cond
+                     ({!
+                           {profile_mgr get_has_seen_first_time_calibration}}
+                        {ui push_screen first_time_calibration})
+                     {do
+                        {if_else
+                           {profile_mgr get_should_show_wii_friends_prompt}
+                           {handle_type
+                              ($this set_splash_state kSplashScreen_WiiFriendsPrompt)}
+                           {do
+                              {overshell set_active_status kOvershellInShell}
+                              {ui goto_screen main_hub_screen}}}}}}})
+         #else
+         ((kSplashScreen_EndOvershell)
+            {cond
+               ({!
+                     {profile_mgr get_has_seen_first_time_calibration}}
+                  {ui push_screen first_time_calibration})
+               {ui goto_screen main_hub_screen}})
+         #endif
+         #ifdef HX_WII
+         (kSplashScreen_WiiFriendsPrompt
+            {unless
+               {ui_event_mgr has_transition_event go_to_wiifriends_screen}
+               {do
+                  {overshell set_active_status kOvershellInShell}
+                  {wiifriends_screen go_to_import_friends_screen}}})
+         #endif})
+   #ifdef HX_WII
+   (overshell_allowing_input
+      ($is_allowed $user)
+      {if
+         {&&
+            {== $is_allowed TRUE}
+            {==
+               [splash_state]
+               kSplashScreen_WaitOvershell}}
+         {do
+            {set
+               [last_user]
+               $user}
+            {handle_type
+               ($this set_splash_state kSplashScreen_CheckFirstInstrument)}}})
+   #else
+   (overshell_allowing_input
+      ($is_allowed)
+      {if
+         {== $is_allowed TRUE}
+         {switch
+            [splash_state]
+            (kSplashScreen_WaitOvershell
+               {handle_type
+                  ($this set_splash_state kSplashScreen_EndOvershell)})}})
+   #endif}
+{new
+   BandScreen
+   splash_screen
+   (panels meta sv8_panel splash_panel)
+   (focus splash_panel)
+   (gather_uistats FALSE)}
+#ifdef HX_PS3
+{new
+   BandScreen
+   trophy_disk_space_error_screen
+   (displayed FALSE)
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {set
+         [displayed]
+         TRUE}
+      {dialog_panel
+         set_msg
+         (trophy_disk_space_error
+            {trophy_file_size_mb})})}
+#endif
+{new
+   BandScreen
+   first_time_calibration
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {profile_mgr set_has_seen_first_time_calibration TRUE}
+      {dialog_small_panel set_custom calibration_msg calibration_calibrate calibration_skip opt1.btn})
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {cal_welcome_screen set cancel_screen main_hub_screen}
+            {cal_welcome_screen set confirm_screen main_hub_screen}
+            {input_mgr set_user $user}
+            {critical_user_listener set_critical_user $user}
+            {overshell set_active_status kOvershellInShell}
+            {ui pop_screen cal_welcome_screen})
+         (opt2.btn
+            {if_else
+               {==
+                  {splash_panel get splash_state}
+                  kSplashScreen_PartyShuffle}
+               {do
+                  {gamemode set_mode party_shuffle}
+                  {ui pop_screen part_difficulty_screen}}
+               {do
+                  {overshell set_active_status kOvershellInShell}
+                  {ui pop_screen main_hub_screen}}})})}
+#ifdef HX_WII
+{new
+   UIPanel
+   first_time_instrument_panel
+   (controller_type none)
+   (file
+      {sprintf
+         "wii_first_time_%s_keep.milo"
+         {get_controller_type
+            [controller_type]}}
+      1)
+   (focus ok.btn)
+   (enter
+      {enter.trg trigger})
+   (exit
+      {recoil.trg trigger})}
+{new
+   BandScreen
+   first_time_instrument_screen
+   (panels first_time_instrument_panel)
+   (focus first_time_instrument_panel)
+   (SELECT_MSG
+      {switch
+         $component
+         (ok.btn
+            {splash_panel set_splash_state kSplashScreen_PreEndOvershell}
+            {ui pop_screen})
+         kDataUnhandled})}
+#endif
+#ifdef HX_WII
+{new
+   BandScreen
+   wii_online_restricted_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_okcancel wii_error_wifi_enterpin no.btn}
+      {platform_mgr print_parental_pin})
+   (SELECT_MSG
+      {switch
+         $component
+         (no.btn
+            {ui pop_screen})
+         (yes.btn
+            {virtual_keyboard
+               show_keyboard
+               $user
+               4
+               ""
+               {localize store_parentalcontrol}
+               ""
+               $this
+               kVkNumbersOnlyEntry})
+         kDataUnhandled})
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if_else
+         $ok
+         {do
+            {if_else
+               {commerce_mgr set_parental_control_pin $text}
+               {do
+                  {platform_mgr relax_online_restriction}
+                  {ui pop_screen}}
+               {ui goto_screen splash_incorrect_pin_screen}}}
+         {do
+            {ui goto_screen splash_incorrect_pin_screen}}})}
+{new
+   BandScreen
+   splash_incorrect_pin_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok store_incorrect_pin})
+   (SELECT_MSG
+      {ui goto_screen wii_online_restricted_screen})}
+#endif

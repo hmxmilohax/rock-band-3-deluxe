@@ -120,7 +120,10 @@
                {acc_mgr has_new_reward_vignettes}
                {acc_mgr has_new_awards}
                {campaign has_hints_to_show}
-               {meta_performer are_credits_pending}})
+               {meta_performer are_credits_pending}
+               #ifdef HX_WII
+               {meta_performer is_wiiprofile_create_pending}
+               #endif})
          ($in_destructive_event
             {ui_event_mgr has_active_destructive_event})
          {$this
@@ -150,6 +153,17 @@
                   {$vignette_panel set_showing TRUE}
                   {$this set_focus_panel $vignette_panel}}}}})
    (enter
+      #ifdef HX_WII
+      {if
+         {'||'
+            {==
+               {ui current_screen}
+               meta_loading_wiiprofile_screen}
+            {==
+               {ui current_screen}
+               meta_loading_charactercreator_screen}}
+         {overshell set_active_status kOvershellInactive}}
+      #endif
       {char_cache lock FALSE}
       {acc_mgr clear_goal_info}
       {overshell set_song_options_required FALSE}
@@ -301,6 +315,15 @@
             {set
                [state]
                kMetaLoading_Leaving}
+            #ifdef HX_WII
+            {if
+               {&&
+                  {gamemode in_mode campaign}
+                  {!
+                     {campaign has_valid_user}}}
+               {do
+                  {accomplishment_panel set returning_from_launch FALSE}}}
+            #endif
             {ui
                sync_screen
                [next_screen]
@@ -360,7 +383,18 @@
                   meta_loading_calibration_screen}
                {==
                   {ui current_screen}
-                  meta_loading_audition_screen}}
+                  meta_loading_audition_screen}
+               #ifdef HX_WII
+               {==
+                  {ui current_screen}
+                  meta_loading_wiiprofile_screen}
+               {==
+                  {ui current_screen}
+                  meta_loading_wiifriends_screen}
+               {==
+                  {ui current_screen}
+                  meta_loading_import_friends_prompt}
+               #endif}
             {gamemode set_mode init}}
          {ui set_disband_status kDisbandsEnabled}
          {if_else
@@ -515,6 +549,71 @@
             TRUE)
          {[loaded_vignette]
             check_is_loaded}}))
+#ifdef HX_WII
+{new
+   UIPanel
+   outro_vignette_loader
+   (chosen_vignette '')
+   (enter
+      {set
+         [chosen_vignette]
+         ''}
+      {if
+         {meta_performer is_set_complete}
+         {meta_performer upload_debug_stats}
+         {set
+            [chosen_vignette]
+            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
+            {if
+               {!=
+                  [chosen_vignette]
+                  ''}
+               {[chosen_vignette]
+                  load}}}
+         #else
+         {if
+            {!=
+               [chosen_vignette]
+               ''}
+            {[chosen_vignette]
+               load}}
+         #endif})
+   (exit
+      {if
+         {!=
+            [chosen_vignette]
+            ''}
+         {[chosen_vignette]
+            unload}})}
+{new
+   BandScreen
+   maybe_outro_to_meta_loading_continue_screen
+   (TRANSITION_COMPLETE_MSG
+      {if_else
+         {&&
+            {<
+               {random_float}
+               0.22}
+            {session_mgr is_local}}
+         {ui goto_screen outro_to_meta_loading_continue_screen}
+         {ui goto_screen meta_loading_continue_screen}})}
+{new
+   BandScreen
+   outro_to_meta_loading_continue_screen
+   (panels outro_vignette_loader transition_fallback_panel)
+   (enter
+      {transition_fallback_panel set_showing TRUE}
+      {transition_fallback_panel start_loading_anim})
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen meta_loading_continue_screen})}
+#endif
 {new
    BandScreen
    meta_loading_continue_screen
@@ -643,6 +742,22 @@
    (goto_practice_mode FALSE)
    (goto_campaign_mode FALSE)
    (next_screen cal_welcome_screen)}
+#ifdef HX_WII
+{new
+   BandScreen
+   meta_loading_wiispeak_options_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen wiispeak_options_screen)}
+{new
+   BandScreen
+   meta_loading_wiiprofile_screen
+   META_LOADING_SCREEN_HANDLERS
+   (goto_practice_mode FALSE)
+   (goto_campaign_mode FALSE)
+   (next_screen wiiprofile_screen)}
+#endif
 {new
    BandScreen
    meta_loading_charactercreator_screen
