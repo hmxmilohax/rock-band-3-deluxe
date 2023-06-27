@@ -115,8 +115,12 @@
          (setup_providers
             ($char_provider $profiles_provider $invite_provider $part_select_provider $cymbal_provider $modifier_provider)
             {chars.lst set_provider $char_provider}
+            #ifdef HX_WII
+            {profiles_wii.lst set_provider $profiles_provider}
+            #else
             {profiles.lst set_provider $profiles_provider}
             {invite_friends.lst set_provider $invite_provider}
+            #endif
             {choose_part.lst set_provider $part_select_provider}
             {options_drum.lst set_provider $cymbal_provider}
             {modifiers.lst set_provider $modifier_provider})
@@ -136,9 +140,16 @@
             {auto_sign_in_rock_central.lst
                set_data
                (overshell_sign_in_cancel)}
+            #ifdef HX_WII
+            {options_av_settings.lst
+               set_data
+               (overshell_calibration overshell_bass_boost overshell_overscan overshell_audio_options overshell_autosave_enabled dlc_sdmode)}
+            #else
+            {dolby.chk set_showing FALSE}
             {options_av_settings.lst
                set_data
                (overshell_dolby overshell_bass_boost overshell_overscan overshell_calibration overshell_autosave_enabled overshell_audio_options)}
+            #endif
             {options_audio.lst
                set_data
                (overshell_audio_instruments
@@ -148,9 +159,18 @@
                   #ifdef HX_PS3
                   overshell_audio_voice_chat
                   #endif)}
+            #ifdef HX_WII
+            {options_vocal.lst
+               set_data
+               (overshell_vocals_mode_static overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
+            #else
             {options_vocal.lst
                set_data
                (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
+            #endif
+            {options_wiispeak.lst
+               set_data
+               (wiispeak_button_toggle_wiispeak wiispeak_button_friends_volume wiispeak_button_microphone_sensitivity wiispeak_button_headphone_mode)}
             {options_extras.lst
                set_data
                (overshell_freecam
@@ -168,20 +188,45 @@
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if_else
+                  {== $platform wii}
+                  {do
+                     {if
+                        {wii_invitations_provider is_invitation_pending}
+                        {push_back $options wii_friends_view_invite}}
+                     {if
+                        {==
+                           {ui current_screen}
+                           main_hub_screen}
+                        {if_else
+                           {!
+                              {profile_mgr get_using_wii_friends}}
+                           {if
+                              {session_mgr is_local}
+                              {push_back $options overshell_import_wii_friends}}
+                           {push_back $options overshell_invite}}}}
+                  {do
+                     {print
+                        "Huh?  HX_WII defined but platform isn't wii?\n"}
+                     {push_back $options overshell_invite}}}
+               #else
                {push_back $options overshell_invite}
-               {if
+               #endif               {if
                   {== $platform xbox}
                   {push_back $options overshell_invite_xbox_party}}
                {if
                   {== $platform ps3}
                   {push_back $options overshell_check_invites}}
                {push_back $options overshell_kick}
+               #ifndef HX_WII
                {push_back
                   $options
                   {if_else
                      {== $platform xbox}
                      overshell_gamercard
                      overshell_mute}}
+               #endif
                {push_back $options overshell_disconnect}
                {online_options.lst set_data $options}})
          (setup_options_list
@@ -189,7 +234,51 @@
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if
+                  {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}}
+               #endif
                {push_back $options overshell_return}
+               #ifdef HX_WII
+               {if_else
+                  {overshell in_wiifriend_invite}
+                  {do
+                     {options.lst set_data $options}}
+                  {do
+                     #endif
+                     #ifdef HX_WII
+                     {if
+                        {&&
+                           {!
+                              {platform_mgr is_online_restricted}}
+                           {!
+                              {meta_performer are_credits_pending}}}
+                        {if_else
+                           $online_enabled
+                           {push_back $options overshell_online_options}
+                           {push_back $options overshell_register_online}}}
+                     #else
+                     {if_else
+                        $online_enabled
+                        {push_back $options overshell_online_options}
+                        {push_back $options overshell_register_online}}
+                     #endif
+                     #ifdef HX_WII
+                     {if
+                        {&&
+                           {!
+                              {memcardmgr is_disable_writing}}
+                           {!
+                              {join_invite_panel join_in_progress}}}
+                        {push_back $options overshell_wiiprofile_options}}
+                     #endif
+                     {push_back $options overshell_change_character}
+                     {push_back $options overshell_game_options}
+                     {push_back $options overshell_leave}
+                     {options.lst set_data $options}
+                     #ifdef HX_WII}}
+               #else
                {if_else $gotcha
                   {if_else $online_enabled
                      {push_back $options overshell_online_options}
@@ -200,7 +289,8 @@
                {push_back $options overshell_change_character}
                {push_back $options overshell_game_options}
                {push_back $options overshell_leave}
-               {options.lst set_data $options}})
+               {options.lst set_data $options}
+               #endif})
          (setup_sign_in_to_register_list
             ($show_continue)
             {do
@@ -241,6 +331,14 @@
                {push_back $options overshell_av_settings}
                {push_back $options overshell_extras}
                {push_back $options overshell_modifiers}
+               #ifdef WIISPEAK_SUPPORT
+               #ifdef HX_WII
+               {push_back $options overshell_wiispeak_options}
+               #endif
+               #ifdef HX_PC
+               {push_back $options overshell_wiispeak_options}
+               #endif
+               #endif
                {if {! $online_enabled}
                   {push_back $options overshell_rb3esettings} ; dx - only show the delux settings icon if not online. it crashes online players
                   {if {modifier_mgr is_modifier_active mod_auto_play}
@@ -248,6 +346,44 @@
                   }
                }
                {game_options.lst set_data $options}})
+         #ifdef HX_WII
+         (setup_wiiprofile_options_list
+            ($user)
+            {do
+               ($options
+                  {array 0})
+               ($is_empty TRUE)
+               {if
+                  {>
+                     {profile_mgr get_count}
+                     0}
+                  {push_back $options overshell_wiiprofile_switch}
+                  {set $is_empty FALSE}}
+               {if
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {do
+                     {push_back $options overshell_wiiprofile_create}
+                     {if
+                        {&&
+                           {>
+                              {profile_mgr get_unregistered_count}
+                              0}
+                           {!
+                              {platform_mgr is_online_restricted}}}
+                        {push_back $options overshell_wiiprofile_register}}
+                     {set $is_empty FALSE}}}
+               {if
+                  {>
+                     {profile_mgr get_count}
+                     0}
+                  {push_back $options overshell_wiiprofile_delete}
+                  {set $is_empty FALSE}}
+               {if
+                  {== $is_empty TRUE}
+                  {push_back $options overshell_return}}
+               {options.lst set_data $options}})
+         #endif
          (set_platform
             ($platform)
             {$this setup_online_options_list $platform}
@@ -273,6 +409,7 @@
                   {! $in_track_mode}
                   {shell_mode.trg trigger}
                   {$this refresh_list_types_in_nav_chain $initial_focus $in_track_mode}}
+               #ifdef HX_WII {view_default_wii.trg trigger} #endif
                {view_default.trg trigger}
                {view_default.trg set_view_pos $this $in_track_mode}
                {$this
@@ -390,6 +527,9 @@
                $can_kick
                {online_options.lst enable_data overshell_kick}
                {online_options.lst disable_data overshell_kick}})
+         (update_wiispeak_toggle_allowed
+            ($can_wiispeak_toggle)
+            {online_options.lst enable_data overshell_wiispeak_toggle})
          (update_mute_allowed
             ($can_mute)
             {if_else
@@ -469,11 +609,16 @@
             {options_drum.lst refresh})
          (update_profiles_provider
             ($provider)
+            #ifdef HX_WII
+            {profiles_wii.lst refresh false}
+            {$this enable profiles_wii.lst}
+            #else
             {profiles.lst refresh}
             {if_else
                {$provider num_data}
                {$this enable profiles.lst}
-               {$this disable profiles.lst}})
+               {$this disable profiles.lst}}
+            #endif)
          (update_friends_provider
             ($provider)
             {invite_friends.lst refresh})
@@ -527,10 +672,15 @@
             ($enabled)
             {no_fail.chk set checked $enabled})
          (update_in_game_options
-            ($quit_token $can_skip $restart $change_diff $metronome $practice $can_quit)
+            ($quit_token $can_skip $restart $change_diff $metronome $practice #ifdef HX_WII $trainer #endif $can_quit)
             {do
                ($options
                   {array 0})
+               #ifdef HX_WII
+               {if
+                  {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}}
+               #endif
                {push_back $options overshell_return}
                ;Shows the pause button only if session is local and nopause is enabled
                {if
@@ -629,10 +779,12 @@
                   {{gamemode get game_panel}
                      metronome_enabled}}})
          (update_dolby_check
+            #ifndef HX_WII
             {dolby.chk
                set
                checked
-               {profile_mgr get_dolby}})
+               {profile_mgr get_dolby}}
+               #endif)
          (update_bass_boost_check
             {bass_boost.chk
                set
@@ -643,9 +795,33 @@
                set
                checked
                {profile_mgr get_overscan}})
+         (update_sdmode_check
+            {do
+               ($isSdMode
+                  {==
+                     kSDMode
+                     {content_mgr get_mode}})
+               {sdmode.chk set checked $isSdMode}
+               {if_else
+                  {&&
+                     {session_mgr is_local}
+                     {!
+                        {ui in_transition}}
+                     {==
+                        main_hub_screen
+                        {ui current_screen}}}
+                  {options_av_settings.lst enable_data dlc_sdmode}
+                  {options_av_settings.lst disable_data dlc_sdmode}}})
          (update_synapse_check
             ($synapse_enabled)
             {synapse.chk set checked $synapse_enabled})
+         (update_toggle_wiispeak_check
+            ($wiispeak_enabled)
+            {ToggleWiispeak.chk set checked $wiispeak_enabled})
+         (update_wiispeak_headphone_mode_check
+            ($headphones_enabled)
+            {HeadphoneMode.chk set checked $headphones_enabled})
+         #ifndef HX_WII
          (set_can_change_synapse
             ($can_change)
             {if_else
@@ -655,6 +831,7 @@
 			         {options_vocal.lst enable_data overshell_synapse}
                }
                {options_vocal.lst disable_data overshell_synapse}})
+         #endif
          (update_static_check
             ($static_enabled)
             {static_vocals.chk set checked $static_enabled})
@@ -798,6 +975,14 @@
                   {$component
                      set_current
                      {profile_mgr get_mic_vol 2}})
+               (FriendsVolume.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_wiispeak_friends_volume}})
+               (MicrophoneSensitivity.sld
+                  {$component
+                     set_current
+                     {profile_mgr get_wiispeak_microphone_sensitivity}})
                ((metronome_vol.sld metronome_vol_freestyle.sld)
                   {if
                      {gamemode get game_panel FALSE}

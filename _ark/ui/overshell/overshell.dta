@@ -70,6 +70,9 @@
                   (kNetUI_CustomizeCharacter
                      (remote_status_customize_character))
                   (kNetUI_MusicLibrary
+                     #ifdef HX_WII
+                     (remote_status_music_library)
+                     #else
                      {do
                         ($song_name
                            {$user_machine get_current_song_preview})
@@ -80,7 +83,18 @@
                            (remote_status_music_library)
                            {'`'
                               (remote_status_song_preview
-                                 {',' $song_name})}}})
+                                 {',' $song_name})}}}
+                     #endif)
+                  #ifdef HX_WII
+                  (kNetUI_FindPlayersQp
+                     (finding_players))
+                  (kNetUI_FindPlayersTour
+                     (finding_players))
+                  (kNetUI_InvitingFriends
+                     (remote_status_inviting_friends))
+                  (kNetUI_InDialog
+                     (remote_status_leader_controlling))
+                  #endif
                   kDataUnhandled}})
          (print_haq_focus_status
             {do
@@ -112,10 +126,45 @@
          (show_message
             {{overshell_player_message find show.trg}
                trigger}
-            {overshell_player_message set_showing TRUE})
+            #ifndef HX_WII {overshell_player_message set_showing TRUE} #endif)
          (hide_message
             {{overshell_player_message find hide.trg}
                trigger})
+         #ifdef HX_WII
+         (invitation_notification_visible 0)
+         (show_invitation_notification
+            {if
+               {==
+                  [invitation_notification_visible]
+                  0}
+               {do
+                  {set
+                     [invitation_notification_visible]
+                     1}
+                  {{{overshell_player_message find overshell_player_invitation_notification}
+                        find
+                        show_invitation.trg}
+                     trigger}}})
+         (hide_invitation_notification
+            {if
+               {==
+                  [invitation_notification_visible]
+                  1}
+               {do
+                  {set
+                     [invitation_notification_visible]
+                     0}
+                  {{{overshell_player_message find overshell_player_invitation_notification}
+                        find
+                        hide_invitation.trg}
+                     trigger}}})
+         (invite_received
+            {invitations.lst refresh}
+            kDataUnhandled)
+         (invite_expired
+            {invitations.lst refresh}
+            kDataUnhandled)
+         #endif
          PASSIVE_MESSAGE_SETUP_HANDLERS
          (message_dir overshell_player_message)
          (post_setup)
@@ -135,6 +184,20 @@
                   {'||'
                      {$this should_pause}
                      {platform_mgr guide_showing}}}}
+            #ifdef HX_WII
+            {if
+               {!
+                  {coop_track_panel is_unloaded}}
+               {coop_track_panel
+                  update_join_in_progress
+                  {$this is_any_slot_joinable}
+                  FALSE}}
+            #else
+            {coop_track_panel
+               update_join_in_progress
+               {$this is_any_slot_joinable}
+               FALSE}
+            #endif
             {coop_track_panel
                update_join_in_progress
                {$this is_any_slot_joinable}
@@ -167,11 +230,13 @@
             {&&
                $zero_players
                $active
+               #ifndef HX_WII
                {'||'
                   {!
                      {gamemode in_mode audition}}
                   {!
-                     {audition_mgr has_autoplayer}}}}
+                     {audition_mgr has_autoplayer}}}
+               #endif}
             {if
                {&&
                   $in_game
@@ -214,12 +279,20 @@
                               {!
                                  {session_mgr is_leader_local}}
                               {net_sync is_enabled}}}}}}}}}
+      #ifdef HX_WII
+      {handle
+         (ui
+            overshell_allowing_input
+            {$this is_any_slot_allowing_input_to_shell}
+            {$this get_first_user_allowing_input_to_shell})}
+      #else
       {handle
          (ui
             overshell_allowing_input
             {'||'
                {! $active}
-               {$this is_any_slot_allowing_input_to_shell}})})
+               {$this is_any_slot_allowing_input_to_shell}})}
+      #endif)
    (autohide_msg
       ($enabled)
       {if_else
