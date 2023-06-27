@@ -178,7 +178,11 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 ## 📩 Installing on Wii
 
-**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii in order to play this mod on console. We hope this is clear.**
+**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii in order to play this mod on console. You also cannot play this mod on a Wii Mini. We hope this is clear.**
+
+**NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`SZBE69`)*** **copies of the game on Wii.**
+
+<br/>
 
 ***You need to have [RB3Enhanced](https://rb3e.rbenhanced.rocks/) installed before you do anything. Install that first and then come back.***
 
@@ -189,6 +193,18 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 ### ✅ ***Rock Band 3 Deluxe is now installed!***
 
 We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
+
+<br/>
+
+***NOTE: The following features are currently unsupported on Wii:***
+* FC Indicator
+* Track Themes
+* RB4 Menu Theme
+* Venue FPS Selection
+* Post FX Toggle
+* Detailed Song Info
+* Song Upgrades
+* Saving *Deluxe Settings* for future sessions
 
 <br/>
 
