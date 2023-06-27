@@ -572,6 +572,22 @@
    (SELECT_MSG
       {switch
          $component
+         #ifdef HX_WII
+         (edit_name.btn
+            {$this set_paused 1}
+            {set
+               [current_edit]
+               name}
+            {virtual_keyboard
+               show_keyboard
+               $user
+               kVkSetlistNameLengthLimit
+               {localize new_setlist_vk_title}
+               {localize new_setlist_vk_desc}
+               {localize setlist_default_name}
+               $this
+               kVkNormalEntry})
+         #else
          (edit_name.btn
             {set
                [current_edit]
@@ -584,6 +600,23 @@
                {localize new_setlist_vk_desc}
                [setlist_name]
                $this})
+         #endif
+         #ifdef HX_WII
+         (edit_desc.btn
+            {$this set_paused 1}
+            {set
+               [current_edit]
+               desc}
+            {virtual_keyboard
+               show_keyboard
+               $user
+               kVkSetlistDescLengthLimit
+               {localize new_setlist_vk_title}
+               {localize new_setlist_vk_desc}
+               {localize setlist_default_desc}
+               $this
+               kVkNormalEntry})
+         #else
          (edit_desc.btn
             {set
                [current_edit]
@@ -596,6 +629,7 @@
                {localize setlist_desc_vk_desc}
                [setlist_desc]
                $this})
+         #endif
          (edit_art.btn
             {do
                ($profile
@@ -645,7 +679,15 @@
    (virtual_keyboard_result_msg
       ($ok $str)
       {if
+         #ifdef HX_WII
+         {&&
+            {== $ok 1}
+            {!=
+               $str
+               ""}}
+         #else
          $ok
+         #endif
          {if_else
             {==
                [current_edit]
@@ -656,7 +698,8 @@
             {set
                [setlist_desc]
                $str}}
-         {$this refresh_fields}})
+         {$this refresh_fields}}
+         #ifdef HX_WII {$this set_paused 0} #endif)
    (leave_setlist
       {ui pop_screen})
    (goto_create_dialog
@@ -701,8 +744,7 @@
    delete_content_confirm_screen
    (panels dialog_panel)
    (focus dialog_panel)
-   (content
-      "")
+   (content #ifdef HX_WII 0 #else "" #endif)
    (enter
       {do
          ($num_songs
@@ -763,12 +805,44 @@
    (refresh_done
       {unless
          {ui in_transition}
-         {ui pop_screen}})}
+         #ifdef HX_WII
+         {script_task
+            kTaskUISeconds
+            (delay 0.5)
+            (script
+               {if_else
+                  {$this delete_failed}
+                  {ui goto_screen deleting_content_failed_screen}
+                  {ui pop_screen}})}
+         #else
+         {ui pop_screen}
+         #endif})}
 {new
    BandScreen
    deleting_content_screen
    (panels deleting_content_panel)
    (focus deleting_content_panel)}
+#ifdef HX_WII
+{new
+   BandScreen
+   deleting_content_failed_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($error
+            {content_mgr get_last_result})
+         {switch
+            $error
+            (kOpSDWriteProtected
+               {set $error dlc_backup_sdwriteprotected})
+            (kOpIncompatibleCard
+               {set $error dlc_backup_sdincompatible})
+            {set $error store_delete_failed}}
+         {dialog_panel set_ok $error}})
+   (SELECT_MSG
+      {ui pop_screen})}
+#endif
 {new
    BandScreen
    missing_setlist_songs_screen
