@@ -199,6 +199,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 ***NOTE: The following features are currently unsupported on Wii:***
 * FC Indicator
 * Track Themes
+* Overdrive Color Selection
 * RB4 Menu Theme
 * Venue FPS Selection
 * Post FX Toggle
