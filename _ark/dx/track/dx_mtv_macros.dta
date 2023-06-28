@@ -53,7 +53,7 @@
 )
 #define MTV_DTA_PREPPER
 (
-   {dx_log_writer {sprint "Attempting to read loaded song DTA."}}
+   {dx_log_writer {sprint "Attempting to read loaded song DTA. - Gamemode: " $dx_gamemode}}
    {unless $dx_readdtaonce
       {set $dx_readdtaonce TRUE}
       {set $dx_readadditionaldtaonce FALSE}
@@ -67,8 +67,13 @@
             }
          }
       }
-      {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
-      {dx_log_writer {sprint "Found DTA path: " $theactualpath}}
+      {if_else $theactualpath
+         {do
+            {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
+            {dx_log_writer {sprint "Found DTA path: " $theactualpath}}
+         }
+         {set $dx_path_failed}
+      }
    }
 )
 #define MTV_DTA_READER
@@ -137,6 +142,13 @@
       {if {file_exists {sprint "songs/dta_collection/gen/" {meta_performer song} ".dtb"}}
          {set $authorvar "Harmonix"}
       }
+      {if_else $authorvar
+         {dx_log_writer {sprint "Song Loaded: " $song_title " - " $artistvar " - Authored By: " $authorvar} " - Gamemode: " $dx_gamemode}
+         {if_else $artistvar
+            {dx_log_writer {sprint "Song Loaded: " $song_title " - " $artistvar} " - Gamemode: " $dx_gamemode}
+            {dx_log_writer {sprint "Song Loaded: " $song_title} " - Gamemode: " $dx_gamemode}
+         }
+      }
    }
    {if_else {&& $authorvar {modifier_mgr is_modifier_active mod_songtitlestats}};check if we have a valid author currently loaded
       {artist.lbl set_token_fmt {sprint $artistvar ", " $yearvar "\n" $albumvar "\n" {localize author} ": " $authorvar}} ;if yes to author and detailed info, print everything we have
@@ -163,7 +175,10 @@
          {gamemode in_mode practice} {gamemode in_mode qp_practice}
       }
       {unless
+         {||
             $dx_ps3hw ; don't run on ps3 hardware
+            $dx_path_failed
+         }
          {do
             {unless $dx_mtv_dta_reader_once
             {set $dx_mtv_dta_reader_once TRUE}
@@ -187,8 +202,16 @@
          }
       }
    }
-   {if $dx_ps3hw ; run on ps3 hardware
+   {if
+      {||
+         $dx_ps3hw ; don't run on ps3 hardware
+         $dx_path_failed
+      }
       {do
+         {unless $dx_author_finder_failed
+            {set $dx_author_finder_failed TRUE}
+            {dx_log_writer {sprint "Author Finder Failed - Song Loaded: " $song_title} " - Gamemode: " $dx_gamemode}
+         }
          {if
             {exists song.lbl}
             MTV_MOD_WRITER
