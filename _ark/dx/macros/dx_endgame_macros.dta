@@ -11,7 +11,8 @@
 )
 #define DX_NOTESHIT_LBL_SETTER
 (
-   {dx_log_writer {sprint "Song: " {{song_mgr get_meta_data {meta_performer get_completed_song}} title} " - User: " {$user get_track_icon} " - Percentage: " {int {'*' 100 {{$user player} notes_hit_fraction}}} "% - Autoplay: " {modifier_mgr is_modifier_active mod_auto_play}}}
+   {dx_log_writer {sprint "Song: " {{song_mgr get_meta_data {meta_performer get_completed_song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) - User: " {$user get_track_icon} " - Difficulty: " {$user get_difficulty_sym} " - Percentage: " {int {'*' 100 {{$user player} notes_hit_fraction}}} "% - Band Score: " {{beatmatch main_performer} accumulated_score}}}
+   {dx_log_writer {sprint "Setting endgame information for: " {$user get_track_icon}}}
    {if_else
       {&&
          {modifier_mgr is_modifier_active mod_fastermode} ; if we are in acceleration mode
@@ -22,16 +23,19 @@
             {== {$user get_track_icon} "D"}
          }
       }
-      {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for acceleration mode
-         {sprint
-            {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
-            "% - "
-            {localize
-               {switch {$user get_difficulty_sym}
-                  (easy easy_short)
-                  (medium medium_short)
-                  (hard hard_short)
-                  (expert expert_short)
+      {do
+         {dx_log_writer {sprint "User " {$user get_track_icon} " in acceleration mode."}}
+         {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for acceleration mode
+            {sprint
+               {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+               "% - "
+               {localize
+                  {switch {$user get_difficulty_sym}
+                     (easy easy_short)
+                     (medium medium_short)
+                     (hard hard_short)
+                     (expert expert_short)
+                  }
                }
             }
          }
@@ -47,39 +51,51 @@
 #define DX_DIFFICULTY_LBL_SETTER
 (
    {if_else {modifier_mgr is_modifier_active mod_auto_play} ;check if in autoplay
-      {difficulty_details.lbl set_token_fmt ;report autoplay with diff
-         {sprint
-            {localize {$user get_difficulty_sym}}
-            " ("
-            {localize mod_auto_play}
-            ")"
-         }
-      }
-      {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
-         {difficulty_details.lbl set_token_fmt ;report ch mode for guitar and bass with diff
+      {do
+         {dx_log_writer {sprint "Autoplay detected for user: " {$user get_track_icon}}}
+         {difficulty_details.lbl set_token_fmt ;report autoplay with diff
             {sprint
                {localize {$user get_difficulty_sym}}
                " ("
-               {localize mod_chmode_short}
+               {localize mod_auto_play}
                ")"
             }
          }
-         {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}} ;check if drum or pro drum has auto kick
-            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+      }
+      {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"}} {modifier_mgr is_modifier_active mod_chmode}} ;check if guitar or bass are in ch mode
+         {do
+            {dx_log_writer {sprint "CH Mode detected for user: " {$user get_track_icon}}}
+            {difficulty_details.lbl set_token_fmt ;report ch mode for guitar and bass with diff
                {sprint
-                  {localize mod_fastermode_topspeed}
-                  ": "
-                  {int {'+' 0.5 {'*' $speedmod_top 100}}}
-                  "%"
+                  {localize {$user get_difficulty_sym}}
+                  " ("
+                  {localize mod_chmode_short}
+                  ")"
+               }
+            }
+         }
+         {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_fastermode}} ;check if drum or pro drum has auto kick
+            {do
+               {dx_log_writer {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
+               {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                  {sprint
+                     {localize mod_fastermode_topspeed}
+                     ": "
+                     {int {'+' 0.5 {'*' $speedmod_top 100}}}
+                     "%"
+                  }
                }
             }
             {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
-               {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
-                  {sprint
-                     {localize {$user get_difficulty_sym}}
-                     " ("
-                     {localize mod_auto_kick}
-                     ")"
+               {do
+                  {dx_log_writer {sprint "Auto Kick detected for user: " {$user get_track_icon}}}
+                  {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                     {sprint
+                        {localize {$user get_difficulty_sym}}
+                        " ("
+                        {localize mod_auto_kick}
+                        ")"
+                     }
                   }
                }
                {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
@@ -99,6 +115,7 @@
    {if {<= {int {'*' 100 {{$user player} notes_hit_fraction}}} 60}
       {set $dx_someone_jurgend TRUE}
    }
+   {dx_log_writer {sprint "Checking player thresholds for sound effects - FC: " $dx_someone_fcd " NICE: " $dx_someone_niced " JURGEN: " $dx_someone_jurgend}}
    {if $dx_someone_fcd ;play our sounds based on the song results
       {coop_endgame_panel fc_clip}
    }
@@ -116,6 +133,7 @@
 #define DX_ENDGAME_SFX_HANDLERS
 (
    (fc_clip
+      {dx_log_writer {sprint "Playing FC Sound. Congrats"}}
       {if_else {exists fc_clip}
          {do
             {delete fc_clip}
@@ -129,6 +147,7 @@
       {fc_clip play}
    )
    (nice_clip
+      {dx_log_writer {sprint "Playing Nice Sound. Nice"}}
       {if_else {exists nice_clip}
          {do
             {delete nice_clip}
@@ -142,6 +161,7 @@
       {nice_clip play}
    )
    (jurgen_clip
+      {dx_log_writer {sprint "Playing Jurgen Sound. Skill Issue"}}
       {if_else {exists jurgen_clip}
          {do
             {delete jurgen_clip}
