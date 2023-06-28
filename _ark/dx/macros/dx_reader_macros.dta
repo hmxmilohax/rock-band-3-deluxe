@@ -24,6 +24,11 @@
    #ifdef HX_XBOX "GAME:/log.dta" #endif
    #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/log.dta" #endif
 )
+#define PREV_LOG_FILE_PATH
+(
+   #ifdef HX_XBOX "GAME:/last_log.dta" #endif
+   #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/last_log.dta" #endif
+)
 #define MENU_BACKGROUND_BIK_PATH
 (
    #ifdef HX_XBOX "GAME:/main_background.bik" #endif
@@ -61,14 +66,14 @@
 (
    {if {&& $toggle_postfx {! $bootpostfxtoggled}} ; dx - ensure we are properly keeping track of the state of the post proc toggle
       {set $bootpostfxtoggled TRUE}
+      {dx_log_writer {sprint "Toggling Post Processing FX. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
       {rnd toggle_all_postprocs}
-      {dx_log_writer {sprint "Toggling Post Processing FX. Current Screen: " {ui current_screen}}}
    }
 )
 #define INIT_DX_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {foreach $entry {read_file DX_FILE_PATH}
       {if {== {elem $entry 0} {basename mtv_position}}
          {set $mtvpos_0
@@ -406,7 +411,7 @@
 #define INIT_DX_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write DX.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to write DX.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file DX_FILE_PATH
       {array
          (
@@ -597,7 +602,7 @@
 #define INIT_MOD_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {foreach $entry {read_file MOD_FILE_PATH}
       {if {== {elem $entry 0} {basename mod_static_fills}}
          {if {== {elem {find $entry mod_static_fills} 1} 1}
@@ -684,11 +689,16 @@
             {modifier_mgr toggle_modifier_enabled mod_nosfx}
          }
       }
-      {if {== {elem $entry 0} {basename mod_auto_kick}}
-         {if {== {elem {find $entry mod_auto_kick} 1} 1}
-            {modifier_mgr toggle_modifier_enabled mod_auto_kick}
+      {if {== {elem $entry 0} {basename mod_dx_logging}}
+         {set $mod_dx_logging
+            {elem {find $entry mod_dx_logging} 1}
          }
       }
+      ;{if {== {elem $entry 0} {basename mod_auto_kick}}
+      ;   {if {== {elem {find $entry mod_auto_kick} 1} 1}
+      ;      {modifier_mgr toggle_modifier_enabled mod_auto_kick}
+      ;   }
+      ;}
       {if {== {elem $entry 0} {basename mod_fcclip}}
          {if {== {elem {find $entry mod_fcclip} 1} 1}
             {modifier_mgr toggle_modifier_enabled mod_fcclip}
@@ -741,7 +751,7 @@
 #define INIT_MOD_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write mod.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to write mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file MOD_FILE_PATH
       {array
          (
@@ -799,8 +809,11 @@
             (mod_nosfx
                (mod_nosfx {modifier_mgr is_modifier_active mod_nosfx})
             )
-            (mod_auto_kick
-               (mod_auto_kick {modifier_mgr is_modifier_active mod_auto_kick})
+            ;(mod_auto_kick
+            ;   (mod_auto_kick {modifier_mgr is_modifier_active mod_auto_kick})
+            ;)
+            (mod_dx_logging
+               (mod_dx_logging {modifier_mgr is_modifier_active mod_dx_logging})
             )
             (mod_fcclip
                (mod_fcclip {modifier_mgr is_modifier_active mod_fcclip})
@@ -831,7 +844,7 @@
 #define INIT_VAL_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {foreach $entry {read_file VAL_FILE_PATH}
       {if {== {elem $entry 0} {basename mic_vols}}
          {set $mic_vol_1
@@ -870,7 +883,7 @@
 #define INIT_VAL_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write val.dta. Current Screen: " {ui current_screen}}}
+   {dx_log_writer {sprint "Attempting to write val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file VAL_FILE_PATH
       {array
          (
@@ -897,6 +910,7 @@
 #define DX_LOG_CLEAR
 (
    {if {file_exists LOG_FILE_PATH}
+      {write_file PREV_LOG_FILE_PATH {read_file LOG_FILE_PATH}}
       {set $dx_log_reader ("start of log")}
       {write_file LOG_FILE_PATH {array $dx_log_reader}}
    }
