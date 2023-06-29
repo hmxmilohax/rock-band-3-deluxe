@@ -205,7 +205,9 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * Post FX Toggle
 * Detailed Song Info
 * Song Upgrades
+* currentsong.txt
 * Saving *Deluxe Settings* for future sessions
+* Debug Logging
 
 <br/>
 
@@ -235,7 +237,9 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * Post FX Toggle
 * Detailed Song Info
 * Song Upgrades
+* currentsong.txt
 * Saving *Deluxe Settings* for future sessions
+* Debug Logging
 
 <br/>
 
