@@ -89,7 +89,7 @@
          ;only show the controller menu when not in-game and only on applicable instruments or when faking is active
          {if
             {&&
-               {! {session is_in_game}}
+               {! {session is_in_game}} ;prevents soft-lock, swapping instrument type in-game would prevent player from rejoining
                {||
                   {||
                      {== {{$this get_user} get_controller_type} kControllerGuitar}
@@ -105,7 +105,7 @@
                {push_back $options os_ctrlmenu}
             }
          }
-         {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data $options}
+         $options
    }
 )
 #define DX_DISPLAY_MSG_HANDLER
@@ -595,6 +595,8 @@
       }
    )
 )
+
+;part selection, adds non-standard selections on a certain instrument if faking is active
 #define DX_PART_SELECT_GUITAR
 (
    {do
@@ -711,11 +713,13 @@
 )
 #define DX_REMAP_PAD
 (
-   {dx_log_writer {sprint "Before pad remap: " {find $syscfg joypad controller_mapping analog}}}
+   ;Selects current mapping configuration from pads and removes them from array
    {remove_elem {find $syscfg joypad controller_mapping digital} {elem {find $syscfg joypad controller_mapping digital} 1}}
    {remove_elem {find $syscfg joypad controller_mapping analog} {elem {find $syscfg joypad controller_mapping analog} 1}}
    {remove_elem {find $syscfg joypad controller_mapping dualshock} {elem {find $syscfg joypad controller_mapping dualshock} 1}}
    {remove_elem {find $syscfg joypad controller_mapping stagekit_xbox} {elem {find $syscfg joypad controller_mapping stagekit_xbox} 1}}
+   
+   ;Appends newly selected map configuration to pad controller arrays
    {push_back {find $syscfg joypad controller_mapping digital} $dx_joypad_pad_mapping}
    {push_back {find $syscfg joypad controller_mapping analog} $dx_joypad_pad_mapping}
    {push_back {find $syscfg joypad controller_mapping dualshock} $dx_joypad_pad_mapping}
@@ -724,10 +728,10 @@
    {remove_elem {find $syscfg joypad controller_mapping wii_remote} {elem {find $syscfg joypad controller_mapping wii_remote} 1}}
    {remove_elem {find $syscfg joypad controller_mapping wii_classic} {elem {find $syscfg joypad controller_mapping wii_classic} 1}}
    {remove_elem {find $syscfg joypad controller_mapping gamecube} {elem {find $syscfg joypad controller_mapping gamecube} 1}}
-   {push_back {find $syscfg joypad controller_mapping wii_remote} {if_else {== $dx_joypad_pad_mapping joypad} wii_remote}}
-   {push_back {find $syscfg joypad controller_mapping wii_classic} {if_else {== $dx_joypad_pad_mapping joypad} wii_classic}}
-   {push_back {find $syscfg joypad controller_mapping gamecube} {if_else {== $dx_joypad_pad_mapping joypad} gamecube}}
+   {push_back {find $syscfg joypad controller_mapping wii_remote} {if_else {== $dx_joypad_pad_mapping joypad} wii_remote $dx_joypad_pad_mapping}}
+   {push_back {find $syscfg joypad controller_mapping wii_classic} {if_else {== $dx_joypad_pad_mapping joypad} wii_classic $dx_joypad_pad_mapping}}
+   {push_back {find $syscfg joypad controller_mapping gamecube} {if_else {== $dx_joypad_pad_mapping joypad} gamecube $dx_joypad_pad_mapping}}
    #endif
-   {dx_log_writer {sprint "After pad remap: " {find $syscfg joypad controller_mapping analog}}}
+   {dx_log_writer {sprint "Pad mapping has been changed to: " {find $syscfg joypad controller_mapping analog}}}
    {overshell update_all}
 )
