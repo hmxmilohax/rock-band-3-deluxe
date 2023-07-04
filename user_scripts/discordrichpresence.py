@@ -141,6 +141,11 @@ def update_presence(client_id, parsed_input, RPC):
 
         active_instrument_count = sum(1 for instrument in active_instruments if instrument.get('active', False))
 
+        # ...
+
+        # Set a default value for active_instrument_small_text
+        active_instrument_small_text = ""
+
         if active_instrument_count > 1:
             active_instrument_text = f"{active_instrument_count} Player"
             active_instrument_small_image = 'default_small_image_name'
@@ -159,6 +164,9 @@ def update_presence(client_id, parsed_input, RPC):
             else:
                 active_instrument_text = ""
 
+        # ...
+
+
 
 
         activity = {
@@ -167,7 +175,7 @@ def update_presence(client_id, parsed_input, RPC):
             'large_image': 'banner',
             'large_text': 'Rock Band 3 Deluxe',
             'small_image': active_instrument_small_image,  # Use the small_image based on the active instrument
-            'small_text': active_instrument_small_text
+            'small_text': active_instrument_small_text if active_instrument_small_text else None
         }
 
         # Update the presence
