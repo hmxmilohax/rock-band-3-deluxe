@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def parse_raw_input(raw_input):
     logger.debug("Parsing raw input data...")
     parsed_input = raw_input.replace("\\q", "\"")
-    parsed_input = parsed_input.replace("'", "\"")  # Replace single quotes with double quotes
+    parsed_input = parsed_input.replace("'", "'")  # Replace single quotes with double quotes
     parsed_input = parsed_input[1:-2]  # Remove first quote and extra double quote at the end
     logger.debug("Raw input data parsed successfully.")
     return parsed_input
@@ -124,34 +124,49 @@ def update_presence(client_id, parsed_input, RPC):
         minutes, seconds = divmod(remainder, 60)
         elapsed_time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-        # Get the active instrument and its difficulty
+        # Get the active instruments and count the number of active instruments
         active_instruments = parsed_input.get('SelectedInstruments', [])
-        active_instrument_text = ''
-        active_instrument_small_image = 'default_small_image_name'  # Default small_image
+        active_instrument_count = sum(1 for instrument in active_instruments if instrument.get('active', False))
 
-        for instrument in active_instruments:
-            if instrument.get('active', False):
-                instrument_name = instrument.get('instrument', '')
-                instrument_difficulty = instrument.get('difficulty', '')
-                instrument_name = simplify_instrument_name(instrument_name)
-                instrument_difficulty = clean_difficulty(instrument_difficulty)
-                active_instrument_text = f"{instrument_name}, {instrument_difficulty}"
-                active_instrument_small_image = map_instrument_to_small_image(instrument_name)
-                break
+        # Check if there are more than 1 active instruments
+        if active_instrument_count > 1:
+            active_instrument_text = f"{active_instrument_count} player band"
+        elif active_instrument_count == 1:
+            active_instrument_text = "1 player band"
+        else:
+            active_instrument_text = ""
 
-        # Check if active_instrument_text is empty and provide a default value
-        if not active_instrument_text:
-            active_instrument_text = "No instrument active"
+        # Set a default value for active_instrument_small_image
+        active_instrument_small_image = 'default_small_image_name'
+
+        active_instrument_count = sum(1 for instrument in active_instruments if instrument.get('active', False))
+
+        if active_instrument_count > 1:
+            active_instrument_text = f"{active_instrument_count} Player"
+            active_instrument_small_image = 'default_small_image_name'
+        else:
+            for instrument in active_instruments:
+                if instrument.get('active', False):
+                    instrument_name = instrument.get('instrument', '')
+                    instrument_difficulty = instrument.get('difficulty', '')
+                    instrument_name = simplify_instrument_name(instrument_name)
+                    instrument_difficulty = clean_difficulty(instrument_difficulty)
+                    active_instrument_text = "Solo"
+                    active_instrument_small_image = map_instrument_to_small_image(instrument_name)
+                    break
+            else:
+                active_instrument_text = ""
+
+
 
         activity = {
-            'details': f"{game_mode} (Elapsed: {elapsed_time_string})",
+            'details': f"{active_instrument_text} {game_mode} (Elapsed: {elapsed_time_string})",
             'state': loaded_song,
             'large_image': 'banner',
             'large_text': 'Rock Band 3 Deluxe',
             'small_image': active_instrument_small_image,  # Use the small_image based on the active instrument
-            'small_text': active_instrument_text
+            'small_text': active_instrument_text if active_instrument_text else "No active instrument"
         }
-
 
         # Update the presence
         RPC.update(**activity)
@@ -159,6 +174,8 @@ def update_presence(client_id, parsed_input, RPC):
 
     except pypresence.InvalidPipe:
         logger.error("Discord client not detected. Make sure Discord is running.")
+
+
 
 
 # Function to simplify instrument names
