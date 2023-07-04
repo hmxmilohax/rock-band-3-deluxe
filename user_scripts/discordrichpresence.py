@@ -148,11 +148,13 @@ def update_presence(client_id, parsed_input, RPC):
             for instrument in active_instruments:
                 if instrument.get('active', False):
                     instrument_name = instrument.get('instrument', '')
+                    instrument_small_text_name = instrument.get('instrument', '')
                     instrument_difficulty = instrument.get('difficulty', '')
                     instrument_name = simplify_instrument_name(instrument_name)
                     instrument_difficulty = clean_difficulty(instrument_difficulty)
                     active_instrument_text = "Solo"
-                    active_instrument_small_image = map_instrument_to_small_image(instrument_name)
+                    active_instrument_small_text = f"{instrument_name}, {instrument_difficulty}"
+                    active_instrument_small_image = map_instrument_to_small_image(instrument_small_text_name)
                     break
             else:
                 active_instrument_text = ""
@@ -165,7 +167,7 @@ def update_presence(client_id, parsed_input, RPC):
             'large_image': 'banner',
             'large_text': 'Rock Band 3 Deluxe',
             'small_image': active_instrument_small_image,  # Use the small_image based on the active instrument
-            'small_text': active_instrument_text if active_instrument_text else "No active instrument"
+            'small_text': active_instrument_small_text
         }
 
         # Update the presence
