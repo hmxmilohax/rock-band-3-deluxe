@@ -1,3 +1,17 @@
+import subprocess
+
+# List of required packages
+required_packages = ["pypresence", "json", "time", "os", "logging", "pathlib"]
+
+# Check if each package is installed, and if not, install it
+for package in required_packages:
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"{package} not found. Installing...")
+        subprocess.check_call(["pip", "install", package])
+
+# Now you can import the required packages
 import pypresence
 import json
 import time
