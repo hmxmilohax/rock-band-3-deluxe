@@ -116,7 +116,9 @@ def update_presence(client_id, parsed_input, RPC):
             'tour': 'Tour',
             'trainer': 'Instrument Training',
             'practice': 'Practice',
-            'career': 'Road Challenges'
+            'career': 'Road Challenges',
+            'autoplay': 'Autoplay',
+            'jukebox': 'Jukebox'
         }
         if game_mode in game_mode_mapping:
             game_mode = game_mode_mapping[game_mode]
