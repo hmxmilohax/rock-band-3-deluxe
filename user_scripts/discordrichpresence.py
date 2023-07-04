@@ -59,14 +59,14 @@ def connect_and_update(client_id, interval, RPC):
 
             # Print the parsed raw input
             #logger.debug("Parsed Raw Input:")
-            logger.debug(raw_input_data)
+            #logger.debug(raw_input_data)
 
             # Parse the raw input data
             parsed_input_data = parse_raw_input(raw_input_data)
 
             # Print the parsed JSON
             #logger.debug("Parsed JSON:")
-            logger.debug(parsed_input_data)
+            #logger.debug(parsed_input_data)
 
             # Load the JSON data from parsed input
             presence_data = load_json(parsed_input_data)
