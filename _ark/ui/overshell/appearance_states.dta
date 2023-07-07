@@ -9,10 +9,7 @@
       os_theme
       #endif
       os_osthm
-      os_mtvpos
-      #ifndef HX_WII
-      os_currentsong
-      #endif
+      os_screenel
       os_angle
       os_setcol
    )})
@@ -24,10 +21,8 @@
       {$this show_state kState_RB3EThemeMenu})
    (os_osthm
       {$this show_state kState_RB3EOvershellThemes})
-   (os_mtvpos
-      {$this show_state kState_RB3EMTVSetup})
-   (os_currentsong
-      {$this show_state kState_RB3ECurrentSongSetup})
+   (os_screenel
+      {$this show_state kState_RB3EScreenEl})
    (os_flames
       {$this show_state kState_RB3ETrackThemes})
    (os_setcol
@@ -618,6 +613,170 @@
       {set $fpsslider FALSE}
       {$this show_state kState_RB3EOvershellThemes}))
 
+(kState_RB3EScreenEl
+   (view options_extras)
+   (enter DX_PRESENCE_MANGER
+   {options_extras.lst set_selected $rb3screenelval}
+   {options_extras.lst set circular 0}
+   {options_extras.lst set_data 
+   (
+      os_mtv
+      os_crowdmeter
+      os_score
+   )})
+   (SELECT_MSG
+   {set $rb3screenelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_mtv
+      {$this show_state kState_RB3EMTVEl})
+   (os_crowdmeter
+      {$this show_state kState_RB3ECrowdMeterEl})
+   (os_score
+      {$this show_state kState_RB3EScoreEl})
+   })
+   (on_cancel
+      {$this show_state kState_RB3EAppearanceMenu}
+      {online_options.lst set_selected 2}))
+
+(kState_RB3EMTVEl
+   (view online_options)
+   (enter DX_PRESENCE_MANGER
+   {online_options.lst set_selected $rb3mtvelval}
+   {online_options.lst set circular 0}
+   {online_options.lst set_data 
+   (
+      os_mtvvis
+      os_pos
+      os_mtvdetailed
+      #ifndef HX_WII
+      os_currentsong
+      #endif
+   )})
+   (SELECT_MSG
+   {set $rb3mtvelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_mtvvis
+      {$this show_state kState_RB3EScreenEl})
+   (os_pos
+      {$this show_state kState_RB3EMTVSetup})
+   (os_mtvdetailed
+      {$this show_state kState_RB3EScreenEl})
+   (os_currentsong
+      {$this show_state kState_RB3ECurrentSongSetup})
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 0}))
+
+#define CROWD_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_no_crowd_meter}
+      os_crowdvis_enable
+      os_crowdvis_disable
+   }
+   os_pos
+   os_eltex
+)
+#define CROWD_LST_RESET
+(
+   {options.lst set_data (CROWD_EL_DATA)}
+   {if $rb3ecrowdelval
+      {options.lst set_selected $rb3ecrowdelval}
+   }
+)
+(kState_RB3ECrowdMeterEl
+   (view options)
+   (lst_reset
+      {options.lst set_data (CROWD_EL_DATA)}
+      {if $rb3ecrowdelval
+         {options.lst set_selected $rb3ecrowdelval}
+      }
+   )
+   (enter DX_PRESENCE_MANGER
+   CROWD_LST_RESET
+   {options.lst set_selected $rb3ecrowdelval}
+   {options.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options.lst set_data 
+   (
+      CROWD_EL_DATA
+   )})
+   (SELECT_MSG
+   {set $rb3ecrowdelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_crowdvis_disable
+      {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               {{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      CROWD_LST_RESET)
+   (os_crowdvis_enable
+      {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               {{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      CROWD_LST_RESET)
+   (os_pos
+      {$this show_state kState_RB3ECrowdSetup}
+      CROWD_LST_RESET)
+   (os_eltex
+      {set $fromelmenu TRUE}
+      {$this show_state kState_RB3ECrowdMeterSelector}
+      CROWD_LST_RESET)
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 1}))
+
+(kState_RB3EScoreEl
+   (view online_options)
+   (enter DX_PRESENCE_MANGER
+   {online_options.lst set_selected $rb3scoreelval}
+   {online_options.lst set circular 0}
+   {online_options.lst set_data 
+   (
+      os_scorevis
+      os_pos
+      os_eltex
+   )})
+   (SELECT_MSG
+   {set $rb3scoreelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_scorevis
+      {$this show_state kState_RB3EScreenEl})
+   (os_pos
+      {$this show_state kState_RB3EScreenEl})
+   (os_eltex
+      {$this show_state kState_RB3EScreenEl})
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 2}))
+
 (kState_RB3EMTVSetup
    (view #ifdef HX_WII options_audio #else options_extras #endif)
    (enter DX_PRESENCE_MANGER
@@ -644,10 +803,37 @@
       {$this show_state kState_RB3EMTVXYZ})
    })
    (on_cancel
-      #ifndef HX_WII
-      {options_audio.lst set_selected 0}
-      #endif
-      {$this show_state kState_RB3EAppearanceMenu}))
+      {$this show_state kState_RB3EMTVEl}
+      {online_options.lst set_selected 1}))
+
+(kState_RB3ECrowdSetup
+   (view #ifdef HX_WII options_audio #else options_extras #endif)
+   (enter DX_PRESENCE_MANGER
+   {set $crowdtracked 0}
+   {#ifdef HX_WII options_audio.lst #else options_extras.lst #endif set_selected $rb3ecrowdposval}
+   {#ifdef HX_WII options_audio.lst #else options_extras.lst #endif set_data 
+   (
+      os_horizontal
+      os_vertical
+      os_zspace
+   )})
+   (SELECT_MSG
+   {set $rb3ecrowdposval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_horizontal
+      {set $crowdtracked 0}
+      {$this show_state kState_RB3ECrowdXYZ})
+   (os_vertical
+      {set $crowdtracked 2}
+      {$this show_state kState_RB3ECrowdXYZ})
+   (os_zspace
+      {set $crowdtracked 1}
+      {$this show_state kState_RB3ECrowdXYZ})
+   })
+   (on_cancel
+      {$this show_state kState_RB3ECrowdMeterEl}
+      {online_options.lst set_selected 1}))
 
 #define CURRENT_SONG_DATA
 (
@@ -728,10 +914,8 @@
       {set $dx_currentsong_source TRUE} CURRENT_SONG_LST_RESET)
    })
    (on_cancel
-      #ifndef HX_WII
-      {options.lst set_selected 0}
-      #endif
-      {$this show_state kState_RB3EAppearanceMenu}))
+      {$this show_state kState_RB3EMTVEl}
+      {online_options.lst set_selected 3}))
 
 (kState_RB3EMTVXYZ
    (view #ifdef HX_WII options #else options_audio #endif)
@@ -839,6 +1023,113 @@
    (on_cancel
       {#ifdef HX_WII options.lst #else options_audio.lst #endif set scroll_time 0.25}
       {$this show_state kState_RB3EMTVSetup}))
+
+(kState_RB3ECrowdXYZ
+   (view #ifdef HX_WII options #else options_audio #endif)
+   (enter DX_PRESENCE_MANGER
+   {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $rb3ecrowdposval}
+   {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data 
+   (
+      os_100
+      os_50
+      os_25
+      os_10
+      os_1
+      os_reset
+      os_minus1
+      os_minus10
+      os_minus25
+      os_minus50
+      os_minus100
+   )
+   {#ifdef HX_WII options.lst #else options_audio.lst #endif set scroll_time 0}})
+   (SELECT_MSG
+   {set $rb3ecrowdposval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_100
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {+ $crowdpos_0 100}})
+         (1 {set $crowdpos_1 {- $crowdpos_1 100}})
+         (2 {set $crowdpos_2 {+ $crowdpos_2 100}})
+      }
+   )
+   (os_50
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {+ $crowdpos_0 50}})
+         (1 {set $crowdpos_1 {- $crowdpos_1 50}})
+         (2 {set $crowdpos_2 {+ $crowdpos_2 50}})
+      }
+   )
+   (os_25
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {+ $crowdpos_0 25}})
+         (1 {set $crowdpos_1 {- $crowdpos_1 25}})
+         (2 {set $crowdpos_2 {+ $crowdpos_2 25}})
+      }
+   )
+   (os_10
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {+ $crowdpos_0 10}})
+         (1 {set $crowdpos_1 {- $crowdpos_1 10}})
+         (2 {set $crowdpos_2 {+ $crowdpos_2 10}})
+      }
+   )
+   (os_1
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {+ $crowdpos_0 1}})
+         (1 {set $crowdpos_1 {- $crowdpos_1 1}})
+         (2 {set $crowdpos_2 {+ $crowdpos_2 1}})
+      }
+   )
+   (os_reset
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 0})
+         (1 {set $crowdpos_1 0})
+         (2 {set $crowdpos_2 0})
+      }
+   )
+   (os_minus100
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {- $crowdpos_0 100}})
+         (1 {set $crowdpos_1 {+ $crowdpos_1 100}})
+         (2 {set $crowdpos_2 {- $crowdpos_2 100}})
+      }
+   )
+   (os_minus50
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {- $crowdpos_0 50}})
+         (1 {set $crowdpos_1 {+ $crowdpos_1 50}})
+         (2 {set $crowdpos_2 {- $crowdpos_2 50}})
+      }
+   )
+   (os_minus25
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {- $crowdpos_0 25}})
+         (1 {set $crowdpos_1 {+ $crowdpos_1 25}})
+         (2 {set $crowdpos_2 {- $crowdpos_2 25}})
+      }
+   )
+   (os_minus10
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {- $crowdpos_0 10}})
+         (1 {set $crowdpos_1 {+ $crowdpos_1 10}})
+         (2 {set $crowdpos_2 {- $crowdpos_2 10}})
+      }
+   )
+   (os_minus1
+      {switch $crowdtracked
+         (0 {set $crowdpos_0 {- $crowdpos_0 1}})
+         (1 {set $crowdpos_1 {+ $crowdpos_1 1}})
+         (2 {set $crowdpos_2 {- $crowdpos_2 1}})
+      }
+   )
+   }
+   {{{gamemode get track_panel} find crowd_meter} dx_set_crowd_pos}
+   )
+   (on_cancel
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set scroll_time 0.25}
+      {$this show_state kState_RB3ECrowdSetup}))
 
 (kState_RB3EAngleMenu
    (view #ifdef HX_PS3 options #else options_extras #endif)
