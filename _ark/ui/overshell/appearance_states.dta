@@ -673,8 +673,8 @@
 #define CROWD_EL_DATA
 (
    {if_else {modifier_mgr is_modifier_active mod_no_crowd_meter}
-      os_crowdvis_enable
-      os_crowdvis_disable
+      os_vis_enable
+      os_vis_disable
    }
    os_eltex
 )
@@ -706,7 +706,7 @@
    {set $rb3ecrowdelval {$component selected_sym}}
   {switch
    {$component selected_sym}
-   (os_crowdvis_disable
+   (os_vis_disable
       {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
          {if
             {exists beatmatch}
@@ -722,7 +722,7 @@
             }
          }
       CROWD_LST_RESET)
-   (os_crowdvis_enable
+   (os_vis_enable
       {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
          {if
             {exists beatmatch}
@@ -747,27 +747,78 @@
       {$this show_state kState_RB3EScreenEl}
       {options_extras.lst set_selected 1}))
 
+#define SCORE_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_no_scoreboard}
+      os_vis_enable
+      os_vis_disable
+   }
+   os_eltex
+)
+#define SCORE_LST_RESET
+(
+   {options_end_game.lst set_data (SCORE_EL_DATA)}
+   {if $rb3ecrowdelval
+      {options_end_game.lst set_selected $rb3ecrowdelval}
+   }
+)
 (kState_RB3EScoreEl
-   (view online_options)
+   (view options_end_game)
+   (lst_reset
+      {options_end_game.lst set_data (SCORE_EL_DATA)}
+      {if $rb3ecrowdelval
+         {options_end_game.lst set_selected $rb3ecrowdelval}
+      }
+   )
    (enter DX_PRESENCE_MANGER
-   {online_options.lst set_selected $rb3scoreelval}
-   {online_options.lst set circular 0}
-   {online_options.lst set_data 
+   SCORE_LST_RESET
+   {options_end_game.lst set_selected $rb3ecrowdelval}
+   {options_end_game.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options_end_game.lst set_data 
    (
-      os_scorevis
-      os_pos
-      os_eltex
+      SCORE_EL_DATA
    )})
    (SELECT_MSG
-   {set $rb3scoreelval {$component selected_sym}}
+   {set $rb3ecrowdelval {$component selected_sym}}
   {switch
    {$component selected_sym}
-   (os_scorevis
-      {$this show_state kState_RB3EScreenEl})
-   (os_pos
-      {$this show_state kState_RB3EScreenEl})
+   (os_vis_disable
+      {modifier_mgr toggle_modifier_enabled mod_no_scoreboard}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               {{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      SCORE_LST_RESET)
+   (os_vis_enable
+      {modifier_mgr toggle_modifier_enabled mod_no_scoreboard}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               {{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      SCORE_LST_RESET)
    (os_eltex
-      {$this show_state kState_RB3EScreenEl})
+      {set $fromelmenu TRUE}
+      {$this show_state kState_RB3EScoreSelector}
+      SCORE_LST_RESET)
    })
    (on_cancel
       {$this show_state kState_RB3EScreenEl}
