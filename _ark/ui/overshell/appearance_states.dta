@@ -639,32 +639,86 @@
       {$this show_state kState_RB3EAppearanceMenu}
       {online_options.lst set_selected 2}))
 
+#define MTV_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_songtitle}
+      os_mtv_vis_never
+      {if_else {modifier_mgr is_modifier_active mod_no_mtv_overlay}
+         os_mtv_vis_default
+         os_mtv_vis_always
+      }
+   }
+   {if_else {modifier_mgr is_modifier_active mod_songtitlestats}
+      os_stats_disable
+      os_stats_enable
+   }
+   {if_else {modifier_mgr is_modifier_active mod_dx_showbpm}
+      os_bpm_disable
+      os_bpm_enable
+   }
+   os_pos
+   #ifndef HX_WII
+   os_currentsong
+   #endif
+)
+#define MTV_LST_RESET
+(
+   {options.lst set_data (MTV_EL_DATA)}
+   {if $rb3mtvelval
+      {options.lst set_selected $rb3mtvelval}
+   }
+)
 (kState_RB3EMTVEl
-   (view online_options)
+   (view options)
+   (lst_reset
+      {options.lst set_data (MTV_EL_DATA)}
+      {if $rb3mtvelval
+         {options.lst set_selected $rb3mtvelval}
+      }
+   )
    (enter DX_PRESENCE_MANGER
-   {online_options.lst set_selected $rb3mtvelval}
-   {online_options.lst set circular 0}
-   {online_options.lst set_data 
+   MTV_LST_RESET
+   {options.lst set_selected $rb3mtvelval}
+   {options.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options.lst set_data 
    (
-      os_mtvvis
-      os_pos
-      os_mtvdetailed
-      #ifndef HX_WII
-      os_currentsong
-      #endif
+      MTV_EL_DATA
    )})
    (SELECT_MSG
    {set $rb3mtvelval {$component selected_sym}}
   {switch
    {$component selected_sym}
-   (os_mtvvis
-      {$this show_state kState_RB3EScreenEl})
+   (os_mtv_vis_default
+      {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay}
+      MTV_LST_RESET)
+   (os_mtv_vis_always
+      {modifier_mgr toggle_modifier_enabled mod_songtitle}
+      MTV_LST_RESET)
+   (os_mtv_vis_never
+      {modifier_mgr toggle_modifier_enabled mod_songtitle}
+      {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay}
+      MTV_LST_RESET)
+   (os_vis_enable
+      MTV_LST_RESET)
+   (os_stats_enable
+      {modifier_mgr toggle_modifier_enabled mod_songtitlestats}
+      MTV_LST_RESET)
+   (os_stats_disable
+      {modifier_mgr toggle_modifier_enabled mod_songtitlestats}
+      MTV_LST_RESET)
+   (os_bpm_enable
+      {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+      MTV_LST_RESET)
+   (os_bpm_disable
+      {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+      MTV_LST_RESET)
    (os_pos
-      {$this show_state kState_RB3EMTVSetup})
-   (os_mtvdetailed
-      {$this show_state kState_RB3EScreenEl})
+      {$this show_state kState_RB3EMTVSetup}
+      MTV_LST_RESET)
    (os_currentsong
-      {$this show_state kState_RB3ECurrentSongSetup})
+      {$this show_state kState_RB3ECurrentSongSetup}
+      MTV_LST_RESET)
    })
    (on_cancel
       {$this show_state kState_RB3EScreenEl}
