@@ -9,10 +9,7 @@
       os_theme
       #endif
       os_osthm
-      os_mtvpos
-      #ifndef HX_WII
-      os_currentsong
-      #endif
+      os_screenel
       os_angle
       os_setcol
    )})
@@ -24,10 +21,8 @@
       {$this show_state kState_RB3EThemeMenu})
    (os_osthm
       {$this show_state kState_RB3EOvershellThemes})
-   (os_mtvpos
-      {$this show_state kState_RB3EMTVSetup})
-   (os_currentsong
-      {$this show_state kState_RB3ECurrentSongSetup})
+   (os_screenel
+      {$this show_state kState_RB3EScreenEl})
    (os_flames
       {$this show_state kState_RB3ETrackThemes})
    (os_setcol
@@ -618,6 +613,271 @@
       {set $fpsslider FALSE}
       {$this show_state kState_RB3EOvershellThemes}))
 
+(kState_RB3EScreenEl
+   (view options_extras)
+   (enter DX_PRESENCE_MANGER
+   {options_extras.lst set_selected $rb3screenelval}
+   {options_extras.lst set circular 0}
+   {options_extras.lst set_data 
+   (
+      os_mtv
+      os_crowdmeter
+      os_score
+   )})
+   (SELECT_MSG
+   {set $rb3screenelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_mtv
+      {$this show_state kState_RB3EMTVEl})
+   (os_crowdmeter
+      {$this show_state kState_RB3ECrowdMeterEl})
+   (os_score
+      {$this show_state kState_RB3EScoreEl})
+   })
+   (on_cancel
+      {$this show_state kState_RB3EAppearanceMenu}
+      {online_options.lst set_selected 2}))
+
+#define MTV_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_songtitle}
+      os_mtv_vis_never
+      {if_else {modifier_mgr is_modifier_active mod_no_mtv_overlay}
+         os_mtv_vis_default
+         os_mtv_vis_always
+      }
+   }
+   {if_else {modifier_mgr is_modifier_active mod_songtitlestats}
+      os_stats_disable
+      os_stats_enable
+   }
+   {if_else {modifier_mgr is_modifier_active mod_dx_showbpm}
+      os_bpm_disable
+      os_bpm_enable
+   }
+   os_pos
+   #ifndef HX_WII
+   os_currentsong
+   #endif
+)
+#define MTV_LST_RESET
+(
+   {options.lst set_data (MTV_EL_DATA)}
+   {if $rb3mtvelval
+      {options.lst set_selected $rb3mtvelval}
+   }
+)
+(kState_RB3EMTVEl
+   (view options)
+   (lst_reset
+      {options.lst set_data (MTV_EL_DATA)}
+      {if $rb3mtvelval
+         {options.lst set_selected $rb3mtvelval}
+      }
+   )
+   (enter DX_PRESENCE_MANGER
+   MTV_LST_RESET
+   {options.lst set_selected $rb3mtvelval}
+   {options.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options.lst set_data 
+   (
+      MTV_EL_DATA
+   )})
+   (SELECT_MSG
+   {set $rb3mtvelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_mtv_vis_default
+      {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay}
+      MTV_LST_RESET)
+   (os_mtv_vis_always
+      {modifier_mgr toggle_modifier_enabled mod_songtitle}
+      MTV_LST_RESET)
+   (os_mtv_vis_never
+      {modifier_mgr toggle_modifier_enabled mod_songtitle}
+      {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay}
+      MTV_LST_RESET)
+   (os_vis_enable
+      MTV_LST_RESET)
+   (os_stats_enable
+      {modifier_mgr toggle_modifier_enabled mod_songtitlestats}
+      MTV_LST_RESET)
+   (os_stats_disable
+      {modifier_mgr toggle_modifier_enabled mod_songtitlestats}
+      MTV_LST_RESET)
+   (os_bpm_enable
+      {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+      MTV_LST_RESET)
+   (os_bpm_disable
+      {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+      MTV_LST_RESET)
+   (os_pos
+      {$this show_state kState_RB3EMTVSetup}
+      MTV_LST_RESET)
+   (os_currentsong
+      {$this show_state kState_RB3ECurrentSongSetup}
+      MTV_LST_RESET)
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 0}))
+
+#define CROWD_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_no_crowd_meter}
+      os_vis_enable
+      os_vis_disable
+   }
+   os_eltex
+)
+#define CROWD_LST_RESET
+(
+   {options_end_game.lst set_data (CROWD_EL_DATA)}
+   {if $rb3ecrowdelval
+      {options_end_game.lst set_selected $rb3ecrowdelval}
+   }
+)
+(kState_RB3ECrowdMeterEl
+   (view options_end_game)
+   (lst_reset
+      {options_end_game.lst set_data (CROWD_EL_DATA)}
+      {if $rb3ecrowdelval
+         {options_end_game.lst set_selected $rb3ecrowdelval}
+      }
+   )
+   (enter DX_PRESENCE_MANGER
+   CROWD_LST_RESET
+   {options_end_game.lst set_selected $rb3ecrowdelval}
+   {options_end_game.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options_end_game.lst set_data 
+   (
+      CROWD_EL_DATA
+   )})
+   (SELECT_MSG
+   {set $rb3ecrowdelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_vis_disable
+      {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               {{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      CROWD_LST_RESET)
+   (os_vis_enable
+      {modifier_mgr toggle_modifier_enabled mod_no_crowd_meter}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               {{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      CROWD_LST_RESET)
+   (os_eltex
+      {set $fromelmenu TRUE}
+      {$this show_state kState_RB3ECrowdMeterSelector}
+      CROWD_LST_RESET)
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 1}))
+
+#define SCORE_EL_DATA
+(
+   {if_else {modifier_mgr is_modifier_active mod_no_scoreboard}
+      os_vis_enable
+      os_vis_disable
+   }
+   os_eltex
+)
+#define SCORE_LST_RESET
+(
+   {options_end_game.lst set_data (SCORE_EL_DATA)}
+   {if $rb3ecrowdelval
+      {options_end_game.lst set_selected $rb3ecrowdelval}
+   }
+)
+(kState_RB3EScoreEl
+   (view options_end_game)
+   (lst_reset
+      {options_end_game.lst set_data (SCORE_EL_DATA)}
+      {if $rb3ecrowdelval
+         {options_end_game.lst set_selected $rb3ecrowdelval}
+      }
+   )
+   (enter DX_PRESENCE_MANGER
+   SCORE_LST_RESET
+   {options_end_game.lst set_selected $rb3ecrowdelval}
+   {options_end_game.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options_end_game.lst set_data 
+   (
+      SCORE_EL_DATA
+   )})
+   (SELECT_MSG
+   {set $rb3ecrowdelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_vis_disable
+      {modifier_mgr toggle_modifier_enabled mod_no_scoreboard}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               {{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      SCORE_LST_RESET)
+   (os_vis_enable
+      {modifier_mgr toggle_modifier_enabled mod_no_scoreboard}
+         {if
+            {exists beatmatch}
+            {if
+               {||
+                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+               }
+               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+               {{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+               ;{{{gamemode get track_panel} find mtv_overlay} intro_end}
+            }
+         }
+      SCORE_LST_RESET)
+   (os_eltex
+      {set $fromelmenu TRUE}
+      {$this show_state kState_RB3EScoreSelector}
+      SCORE_LST_RESET)
+   })
+   (on_cancel
+      {$this show_state kState_RB3EScreenEl}
+      {options_extras.lst set_selected 2}))
+
 (kState_RB3EMTVSetup
    (view #ifdef HX_WII options_audio #else options_extras #endif)
    (enter DX_PRESENCE_MANGER
@@ -644,10 +904,8 @@
       {$this show_state kState_RB3EMTVXYZ})
    })
    (on_cancel
-      #ifndef HX_WII
-      {options_audio.lst set_selected 0}
-      #endif
-      {$this show_state kState_RB3EAppearanceMenu}))
+      {$this show_state kState_RB3EMTVEl}
+      {options.lst set_selected 3}))
 
 #define CURRENT_SONG_DATA
 (
@@ -728,10 +986,8 @@
       {set $dx_currentsong_source TRUE} CURRENT_SONG_LST_RESET)
    })
    (on_cancel
-      #ifndef HX_WII
-      {options.lst set_selected 0}
-      #endif
-      {$this show_state kState_RB3EAppearanceMenu}))
+      {$this show_state kState_RB3EMTVEl}
+      {options.lst set_selected 4}))
 
 (kState_RB3EMTVXYZ
    (view #ifdef HX_WII options #else options_audio #endif)
