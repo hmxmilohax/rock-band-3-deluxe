@@ -100,6 +100,10 @@
    #ifdef HX_PS3
    overshell_audio_voice_chat
    #endif
+   {if_else {modifier_mgr is_modifier_active mod_songselectnoise}
+      os_audio_ambience_off
+      os_audio_ambience_on
+   }
    {if_else {modifier_mgr is_modifier_active mod_nosfx}
       os_audio_instsfx_on
       os_audio_instsfx_off
@@ -233,14 +237,35 @@
       }
    }
 )
+#define DX_NO_AMBIENCE_HANDLER
+(
+   (os_audio_ambience_on
+      {unless {modifier_mgr is_modifier_active mod_songselectnoise}
+         {modifier_mgr toggle_modifier_enabled mod_songselectnoise}
+         {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
+         {if $audiomenuval
+            {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
+         }
+      }
+   )
+   (os_audio_ambience_off
+      {if {modifier_mgr is_modifier_active mod_songselectnoise}
+         {modifier_mgr toggle_modifier_enabled mod_songselectnoise}
+      }
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
+      {if $audiomenuval
+         {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
+      }
+   )
+)
 #define DX_NO_SFX_HANDLER
 (
    (os_audio_instsfx_off
       {unless {modifier_mgr is_modifier_active mod_nosfx}
          {modifier_mgr toggle_modifier_enabled mod_nosfx}
-         {options_audio.lst set_data (AUDIO_DATA)}
+         {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
          {if $audiomenuval
-            {options_audio.lst set_selected $audiomenuval}
+            {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
          }
       }
    )
@@ -248,9 +273,9 @@
       {if {modifier_mgr is_modifier_active mod_nosfx}
          {modifier_mgr toggle_modifier_enabled mod_nosfx}
       }
-      {options_audio.lst set_data (AUDIO_DATA)}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
       {if $audiomenuval
-         {options_audio.lst set_selected $audiomenuval}
+         {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
       }
    )
 )
@@ -353,18 +378,6 @@
          }
       }
    )
-   (mod_songtitlestats
-      {do
-         {if_else {&& {modifier_mgr is_modifier_active mod_current_song_logging} {modifier_mgr is_modifier_active mod_songtitlestats}}
-            {do
-               {modifier_mgr toggle_modifier_enabled $modifier}
-               {modifier_mgr toggle_modifier_enabled mod_current_song_logging} ;turn off both modifiers if both modifiers are on
-            }
-            {modifier_mgr toggle_modifier_enabled $modifier}
-         }
-         {overshell update_all}
-      }
-   )
    (mod_current_song_logging
       {do
          {modifier_mgr toggle_modifier_enabled $modifier}
@@ -385,50 +398,6 @@
          }
          {unless {modifier_mgr is_modifier_active mod_current_song_logging}
             {modifier_mgr toggle_modifier_enabled mod_current_song_logging} ;turn on song title stats if using this modifier
-         }
-         {overshell update_all}
-      }
-   )
-   (mod_songtitle
-      {do
-         {modifier_mgr toggle_modifier_enabled $modifier}
-         {if {modifier_mgr is_modifier_active mod_no_mtv_overlay}
-            {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay} ;turn on song title stats if using this modifier
-         }
-         {if
-            {exists beatmatch}
-            {if
-               {||
-                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
-                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
-                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
-               }
-               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
-               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
-               {{{gamemode get track_panel} find mtv_overlay} intro_end}
-            }
-         }
-         {overshell update_all}
-      }
-   )
-   (mod_no_mtv_overlay
-      {do
-         {modifier_mgr toggle_modifier_enabled $modifier}
-         {if {modifier_mgr is_modifier_active mod_songtitle}
-            {modifier_mgr toggle_modifier_enabled mod_songtitle} ;turn on song title stats if using this modifier
-         }
-         {if
-            {exists beatmatch}
-            {if
-               {||
-                  {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
-                  {gamemode in_mode qp_coop} {gamemode in_mode campaign}
-                  {gamemode in_mode party_shuffle} {gamemode in_mode tour}
-               }
-               ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
-               ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
-               {{{gamemode get track_panel} find mtv_overlay} intro_end}
-            }
          }
          {overshell update_all}
       }
@@ -470,39 +439,6 @@
    (mod_nomv
       {modifier_mgr toggle_modifier_enabled mod_nomv}
       {overshell update_all}
-      {if_else {$this in_game}
-         {$this show_state kState_ModifierSongLoad}
-         {ui goto_screen meta_loading_main_screen}
-      }
-   )
-   (mod_noblur
-      {if_else {modifier_mgr is_modifier_active mod_noblur}
-         {do 
-            {set $blurisbackon TRUE}
-            {modifier_mgr toggle_modifier_enabled mod_noblur}
-         }
-         {do
-            {set $blurisbackon FALSE}
-            {modifier_mgr toggle_modifier_enabled mod_noblur}
-         }
-      }
-      {overshell update_all}
-   )
-   (mod_nocrust
-      {if_else {modifier_mgr is_modifier_active mod_nocrust}
-         {do 
-            {set $crustisbackon TRUE}
-            {modifier_mgr toggle_modifier_enabled mod_nocrust}
-         }
-         {do
-            {set $crustisbackon FALSE}
-            {modifier_mgr toggle_modifier_enabled mod_nocrust}
-         }
-      }
-      {overshell update_all}
-   )
-   (mod_blackmenu
-      {modifier_mgr toggle_modifier_enabled mod_blackmenu}
       {if_else {$this in_game}
          {$this show_state kState_ModifierSongLoad}
          {ui goto_screen meta_loading_main_screen}
