@@ -1,0 +1,63 @@
+{func
+   dx_log_writer
+   ($dx_log_writer)
+   #ifndef HX_WII
+   {do
+      DX_GAMEMODE_CHECKER
+      {if_else {file_exists LOG_FILE_PATH}
+         {set $dx_log_reader {read_file LOG_FILE_PATH}}
+         {set $dx_log_reader ("start of log")}
+      }
+      {if {== $dx_log_counter 3}
+         {push_back $dx_log_reader "Game Entered three times, starting new log."}
+         {write_file PREV_LOG_FILE_PATH $dx_log_reader}
+         {set $dx_log_counter 0}
+         {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
+      }
+      {push_back $dx_log_reader $dx_log_writer}
+      {write_file LOG_FILE_PATH
+         {array
+            $dx_log_reader
+         }
+      }
+   }
+   #endif
+}
+{func
+   dx_discordrp_writer
+   ($dx_discordrp_writer)
+   #ifndef HX_WII
+   {do
+      {write_file DRP_FILE_PATH {array ($dx_discordrp_writer)}}
+   }
+   #endif
+}
+{func
+   dx_modifier_reader
+   ($dx_modifier_reader)
+   #ifndef HX_WII
+   {foreach $entry {read_file MOD_FILE_PATH}
+      {if {== {elem $entry 0} {basename $dx_modifier_reader}}
+         {if {== {elem {find $entry $dx_modifier_reader} 1} 1}
+            {modifier_mgr toggle_modifier_enabled $dx_modifier_reader}
+         }
+      }
+   }
+   #endif
+}
+{func
+   dx_mtv_formatter
+   ($dx_mtv_addition)
+   {if_else {== $dx_mtv_addition reset}
+      {do 
+         {set $dx_mtv_holder ()}
+         {resize $dx_mtv_holder 0}
+         {set $dx_mtv_elements 0}
+      }
+      {do
+         {push_back $dx_mtv_holder $dx_mtv_addition}
+         {set $dx_mtv_elements {+ $dx_mtv_elements 1}}
+      }
+   }
+   {dx_log_writer $dx_mtv_addition}
+}
