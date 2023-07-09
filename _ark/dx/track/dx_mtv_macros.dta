@@ -434,32 +434,45 @@
       }
    )
 )
-#define MTV_MOD_WRITER
+#define MTV_MOD_WRITER_HANDLER
 (
-   {set $dx_tmp ""}
-   {set $dx_tmp2 ""}
-   {if {modifier_mgr is_modifier_active mod_fastermode}
-      {set $dx_tmp2 {sprint $dx_tmp2 {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) " }}
-   }
-   {if {modifier_mgr is_modifier_active mod_chmode}
-      {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "DRUNK MODE"}}
-   }
-   {if {&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
-      {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "AUTOPLAY"}}
-   }
-   {if {modifier_mgr is_modifier_active mod_dx_showbpm}
-      {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "BPM: " $dx_bpm_counter}}
-   }
-   {if {&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
-      {set $dx_tmp {sprint $dx_tmp " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" }}
-   }
-   {if {!= $dx_tmp2 ""}
-      {set $dx_tmp {sprint $dx_tmp "\n" $dx_tmp2}}
-   }
-   {if_else {!= $dx_tmp ""}
-      {song.lbl set_token_fmt {sprint $song_title $dx_tmp}}
-      {song.lbl set_song_name $short_name} ;if nothing else needs to be reported at all. just print the shortname
-   }
+   (mtv_song_title_writer
+      {set $dx_tmp ""}
+      {set $dx_tmp2 ""}
+      {if {modifier_mgr is_modifier_active mod_fastermode}
+         {set $dx_tmp2 {sprint $dx_tmp2 {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) " }}
+      }
+      {if {modifier_mgr is_modifier_active mod_chmode}
+         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "DRUNK MODE"}}
+      }
+      {if {&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "AUTOPLAY"}}
+      }
+      {if {modifier_mgr is_modifier_active mod_dx_showbpm}
+         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "BPM: " $dx_bpm_counter}}
+      }
+      {if {&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
+         {set $dx_tmp {sprint $dx_tmp " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" }}
+      }
+      {if_else $dx_song_title_mtv_line
+         {if {!= $dx_tmp2 ""}
+            {set $dx_tmp {sprint $dx_tmp "\n" $dx_tmp2}}
+         }
+         {if {!= $dx_tmp2 ""}
+            {set $dx_tmp {sprint $dx_tmp $dx_tmp2}}
+         }
+      }
+      {if_else $dx_song_title_mtv_line
+         {if_else {!= $dx_tmp ""}
+            {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} $dx_tmp}}
+            {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title}}}
+         }
+         {if_else {!= $dx_tmp ""}
+            {song.lbl set_token_fmt {sprint $dx_tmp}}
+            {song.lbl set_token_fmt {sprint " "}}
+         }
+      }
+   )
 )
 #define MTV_SONG_WRITER
 (
@@ -517,7 +530,7 @@
                {set $dx_entry_finder rank} MTV_DTA_READER
             }
             {if {exists song.lbl}
-               MTV_MOD_WRITER
+               {$this mtv_song_title_writer}
             }
             {if {exists artist.lbl}
                MTV_SONG_WRITER
@@ -537,7 +550,7 @@
          }
          {if
             {exists song.lbl}
-            MTV_MOD_WRITER
+            {$this mtv_song_title_writer}
          }
          {if
             {exists artist.lbl}
@@ -549,7 +562,7 @@
    {do
       {if
          {exists song.lbl}
-         MTV_MOD_WRITER
+         {$this mtv_song_title_writer}
       }
       {if
          {exists artist.lbl}
