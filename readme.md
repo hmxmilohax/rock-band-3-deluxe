@@ -200,12 +200,13 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * FC Indicator
 * Track Themes
 * Overdrive Color Selection
-* RB4 Menu Theme
+* RB4/Rivals Menu Themes
 * Venue FPS Selection
-* Post FX Toggle
-* Detailed Song Info
+* Post Processing Menu
+* Song Title Overlay Customization
 * Song Upgrades
-* currentsong.txt
+* currentsong.txt/json
+* RB3DX Discord Rich Presence (for Dolphin)
 * Saving *Deluxe Settings* for future sessions
 * Debug Logging
 
@@ -232,12 +233,13 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * FC Indicator
 * Track Themes
 * Overdrive Color Selection
-* RB4 Menu Theme
+* RB4/Rivals Menu Themes
 * Venue FPS Selection
-* Post FX Toggle
-* Detailed Song Info
+* Post Processing Menu
+* Song Title Overlay Customization
 * Song Upgrades
-* currentsong.txt
+* currentsong.txt/json
+* RB3DX Discord Rich Presence (for Dolphin)
 * Saving *Deluxe Settings* for future sessions
 * Debug Logging
 
