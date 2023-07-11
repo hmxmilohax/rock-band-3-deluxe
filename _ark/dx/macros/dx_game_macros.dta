@@ -105,59 +105,36 @@
 (
    {dx_log_writer {sprint "Setting Venue - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {if
-      {||
-         {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
-         {gamemode in_mode qp_coop} {gamemode in_mode party_shuffle}
-         {gamemode in_mode practice} {gamemode in_mode qp_practice}
-      }
-      {if_else {== $force TRUE} ;prioritizes a forced venue over the no music video modifier
-         {if_else {== $venue small_venues}
-            {do
-               {gamecfg set_venue {random_elem (SMALL_VENUES)}}
-               {meta_performer set_venue {random_elem (SMALL_VENUES)}}
-            }
-            {if_else {== $venue big_venues}
-               {do
-                  {gamecfg set_venue {random_elem (BIG_VENUES)}}
-                  {meta_performer set_venue {random_elem (BIG_VENUES)}}
-               }
-               {if_else {== $venue arena_venues}
-                  {do
-                     {gamecfg set_venue {random_elem (ARENA_VENUES)}}
-                     {meta_performer set_venue {random_elem (ARENA_VENUES)}}
-                  }
-                  {if_else {== $venue festival_venues}
-                     {do
-                        {gamecfg set_venue {random_elem (FESTIVAL_VENUES)}}
-                        {meta_performer set_venue {random_elem (FESTIVAL_VENUES)}}
-                     }
-                     {if_else {== $venue venues_video}
-                        {do
-                           {gamecfg set_venue {random_elem (VENUES_VIDEO)}}
-                           {meta_performer set_venue {random_elem (VENUES_VIDEO)}}
-                        }
-                        {if_else {&& {== $venue random} {! {modifier_mgr is_modifier_active mod_nomv}}}
-                           {do
-                              {gamecfg set_venue {random_elem (ALL_VENUES)}}
-                              {meta_performer set_venue {random_elem (ALL_VENUES)}}
-                           }
-                           {if_else {&& {== $venue random} {modifier_mgr is_modifier_active mod_nomv} {session_mgr is_leader_local}}
-                              {do
-                                 {gamecfg set_venue {random_elem (VENUES)}}
-                                 {meta_performer set_venue {random_elem (VENUES)}}
-                              }
-                              {do
-                                 {gamecfg set_venue $venue}
-                                 {meta_performer set_venue $venue}
-                              }
-                           }
-                        }
-                     }
-                  }
-               }
-            }
+      {&&
+         {||
+            {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+            {gamemode in_mode qp_coop} {gamemode in_mode party_shuffle}
+            {gamemode in_mode practice} {gamemode in_mode qp_practice}
          }
-         {if_else {&& {modifier_mgr is_modifier_active mod_nomv} {session_mgr is_leader_local}}
+         {session_mgr is_leader_local} ;set venue only if host of the lobby
+      }
+      {if_else {== $force TRUE}
+         {switch $venue
+            (small_venues {do {gamecfg set_venue {random_elem (SMALL_VENUES)}} {meta_performer set_venue {random_elem (SMALL_VENUES)}}})
+            (big_venues {do {gamecfg set_venue {random_elem (BIG_VENUES)}} {meta_performer set_venue {random_elem (BIG_VENUES)}}})
+            (arena_venues {do {gamecfg set_venue {random_elem (ARENA_VENUES)}} {meta_performer set_venue {random_elem (ARENA_VENUES)}}})
+            (festival_venues {do {gamecfg set_venue {random_elem (FESTIVAL_VENUES)}} {meta_performer set_venue {random_elem (FESTIVAL_VENUES)}}})
+            (venues_video {do {gamecfg set_venue {random_elem (VENUES_VIDEO)}} {meta_performer set_venue {random_elem (VENUES_VIDEO)}}})
+            (random
+               {if_else {! {modifier_mgr is_modifier_active mod_nomv}}
+                   {do
+                      {gamecfg set_venue {random_elem (ALL_VENUES)}}
+                      {meta_performer set_venue {random_elem (ALL_VENUES)}}
+                   }
+                   {do
+                      {gamecfg set_venue {random_elem (VENUES)}}
+                      {meta_performer set_venue {random_elem (VENUES)}}
+                   }
+               }
+            )
+            {do {gamecfg set_venue $venue} {meta_performer set_venue $venue}}
+         }
+         {if_else {modifier_mgr is_modifier_active mod_nomv}
             {do
                {gamecfg set_venue {random_elem (VENUES)}}
                {meta_performer set_venue {random_elem (VENUES)}}
@@ -170,6 +147,10 @@
       }
       {dx_log_writer {sprint "Venue set to " $venue " - Forced: " $force}}
    }
+)
+#define DX_SWAP_VENUE_MID_SETLIST
+(
+   {if {modifier_mgr is_modifier_active mod_venue_swap} DX_VENUE_SETTER}
 )
 #define DX_GAMEMODE_CHECKER
 (
