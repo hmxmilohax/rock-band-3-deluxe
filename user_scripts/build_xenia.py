@@ -12,8 +12,11 @@ if not download_mackiloha():
     print("Failed to download and extract Mackiloha-suite-archive.zip. Exiting.")
     sys.exit(1)
 
-if build_patch_ark(True):
+if build_patch_ark(True, rpcs3_mode=False):
+    print("Xbox ARK built successfully.")
     print("Checking for updates to Xenia Canary")
     setup_xenia()
     cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"
     subprocess.run(cmd_xenia, shell=True, cwd="..")
+else:
+    print("Error building Xbox ARK. Check your modifications or run git_reset.py to rebase your repo.")
