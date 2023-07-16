@@ -2,11 +2,33 @@ import sys
 import subprocess
 import os
 
+# List of required packages
+required_packages = ["psutil"]
+
+# Check if each package is installed, and if not, install it
+for package in required_packages:
+    try:
+        import psutil
+    except ImportError:
+        print(f"{package} not found. Installing...")
+        subprocess.check_call(["pip", "install", package])
+
+def close_xenia_process():
+    for process in psutil.process_iter(['pid', 'name']):
+        if process.info['name'] == 'xenia_canary.exe':
+            print(f"Terminating xenia_canary.exe (PID: {process.info['pid']})")
+            process.terminate()
+            process.wait()  # Wait for the process to terminate
+            break
+
 sys.path.append("../dependencies/dev_scripts")
 
 from download_mackiloha import download_mackiloha
 from download_xenia import setup_xenia
+close_xenia_process()
 from build_ark import build_patch_ark
+
+
 
 # Download and extract Mackiloha-suite-archive.zip
 if not download_mackiloha():

@@ -8,6 +8,25 @@ sys.path.append("../dependencies/dev_scripts")
 from build_ark import build_patch_ark
 from download_mackiloha import download_mackiloha
 
+# List of required packages
+required_packages = ["psutil"]
+
+# Check if each package is installed, and if not, install it
+for package in required_packages:
+    try:
+        import psutil
+    except ImportError:
+        print(f"{package} not found. Installing...")
+        subprocess.check_call(["pip", "install", package])
+
+def close_rpcs3_process():
+    for process in psutil.process_iter(['pid', 'name']):
+        if process.info['name'] == 'rpcs3.exe':
+            print(f"Terminating rpcs3.exe (PID: {process.info['pid']})")
+            process.terminate()
+            process.wait()  # Wait for the process to terminate
+            break
+
 # Function to ask for the rpcs3 dev_hdd0 directory and save it to a file
 def get_rpcs3_directory():
     directory_file = "rpcs3_directory.txt"
@@ -49,6 +68,7 @@ rpcs3_directory = get_rpcs3_directory()
 successful_extraction = download_mackiloha()
 
 if successful_extraction:
+    close_rpcs3_process()
     build_patch_ark(False, rpcs3_directory, rpcs3_mode=True)
     print("You may find the files needed to place on your PS3 in the specified directory.")
 
@@ -90,6 +110,7 @@ if successful_extraction:
 
     # Run rpcs3 with the appropriate suffix
     eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
+    close_rpcs3_process()
     subprocess.run([rpcs3_exe_path, eboot_bin_path])
 
 else:
