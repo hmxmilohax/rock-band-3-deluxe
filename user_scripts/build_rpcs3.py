@@ -19,6 +19,11 @@ for package in required_packages:
         print(f"{package} not found. Installing...")
         subprocess.check_call(["pip", "install", package])
 
+def run_in_detached_process(command):
+    # Start the command in a new subprocess with DETACHED_PROCESS flag
+    subprocess.Popen(command, creationflags=subprocess.DETACHED_PROCESS, close_fds=True)
+
+
 def close_rpcs3_process():
     for process in psutil.process_iter(['pid', 'name']):
         if process.info['name'] == 'rpcs3.exe':
@@ -68,50 +73,47 @@ rpcs3_directory = get_rpcs3_directory()
 successful_extraction = download_mackiloha()
 
 if successful_extraction:
-    close_rpcs3_process()
-    build_patch_ark(False, rpcs3_directory, rpcs3_mode=True)
-    print("You may find the files needed to place on your PS3 in the specified directory.")
+    if build_patch_ark(False, rpcs3_directory, rpcs3_mode=True):
+        close_rpcs3_process()
 
-    
-    # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
-    source_dir = "../_build/ps3"
-    # Delete _build/ps3/USRDIR/gen folder if it exists
-    gen_folder_path = os.path.join(source_dir, "USRDIR", "gen")
-    if os.path.exists(gen_folder_path):
-        shutil.rmtree(gen_folder_path)
-    destination_dir = os.path.join(rpcs3_directory, "game", "BLUS30463")
+        # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
+        source_dir = "../_build/ps3"
+        # Delete _build/ps3/USRDIR/gen folder if it exists
+        gen_folder_path = os.path.join(source_dir, "USRDIR", "gen")
+        if os.path.exists(gen_folder_path):
+            shutil.rmtree(gen_folder_path)
+        destination_dir = os.path.join(rpcs3_directory, "game", "BLUS30463")
 
-    # Ensure destination_dir exists before copying
-    os.makedirs(destination_dir, exist_ok=True)
+        # Ensure destination_dir exists before copying
+        os.makedirs(destination_dir, exist_ok=True)
 
-    # Copy files
-    for root, dirs, files in os.walk(source_dir):
-        relative_path = os.path.relpath(root, source_dir)
-        destination_path = os.path.join(destination_dir, relative_path)
-        os.makedirs(destination_path, exist_ok=True)
-        for file in files:
-            source_file = os.path.join(root, file)
-            destination_file = os.path.join(destination_path, file)
-            shutil.copy2(source_file, destination_file)
+        # Copy files
+        for root, dirs, files in os.walk(source_dir):
+            relative_path = os.path.relpath(root, source_dir)
+            destination_path = os.path.join(destination_dir, relative_path)
+            os.makedirs(destination_path, exist_ok=True)
+            for file in files:
+                source_file = os.path.join(root, file)
+                destination_file = os.path.join(destination_path, file)
+                shutil.copy2(source_file, destination_file)
 
-    # Check for rpcs3.exe in the parent folder of rpcs3_directory
-    rpcs3_exe_path = os.path.join(os.path.dirname(rpcs3_directory), "rpcs3.exe")
-    discordrichpresence_path = os.path.join(os.path.dirname(__file__), "discordrichpresence.py")
+        # Check for rpcs3.exe in the parent folder of rpcs3_directory
+        rpcs3_exe_path = os.path.join(os.path.dirname(rpcs3_directory), "rpcs3.exe")
+        discordrichpresence_path = os.path.join(os.path.dirname(__file__), "discordrichpresence.py")
 
-    suffix = "_rpcs3" if os.path.exists(rpcs3_exe_path) else ""
+        suffix = "_rpcs3" if os.path.exists(rpcs3_exe_path) else ""
 
-    # Create the json_path file with the appropriate suffix
-    json_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "discordrp.json")
-    with open(f"json_path{suffix}.txt", "w") as file:
-        file.write(json_path)
+        # Create the json_path file with the appropriate suffix
+        json_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "discordrp.json")
+        with open(f"json_path{suffix}.txt", "w") as file:
+            file.write(json_path)
 
-    # Run discordrichpresence.py with the appropriate suffix
-    subprocess.Popen(["python", discordrichpresence_path, suffix])
+        # Run discordrichpresence.py with the appropriate suffix
+        subprocess.Popen(["python", discordrichpresence_path, suffix])
 
-    # Run rpcs3 with the appropriate suffix
-    eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
-    close_rpcs3_process()
-    subprocess.run([rpcs3_exe_path, eboot_bin_path])
+        # Run rpcs3 with the appropriate suffix in a detached process
+        eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
+        run_in_detached_process([rpcs3_exe_path, eboot_bin_path])
 
-else:
-    print("Failed to extract Mackiloha-suite-archive.zip. Please check the download and extraction process.")
+    else:
+        print("Error building PS3 ARK. Check your modifications or run git_reset.py to rebase your repo.")
