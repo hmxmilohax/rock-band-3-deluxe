@@ -26,19 +26,19 @@ import pypresence
 
 # Function to parse the raw input data
 def parse_raw_input(raw_input):
-    logger.debug("Parsing raw input data...")
+    #logger.debug("Parsing raw input data...")
     parsed_input = raw_input.replace("\\q", "\"")
     parsed_input = parsed_input.replace("'", "'")  # Replace single quotes with double quotes
     parsed_input = parsed_input[1:-2]  # Remove first quote and extra double quote at the end
-    logger.debug("Raw input data parsed successfully.")
+    #logger.debug("Raw input data parsed successfully.")
     return parsed_input
 
 # Function to load JSON data from parsed input
 def load_json(parsed_input):
-    logger.debug("Loading JSON data...")
+    #logger.debug("Loading JSON data...")
     try:
         data = json.loads(parsed_input)  # Parse the JSON data
-        logger.debug("JSON data loaded successfully.")
+        #logger.debug("JSON data loaded successfully.")
         return data
     except json.JSONDecodeError as e:
         logger.exception("Invalid JSON data.")
