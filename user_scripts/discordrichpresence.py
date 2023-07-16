@@ -1,4 +1,14 @@
+import sys
 import subprocess
+import json
+import time
+import os
+import logging
+from pathlib import Path
+
+# Set up logging configuration
+logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # List of required packages
 required_packages = ["pypresence", "json", "time", "os", "logging", "pathlib"]
@@ -13,15 +23,6 @@ for package in required_packages:
 
 # Now you can import the required packages
 import pypresence
-import json
-import time
-import os
-import logging
-from pathlib import Path
-
-# Set up logging configuration
-logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 # Function to parse the raw input data
 def parse_raw_input(raw_input):
@@ -44,22 +45,22 @@ def load_json(parsed_input):
         return None
 
 # Function to prompt for JSON file path
-def prompt_json_path():
-    json_path = input("Enter the path to the JSON file: ")
+def prompt_json_path(suffix):
+    json_path = input(f"Enter the path to the JSON file{suffix}: ")
     return json_path.strip()
 
 # Connect to Discord RPC and update rich presence
-def connect_and_update(client_id, interval, RPC):
+def connect_and_update(client_id, interval, RPC, json_path_suffix="", large_text=""):
     try:
         # Try to read JSON file path from the text file
-        json_path_file = Path("json_path.txt")
+        json_path_file = Path(f"json_path{json_path_suffix}.txt")
         if not json_path_file.is_file():
-            logger.error("JSON file path text file not found.")
-            json_path = prompt_json_path()
+            logger.error(f"JSON file path text file not found{json_path_suffix}.")
+            json_path = prompt_json_path(json_path_suffix)
             json_path_file.write_text(json_path)
         else:
             json_path = json_path_file.read_text().strip()
-            logger.debug(f"JSON file path read from the text file: {json_path}")
+            #logger.debug(f"JSON file path read from the text file: {json_path}")
 
         json_file = Path(json_path)
         if not json_file.is_file():
@@ -88,7 +89,10 @@ def connect_and_update(client_id, interval, RPC):
             # Check if the JSON data was loaded successfully
             if presence_data is not None:
                 # Update Discord Rich Presence
-                update_presence(client_id, presence_data, RPC)
+                #logger.debug(f"Presence data: {presence_data}")
+                update_presence(client_id, presence_data, RPC, large_text)
+            else:
+                logger.error("Failed to load presence data. Check the JSON input.")
 
         except Exception as e:
             logger.exception(f"An error occurred: {str(e)}")
@@ -98,7 +102,7 @@ def connect_and_update(client_id, interval, RPC):
         json_path = prompt_json_path()
         logger.error(f"JSON file path text file not found: {json_path}")
 # Update Discord Rich Presence
-def update_presence(client_id, parsed_input, RPC):
+def update_presence(client_id, parsed_input, RPC, large_text):
     try:
         # Perform the necessary actions based on the updated data
         # ...
@@ -180,23 +184,20 @@ def update_presence(client_id, parsed_input, RPC):
             else:
                 active_instrument_text = ""
 
-        # ...
-
-
-
+        #logger.debug(f"Large text: {large_text}")
 
         activity = {
             'details': f"{active_instrument_text} {game_mode} (Elapsed: {elapsed_time_string})",
             'state': loaded_song,
             'large_image': 'banner',
-            'large_text': 'Rock Band 3 Deluxe',
-            'small_image': active_instrument_small_image,  # Use the small_image based on the active instrument
+            'large_text': large_text,
+            'small_image': active_instrument_small_image,
             'small_text': active_instrument_small_text if active_instrument_small_text else None
         }
 
         # Update the presence
         RPC.update(**activity)
-        logger.debug("Rich Presence updated.")
+        #logger.debug("Rich Presence updated.")
 
     except pypresence.InvalidPipe:
         logger.error("Discord client not detected. Make sure Discord is running.")
@@ -251,19 +252,42 @@ update_presence.previous_mode = ''
 update_presence.start_time = 0
 
 # Main function
-def main():
+def main(suffix=None):
+    # Check if Discord is installed and running
+    try:
+        import pypresence
+    except ImportError:
+        logger.error("pypresence module not found. Discord is either not installed or not accessible.")
+        return
+
     # Configurable parameters
     client_id = "1125571051607298190"
     interval = 1  # Check for updates every 10 seconds
 
+    # Set the JSON path suffix based on the provided argument
+    json_path_suffix = ""
+    large_text = "Rock Band 3 Deluxe"  # Default value for large_text
+
+    if suffix == "_xenia":
+        json_path_suffix = suffix
+        large_text = "Rock Band 3 Deluxe Xenia"
+    elif suffix == "_rpcs3":
+        json_path_suffix = suffix
+        large_text = "Rock Band 3 Deluxe RPCS3"
+
     # Connect to Discord RPC
-    RPC = pypresence.Presence(client_id)
-    RPC.connect()
-    logger.debug("Connected to Discord RPC successfully.")
+    try:
+        RPC = pypresence.Presence(client_id)
+        RPC.connect()
+        logger.debug("Connected to Discord RPC successfully.")
+    except pypresence.exceptions.DiscordNotFound:
+        logger.error("Discord client not detected. Make sure Discord is running.")
+        return
 
     try:
         while True:
-            connect_and_update(client_id, interval, RPC)
+            # Pass the json_path_suffix and large_text to connect_and_update function
+            connect_and_update(client_id, interval, RPC, json_path_suffix, large_text)
             # Wait for the specified interval before checking again
             time.sleep(interval)
 
@@ -274,4 +298,8 @@ def main():
     RPC.close()
 
 if __name__ == '__main__':
-    main()
+    # Check for the script argument and pass it to the main function
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main()

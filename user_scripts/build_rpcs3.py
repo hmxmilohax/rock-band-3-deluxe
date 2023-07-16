@@ -71,10 +71,21 @@ if successful_extraction:
 
     # Check for rpcs3.exe in the parent folder of rpcs3_directory
     rpcs3_exe_path = os.path.join(os.path.dirname(rpcs3_directory), "rpcs3.exe")
-    if os.path.exists(rpcs3_exe_path):
-        eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
-        subprocess.run([rpcs3_exe_path, eboot_bin_path])
-    else:
-        print("rpcs3.exe not found. You can manually run the game using rpcs3.")
+    discordrichpresence_path = os.path.join(os.path.dirname(__file__), "discordrichpresence.py")
+
+    suffix = "_rpcs3" if os.path.exists(rpcs3_exe_path) else ""
+
+    # Create the json_path file with the appropriate suffix
+    json_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "discordrp.json")
+    with open(f"json_path{suffix}.txt", "w") as file:
+        file.write(json_path)
+
+    # Run discordrichpresence.py with the appropriate suffix
+    subprocess.Popen(["python", discordrichpresence_path, suffix])
+
+    # Run rpcs3 with the appropriate suffix
+    eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
+    subprocess.run([rpcs3_exe_path, eboot_bin_path])
+
 else:
     print("Failed to extract Mackiloha-suite-archive.zip. Please check the download and extraction process.")
