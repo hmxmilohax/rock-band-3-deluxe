@@ -52,8 +52,13 @@ if successful_extraction:
     build_patch_ark(False, rpcs3_directory, rpcs3_mode=True)
     print("You may find the files needed to place on your PS3 in the specified directory.")
 
+    
     # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
     source_dir = "../_build/ps3"
+    # Delete _build/ps3/USRDIR/gen folder if it exists
+    gen_folder_path = os.path.join(source_dir, "USRDIR", "gen")
+    if os.path.exists(gen_folder_path):
+        shutil.rmtree(gen_folder_path)
     destination_dir = os.path.join(rpcs3_directory, "game", "BLUS30463")
 
     # Ensure destination_dir exists before copying
