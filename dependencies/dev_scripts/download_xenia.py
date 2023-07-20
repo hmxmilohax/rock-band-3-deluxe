@@ -78,7 +78,7 @@ def modify_config_file(config_path):
 
     with open(config_path, "w") as f:
         for line in lines:
-            line = update_toml_line(line, "max_queued_frames =", "3")
+            line = update_toml_line(line, "apu_max_queued_frames =", "3")
             line = update_toml_line(line, "allow_game_relative_writes =", "true")
             line = update_toml_line(line, "discord =", "false")
             line = update_toml_line(line, "writable_code_segments =", "true")
