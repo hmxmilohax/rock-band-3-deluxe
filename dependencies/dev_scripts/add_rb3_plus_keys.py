@@ -34,6 +34,9 @@ merged_songs = {}
 song_update_path = root_dir.joinpath("_ark/songs/updates")
 venue_update_dta = []
 
+vanilla_pro_upgrade_dict = parse_song_dta(root_dir.joinpath("_ark/songs/dta_sections/vanilla_strings.dta"))
+# print(vanilla_pro_upgrade_dict)
+
 # traverse through rb3_plus/Pro Keys and find mid, mogg, and songs.dta
 for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
     # print(pro_song.stem)
@@ -50,7 +53,13 @@ for pro_song in rb3_plus_path.glob("Pro Keys/*/*"):
             merged_songs[pro_song.stem]["song"]["pans"] = song_keys_dict["songs"][pro_song.stem]["song"]["pans"]
             merged_songs[pro_song.stem]["song"]["vols"] = song_keys_dict["songs"][pro_song.stem]["song"]["vols"]
             merged_songs[pro_song.stem]["song"]["cores"] = song_keys_dict["songs"][pro_song.stem]["song"]["cores"]
+            # FIXME: if a pro string upgrade exists (whether that be in vanilla_strings or rb3_plus_strings, merge THAT rank)
             merged_songs[pro_song.stem]["rank"] = song_keys_dict["songs"][pro_song.stem]["rank"]
+            if pro_song.stem in vanilla_pro_upgrade_dict["songs"]:
+                merged_songs[pro_song.stem]["rank"]["real_guitar"] = vanilla_pro_upgrade_dict["songs"][pro_song.stem]["rank"]["real_guitar"]
+                merged_songs[pro_song.stem]["rank"]["real_bass"] = vanilla_pro_upgrade_dict["songs"][pro_song.stem]["rank"]["real_bass"]
+                merged_songs[pro_song.stem]["real_guitar_tuning"] = vanilla_pro_upgrade_dict["songs"][pro_song.stem]["real_guitar_tuning"]
+                merged_songs[pro_song.stem]["real_bass_tuning"] = vanilla_pro_upgrade_dict["songs"][pro_song.stem]["real_bass_tuning"]
             merged_songs[pro_song.stem]["extra_authoring"] = "disc_update"
             venue_update_dta.append(f"({pro_song.stem} (version 30))\n")          
         elif pro_file.suffix == ".mid":
