@@ -1,33 +1,33 @@
 (kState_RB3ESettings
-   (view options)
+   (view #ifdef HX_WII choose_profile_wii #else options_audio #endif)
    (enter
-   {options.lst set_selected $rb3esettingsval}
-   {set $rb3esettingsval 2}
-   {online_options.lst set circular 0}
-   {options.lst set_data
-   (
-      os_spds
-      os_venuesel
-      os_thm
-      os_cam
-      os_audiomenu
-   )})
+   {options.lst set_selected 0}
+      #ifdef HX_WII {choose_profile.lbl set text_token os_blnk} #endif
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set circular 0}
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_selected $rb3esettingsval}
+   ;   {set $rb3esettingsval 2}
+      {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 0}
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data DX_RB3E_SETTINGS_LIST}
+   )
    (SELECT_MSG
       {set $rb3esettingsval {$component selected_sym}}
    {switch
-   {$component selected_sym}
+      {$component selected_sym}
    (os_spds
       {$this show_state kState_RB3ESpeedMenu})
    (os_thm
       {$this show_state kState_RB3EAppearanceMenu})
    (os_venuesel
-    {$this show_state kState_RB3EVenueSelector})
+      {$this show_state kState_RB3EVenueSelector})
    (os_cam
-    {$this show_state kState_RB3ECameraMenu})
+      {$this show_state kState_RB3ECameraMenu})
    (os_audiomenu
-    {$this show_state kState_RB3EAudioMenu})
+      {$this show_state kState_RB3EAudioMenu})
+   (os_ctrlmenu
+      {$this show_state kState_RB3EControllerMenu})
    })
 	(on_cancel
+   ;   {options.lst set_selected #ifdef HX_WII 4 #else 3 #endif}
        ;restore original online_options upon exit
 	   {do
          ($options
@@ -36,53 +36,74 @@
             #ifdef HX_XBOX {push_back $options overshell_invite_xbox_party} #endif
             #ifdef HX_PS3 {push_back $options overshell_check_invites} #endif
             {push_back $options overshell_kick}
-            {push_back
-               $options
+            {push_back $options
                #ifdef HX_XBOX overshell_gamercard #else
                overshell_mute #endif}
             {push_back $options overshell_disconnect}
             {online_options.lst set_data $options}}
+      #ifndef HX_WII
       {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
-         {if_else $settingserror
+         {if_else $dx_settings_error
             {$this show_state kState_RB3ESaveWarnError}
-            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}}
-         {$this show_state kState_RB3ESaveWarn}}))
+            {do INIT_DX_WRITER {unless $dx_dont_save_mod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}}
+         {$this show_state kState_RB3ESaveWarn}}
+      #else
+      {$this show_game_options}
+      #endif))
 
 (kState_RB3EVenueSelector
-   (view options_audio)
+   (view #ifdef HX_WII options #else online_options #endif)
    (enter
+      DX_OS_OPEN_MSG
+      {set $dx_menu_message os_venue_select_warn}
+      DX_MENU_DESC
       {do
          ($venue_array
             {array
                (VENUES VENUES_VIDEO)})
          {insert_elem $venue_array 0 none}
-		   {insert_elem $venue_array 1 random}
-         {options_audio.lst set_data $venue_array}
-         {options_audio.lst set scroll_time 0}
-         {options_audio.lst set circular 1}
-         {options_audio.lst set_selected $rb3evenueval}
+         {insert_elem $venue_array 1 random}
+         {insert_elem $venue_array 2 small_venues}
+         {insert_elem $venue_array 3 big_venues}
+         {insert_elem $venue_array 4 arena_venues}
+         {insert_elem $venue_array 5 festival_venues}
+         {insert_elem $venue_array 6 venues_video}
+         {#ifdef HX_WII options.lst #else online_options.lst #endif set_data $venue_array}
+         {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 1}
+         {#ifdef HX_WII options.lst #else online_options.lst #endif set_selected $rb3evenueval}
          {$this update_venue_selection}})
    (update_venue_selection
       {options_extras.lst
          set_selected
-         {{set $force TRUE} {set $venue {options_audio.lst selected_sym}} {ui goto_screen meta_loading_main_screen}}})
+         {{set $force TRUE} {set $venue {#ifdef HX_WII options.lst #else online_options.lst #endif selected_sym}} {ui goto_screen meta_loading_main_screen}}})
    (SELECT_MSG
       {set $rb3evenueval {$component selected_sym}}
-      {set $force TRUE} {set $venue {options_audio.lst selected_sym}} {ui goto_screen meta_loading_main_screen}
+      {set $force TRUE} {set $venue {#ifdef HX_WII options.lst #else online_options.lst #endif selected_sym}} {ui goto_screen meta_loading_main_screen}
       {switch
          {$component selected_sym}
          (random
             {set $force FALSE} {set $venue VENUES} {ui goto_screen meta_loading_main_screen})
-		 (none
+         (small_venues
+            {set $force TRUE} {set $venue small_venues} {ui goto_screen meta_loading_main_screen})
+         (big_venues
+            {set $force TRUE} {set $venue big_venues} {ui goto_screen meta_loading_main_screen})
+         (arena_venues
+            {set $force TRUE} {set $venue arena_venues} {ui goto_screen meta_loading_main_screen})
+         (festival_venues
+            {set $force TRUE} {set $venue festival_venues} {ui goto_screen meta_loading_main_screen})
+         (venues_video
+            {set $force TRUE} {set $venue venues_video} {ui goto_screen meta_loading_main_screen})
+         (none
             {set $force TRUE} {set $venue BLACK_VENUE} {ui goto_screen meta_loading_main_screen})}
+      DX_OS_CLOSE_MSG
       {$this show_state kState_RB3ESettings} {ui pop_screen})
   (exit
-  {options_audio.lst set scroll_time 0.25}
-  {options_audio.lst set circular 0}
-  {options_audio.lst set_selected 0})
+  {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 0}
+  {#ifdef HX_WII options.lst #else online_options.lst #endif set_selected 0})
   (on_cancel
-  {options.lst set_selected 2}
-  {$this show_state kState_RB3ESettings}))
+      DX_OS_CLOSE_MSG
+      {options.lst set_selected 2}
+      {$this show_state kState_RB3ESettings}))
 
 ;save warnings
 
@@ -106,9 +127,9 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (os_save
-            {if_else $settingserror
+            {if_else $dx_settings_error
             {$this show_state kState_RB3ESaveWarnError}
-            {do INIT_DX_WRITER {unless $dontsavemod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}})
+            {do INIT_DX_WRITER {unless $dx_dont_save_mod INIT_MOD_WRITER} INIT_VAL_WRITER {$this show_game_options}}})
          (os_dontsave
             {$this show_game_options})}))
 
@@ -166,12 +187,13 @@
          ($this set_confirm_actions autoplay_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
       {switch {$component selected_sym}
-      (overshell_continue
-      {modifier_mgr toggle_modifier_enabled mod_auto_play}
-      {set $gotcha FALSE}
-      {saveload_mgr disable_autosave $user}
-      {overshell update_all}
-		{ui goto_screen meta_loading_main_screen})}
+         (overshell_continue
+            {modifier_mgr toggle_modifier_enabled mod_auto_play}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            DX_SAVING_DISABLED_MSG
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
       {$this show_modifiers})
    (on_cancel
       {$this show_modifiers}))
@@ -184,27 +206,30 @@
          ($this set_confirm_actions fakejuke_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
       {switch {$component selected_sym}
-      (overshell_continue
-      {set $dontsavemod TRUE}
-      {modifier_mgr toggle_modifier_enabled mod_fakejuke}
-         {unless {modifier_mgr is_modifier_active mod_auto_play}
-            {modifier_mgr toggle_modifier_enabled mod_auto_play}}
-         {unless {modifier_mgr is_modifier_active mod_nohud}
-            {modifier_mgr toggle_modifier_enabled mod_nohud}}
-         {unless {modifier_mgr is_modifier_active mod_nopause}
-            {modifier_mgr toggle_modifier_enabled mod_nopause}}
-         {unless {modifier_mgr is_modifier_active mod_songtitlestats}
-            {modifier_mgr toggle_modifier_enabled mod_songtitlestats}}
-         {if {modifier_mgr is_modifier_active mod_songtitle}
-            {modifier_mgr toggle_modifier_enabled mod_songtitle}}
-         {if {modifier_mgr is_modifier_active mod_drum_fills}
-            {modifier_mgr toggle_modifier_enabled mod_drum_fills}}
-         {if {modifier_mgr is_modifier_active mod_nointro}
-            {modifier_mgr toggle_modifier_enabled mod_nointro}}
-      {set $gotcha FALSE}
-      {saveload_mgr disable_autosave $user}
-      {overshell update_all}
-		{ui goto_screen meta_loading_main_screen})}
+         (overshell_continue
+            {set $dx_dont_save_mod TRUE}
+            {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+            {unless {modifier_mgr is_modifier_active mod_auto_play}
+               {modifier_mgr toggle_modifier_enabled mod_auto_play}}
+            {unless {modifier_mgr is_modifier_active mod_nohud}
+               {modifier_mgr toggle_modifier_enabled mod_nohud}}
+            {unless {modifier_mgr is_modifier_active mod_nopause}
+               {modifier_mgr toggle_modifier_enabled mod_nopause}}
+            {unless {modifier_mgr is_modifier_active mod_dx_no_overdrive}
+               {modifier_mgr toggle_modifier_enabled mod_dx_no_overdrive}}
+            {if {modifier_mgr is_modifier_active mod_songtitle}
+               {modifier_mgr toggle_modifier_enabled mod_songtitle}}
+            {if {modifier_mgr is_modifier_active mod_dx_showbpm}
+               {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}}
+            {if {modifier_mgr is_modifier_active mod_drum_fills}
+               {modifier_mgr toggle_modifier_enabled mod_drum_fills}}
+            {if {modifier_mgr is_modifier_active mod_nointro}
+               {modifier_mgr toggle_modifier_enabled mod_nointro}}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            DX_SAVING_DISABLED_MSG
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
       {$this show_modifiers})
    (on_cancel
       {$this show_modifiers}))
@@ -217,14 +242,6 @@
    (SELECT_MSG
       {$this show_state kState_Modifiers}))
 
-(kState_RB3ENoMusicVideos
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message os_nomvconfirm)})
-   (SELECT_MSG
-      {$this show_state kState_Modifiers}))
-
 (kState_CHModeWarn
    (view confirm_action)
    (enter
@@ -232,12 +249,14 @@
          ($this set_confirm_actions chmode_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
       {switch {$component selected_sym}
-      (overshell_continue
-      {modifier_mgr toggle_modifier_enabled mod_chmode}
-      {set $gotcha FALSE}
-      {saveload_mgr disable_autosave $user}
-      {overshell update_all}
-      {ui goto_screen meta_loading_main_screen})}
+         (overshell_continue
+            {modifier_mgr toggle_modifier_enabled mod_chmode}
+            {set $railscustomtexture FALSE}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            DX_SAVING_DISABLED_MSG
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
       {$this show_modifiers})
    (on_cancel
       {$this show_modifiers}))
@@ -275,7 +294,11 @@
 #define DX_BOT_SETTINGS_DATA
 (
    os_dx_bot_skill
-   {if_else $dx_bot_overdrive os_dx_bot_overdrive_on os_dx_bot_overdrive_off}
+   {switch $dx_bot_overdrive 
+      (dx_on os_dx_bot_overdrive_on)
+      (dx_off os_dx_bot_overdrive_off)
+      (dx_drain os_dx_bot_overdrive_drain)
+   }
    {if_else $dx_bot_1 os_dx_bot_1_on os_dx_bot_1_off}
    {if_else $dx_bot_2 os_dx_bot_2_on os_dx_bot_2_off}
    {if_else $dx_bot_3 os_dx_bot_3_on os_dx_bot_3_off}
@@ -284,17 +307,17 @@
 )
 
 (dxState_BotSettings
-   (view options_audio)
+   (view #ifdef HX_WII choose_profile_wii #else options_audio #endif)
    (enter
+      #ifdef HX_WII {choose_profile.lbl set text_token os_blnk} #endif
       {set $dx_refresh_hack_state dxState_BotSettings}
       {set $dx_slider TRUE}
       {set $dx_slider_id dx_bot_skill}
       {instruments.sld set_num_steps 12}
       {instruments.sld set_current $dx_bot_skill}
-      {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
-      {options_audio.lst set scroll_time 0}
-      {options_audio.lst set circular 0}
-      {options_audio set_selected 0}
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set circular 0}
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_selected 0}
+      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
    )
    (update_view
       {handle ($this update_slider instruments.sld "")}
@@ -310,29 +333,33 @@
             {instruments.sld set_showing TRUE}
             {$this set_focus instruments.sld}
          )
-         ((os_dx_bot_overdrive_on os_dx_bot_overdrive_off)
-            {set $dx_bot_overdrive {! $dx_bot_overdrive}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+         ((os_dx_bot_overdrive_on os_dx_bot_overdrive_off os_dx_bot_overdrive_drain)
+            {set $dx_bot_overdrive {switch $dx_bot_overdrive
+               (dx_on dx_drain)
+               (dx_drain dx_off)
+               (dx_off dx_on)
+            }}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          )
          ((os_dx_bot_1_on os_dx_bot_1_off)
             {set $dx_bot_1 {! $dx_bot_1}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          ) 
          ((os_dx_bot_2_on os_dx_bot_2_off)
             {set $dx_bot_2 {! $dx_bot_2}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          ) 
          ((os_dx_bot_3_on os_dx_bot_3_off)
             {set $dx_bot_3 {! $dx_bot_3}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          ) 
          ((os_dx_bot_4_on os_dx_bot_4_off)
             {set $dx_bot_4 {! $dx_bot_4}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          ) 
          ((os_dx_bot_5_on os_dx_bot_5_off)
             {set $dx_bot_5 {! $dx_bot_5}}
-            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+            {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data (DX_BOT_SETTINGS_DATA)}
          ) 
          kDataUnhandled
       }
@@ -345,9 +372,9 @@
                {{$this find {$this focus_name}} set_showing FALSE}
                {if_else $dx_slider
                   {do
-                     {$this set_focus options_audio.lst}
+                     {$this set_focus #ifdef HX_WII choose_profile_wii.lst #else options_audio.lst #endif}
                   }
-                  {$this set_focus options_audio.lst}
+                  {$this set_focus #ifdef HX_WII choose_profile_wii.lst #else options_audio.lst #endif}
                }
             )
             kDataUnhandled
@@ -359,7 +386,6 @@
    (SCROLL_MSG {$this on_slider_change $component $user})
    (exit 
       {set $dx_slider FALSE}
-      {options_audio.lst set scroll_time 0.25}
    )
-	(on_cancel {$this show_game_options})
+	(on_cancel {$this show_options})
 )

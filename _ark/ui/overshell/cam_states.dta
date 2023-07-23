@@ -2,12 +2,15 @@
    (view online_options)
    (enter
    {online_options.lst set_selected $rb3camval}
-   {options_audio.lst set circular 0}
    {online_options.lst set_data 
    (
+      #ifndef HX_WII
       os_menubg
-      overshell_freecam
       overshell_postproc
+      #else
+      os_menubg_wii
+      #endif
+      overshell_freecam
       os_reload
       os_scrsvr
    )})
@@ -17,35 +20,12 @@
    {$component selected_sym}
    (os_menubg
       {$this show_state kState_RB3EMenuBG})
+   (os_menubg_wii
+      {$this show_state kState_RB3EMenuBGWii})
    (overshell_freecam
       {if {&& {$this in_song} {modifier_mgr is_modifier_active mod_auto_play}} {cycle_free_camera}})
    (overshell_postproc
-      {do
-      {if_else {&& {== $toggle_postfx FALSE} {== $toggledthisboot FALSE}}
-         {do
-            {set $toggledthisboot TRUE}
-            {set $toggle_postfx TRUE}
-         }
-         {if_else {&& {== $toggle_postfx TRUE} {== $toggledthisboot TRUE}}
-            {do
-               {set $toggledthisboot FALSE}
-               {set $toggle_postfx FALSE}
-            }
-            {if_else {&& {== $toggle_postfx TRUE} {{== $toggledthisboot FALSE}}}
-               {do
-                  {set $toggledthisboot FALSE}
-                  {set $toggle_postfx TRUE}
-               }
-               {do
-                  {set $toggledthisboot TRUE}
-                  {set $toggle_postfx FALSE}
-               }
-            }
-         }
-      }
-      {rnd toggle_all_postprocs}
-      }
-   )
+      {$this show_state kState_RB3EPostFX})
    (os_reload
       {if_else {$this in_game}
       {$this show_state kState_RB3EReloadDenyMsg}
@@ -54,15 +34,17 @@
       {$this show_state kState_RB3EScreensaver})
    })
    (on_cancel
-      {options.lst set_selected 3}
-      {$this show_state kState_RB3ESettings}))
+      {$this show_state kState_RB3ESettings}
+      {options_audio.lst set_selected 3}))
 
 (kState_RB3EMenuBG
    (view options)
    (enter
    {options.lst set_selected $rb3bgval}
+   {options.lst set circular 1}
    {options.lst set_data
    (
+      os_nobg
       os_bg8
       os_bg3
       os_bg4
@@ -73,24 +55,196 @@
       {set $rb3bgval {$component selected_sym}}
   {switch
    {$component selected_sym}
+   (os_nobg
+      {unless {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
+   )
    (os_bg8
       {set $svnumber 8}
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
       {$this show_state kState_RB3EMenuBGWarn})
    (os_bg3
       {set $svnumber 3}
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
       {$this show_state kState_RB3EMenuBGWarn})
    (os_bg2
       {set $svnumber 2}
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
       {$this show_state kState_RB3EMenuBGWarn})
    (os_bg4
       {set $svnumber 4}
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
       {$this show_state kState_RB3EMenuBGWarn})
    (os_bg5
       {set $svnumber 5}
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
       {$this show_state kState_RB3EMenuBGWarn})
    })
    (on_cancel
       {$this show_state kState_RB3ECameraMenu}))
+
+(kState_RB3EMenuBGWii
+   (view options_end_game)
+   (enter
+   {options_end_game.lst set_selected $rb3bgwiival}
+   {options_end_game.lst set_data
+   (
+      os_nobg_wii
+      os_yesbg
+   )})
+   (SELECT_MSG
+      {set $rb3bgwiival {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_nobg_wii
+      {unless {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
+   )
+   (os_yesbg
+      {if {modifier_mgr is_modifier_active mod_blackmenu}
+         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+         {ui goto_screen meta_loading_main_screen}
+      }
+   )})
+   (on_cancel
+      {$this show_state kState_RB3ECameraMenu}))
+
+#define POST_FX_DATA
+(
+   {if_else $toggle_postfx
+      os_postfx_enable
+      os_postfx_disable
+   }
+   {if_else $blurisbackon
+      os_blur_disable
+      os_blur_enable
+   }
+   {if_else $crustisbackon
+      os_crust_disable
+      os_crust_enable
+   }
+)
+#define POST_FX_LST_RESET
+(
+   {options_extras.lst set_data (POST_FX_DATA)}
+   {if $rb3ecrowdelval
+      {options_extras.lst set_selected $rb3ecrowdelval}
+   }
+)
+(kState_RB3EPostFX
+   (view options_extras)
+   (lst_reset
+      {options_extras.lst set_data (POST_FX_DATA)}
+      {if $rb3ecrowdelval
+         {options_extras.lst set_selected $rb3ecrowdelval}
+      }
+   )
+   (enter
+   POST_FX_LST_RESET
+   {options_extras.lst set_selected $rb3ecrowdelval}
+   {options_extras.lst set circular 0}
+   {set $fromelmenu FALSE}
+   {options_extras.lst set_data 
+   (
+      POST_FX_DATA
+   )})
+   (SELECT_MSG
+   {set $rb3ecrowdelval {$component selected_sym}}
+  {switch
+   {$component selected_sym}
+   (os_postfx_disable
+      {do
+         {if_else {&& {== $toggle_postfx FALSE} {== $toggledthisboot FALSE}}
+            {do
+               {set $toggledthisboot TRUE}
+               {set $toggle_postfx TRUE}
+            }
+            {if_else {&& {== $toggle_postfx TRUE} {== $toggledthisboot TRUE}}
+               {do
+                  {set $toggledthisboot FALSE}
+                  {set $toggle_postfx FALSE}
+               }
+               {if_else {&& {== $toggle_postfx TRUE} {{== $toggledthisboot FALSE}}}
+                  {do
+                     {set $toggledthisboot FALSE}
+                     {set $toggle_postfx TRUE}
+                  }
+                  {do
+                     {set $toggledthisboot TRUE}
+                     {set $toggle_postfx FALSE}
+                  }
+               }
+            }
+         }
+      {rnd toggle_all_postprocs}
+      }
+      POST_FX_LST_RESET)
+   (os_postfx_enable
+      {do
+         {if_else {&& {== $toggle_postfx FALSE} {== $toggledthisboot FALSE}}
+            {do
+               {set $toggledthisboot TRUE}
+               {set $toggle_postfx TRUE}
+            }
+            {if_else {&& {== $toggle_postfx TRUE} {== $toggledthisboot TRUE}}
+               {do
+                  {set $toggledthisboot FALSE}
+                  {set $toggle_postfx FALSE}
+               }
+               {if_else {&& {== $toggle_postfx TRUE} {{== $toggledthisboot FALSE}}}
+                  {do
+                     {set $toggledthisboot FALSE}
+                     {set $toggle_postfx TRUE}
+                  }
+                  {do
+                     {set $toggledthisboot TRUE}
+                     {set $toggle_postfx FALSE}
+                  }
+               }
+            }
+         }
+      {rnd toggle_all_postprocs}
+      }
+      POST_FX_LST_RESET)
+   (os_blur_disable
+      {modifier_mgr toggle_modifier_enabled mod_noblur}
+      {set $blurisbackon FALSE}
+      POST_FX_LST_RESET)
+   (os_blur_enable
+      {modifier_mgr toggle_modifier_enabled mod_noblur}
+      {set $blurisbackon TRUE}
+      POST_FX_LST_RESET)
+   (os_crust_disable
+      {modifier_mgr toggle_modifier_enabled mod_nocrust}
+      {set $crustisbackon FALSE}
+      POST_FX_LST_RESET)
+   (os_crust_enable
+      {modifier_mgr toggle_modifier_enabled mod_nocrust}
+      {set $crustisbackon TRUE}
+      POST_FX_LST_RESET)
+   })
+   (on_cancel
+      {$this show_state kState_RB3ECameraMenu}
+      {online_options.lst set_selected 1}))
 
 (kState_RB3EMenuBGWarn
    (view confirm_action)

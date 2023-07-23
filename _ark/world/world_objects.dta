@@ -761,6 +761,21 @@
       (song
          #ifdef HX_PC
          #else
+         #ifdef HX_WII
+         (change_subdir
+            ($file)
+            {if_else
+               {has_substr
+                  $file
+                  "dlc/"}
+               {cond
+                  ({has_substr
+                        $file
+                        "/world/shared/director.milo"}
+                     "world/shared/director.milo")
+                  "stream_cache"}
+               kDataUnhandled})
+         #else
          (change_subdir
             ($file)
             {if_else
@@ -774,6 +789,7 @@
                      "world/shared/director.milo")
                   "stream_cache"}
                kDataUnhandled})
+         #endif
          #endif)))
 (RndDir
    (types
@@ -1573,23 +1589,17 @@
                         set
                         showing
                         FALSE}}}}
+            {if {|| {&& {game is_up} {== $venue none}} {modifier_mgr is_modifier_active mod_blackmenu}} ; dx - hide background vignettes for menu speedups or for black venue
+               {if [scene0]
+                  {[scene0] set showing FALSE}
+               }
+            }
             {if
                {exists meta_performer}
                {profile_mgr
                   add_sink
                   $this
-                  (primary_profile_changed_msg)}}
-            {if {modifier_mgr is_modifier_active mod_blackmenu}
-               {if [scene0]
-                  {[scene0] set showing FALSE}
-               }
-            }
-            {if {&& {game is_up} {== $venue none}}
-               {if [scene0]
-                  {[scene0] set showing FALSE}
-               }
-            }
-         )
+                  (primary_profile_changed_msg)}})
          (exit
             {handle
                ([scene0]
@@ -4225,28 +4235,25 @@
                   $this
                   (excitement game_won game_won_finale game_lost game_over game_outro playing_final_cam)
                   kSinkModeType}}
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;60fps patch
-    {if {!= $emulatefps 30}
-    {if $world {$world iterate PostProc $p
-    {$p set emulate_fps $emulatefps}}}}
-;   {if $world {$world iterate WorldDir $wd
-;   {$wd iterate BandCamShot $bcs
-;   {foreach $property
-;   (shake_noisefreq shake_noiseamp)
-;   {$bcs set
-;   (keyframes $i $property)
-;   {'*' {$bcs get
-;   (keyframes $i $property)}
-;   0.25}}}
-;   {foreach $component
-;   (x y)
-;   {$bcs set
-;   (keyframes $i shake_maxangle $component)
-;   {'*' {$bcs get
-;   (keyframes $i shake_maxangle $component)}
-;   0.25}}}}}}
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            {dx_log_writer {sprint "Setting venue fps and trimming the crust - Current Screen: " {ui current_screen}}}
+            {if {!= $emulatefps 30} ; dx - custom venue fps enabler
+               {if $world
+                  {$world iterate PostProc $p {$p set emulate_fps $emulatefps}}
+               }
+            }
+            {if {modifier_mgr is_modifier_active mod_nocrust} ; dx - remove noise in venues
+               {if $world
+                  {$world iterate PostProc $p {$p set noise_intensity 0}}
+               }
+            }
+            {if {modifier_mgr is_modifier_active mod_noblur} ; dx - remove motion blur in venues
+               {if $world
+                  {$world iterate PostProc $p {$p set motion_blur_velocity 0}}
+                  {$world iterate PostProc $p {$p set motion_blur_blend 0}}
+                  {$world iterate PostProc $p {$p set motion_blur_weight 0}}
+                  {$world iterate PostProc $p {$p set motion_blur_exposure 0}}
+               }
+            }
             {set $crowd.game_excitement kExcitementOkay}
             {set $crowd.authored_excitement kExcitementIdle}
             {set $crowd.authored_action ''}
@@ -4321,10 +4328,35 @@
                   {== $cat LOSE}
                   kExcitementLost
                   kExcitementWon}}
+            #ifdef HX_WII
+            {if_else
+               {== $cat WIN_PRE_FINALE}
+               {do
+                  {if_else
+                     {$this set_dircut WIN_FINALE}
+                     {set $has_finale 1}
+                     {set $has_finale 0}}
+                  {if_else
+                     {$this set_dircut WIN_PRE_FINALE}
+                     {set $has_pre_finale 1}
+                     {set $has_pre_finale 0}}
+                  {if
+                     {&&
+                        {! $has_finale}
+                        {! $has_pre_finale}}
+                     {handle
+                        (game game_outro)}}}
+               {if
+                  {!
+                     {$this set_dircut $cat}}
+                  {handle
+                     (game game_outro)}}}
+            #else
             {unless
                {$this set_dircut $cat}
                {handle
-                  (game game_outro)}})
+                  (game game_outro)}}
+            #endif)
          (append_shot
             ($first_cam $cat $notify)
             {do
@@ -4506,10 +4538,11 @@
                   set_intro_real_time
                   {if_else
                      $shot
-					 {if_else {&& {modifier_mgr is_modifier_active mod_nointro} {session_mgr is_local}}
-					 0
-                     {-
-                        {$shot total_duration_seconds}}}
+					 {if_else {&& {modifier_mgr is_modifier_active mod_nointro} {session_mgr is_local}} ; dx - skip intro
+					    0
+                        {-
+                           {$shot total_duration_seconds}}
+                     }
                      0}}})
          (load_game_song
             ($load)

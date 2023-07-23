@@ -225,9 +225,10 @@
    sel_speed_panel
    (file sel_speed.milo)
    (enter
+      {speeds.lst set scroll_time 0} ; dx - makes the scrolling for the speeds list faster
       {speeds.lst
          set_data
-        (practice_speed_0 practice_speed_1 practice_speed_2 practice_speed_3 practice_speed_4 practice_speed_5 practice_speed_6 practice_speed_7 practice_speed_8 practice_speed_9 practice_speed_10 practice_speed_11 practice_speed_12 practice_speed_13 practice_speed_14 practice_speed_15 practice_speed_16 practice_speed_17 practice_speed_18)})
+        (practice_speed_0 practice_speed_1 practice_speed_2 practice_speed_3 practice_speed_4 practice_speed_5 practice_speed_6 practice_speed_7 practice_speed_8 practice_speed_9 practice_speed_10 practice_speed_11 practice_speed_12 practice_speed_13 practice_speed_14 practice_speed_15 practice_speed_16 practice_speed_17 practice_speed_18)}) ; dx - add additional practice speeds
    (focus speeds.lst)
    (SELECT_MSG
       {switch
@@ -382,7 +383,39 @@
    PracticePanel
    practice_panel
    (file practice_panel.milo)
-   (enter
+   (dx_speed_control_set_pos
+      {speed_control.grp set_local_pos $speed_controlpos_0 $speed_controlpos_1 $speed_controlpos_2}
+   )
+   (dx_score_set_pos
+      {score.grp set_local_pos $scorepos_0 $scorepos_1 $scorepos_2}
+   )
+   (dx_guide_pitch_set_pos
+      {guide_pitch.grp set_local_pos $guide_pitchpos_0 $guide_pitchpos_1 $guide_pitchpos_2}
+   )
+   (dx_drum_buttons_set_pos
+      {drum_buttons.grp set_local_pos $drum_buttonspos_0 $drum_buttonspos_1 $drum_buttonspos_2}
+   )
+   (dx_score_parts_set_pos
+      {score_parts.grp set_local_pos $score_partspos_0 $score_partspos_1 $score_partspos_2}
+   )
+   (dx_splash_set_pos
+      {splash.grp set_local_pos $splashpos_0 $splashpos_1 $splashpos_2}
+   )
+   (dx_all_item_set_pos
+      {all_item.grp set_local_pos $all_itempos_0 $all_itempos_1 $all_itempos_2}
+   )
+   (dx_section_set_pos
+      {section.lbl set_local_pos $sectionpos_0 $sectionpos_1 $sectionpos_2}
+   )
+   (enter DX_PRESENCE_MANGER
+      {$this dx_speed_control_set_pos}
+      {$this dx_score_set_pos}
+      {$this dx_section_set_pos}
+      ;{$this dx_guide_pitch_set_pos}
+      ;{$this dx_drum_buttons_set_pos}
+      ;{$this dx_score_parts_set_pos}
+      ;{$this dx_splash_set_pos}
+      {$this dx_all_item_set_pos}
       {if
          {&&
             {>
@@ -460,10 +493,7 @@
             [uses_harmony]
             {harmony_vox.trig trigger}
             {solo_vox.trig trigger}}
-         {if_else
-            {== $venue BLACK_VENUE}
-            {practice_black_game_screen set jump_delay 130}
-            {practice_game_screen set jump_delay 130}}
+            {practice_game_screen set jump_delay 130}
          {$this update_guide_label}
          {$this update_score_label}
          {hide_score.trig trigger}
@@ -552,7 +582,7 @@
          $p_speed
          {gamecfg get practice_speed}}
       {if
-         {< $p_speed 18}
+         {< $p_speed 18} ; dx - add additional practice speeds
          {'++' $p_speed}
          {$this update_speed $p_speed}})
    (update_speed
@@ -743,7 +773,7 @@
    (keep_section_text FALSE)
    (ignore_section '')
    (speed_modifier
-      (1.0 0.95 0.9 0.85 0.8 0.75 0.7 0.65 0.6 0.55 0.5 0.45 0.4 0.35 0.3 0.25 0.2 0.15 0.1))
+      (1.0 0.95 0.9 0.85 0.8 0.75 0.7 0.65 0.6 0.55 0.5 0.45 0.4 0.35 0.3 0.25 0.2 0.15 0.1)) ; dx - add additional practice speeds
    (best_percent 0.0)
    (update_best_percent TRUE)
    (uses_harmony FALSE)
@@ -757,8 +787,6 @@
       (score_lead_and_harmonies score_lead score_harmony1 score_harmony2))}
 #define PRACTICE_PANELS
 (game sync_audio_net_panel trainer_background_panel practice_panel coop_track_panel)
-#define PRACTICE_BLACK
-(game sync_audio_net_panel practice_panel coop_track_panel)
 {new
    BandScreen
    practice_game_screen
@@ -778,10 +806,11 @@
                {!
                   {game is_game_over}}
                {session is_in_game}}
-            {unless $practiceoverdrive
-            {if
-               {== $action kAction_ViewModify}
-               {session end_game kRestart}}}
+            {unless $practiceoverdrive ; dx - restart the current section as long as overdrive isnt enabled
+               {if {== $action kAction_ViewModify}
+                  {session end_game kRestart}
+               }
+            }
             {if
                {&&
                   {== $action kAction_Start}
@@ -793,7 +822,11 @@
             {if
                {&&
                   {practice_panel in_vocal_mode}
-                  {== $action kAction_PageUp}}
+                  #ifdef HX_WII
+                  {== $action kAction_Option}
+                  #else
+                  {== $action kAction_PageUp}
+                  #endif}
                {if_else
                   {&&
                      {practice_panel get uses_harmony}
@@ -807,74 +840,11 @@
                {&&
                   {practice_panel in_vocal_mode}
                   {practice_panel get uses_harmony}
-                  {== $raw_button kPad_L2}}
-               {practice_panel inc_score_part}
-               {do
-                  ($start_ms 0.0)
-                  ($end_ms 0.0)
-                  {gamecfg
-                     get_section_bounds
-                     {gamecfg get_section 1}
-                     $start_ms
-                     $end_ms}
-                  {beatmatch adjust_for_vocal_phrases $start_ms $end_ms}
-                  {percentage_callback
-                     reset
-                     {beatmatch get_song_ms}
-                     $end_ms}}
-               {practice_panel set_hit_percent 0.0}
-               {practice_panel update_score_label}
-               {practice_panel update_guide_label}}}}
-      kDataUnhandled)}
-{new
-   BandScreen
-   practice_black_game_screen
-   (panels practice_mode_panel PRACTICE_BLACK)
-   (allow_back FALSE)
-   (animate_transition FALSE)
-   (in_game TRUE)
-   (focus practice_panel)
-   GAME_SCREEN_HANDLERS
-   (BUTTON_DOWN_MSG
-      {do
-         ($track_sym
-            {$user get_track_sym})
-         {if
-            {&&
-               {!= none $track_sym}
-               {!
-                  {game is_game_over}}
-               {session is_in_game}}
-            {unless $practiceoverdrive
-            {if
-               {== $action kAction_ViewModify}
-               {session end_game kRestart}}}
-            {if
-               {&&
-                  {== $action kAction_Start}
-                  {beatmatch can_user_pause}}
-               {practice_panel pause}
-               {input_mgr set_user $user}
-               {net_sync disable}
-               {ui push_screen pause_screen}}
-            {if
-               {&&
-                  {practice_panel in_vocal_mode}
-                  {== $action kAction_PageUp}}
-               {if_else
-                  {&&
-                     {practice_panel get uses_harmony}
-                     {==
-                        {$this get_score_part}
-                        -1}}
-                  {practice_panel inc_guide_part}
-                  {practice_panel toggle_guide_part}}
-               {practice_panel update_guide_label}}
-            {if
-               {&&
-                  {practice_panel in_vocal_mode}
-                  {practice_panel get uses_harmony}
-                  {== $raw_button kPad_L2}}
+                  #ifdef HX_WII
+                  {== $raw_button kPad_Tri}
+                  #else
+                  {== $raw_button kPad_L2}
+                  #endif}
                {practice_panel inc_score_part}
                {do
                   ($start_ms 0.0)

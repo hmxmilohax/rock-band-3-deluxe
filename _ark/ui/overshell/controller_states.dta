@@ -1,0 +1,169 @@
+#define DX_SET_CONTROLLER_MENU
+(
+   {do
+      ($options
+         {array 0})
+      {if_else 
+         {&&
+            {== $dx_joypad_type_guitar kControllerGuitar}
+            {== $dx_joypad_type_keys kControllerKeys}
+            {== $dx_joypad_type_vocals kControllerVocals}}
+         {do
+            {push_back $options os_instswap}
+            {set $dx_menu_message os_instswap_desc}}
+         {do
+            {push_back $options os_instreset} ;shows controller reset menu if at least one instrument faking is active
+            {set $dx_menu_message os_instreset_desc}}}
+      {push_back $options os_pad_mapping}
+      $options}
+)
+
+(kState_RB3EControllerMenu
+   (view options_end_game)
+   (enter
+      DX_OS_OPEN_MSG
+      {options_end_game.lst set_data DX_SET_CONTROLLER_MENU}
+      {options_end_game.lst set circular 0}
+      {options_end_game.lst set_selected 0}
+      DX_MENU_DESC
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_instswap
+            {switch {{$this get_user} get_controller_type}
+               (kControllerGuitar
+                  {$this show_state kState_RB3EInstSwapGuitar})
+               (kControllerKeys
+                  {$this show_state kState_RB3EInstSwapKeys})
+               (kControllerVocals
+                  {$this show_state kState_RB3EInstSwapVocals})})
+         (os_instreset
+            DX_OS_CLOSE_MSG
+            DX_RESET_INST_TYPES
+            ;{$this show_state kState_RB3ESettings} ;force closes the menu if a different player resets the controllers
+            {overshell update_all})
+         (os_pad_mapping
+            {$this show_state kState_RB3EPadMappingSwap})})	
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state kState_RB3ESettings}
+      {options_audio.lst set_selected 5}))
+	  
+(kState_RB3EPadMappingSwap
+   (view #ifdef HX_WII options #else options_audio #endif)
+   (enter
+      DX_OS_OPEN_MSG
+      {set $dx_menu_message os_pad_mapping_select_desc}
+      DX_MENU_DESC
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set circular 0}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected 0}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data 
+         (
+            os_pad
+            os_rbguitar
+            os_ghguitar
+            os_rbdrums
+            os_rb2drums
+            os_ghdrums
+         )})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_pad
+            {set $dx_joypad_pad_mapping joypad})
+         (os_rbguitar
+            {set $dx_joypad_pad_mapping #ifdef HX_PS3 hx_guitar_ps3 #else #ifdef HX_WII wii_guitar #else ro_guitar_xbox #endif #endif})
+         (os_ghguitar
+            {set $dx_joypad_pad_mapping #ifdef HX_PS3 ro_guitar_ps3 #else #ifdef HX_WII wii_guitar #else ro_guitar_xbox #endif #endif})
+         (os_rbdrums
+            {set $dx_joypad_pad_mapping #ifdef HX_PS3 hx_drums_ps3 #else #ifdef HX_WII wii_drums #else hx_drums_xbox #endif #endif})
+         (os_rb2drums
+            {set $dx_joypad_pad_mapping #ifdef HX_PS3 hx_drums_ps3 #else #ifdef HX_WII wii_drums #else hx_drums_xbox_rb2 #endif #endif})
+         (os_ghdrums
+            {set $dx_joypad_pad_mapping #ifdef HX_PS3 ro_drums_ps3 #else #ifdef HX_WII wii_rodrums #else ro_drums_xbox #endif #endif})}
+      DX_REMAP_PAD
+   )
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state kState_RB3EControllerMenu}
+      {options_end_game.lst set_selected 1}))
+	  
+(kState_RB3EInstSwapGuitar
+   (view #ifdef HX_WII online_options #else options #endif)
+   (enter
+      DX_OS_OPEN_MSG
+      {set $dx_menu_message os_instswap_menu_guitar_desc}
+      DX_MENU_DESC
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set circular 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_selected 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_data (keys drums vocals)})
+   (SELECT_MSG
+      DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
+      {switch {$component selected_sym}
+         (keys
+            {set $dx_joypad_type_guitar kControllerKeys})
+         (drums
+            {set $dx_joypad_type_guitar kControllerDrum})
+         (vocals
+            {set $dx_joypad_type_guitar kControllerVocals})}
+      DX_SWAP_INSTRUMENT_TYPE_GUITAR
+      {dx_log_writer {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state kState_RB3EControllerMenu}))
+	  
+(kState_RB3EInstSwapKeys
+   (view #ifdef HX_WII online_options #else options #endif)
+   (enter
+      DX_OS_OPEN_MSG
+      {set $dx_menu_message os_instswap_menu_keys_desc}
+      DX_MENU_DESC
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set circular 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_selected 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_data (guitar drums vocals)})
+   (SELECT_MSG
+      DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
+      {switch {$component selected_sym}
+         (guitar
+            {set $dx_joypad_type_keys kControllerGuitar})
+         (drums
+            {set $dx_joypad_type_keys kControllerDrum})
+         (vocals
+            {set $dx_joypad_type_keys kControllerVocals})}
+      DX_SWAP_INSTRUMENT_TYPE_KEYS
+      {dx_log_writer {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state kState_RB3EControllerMenu}))
+	  
+(kState_RB3EInstSwapVocals
+   (view #ifdef HX_WII online_options #else options #endif)
+   (enter
+      DX_OS_OPEN_MSG
+      {set $dx_menu_message os_instswap_menu_vocals_desc}
+      DX_MENU_DESC
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set circular 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_selected 0}
+      {#ifdef HX_WII online_options.lst #else options.lst #endif set_data (guitar keys drums)})
+   (SELECT_MSG
+      DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
+      {switch {$component selected_sym}
+         (guitar
+            {set $dx_joypad_type_vocals kControllerGuitar})
+         (drums
+            {set $dx_joypad_type_vocals kControllerDrum})
+         (keys
+            {set $dx_joypad_type_vocals kControllerKeys})}
+      DX_SWAP_INSTRUMENT_TYPE_VOCALS
+      {dx_log_writer {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state kState_RB3EControllerMenu}))

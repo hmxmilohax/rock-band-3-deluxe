@@ -1,31 +1,3 @@
-#define OVERSHELL_RB4OS
-(
-                  {background.tex set_bitmap "ui/overshell/rb4_early/background.png"}
-                  {checked.tex set_bitmap "ui/overshell/rb4_early/checkmark.png"}
-                  {checkbox.tex set_bitmap "ui/overshell/rb4_early/checkmark_bg.png"}
-                  {connect_controller.tex set_bitmap "ui/overshell/rb4_early/connect_controller.png"}
-                  {connect_controller_normal2.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {connect_controller_spec.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {pause_container.tex set_bitmap "ui/overshell/rb4_early/pause_container.png"}
-                  {top_bg.tex set_bitmap "ui/overshell/rb4_early/top_bg.png"}
-                  {help_bar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_bg02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {online_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {bottom_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_lowered.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_help_lowered02.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {song_bg.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {header_song_bg_normal_pma.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {side_piece.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {results_sidebar.tex set_bitmap ui/track/custom_track_textures/_no_highway.png}
-                  {top_bg.mesh set_local_scale .51 .25 .6}
-                  {background.mesh set_local_scale_index 0 .675}
-                  {background.mesh set_local_pos_index 0 1}
-                  {background.mesh set_local_pos_index 2 -810}
-                  {ingame_pause_bg.mat set color {pack_color 1.0 1.0 1.0}}
-                  {ingame_pausebg.mat set color {pack_color 1.0 1.0 1.0}}
-)
 {new
    OvershellPanel
    overshell
@@ -40,10 +12,10 @@
                (vocals)
                (guitar real_guitar keys))
             (auto_vocals
-               (guitar real_guitar keys)
-               (drum)
-               (guitar real_guitar keys)
-               (guitar real_guitar keys)))
+               (guitar real_guitar keys vocals) ; dx - any instrument anywhere
+               (drum vocals)
+               (guitar real_guitar keys vocals)
+               (guitar real_guitar keys vocals)))
          (joining_priority 0 3 2 1))
       (type
          (state_handlers
@@ -54,12 +26,11 @@
             #include cam_states.dta
             #include color_states.dta
             #include speed_states.dta
-            #include sfx_states.dta)
+            #include sfx_states.dta
+            #include controller_states.dta)
          (enter
-            {if {modifier_mgr is_modifier_active mod_rb4os}
-               OVERSHELL_RB4OS
-            }
-            {if {|| {modifier_mgr is_modifier_active mod_auto_play} {modifier_mgr is_modifier_active mod_auto_kick}} {do {session disconnect} {session_mgr disconnect}}}
+            #ifndef HX_WII {if {modifier_mgr is_modifier_active mod_rb4os} OVERSHELL_RB4OS} {if {modifier_mgr is_modifier_active mod_rivalsos} OVERSHELL_RIVALSOS} #endif
+            {$this iterate UIList $l {$l set scroll_time 0}}
             {overshell_player_message set_showing FALSE})
          (exit)
          (get_remote_status
@@ -99,6 +70,9 @@
                   (kNetUI_CustomizeCharacter
                      (remote_status_customize_character))
                   (kNetUI_MusicLibrary
+                     #ifdef HX_WII
+                     (remote_status_music_library)
+                     #else
                      {do
                         ($song_name
                            {$user_machine get_current_song_preview})
@@ -109,7 +83,18 @@
                            (remote_status_music_library)
                            {'`'
                               (remote_status_song_preview
-                                 {',' $song_name})}}})
+                                 {',' $song_name})}}}
+                     #endif)
+                  #ifdef HX_WII
+                  (kNetUI_FindPlayersQp
+                     (finding_players))
+                  (kNetUI_FindPlayersTour
+                     (finding_players))
+                  (kNetUI_InvitingFriends
+                     (remote_status_inviting_friends))
+                  (kNetUI_InDialog
+                     (remote_status_leader_controlling))
+                  #endif
                   kDataUnhandled}})
          (print_haq_focus_status
             {do
@@ -141,10 +126,45 @@
          (show_message
             {{overshell_player_message find show.trg}
                trigger}
-            {overshell_player_message set_showing TRUE})
+            #ifndef HX_WII {overshell_player_message set_showing TRUE} #endif)
          (hide_message
             {{overshell_player_message find hide.trg}
                trigger})
+         #ifdef HX_WII
+         (invitation_notification_visible 0)
+         (show_invitation_notification
+            {if
+               {==
+                  [invitation_notification_visible]
+                  0}
+               {do
+                  {set
+                     [invitation_notification_visible]
+                     1}
+                  {{{overshell_player_message find overshell_player_invitation_notification}
+                        find
+                        show_invitation.trg}
+                     trigger}}})
+         (hide_invitation_notification
+            {if
+               {==
+                  [invitation_notification_visible]
+                  1}
+               {do
+                  {set
+                     [invitation_notification_visible]
+                     0}
+                  {{{overshell_player_message find overshell_player_invitation_notification}
+                        find
+                        hide_invitation.trg}
+                     trigger}}})
+         (invite_received
+            {invitations.lst refresh}
+            kDataUnhandled)
+         (invite_expired
+            {invitations.lst refresh}
+            kDataUnhandled)
+         #endif
          PASSIVE_MESSAGE_SETUP_HANDLERS
          (message_dir overshell_player_message)
          (post_setup)
@@ -160,10 +180,24 @@
                set_overshell_pause
                {&&
                   {session is_local}
-                  {! {modifier_mgr is_modifier_active mod_nopause}}
+                  {! {modifier_mgr is_modifier_active mod_nopause}} ; dx - don't pause the game if we are in party mode
                   {'||'
                      {$this should_pause}
                      {platform_mgr guide_showing}}}}
+            #ifdef HX_WII
+            {if
+               {!
+                  {coop_track_panel is_unloaded}}
+               {coop_track_panel
+                  update_join_in_progress
+                  {$this is_any_slot_joinable}
+                  FALSE}}
+            #else
+            {coop_track_panel
+               update_join_in_progress
+               {$this is_any_slot_joinable}
+               FALSE}
+            #endif
             {coop_track_panel
                update_join_in_progress
                {$this is_any_slot_joinable}
@@ -196,16 +230,18 @@
             {&&
                $zero_players
                $active
+               #ifndef HX_WII
                {'||'
                   {!
                      {gamemode in_mode audition}}
                   {!
-                     {audition_mgr has_autoplayer}}}}
+                     {audition_mgr has_autoplayer}}}
+               #endif}
             {if
                {&&
                   $in_game
                   {! $any_dialog_up}	
-                  {! {modifier_mgr is_modifier_active mod_nopause}}} ;hides "Press START" screen while in-game when pause is disabled
+                  {! {modifier_mgr is_modifier_active mod_nopause}}} ;dx - hides "Press START" screen while in-game when pause is disabled
                {ui_event_mgr trigger_event zero_players}}
             {if
                $zero_players_dialog_up
@@ -243,12 +279,20 @@
                               {!
                                  {session_mgr is_leader_local}}
                               {net_sync is_enabled}}}}}}}}}
+      #ifdef HX_WII
+      {handle
+         (ui
+            overshell_allowing_input
+            {$this is_any_slot_allowing_input_to_shell}
+            {$this get_first_user_allowing_input_to_shell})}
+      #else
       {handle
          (ui
             overshell_allowing_input
             {'||'
                {! $active}
-               {$this is_any_slot_allowing_input_to_shell}})})
+               {$this is_any_slot_allowing_input_to_shell}})}
+      #endif)
    (autohide_msg
       ($enabled)
       {if_else
@@ -275,7 +319,6 @@
             {== $status kStatus_End}}
          {$this update_all}})
    (enter
-      {if {|| {modifier_mgr is_modifier_active mod_auto_play} {modifier_mgr is_modifier_active mod_auto_kick}} {do {session disconnect} {session_mgr disconnect}}}
       {memcardmgr
          add_sink
          $this
@@ -329,10 +372,7 @@
       ($in_game)
       {if_else
          $in_game
-         {if_else
-            {modifier_mgr is_modifier_active mod_auto_vocals}
-            {slot_positions.anim set_frame 2}
-            {slot_positions.anim set_frame 2}} ;used to be 1, changed to always be two to fix "invisible" pause when using laned instruments in vox slot
+         {slot_positions.anim set_frame DX_IS_VOX_LANED} ; dx - dynamically moves the vocalist's pause menu depending on if they're on a laned instrument or not
          {slot_positions.anim set_frame 0}})
    (set_position_frame
       ($frame)

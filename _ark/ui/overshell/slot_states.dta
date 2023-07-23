@@ -81,6 +81,8 @@
    (choose_char_flow TRUE)
    (remote_status remote_status_choose_char)
    (enter
+      {if $chartexset
+         {choose_character.tex set_bitmap {sprint "ui/track/custom_track_textures/choose_character.png"}}} ; dx - restore original character icon if it was changed
       {prefab_mgr load_portraits $this}
       {if
          {{$this get_user}
@@ -158,6 +160,473 @@
             (overshell_confirm_no
                {$user set_contributes_song_progress FALSE})}}
       {$this leave_options}))
+#ifdef HX_WII
+(kState_ChooseProfile
+   (view choose_profile_wii)
+   (prevents_override TRUE)
+   (enter
+      {choose_profile.lbl set text_token dx_choose_profile}
+      {$this set_wiiprofile_list_mode kWiiProfileListMode_Entry})
+   (on_cancel
+      {$this attempt_remove_user})
+   (SELECT_MSG
+      {$this
+         act_on_user_profile
+         {profiles_wii.lst selected_pos}}))
+(kState_WiiProfileList
+   (view choose_profile_wii)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this cancel_wii_profile_selector})
+   (SELECT_MSG
+      {$this
+         act_on_user_profile
+         {profiles_wii.lst selected_pos}}))
+(kState_WiiProfileConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_guest_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Register
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_register_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_guest_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_create_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_delete_confirm
+                  (overshell_confirm_yes overshell_confirm_no))}
+            {confirm_question.lbl
+               set_token_fmt
+               overshell_wiiprofile_delete_confirm
+               {$this get_wiiprofile_list_selected_name}}
+            {confirm_action.lst set_selected overshell_confirm_no FALSE})})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {wiiprofile_panel set_user $user}
+            {splash_panel set last_user $user}
+            {$this act_on_user_profile_confirm}
+            {saveload_mgr autosave})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfileSwitchConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiiprofile_switch_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this act_on_user_profile_confirm})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfilePreconfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_delete_preconfirm
+                  (overshell_confirm_yes overshell_confirm_no))}
+            {confirm_question.lbl
+               set_token_fmt
+               overshell_wiiprofile_delete_preconfirm
+               {$this get_wiiprofile_list_selected_name}}
+            {confirm_action.lst set_selected overshell_confirm_no FALSE})})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_wiiprofile_confirm})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfilePostAction
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_post)})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileFail
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Register
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_register_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_register_denial_in_override)}})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Create
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)}})
+         (kWiiProfileListMode_Delete
+            {if_else
+               {==
+                  {$this is_wiiprofile_delete_queue_full}
+                  TRUE}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_delete_full)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_delete_fail)}})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileFailBusy
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Register
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_register_denial_in_override)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_full)})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this cancel_wii_profile_selector}}))
+(kState_WiiProfileFailCreate
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Create
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)}})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileSwapFail
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this cancel_wii_profile_selector}}))
+(kState_WiiProfileListEmpty
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Register
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_register_empty)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_switch_empty)})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_empty)})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_empty)})})
+   (SELECT_MSG
+      {$this cancel_wii_profile_selector}))
+(kState_WiiProfileOptions
+   (view wiiprofile_options)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_wiiprofile_register
+            {$this show_wiiprofile_list kWiiProfileListMode_Register})
+         (overshell_wiiprofile_switch
+            {$this show_wiiprofile_list kWiiProfileListMode_Switch})
+         (overshell_wiiprofile_create
+            {$this show_wiiprofile_list kWiiProfileListMode_Create})
+         (overshell_wiiprofile_delete
+            {$this show_wiiprofile_list kWiiProfileListMode_Delete})
+         (overshell_return
+            {$this leave_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_RegisterWiiProfile
+   (view wait_wii)
+   (prevents_override TRUE)
+   (enter
+      {if_else
+         {&&
+            {!
+               {memcardmgr is_disable_writing}}
+            {!
+               {overshell in_override_flow kOverrideFlow_SongSettings}}
+            {==
+               {wiiprofile_panel get_wiiprofile_state}
+               kWiiProfileState_None}
+            {!
+               {ui_event_mgr has_transition_event invite_accepted}}}
+         {do
+            {wiiprofile_panel
+               set_wiiprofile_index
+               {$this get_wiiprofile_last_index}}
+            {wiiprofile_panel set_wiiprofile_state kWiiProfileState_Register}
+            {overshell set_active_status kOvershellInactive}
+            {$this leave_options}
+            {ui_event_mgr
+               trigger_event
+               go_to_wiiprofilecreator
+               (dummy init $user)}}
+         {do
+            {if_else
+               {!=
+                  {wiiprofile_panel get_wiiprofile_state}
+                  kWiiProfileState_None}
+               {$this show_wiiprofile_fail_busy}
+               {$this show_wiiprofile_fail}}}}))
+(kState_EnterWiiProfile
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_new_wiiprofile
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {splash_panel set last_user $user}
+            {wiiprofile_panel set_user $user}
+            {if_else
+               {$this is_wiiprofile_full}
+               {$this show_wiiprofile_fail}
+               {do
+                  {if_else
+                     {&&
+                        {!
+                           {memcardmgr is_disable_writing}}
+                        {!
+                           {overshell in_override_flow kOverrideFlow_SongSettings}}
+                        {==
+                           {wiiprofile_panel get_wiiprofile_state}
+                           kWiiProfileState_None}
+                        {!
+                           {ui_event_mgr has_transition_event invite_accepted}}}
+                     {do
+                        {wiiprofile_panel set_wiiprofile_state kWiiProfileState_New}
+                        {overshell set_active_status kOvershellInactive}
+                        {$this leave_options}
+                        {if_else
+                           {!
+                              {wiiprofile_panel is_delay}}
+                           {do
+                              {ui_event_mgr
+                                 trigger_event
+                                 go_to_wiiprofilecreator
+                                 (dummy init $user)}}
+                           {do
+                              {splash_panel set last_user $user}}}}
+                     {do
+                        {if_else
+                           {!=
+                              {wiiprofile_panel get_wiiprofile_state}
+                              kWiiProfileState_None}
+                           {$this show_wiiprofile_fail_busy}
+                           {$this show_wiiprofile_fail}}}}}})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfileGuestConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiiprofile_guest_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this select_guest_profile}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_profiles})}))
+(kState_WiiProfileRemoveUserConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_wiiprofile_list kWiiProfileListMode_Confirmed})
+         (overshell_confirm_no
+            {$this show_wiiprofile_options})})
+   (on_cancel
+      {$this show_wiiprofile_options}))
+(kState_ChooseProfileConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_profiles})
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_swap_profile
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {if
+               {!
+                  {$this confirm_swap_user_profile}}
+               {do
+                  {$this show_wiiprofile_swap_fail}}})
+         (overshell_confirm_no
+            {$this show_profiles})}))
+(kState_WiiProfileDenial
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_create_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_profiles})
+   (on_cancel
+      {$this show_profiles}))
+(kState_RegisterWiiProfileDenial
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_register_denial_remote_players)})
+   (SELECT_MSG
+      {$this cancel_wii_profile_selector})
+   (on_cancel
+      {$this cancel_wii_profile_selector}))
+(kState_WaitWii
+   (view wait_wii))
+#else
 (kState_ChooseProfile
    (view choose_profile)
    (prevents_override TRUE)
@@ -195,6 +664,7 @@
             {$this confirm_swap_user_profile})
          (overshell_confirm_no
             {$this show_choose_profile})}))
+#endif
 (kState_Options
    (view
       {if_else
@@ -259,6 +729,7 @@
                      {gamemode get show_change_difficulty}
                      $showing_metronome
                      {gamemode get show_pause_practice_new}
+                     #ifdef HX_WII {gamemode get show_pause_trainer} #endif
                      $can_quit)}
                {handle
                   ($this update_restart_allowed $restart_allowed)}}
@@ -317,12 +788,12 @@
                      {!
                         {beatmatch get_paused}})
                   {beatmatch set_paused $new TRUE FALSE}})
-            (overshell_change_diff
-               {$this begin_override_flow kOverrideFlow_SongSettings})
             (overshell_choose_part
                {do
                   {$this begin_override_flow kOverrideFlow_SongSettings}
                   {$this show_state kState_ChoosePart}})
+            (overshell_change_diff
+               {$this begin_override_flow kOverrideFlow_SongSettings})
             (overshell_practice_new_section
                {ui_event_mgr trigger_event go_to_practice_screen})
             (overshell_metronome
@@ -358,7 +829,25 @@
             (overshell_game_options
                {$this show_game_options})
             (overshell_leave
-               {$this attempt_remove_user})}})
+               {$this attempt_remove_user})
+            (overshell_dx_bot_settings
+               {$this show_state dxState_BotSettings})
+                        #ifdef HX_WII
+            (overshell_wiiprofile_options
+               {do
+                  {$this
+                     setup_wiiprofile_options_list
+                     {$this get_user}}
+                  {$this show_wiiprofile_options}})
+            (wii_friends_view_invite
+               {do
+                  {rock_central clear_pending_invitations}
+                  {$this show_choose_invitation}
+                  {{$this get_state}
+                     set
+                     return_to_options_menu
+                     TRUE}})
+            #endif}})
    (SCROLL_SELECT_MSG
       {$this on_slider_change $component $user})
    (SCROLL_MSG
@@ -472,7 +961,7 @@
       {$this show_options}))
 (kState_OnlineOptions
    (enter
-   {online_options.lst set circular 0})
+      {online_options.lst set circular 0})
    (view online_options)
    (update_view
       {do
@@ -494,14 +983,24 @@
          {handle
             ($this update_in_xbox_party $is_partying)}
          #endif
+         #ifdef HX_WII
+         {$this setup_online_options_list wii}
+         #endif
          {handle
             ($this
                update_kick_allowed
                {&&
                   {! $is_local}
                   $is_leader_local})}
+         #ifdef HX_WII
+         {handle
+            ($this
+               update_wiispeak_toggle_allowed
+               {true})}
+         #else
          {handle
             ($this update_mute_allowed $has_remote_users)}
+         #endif
          {handle
             ($this update_invites_allowed $are_invites_allowed)}})
    (requires_online_session TRUE)
@@ -512,8 +1011,46 @@
             #ifdef HX_XBOX
             {platform_mgr show_user_friends $user}
             #else
+            #ifdef HX_WII
+            {if_else
+               {$user is_signed_in_online}
+               {if
+                  {&&
+                     {==
+                        {ui current_screen}
+                        main_hub_screen}
+                     {!
+                        {ui_event_mgr has_transition_event friends_screen_event}}}
+                  {do
+                     {main_hub_panel set_state kMainHubState_Main}
+                     {input_mgr set_user $user}
+                     {wiifriends_screen go_to_friends_screen $user}}}
+               {ui_event_mgr trigger_event sign_in}}
+            #else
             {$this show_invite_friends}
+            #endif
             #endif)
+         #ifdef HX_WII
+         (overshell_import_wii_friends
+            {if
+               {==
+                  {ui current_screen}
+                  main_hub_screen}
+               {do
+                  {main_hub_panel set_state kMainHubState_Main}
+                  {$this leave_options}
+                  {wiifriends_screen go_to_import_friends_screen}}})
+         (wii_friends_view_invite
+            {do
+               {rock_central clear_pending_invitations}
+               {$this show_choose_invitation}
+               {{$this get_state}
+                  set
+                  return_to_options_menu
+                  FALSE}})
+         #endif
+         (overshell_wiispeak_toggle
+            {$this toggle_wii_speak})
          (overshell_kick
             {$this show_kick_users})
          (overshell_mute
@@ -592,6 +1129,27 @@
             {$this leave_options})})
    (on_cancel
       {$this leave_options}))
+(kState_RemoveUserInCampaignConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (remove_user_prompt TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_remove_critical_user
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this remove_user})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
 (kState_RemoveUserInSongConfirm
    (view confirm_action)
    (prevents_override TRUE)
@@ -624,8 +1182,6 @@
       {$this show_options}))
 (kState_GameOptions
    (view game_options)
-   (enter 
-      {game_options.lst set scroll_time 0})
    (update_view
       {do
          ($controller
@@ -676,7 +1232,7 @@
       {switch
          {$component selected_sym}
          (mod_auto_vocals
-            {$this attempt_toggle_auto_vocals})
+            DX_AUTO_VOCALS_HANDLER)
          (mod_no_fail_band
             {if_else
                {session_mgr is_leader_local}
@@ -713,15 +1269,15 @@
             {$this show_options_av_settings})
          (overshell_extras
             {$this show_options_extras})
-         (overshell_modifiers
-            {$this show_modifiers})
+         (overshell_wiispeak_options
+            {$this show_options_wiispeak})
          (overshell_rb3esettings
             {$this show_state kState_RB3ESettings})
-         (overshell_dx_bot_settings
-            {$this show_state dxState_BotSettings})
-         })
+         (overshell_modifiers
+            {$this show_modifiers})})
    (on_cancel
-      {$this show_options}))
+      {$this show_options}
+      {options.lst set_selected #ifdef HX_WII 4 #else 3 #endif}))
 (kState_ToggleNoFailDenial
    (view confirm_action)
    (update_view
@@ -742,6 +1298,10 @@
          ($this update_bass_boost_check)}
       {handle
          ($this update_overscan_check)}
+      #ifdef HX_WII
+      {handle
+         ($this update_sdmode_check)}
+      #endif
       {do
          ($user
             {$this get_user})
@@ -762,10 +1322,8 @@
             {$this get_user}}})
    (exit
       {unless
-	  {'||'
          {$this in_game}
-		 {modifier_mgr is_modifier_active mod_auto_play}}
-         {saveload_mgr autosave}})
+      		DX_AUTOSAVE})
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -800,41 +1358,63 @@
                      {if_else
                         {saveload_mgr is_autosave_enabled $user}
                         {$this show_saveloadmgr_autosave_confirm}
-						{unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
-                        {saveload_mgr enable_autosave $user}}}
+                        {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
+                           {saveload_mgr enable_autosave $user}}
+                     }
                      {overshell update_all}}
                   {$this show_saveloadmgr_not_idle}}
-               {$this show_saveloadmgr_not_meta}})}))
-#define AUDIO_DATA
-(
-   overshell_audio_instruments
-   overshell_audio_bg_music
-   overshell_audio_crowd
-   overshell_audio_sfx
-   #ifdef HX_PS3
-   overshell_audio_voice_chat
-   #endif
-   {if_else {modifier_mgr is_modifier_active mod_nosfx}
-   os_audio_instsfx_on
-   os_audio_instsfx_off}
-)
+               {$this show_saveloadmgr_not_meta}})
+         (dlc_sdmode
+            {if
+               {&&
+                  {session_mgr is_local}
+                  {!
+                     {ui in_transition}}
+                  {==
+                     main_hub_screen
+                     {ui current_screen}}}
+               {do
+                  ($isSdMode
+                     {==
+                        kSDMode
+                        {content_mgr get_mode}})
+                  {if_else
+                     $isSdMode
+                     {do
+                        {print
+                           "* Switching from kSDMode to kNANDMode\n"}
+                        {if_else
+                           {content_mgr refresh_done}
+                           {do
+                              {content_mgr set_mode kNANDMode}
+                              {content_mgr start_refresh}}
+                           {do
+                              {push_disable_sdmode_dialog}}}}
+                     {do
+                        {print
+                           "* Switching from kNANDMode to kSDMode\n"}
+                        {push_enable_sdmode_dialog}}}}}
+            {$this update_sdmode_check})}))
 (kState_OptionsAudio
-   (view options_audio)
+   (view #ifdef HX_WII options #else options_audio #endif)
    (on_cancel
-      {unless $dontsavemod
-         {do INIT_MOD_WRITER}}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnErrorAV}
-      {$this show_options_av_settings}})
+      {unless $dx_dont_save_mod
+         INIT_MOD_WRITER
+      }
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnErrorAV}
+         {$this show_options_av_settings}
+      }
+   )
    (lst_reset
-      {options_audio.lst set_data (AUDIO_DATA)}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
       {if $audiomenuval
-         {options_audio.lst set_selected $audiomenuval}
+         {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
       }
    )
    (enter
       {$this lst_reset}
-      {options_audio.lst set_selected $audiomenuval}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
       {instruments.sld set_num_steps 12}
       {bg_music.sld set_num_steps 12}
       {crowd.sld set_num_steps 12}
@@ -845,7 +1425,7 @@
       {crowd.sld set_current {profile_mgr get_crowd_volume}}
       {sfx.sld set_current {profile_mgr get_fx_volume}}
       {voice_chat.sld set_current {profile_mgr get_voice_chat_volume}}
-      {options_audio.lst set_data (AUDIO_DATA)}
+      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (AUDIO_DATA)}
    )
    (update_view
       {handle
@@ -876,9 +1456,11 @@
    (SELECT_MSG
       {set $audiomenuval {$component selected_sym}}
       {if
-         {== $component options_audio.lst}
+         {== $component #ifdef HX_WII options.lst #else options_audio.lst #endif}
          {switch
             {$component selected_sym}
+            DX_NO_AMBIENCE_HANDLER
+            DX_NO_SFX_HANDLER
             (overshell_audio_instruments
                {instruments.sld store}
                {instruments.sld set_showing TRUE}
@@ -898,20 +1480,8 @@
             (overshell_audio_voice_chat
                {voice_chat.sld store}
                {voice_chat.sld set_showing TRUE}
-               {$this set_focus voice_chat.sld})
-            (os_audio_instsfx_off
-               {unless {modifier_mgr is_modifier_active mod_nosfx}
-                  {modifier_mgr toggle_modifier_enabled mod_nosfx}
-                  {options_audio.lst set_data (AUDIO_DATA)}
-               {if $audiomenuval
-                  {options_audio.lst set_selected $audiomenuval}}})
-            (os_audio_instsfx_on
-               {if {modifier_mgr is_modifier_active mod_nosfx}
-                  {modifier_mgr toggle_modifier_enabled mod_nosfx}}
-               {options_audio.lst set_data (AUDIO_DATA)}
-               {if $audiomenuval
-                  {options_audio.lst set_selected $audiomenuval}})}
-      {$this lst_reset}})
+               {$this set_focus voice_chat.sld})}
+         {$this lst_reset}})
    (BUTTON_DOWN_MSG
       {if_else
          {find_elem
@@ -933,7 +1503,7 @@
                      {$this focus_name}}
                   set_showing
                   FALSE}
-               {$this set_focus options_audio.lst})
+               {$this set_focus #ifdef HX_WII options.lst #else options_audio.lst #endif})
             kDataUnhandled}
          kDataUnhandled})
    (SCROLL_SELECT_MSG
@@ -943,21 +1513,22 @@
 (kState_OptionsVocal
    (view options_vocal)
    (on_cancel
-      {do INIT_VAL_WRITER}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnError}
-      {$this show_game_options}})
+      INIT_VAL_WRITER
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnError}
+         {$this show_game_options}
+      }
+   )
    (enter
+      {static_vocals.chk set_showing 1}
+      {synapse.chk set_showing 1}
+      {options_vocal.lst set_data
+         (overshell_vocals_mode_static #ifndef HX_WII overshell_synapse #endif overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)
+      }
       {vocal_track.sld set_num_steps 12}
       {vocal_sens1.sld set_num_steps 12}
       {vocal_sens2.sld set_num_steps 12}
-      {vocal_sens3.sld set_num_steps 12}
-         {static_vocals.chk set_showing 1}
-         {synapse.chk set_showing 1}
-         {options_vocal.lst
-            set_data
-               (overshell_vocals_mode_static overshell_synapse overshell_vocal_track_vol mic_1_gain mic_2_gain mic_3_gain)}
-      )
+      {vocal_sens3.sld set_num_steps 12})
    (update_view
       {do
          ($options
@@ -1069,16 +1640,108 @@
       {$this on_slider_change $component $user})
    (SCROLL_MSG
       {$this on_slider_change $component $user}))
+(kState_OptionsWiiSpeak
+   (view options_wiispeak)
+   (on_cancel
+      {$this show_game_options})
+   (update_view
+      {do
+         ($options
+            {{$this get_user}
+               get_gameplay_options})
+         {handle
+            ($this
+               update_slider
+               MicrophoneSensitivity.sld
+               "")}
+         {handle
+            ($this
+               update_slider
+               FriendsVolume.sld
+               "")}
+         {handle
+            ($this
+               update_toggle_wiispeak_check
+               {profile_mgr get_wiispeak_toggle})}
+         {handle
+            ($this
+               update_wiispeak_headphone_mode_check
+               {profile_mgr get_wiispeak_headphone_mode})}})
+   (enter
+      {MicrophoneSensitivity.sld set_num_steps 4}
+      {platform_mgr set_party_mic_options_showing 1}
+      {if
+         {{$this get_user}
+            is_local}
+         {{ui get_wiispeak_icon_panel}
+            show_warning_messages}})
+   (exit
+      {platform_mgr set_party_mic_options_showing 0})
+   (SELECT_MSG
+      {if
+         {== $component options_wiispeak.lst}
+         {switch
+            {$component selected_sym}
+            (wiispeak_button_toggle_wiispeak
+               {profile_mgr
+                  set_wiispeak_toggle
+                  {!
+                     {profile_mgr get_wiispeak_toggle}}}
+               {$this update}
+               {saveload_mgr autosave})
+            (wiispeak_button_headphone_mode
+               {profile_mgr
+                  set_wiispeak_headphone_mode
+                  {!
+                     {profile_mgr get_wiispeak_headphone_mode}}}
+               {$this update}
+               {do
+                  {HeadphoneMode.chk
+                     set
+                     checked
+                     {profile_mgr get_wiispeak_headphone_mode}}
+                  {{ui get_wiispeak_icon_panel}
+                     refresh_headphone_mode}}
+               {saveload_mgr autosave})
+            (wiispeak_button_friends_volume
+               {FriendsVolume.sld store}
+               {FriendsVolume.sld set_showing TRUE}
+               {$this set_focus FriendsVolume.sld})
+            (wiispeak_button_microphone_sensitivity
+               {MicrophoneSensitivity.sld store}
+               {MicrophoneSensitivity.sld set_showing TRUE}
+               {$this set_focus MicrophoneSensitivity.sld})}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("FriendsVolume.sld"
+               "MicrophoneSensitivity.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {$this set_focus options_wiispeak.lst}
+               {saveload_mgr autosave})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user}))
 (kState_OptionsExtras
    (view options_extras)
-      (enter
-         {options_extras.lst
-            set_data
-               (overshell_credits
-                overshell_linking_code
-                #ifdef HX_XBOX
-                overshell_audition
-                #endif)})
+   (enter
+      {options_extras.lst set_data (overshell_credits overshell_linking_code #ifdef HX_XBOX overshell_audition #endif)}
+   )
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -1088,7 +1751,10 @@
             {if_else
                {&&
                   {$user can_save_data}
-                  {$user is_signed_in_online}}
+                  {$user is_signed_in_online}
+                  #ifdef HX_WII
+                  {server is_connected}
+                  #endif}
                {$this show_linking_code}
                #ifdef HX_PS3
                {do
@@ -1230,7 +1896,6 @@
             ($this set_confirm_message linking_code_signin_error)}})
    (SELECT_MSG
       {$this show_options_extras}))
-
 (kState_SaveloadManagerNotIdle
    (view confirm_action)
    (enter
@@ -1268,13 +1933,16 @@
    (update_view
       {$this update_modifiers_list})
    (enter
-      {modifiers.lst set scroll_time 0})
+      DX_OS_OPEN_MSG ;opens overshell_player_message
+   ) 
    (exit
+      DX_OS_CLOSE_MSG ;closes overshell_player_message
       {unless
-	  {'||'
          {$this in_game}
-		 {modifier_mgr is_modifier_active mod_auto_play}}
-         {saveload_mgr autosave}})
+         DX_AUTOSAVE})
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   )
    (SELECT_MSG
       {do
          ($modifier
@@ -1283,143 +1951,7 @@
             $modifier
                (modifier_enter_entry_name
                {$this show_modifier_unlock})
-               (mod_nohud
-                  {if {modifier_mgr is_modifier_active mod_nohud}
-                     {if {modifier_mgr is_modifier_active mod_fakejuke}
-                        {modifier_mgr toggle_modifier_enabled mod_fakejuke}
-                        {modifier_mgr toggle_modifier_enabled mod_auto_play}
-                        {modifier_mgr toggle_modifier_enabled mod_nopause}}}
-                  {modifier_mgr toggle_modifier_enabled mod_nohud}
-                  {overshell update_all})
-               (mod_nolanes
-                  {if {modifier_mgr is_modifier_active mod_rb4lanes}
-                     {modifier_mgr toggle_modifier_enabled mod_rb4lanes}}
-                  {modifier_mgr toggle_modifier_enabled mod_nolanes}
-                  {set $nolanes {! $nolanes}}
-                  {overshell update_all})
-               (mod_rb4lanes
-                  {if {modifier_mgr is_modifier_active mod_nolanes}
-                     {modifier_mgr toggle_modifier_enabled mod_nolanes}}
-                  {modifier_mgr toggle_modifier_enabled mod_rb4lanes}
-                  {overshell update_all})
-               (mod_practiceoverdrive
-                  {modifier_mgr toggle_modifier_enabled mod_practiceoverdrive}
-                  {set $practiceoverdrive {! $practiceoverdrive}}
-                  {overshell update_all})
-               (mod_nobre
-                  {modifier_mgr toggle_modifier_enabled mod_nobre}
-                  {overshell update_all})
-               (mod_fakebrutal
-                  {modifier_mgr toggle_modifier_enabled mod_fakebrutal}
-                  {set $fakebrutalmode {! $fakebrutalmode}}
-                  {overshell update_all})
-               (mod_animatedgems
-                  {modifier_mgr toggle_modifier_enabled mod_animatedgems}
-                  {set $animatedgems {! $animatedgems}}
-                  {set $animatedgemscustomtexture TRUE}
-                  {overshell update_all})
-               (mod_animatedhighway
-                  {modifier_mgr toggle_modifier_enabled mod_animatedhighway}
-                  {set $animatedhighwayname rb4effect4_color1}
-                  {set $animatedhighwaycustomtexture TRUE}
-                  {set $animatedhighway {! $animatedhighway}}
-                  {overshell update_all})
-               (mod_videobg
-                  {modifier_mgr toggle_modifier_enabled mod_videobg}
-                  {set $videobg {! $videobg}}
-                  {do {$this show_state kState_RB3EVideoMsg} {$this set_focus confirm_action.lst}}
-                  {ui goto_screen meta_loading_main_screen})
-               (mod_doublespeed
-                  {modifier_mgr toggle_modifier_enabled mod_doublespeed}
-                  {overshell update_all})
-               (mod_fakejuke
-               {do {session disconnect}
-               {session_mgr disconnect}}
-               {unless {{$this get_session_mgr} is_online_enabled}
-               {unless
-                  {modifier_mgr is_modifier_active mod_fakejuke}
-                  {$this show_state kState_FakeJukeWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_fakejuke}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {if {modifier_mgr is_modifier_active mod_auto_play}
-                     {modifier_mgr toggle_modifier_enabled mod_auto_play}}
-                  {if {modifier_mgr is_modifier_active mod_nohud}
-                     {modifier_mgr toggle_modifier_enabled mod_nohud}}
-                  {if {modifier_mgr is_modifier_active mod_nopause}
-                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
-                  {overshell update_all}}}})
-               (mod_auto_play
-               {do {session disconnect}
-               {session_mgr disconnect}}
-               {unless {{$this get_session_mgr} is_online_enabled}
-               {unless
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {$this show_state kState_AutoPlayWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {if {modifier_mgr is_modifier_active mod_fakejuke}
-                     {modifier_mgr toggle_modifier_enabled mod_fakejuke}
-                     {modifier_mgr toggle_modifier_enabled mod_nohud}
-                     {modifier_mgr toggle_modifier_enabled mod_nopause}}
-                  {overshell update_all}}}})
-               (mod_auto_kick
-               {do
-               {session disconnect}
-               {session_mgr disconnect}
-               {modifier_mgr toggle_modifier_enabled $modifier}
-               {if {$this in_game}
-                  {$this show_state kState_ModifierSongLoad}}
-               {overshell update_all}})
-               (mod_chmode
-               {unless
-                  {modifier_mgr is_modifier_active mod_chmode}
-                  {$this show_state kState_CHModeWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_chmode}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {overshell update_all}}})
-               ;(mod_rrdrums
-               ;   {modifier_mgr toggle_modifier_enabled $modifier}
-               ;   {set $author TRUE} {$this show_modifiers_drum_warning}
-               ;   {saveload_mgr disable_autosave $user}
-               ;   {if {$this in_song} {ui goto_screen meta_loading_main_screen}}
-               ;   {overshell update_all})
-               ;(mod_ghdrums
-               ;   {modifier_mgr toggle_modifier_enabled $modifier}
-               ;   {set $author TRUE} {$this show_modifiers_drum_warning}
-               ;   {saveload_mgr disable_autosave $user}
-               ;   {if {$this in_song} {ui goto_screen meta_loading_main_screen}}
-               ;   {overshell update_all})
-               (mod_whammyfx
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {set $whammyfx {! $whammyfx}}
-                  {if {$this in_game}
-                     {$this show_state kState_ModifierSongLoad}}
-                  {overshell update_all}) ;whammy fx modifier
-				(mod_nomv
-					{modifier_mgr toggle_modifier_enabled mod_nomv}
-					{if_else {$this in_game}
-                  {$this show_state kState_ModifierSongLoad}
-                  {do {$this show_state kState_RB3ENoMusicVideos} {$this set_focus confirm_action.lst} {ui goto_screen meta_loading_main_screen}}})
-				(mod_blackmenu
-					{modifier_mgr toggle_modifier_enabled mod_blackmenu}
-               {if_else {$this in_game}
-                  {$this show_state kState_ModifierSongLoad}
-                  {ui goto_screen meta_loading_main_screen}})
-            (mod_calibration
-               {unless
-                  {modifier_mgr is_modifier_active mod_calibration}
-                  {$this show_state kState_CalibrationWarn}}
-               {if
-                  {modifier_mgr is_modifier_active mod_calibration}
-                  {do
-                  {modifier_mgr toggle_modifier_enabled $modifier}
-                  {overshell update_all}}})
+               DX_MODIFIER_HANDLERS
 	           (mod_drum_surface_navigation
                {modifier_mgr toggle_modifier_enabled $modifier}
                {unless
@@ -1434,37 +1966,30 @@
                {$this show_modifier_delayed_effect}}
             {overshell update_all}}})
    (on_cancel
-      {unless $dontsavemod
-         {do INIT_MOD_WRITER}}
-      {modifiers.lst set scroll_time 0.25}
-      {if_else $settingserror
-      {$this show_state kState_RB3ESaveWarnError}
-      {$this show_game_options}}))
-
+      {unless $dx_dont_save_mod
+         INIT_MOD_WRITER
+      }
+      {if_else $dx_settings_error
+         {$this show_state kState_RB3ESaveWarnError}
+         {$this show_game_options}
+      }
+   )
+)
 (kState_ModifiersDrumWarning
    (view confirm_action)
    (enter
-      {if_else $ingameset
-            {handle
-               ($this set_confirm_message ingame_warning)}
-      {if_else $author
-         {do {set $author FALSE}
-            {handle
-               ($this set_confirm_message author_warning)}}
-      {if_else $autoplay
-         {do {set $autoplay FALSE}
-            {handle
-               ($this set_confirm_message autoplay_warning)}}
-      {if_else $breakneck
-         {do {set $breakneck FALSE}
-            {handle
-               ($this set_confirm_message breakneck_warning)}}
-      {handle
-         ($this set_confirm_message disable_drum_surface_navigation_warning)}}}}})
+      DX_WARNING_HANDLER
+   )
    (SELECT_MSG
       {if_else $ingameset
-      {do {set $ingameset FALSE} {$this show_state kState_RB3ESettings}}
-      {$this show_modifiers}}))
+         {do
+            {set $ingameset FALSE}
+            {$this show_state kState_RB3ESettings}
+         }
+         {$this show_modifiers}
+      }
+   )
+)
 (kState_ModifierUnlock
    (view confirm_action)
    (enter
@@ -1534,63 +2059,24 @@
       ($focus_item)
       {choose_part.lst set_selected $focus_item})
    (enter
-      {choose_part.lst set scroll_time 0}
       {$this update_part_select_list}
-      {if {== {{$this get_user} get_controller_type} kControllerGuitar}
-  {choose_part.lst
-   set_data
-   (overshell_guitar
-    overshell_bass
-    overshell_keys)}
-   {choose_part.lst set_selected $default_guitar}}
-      {if {== {{$this get_user} get_controller_type} kControllerDrum}
-  {choose_part.lst
-   set_data
-   (overshell_drums
-    overshell_drums_pro)}
-   {choose_part.lst set_selected $default_drum}}
-      {if {== {{$this get_user} get_controller_type} kControllerVocals}
-  {choose_part.lst
-   set_data
-   (overshell_vocal_solo
-    overshell_vocal_harmony
-    overshell_guitar
-    overshell_bass
-    overshell_keys
-    overshell_drums)}
-   {choose_part.lst set_selected $default_vocals}}
-      {if {== {{$this get_user} get_controller_type} kControllerKeys}
-  {choose_part.lst
-   set_data
-   (overshell_keys
-    overshell_real_keys
-    overshell_guitar
-    overshell_bass
-    overshell_drums)}
-   {choose_part.lst set_selected $default_keys}}
-      {if {== {{$this get_user} get_controller_type} kControllerRealGuitar}
-  {choose_part.lst
-   set_data
-   (overshell_real_guitar
-    overshell_real_bass
-    overshell_guitar
-    overshell_bass)}
-   {choose_part.lst set_selected $default_real_guitar}}
-    )
+      DX_PART_SELECT_HANDLERS
+   )
    (exit
-      {choose_part.lst set scroll_time 0.25}
-      {do INIT_VAL_WRITER})
+      {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
+         INIT_VAL_WRITER
+      }
+   )
    (SELECT_MSG
+      ;Saves default instrument by slot number
       {switch
-         {{$this get_user}
-            get_controller_type}
-         (kControllerGuitar {set $default_guitar {$component selected_sym}})
-         (kControllerRealGuitar {set $default_real_guitar {$component selected_sym}})
-         (kControllerVocals {set $default_vocals {$component selected_sym}})
-         (kControllerKeys {set $default_keys {$component selected_sym}})
-         (kControllerDrum {set $default_drum {$component selected_sym}})
-         {fail
-            "No choose part view for this controller type"}}
+         {$this get_slot_num}
+         (0 {set $default_slot0 {$component selected_sym}})
+         (1 {set $default_slot1 {$component selected_sym}})
+         (2 {set $default_slot2 {$component selected_sym}})
+         (3 {set $default_slot3 {$component selected_sym}})
+         {fail {set $default_slot0 {$component selected_sym}}}
+      }
       {switch
          {$component selected_sym}
          (overshell_guitar
@@ -1603,12 +2089,34 @@
             {$this select_part kTrackRealGuitar}
             {if
                {gamemode in_mode trainer}
-               {gamemode set_mode pro_song_lessons_real_guitar}})
+               {gamemode set_mode pro_song_lessons_real_guitar}}
+            {if
+               {modifier_mgr is_modifier_active mod_auto_play}
+               {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
          (overshell_real_bass
             {$this select_part kTrackRealBass}
             {if
                {gamemode in_mode trainer}
-               {gamemode set_mode pro_song_lessons_real_bass}})
+               {gamemode set_mode pro_song_lessons_real_bass}}
+            {if
+               {modifier_mgr is_modifier_active mod_auto_play}
+               {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
+         (overshell_real_guitar_22
+            {$this select_part kTrackRealGuitar}
+            {if
+               {gamemode in_mode trainer}
+               {gamemode set_mode pro_song_lessons_real_guitar}}
+            {if
+               {modifier_mgr is_modifier_active mod_auto_play}
+               {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
+         (overshell_real_bass_22
+            {$this select_part kTrackRealBass}
+            {if
+               {gamemode in_mode trainer}
+               {gamemode set_mode pro_song_lessons_real_bass}}
+            {if
+               {modifier_mgr is_modifier_active mod_auto_play}
+               {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
          (overshell_real_keys
             {$this select_part kTrackRealKeys})
          (overshell_vocal_solo
@@ -1864,9 +2372,12 @@
    (view choose_diff)
    (song_settings_flow TRUE)
    (shows_extended_mic_arrows TRUE)
-   (enter {if {! $firstdiff}
-	     {set $firstdiff TRUE}
-		 {choose_diff.lst set_selected 3}})
+   (enter
+      {if {! $dx_first_diff} ; dx - hacky way to default to expert on first boot
+         {set $dx_first_diff TRUE}
+         {choose_diff.lst set_selected 3}
+      }
+   )
    (SELECT_MSG
       {switch
          {choose_diff.lst selected_sym}
@@ -1878,8 +2389,15 @@
             {$this select_difficulty kDifficultyHard})
          (overshell_expert
             {if_else {modifier_mgr is_modifier_active mod_nobre}
-            {{$this select_difficulty kDifficultyEasy} {do {set $imabigboy TRUE}}}
-            {$this select_difficulty kDifficultyExpert}})})
+               {do
+                  {$this select_difficulty kDifficultyEasy}
+                  {set $imabigboy TRUE}
+               }
+               {$this select_difficulty kDifficultyExpert}
+            }
+         )
+      }
+   )
    (update_remote_feedback
       ($focus_item)
       {choose_diff.lst set_selected $focus_item})
@@ -1989,6 +2507,9 @@
 (kState_AutoSignInRockCentral
    (view auto_sign_in_rock_central)
    (register_online_flow TRUE)
+   #ifdef HX_WII
+   (register_online_flow TRUE)
+   #endif
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -2005,7 +2526,15 @@
          (overshell_sign_in_continue
             {$this show_sign_in_wait})
          (overshell_sign_in
-            {platform_mgr signin 1 TRUE})
+            #ifdef HX_WII
+            {platform_mgr
+               signin
+               1
+               TRUE
+               {$this get_user}}
+            #else
+            {platform_mgr signin 1 TRUE}
+            #endif)
          (overshell_sign_in_cancel
             {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
    (on_cancel
@@ -2197,7 +2726,7 @@
                   ""}}}
          {$this rename_character $text}
          {$this show_chars}
-         {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}} {saveload_mgr autosave}}})
+         DX_AUTOSAVE})
    (on_cancel
       {$this show_chars}))
 (kState_ChooseCharDelete
@@ -2221,7 +2750,7 @@
             {$this
                refresh_highlighted_char
                {chars.lst selected_pos}}
-            {unless {|| {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}} {saveload_mgr autosave}})
+            DX_AUTOSAVE)
          (overshell_confirm_no
             {$this leave_char_delete})})
    (on_cancel
@@ -2305,6 +2834,87 @@
             {$this show_chars})})
    (on_cancel
       {$this show_chars}))
+(kState_EnterWiiSpeakOptions
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiispeak_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {ui_event_mgr trigger_event go_to_wiispeak_options}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_game_options})}))
+(kState_AutoSignInNintendo
+   (view wait_wii)
+   (register_online_flow TRUE)
+   (on_cancel
+      {$this leave_wait_wii}))
+(kState_ChooseInvitation
+   (view choose_invitation)
+   (prevents_override TRUE)
+   (return_to_options_menu TRUE)
+   (update_view
+      {rock_central clear_pending_invitations}
+      {if_else
+         {wii_invitations_provider is_invitation_pending}
+         {invitations.lst refresh}
+         {$this show_no_invitations}})
+   (on_cancel
+      {if_else
+         {{$this get_state}
+            get
+            return_to_options_menu}
+         {$this show_options}
+         {$this show_online_options}})
+   (SELECT_MSG
+      {if
+         {== $component invitations.lst}
+         {do
+            {wii_invitations_provider
+               set_invitation
+               {$component selected_pos}}
+            {print
+               "[ISDebug] accpeting invitation from "
+               {wii_invitations_provider get_sender_name}
+               "\n"}
+            {accept_invitation.lbl
+               set_token_fmt
+               wii_friends_accept_invitation
+               {wii_invitations_provider get_sender_name}}
+            {$this show_accept_invitation}}}))
+(kState_AcceptInvitation
+   (view accept_invitation)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_choose_invitation})
+   (SELECT_MSG
+      {if
+         {== $component accept_invitation.lst}
+         {do
+            {switch
+               {$component selected_sym}
+               (wii_friends_accept_invitation_yes
+                  {wii_invitations_provider accept_invitation $user}
+                  {$this leave_options})
+               (wii_friends_accept_invitation_no
+                  {wii_invitations_provider decline_invitation}
+                  {$this show_choose_invitation})
+               (wii_friends_accept_invitation_cancel
+                  {$this show_choose_invitation})
+               kDataUnhandled}}}))
+(kState_NoInvitations
+   (view no_invitations)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_options})
+   (SELECT_MSG
+      {$this show_options}))
 (kState_CharCreatorDenialMaxChars
    (view confirm_action)
    (choose_char_flow TRUE)

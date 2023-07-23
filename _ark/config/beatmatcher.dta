@@ -1,163 +1,45 @@
-#define DX_ALL_BOTS_ENABLED
-(
-   {&& 
-      $dx_bot_1
-      {&&
-         {&&
-            $dx_bot_2
-            $dx_bot_3
-         }
-         {&&
-            $dx_bot_4
-            $dx_bot_5
-         }
-      }
-   }
-)
-
 (callbacks
    (sixteenth_note
+      DX_BOT_OVERDRIVE_HANDLER
+      {coop_track_panel dx_set_star_display_pos}
+      #ifdef HX_WII
+      {unless
+         $stagekit
+         {handle
+            (game quarterbeat)}}
+      #else
       {if_else
          $stagekit
          {stagekit_left_right kStageSweepLeft_fast kStageSweepRight_fast}
          {handle
             (game quarterbeat)}}
-
-      {if {&& $dx_bot_overdrive {! DX_ALL_BOTS_ENABLED}} {do
-         {set $dx_tmp FALSE}
-         {beatmatch foreach_active_player $player 
-            {if {$player is_deploying} {set $dx_tmp TRUE}}
-         }
-         {if {&& {>= {beatmatch num_active_players} 1} $dx_bot_1}
-            {set $player {beatmatch active_player 0}}
-            {if $dx_tmp {$player deploy_if_possible}}
-            {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-         }
-         {if {&& {>= {beatmatch num_active_players} 2} $dx_bot_2}
-            {set $player {beatmatch active_player 1}}
-            {if $dx_tmp {$player deploy_if_possible}}
-            {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-         }
-         {if {&& {>= {beatmatch num_active_players} 3} $dx_bot_3}
-            {set $player {beatmatch active_player 2}}
-            {if $dx_tmp {$player deploy_if_possible}}
-            {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-         }
-         {if {&& {>= {beatmatch num_active_players} 4} $dx_bot_4}
-            {set $player {beatmatch active_player 3}}
-            {if $dx_tmp {$player deploy_if_possible}}
-            {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-         }
-         {if {&& {>= {beatmatch num_active_players} 5} $dx_bot_5}
-            {set $player {beatmatch active_player 4}}
-            {if $dx_tmp {$player deploy_if_possible}}
-            {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-         }
-      }}
-
-   )
+      #endif)
    (eighth_note
+      #ifndef HX_WII
       {if
          $stagekit
          {stagekit_left_right kStageSweepLeft_medium kStageSweepRight_medium}}
-         ;{if {exists beatmatch} {{{gamemode get track_panel} find mtv_overlay} setup_text}} ;dont do this it crashed endgame
-         )
+      #endif)
    (beat
-      {if {&& {modifier_mgr is_modifier_active mod_dx_showbpm} $dx_mtvup}
-         {set $dx_tmp {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}
-         {set $dx_bpm_counter {* {* 60 {/ 1 {- {beat_to_seconds {+ $dx_tmp 1}} {beat_to_seconds $dx_tmp}}}} $speedmod}}
-         {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay to show the current bpm
-      }
-      ; this is likely the single dumbest thing in the whole codebase
-      {if {! $dx_bot_overdrive}
-         {beatmatch foreach_active_player $player {$player empty_band_energy}}
-      }
-   #ifdef HX_XBOX
+      DX_SET_SPEEDS
+      DX_MTV_BPM_HANDLER
+      DX_BOT_OVERDRIVE_DEPLETION_HANDLER
+      #ifdef HX_WII
       {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {gamemode in_mode audition} {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {if {is_leader_local} {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}}
-      }
-      {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {gamemode in_mode audition} {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {beatmatch set_music_speed $speedmod}
-      }
-   #else
-      {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {if {is_leader_local} {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}}
-      }
-      {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {beatmatch set_music_speed $speedmod}
-      }
-   #endif
-   {if {|| {modifier_mgr is_modifier_active mod_auto_play} {modifier_mgr is_modifier_active mod_auto_kick}} {session send_msg_to_all {'`' (ui goto_screen meta_loading_main_screen) kNetReliable}}}
+         $stagekit
+         {handle
+            (game beat)}}
+      #else
       {if_else
          $stagekit
          {stagekit_left_right kStageSweepLeft_slow kStageSweepRight_slow}
          {handle
-            (game beat)}})
+            (game beat)}}
+      #endif)
    (downbeat
-   #ifdef HX_XBOX
+      DX_SET_SPEEDS
+      DX_DRUM_OD_DEPLOY_HANDLER
       {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {gamemode in_mode audition} {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {beatmatch set_music_speed $speedmod}
-      }
-   #else
-     {unless
-         {||
-            {gamemode in_mode pro_song_lessons_keyboard} {gamemode in_mode pro_song_lessons_real_guitar}
-            {gamemode in_mode pro_song_lessons_real_bass} {gamemode in_mode drum_freestyle}
-            {gamemode in_mode trainer} {gamemode in_mode trainer_drums} {gamemode in_mode trainer_pro_drums}
-            {gamemode in_mode trainer_real_guitar} {gamemode in_mode trainer_pro_keyboard}
-            {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
-         }
-         {beatmatch set_music_speed $speedmod}
-      }
-   #endif
-   {if_else {&& $dx_bot_overdrive {&& {modifier_mgr is_modifier_active mod_auto_play} DX_ALL_BOTS_ENABLED}}
-      {beatmatch foreach_active_player $player {unless {mod $measure 4} {$player deploy_if_possible}}}
-
-      {if {modifier_mgr is_modifier_active mod_staticfills}
-         {beatmatch foreach_active_player $player {switch {$player instrument}
-            (bass)
-            (guitar)
-            (vocals) 
-            (drum {$player deploy_if_possible})
-         }}
-      }
-   }
-	  {unless
          $stagekit
          {handle
             (game downbeat)}})
@@ -165,94 +47,48 @@
 (watcher
    (slop
       {if_else {modifier_mgr is_modifier_active mod_calibration}
-         15
-      {if_else {modifier_mgr is_modifier_active mod_chmode}
-         750
-      {if_else {<= $speedmod 1.0}
-         100 ;if 100% or less, use stock 100ms window (which is proportional)
-         {if_else {modifier_mgr is_modifier_active mod_precision}
-            100 ;if precision modifier on and speedup, use stock 100ms window (which is proportional)
-            {* 100 $speedmod} ;if precision modifier off and speedup, compensate for song speed in the note window
+         15 ;really strict window, great for calibrating
+         {if_else {modifier_mgr is_modifier_active mod_chmode}
+            750 ;whale pussy mode
+            {if_else {<= $speedmod 1.0}
+               100 ;if 100% or less, use stock 100ms window (which is proportional)
+               {if_else {modifier_mgr is_modifier_active mod_precision}
+                  100 ;if precision modifier on and speedup, use stock 100ms window (which is proportional)
+                  {* 100 $speedmod} ;if precision modifier off and speedup, compensate for song speed in the note window
+               }
+            }
          }
-      }
-      }
       }
    )
    (cheat_error 0)
-   (autoplay_accuracy {switch $dx_bot_skill
-      (0 50)      ; 1 / 2
-      (1 80)      ; 1 / 5 
-      (2 90)      ; 1 / 10
-      (3 95)      ; 1 / 20
-      (4 96.666)  ; 1 / 30
-      (5 98)      ; 1 / 50
-      (6 99)      ; 1 / 100
-      (7 99.6)    ; 1 / 250
-      (8 99.8)    ; 1 / 500
-      (9 99.9)    ; 1 / 1000
-      (10 99.96)  ; 1 / 2500
-      (11 100)    ; 1 / infinity
-   })
+   (autoplay_accuracy
+      {switch $dx_bot_skill
+         (0 50)      ; 1 / 2
+         (1 80)      ; 1 / 5 
+         (2 90)      ; 1 / 10
+         (3 95)      ; 1 / 20
+         (4 96.666)  ; 1 / 30
+         (5 98)      ; 1 / 50
+         (6 99)      ; 1 / 100
+         (7 99.6)    ; 1 / 250
+         (8 99.8)    ; 1 / 500
+         (9 99.9)    ; 1 / 1000
+         (10 99.96)  ; 1 / 2500
+         (11 100)    ; 1 / infinity
+      }
+   )
    (pitch_bend_range 1)
    (ms_to_full_pitch_bend 1000)
-   (cymbal_autoplay_ms 0)
+   (cymbal_autoplay_ms 0) ; dx - fixes "glitch" where cymbals would automatically hit near cymbals. thanks hmx
    (trill_interval_ms
-      (
-         {if_else {modifier_mgr is_modifier_active mod_nolanes}
-            -100
-            0
-         }
-         {if_else {modifier_mgr is_modifier_active mod_nolanes}
-            -100
-            0
-         }
-         {if_else {modifier_mgr is_modifier_active mod_nolanes}
-            -100
-            {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-               184
-               160
-            }
-         } 
-         {if_else {modifier_mgr is_modifier_active mod_nolanes}
-            -100
-            {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-               184
-               160
-            }
-         }
-      )
-   )
+      (DX_ROLL_INTERVAL_COMMON))
    (keyboard_miss_window_ms 200)
    (real_guitar_miss_window_ms 200)
    (keyboard_fat_finger_window_ms 100)
    (roll_interval_ms
       (drum
          (single_lane
-            (
-               {if_else {modifier_mgr is_modifier_active mod_nolanes}
-                  -100
-                  0
-               }
-               {if_else {modifier_mgr is_modifier_active mod_nolanes}
-                  -100
-                  0
-               }
-               {if_else {modifier_mgr is_modifier_active mod_nolanes}
-                  -100
-                  {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                     190
-                     165
-                  }
-               }
-               {if_else {modifier_mgr is_modifier_active mod_nolanes}
-                  -100
-                  {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                     190
-                     165
-                  }
-               }
-            )
-         )
+            (DX_ROLL_INTERVAL_COMMON))
          (double_lane
             (
                {if_else {modifier_mgr is_modifier_active mod_nolanes}
@@ -275,189 +111,19 @@
          )
       )
       (guitar
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (bass
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (real_guitar
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (real_guitar_22
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (real_bass
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (real_bass_22
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
+         (DX_ROLL_INTERVAL_COMMON))
       (real_keys
-         (
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               0
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-            {if_else {modifier_mgr is_modifier_active mod_nolanes}
-               -100
-               {if_else {modifier_mgr is_modifier_active mod_rb4lanes}
-                  190
-                  165
-               }
-            }
-         )
-      )
-   )
-)
+         (DX_ROLL_INTERVAL_COMMON))))
 (parser
    (drum_style_instruments
       (kAudioDrums))
@@ -467,7 +133,7 @@
    (player_slot 9))
 (audio
    (default_style unmute)
-   (mute_volume -96.0)
+   (mute_volume -96.0) ; dx - fully mutes a stem when not played. vanilla -16.0
    (mute_volume_vocals -12.0)
    (multiplayer_scale 0.33)
    (multiplayer_attenuation 3.0)
@@ -477,8 +143,13 @@
    (remote_attenuation 1.5)
    (drum_velocity_to_db
       (0.0 -13.0 -7.0 -3.0 -2.0 -0.5 0.0))
+   #ifdef HX_WII
+   (drum_sample_attenuation -12.0)
+   #endif
+   #ifndef HX_WII
    (drum_sample_attenuation 3.0)
-   (whammy_enabled {! $whammyfx}) ;whammy fx modifier
+   #endif
+   (whammy_enabled {! {modifier_mgr is_modifier_active mod_whammyfx}}) ;whammy fx modifier
    (auto_miss_sound_timeout_seconds 5.0)
    (auto_miss_sound_timeout_gems 5)
    (auto_miss_sound_timeout_gems_remote 10)
