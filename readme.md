@@ -36,11 +36,7 @@
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-> The standard install, typical for most users.
-
-📥 [RB3DX (No Song Updates) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-no-song-updates.zip)
-
-> By default, *Rock Band 3 Deluxe* contains additional song updates and pro upgrades. This version removes those.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for PS3.
 
 <br/>
 
@@ -52,11 +48,7 @@ Continue to:
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
-> The standard install, typical for most users.
-
-📥 [RB3DX (No Song Updates) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-no-song-updates.zip)
-
-> By default, *Rock Band 3 Deluxe* contains additional song updates and pro upgrades. This version removes those.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for Xbox 360.
 
 <br/>
 
@@ -68,7 +60,7 @@ Continue to:
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
-> The standard install, typical for most users.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for Wii.
 
 <br/>
 
@@ -98,7 +90,7 @@ Continue to:
 
 <img src="dependencies/images/serial.png" alt="Serial">
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
   * Select `Yes` to confirm.
 
@@ -124,7 +116,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 **NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
   * Navigate to `Package Manager > Install Package Files > Standard` in the XMB and install it just like any other package.
@@ -146,7 +138,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 * **Disable updates** for Rock Band 3 in Aurora. *Rock Band 3 Deluxe* rolls `TU5` into its base installation.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). 
+* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip). 
   * **Copy the contents of it to where your copy of Rock Band 3 is installed** (we recommend using FTP to do so).
   * Select `Yes` to overwrite the files if it asks you to.
 
@@ -236,7 +228,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * **Extract and copy your vanilla copy of Rock Band 3** to your USB drive.
   * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360).
+* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip).
   * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**.
   * Click `Yes` to overwrite the files if it asks you to.
 
