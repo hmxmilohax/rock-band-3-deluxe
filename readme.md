@@ -68,6 +68,12 @@ Continue to:
     - [Installing on Wii](#-installing-on-wii)
     - [Installing on Dolphin Emulator](#-installing-on-dolphin-emulator)
 
+## [YARG](https://yarg.in/) Song Updates
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
+### 📥 [RB3DX Song Updates for YARG](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-YARG-Updates.zip)
+
+> All song updates and upgrades included in RB3DX for use in YARG.
+
 <br/>
 
 # 📩 How to Install
