@@ -1,6 +1,7 @@
 # enable_stock_pad.py
 from pathlib import Path
 import shutil
+import os
 
 def delete_mogg_files(destination_folder):
     for root, _, files in os.walk(destination_folder):

@@ -2,16 +2,31 @@
 from pathlib import Path
 import shutil
 
+def copy_folder_contents(source, destination):
+    # Ensure the destination folder exists
+    destination.mkdir(parents=True, exist_ok=True)
+
+    for item in source.iterdir():
+        target = destination / item.name
+        if item.is_file():
+            # Copy files, overwriting existing files in the destination
+            shutil.copy2(item, target)
+        else:
+            # Recursively copy subfolders
+            copy_folder_contents(item, target)
+
 def main():
     # get the current working directory (where this script resides)
     cwd = Path().absolute()
     # get the root directory of the repo
     root_dir = Path(__file__).parents[2]
 
-    # Copy folders and their contents from one location to another
+    # Set the source and destination folders
     source_folder = root_dir / "dependencies" / "_rb3_plus_keys_moggs_enc"
     destination_folder = root_dir / "_ark" / "songs" / "updates"
-    shutil.copytree(source_folder, destination_folder)
+
+    # Copy the contents of the source folder into the destination folder
+    copy_folder_contents(source_folder, destination_folder)
 
     missing_song_data_path = root_dir / "_ark" / "dx" / "macros" / "dx_macros.dta"
     missing_song_data = [line for line in open(missing_song_data_path, "r")]
