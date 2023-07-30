@@ -4,11 +4,11 @@
 
 ## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and Wii.
 
-### With features like an FC indicator, custom track themes, an increased song limit, and various chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
+### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
-### 📥 [Download Now!](https://github.com/hmxmilohax/rock-band-3-deluxe#%EF%B8%8F-what-youll-need)
+### 📥 [Download Now!](#%EF%B8%8F-what-youll-need)
 
 <br/>
 
@@ -38,6 +38,10 @@
 
 > The most recent Nightly build of *Rock Band 3 Deluxe* for PS3.
 
+📥 [RB3DX (With Keys Stems) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Keys-Moggs.zip)
+
+> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
+
 <br/>
 
 Continue to: 
@@ -49,6 +53,14 @@ Continue to:
 ### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
 > The most recent Nightly build of *Rock Band 3 Deluxe* for Xbox 360.
+
+📥 [RB3DX (With Keys Stems) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Keys-Moggs.zip)
+
+> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
+
+📥 [RB3DX (Vanilla Song Data) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
+
+> By default, RB3DX contains many song updates and pro upgrades. This build does not have those.
 
 <br/>
 
@@ -96,7 +108,7 @@ Continue to:
 
 <img src="dependencies/images/serial.png" alt="Serial">
 
-* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
+* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
   * Select `Yes` to confirm.
 
@@ -122,7 +134,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 **NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
 
-* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
+* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
   * Navigate to `Package Manager > Install Package Files > Standard` in the XMB and install it just like any other package.
@@ -144,7 +156,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 * **Disable updates** for Rock Band 3 in Aurora. *Rock Band 3 Deluxe* rolls `TU5` into its base installation.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip). 
+* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). 
   * **Copy the contents of it to where your copy of Rock Band 3 is installed** (we recommend using FTP to do so).
   * Select `Yes` to overwrite the files if it asks you to.
 
@@ -234,7 +246,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * **Extract and copy your vanilla copy of Rock Band 3** to your USB drive.
   * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip).
+* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360).
   * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**.
   * Click `Yes` to overwrite the files if it asks you to.
 
