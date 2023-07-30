@@ -4,7 +4,7 @@
 
 ## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and Wii.
 
-### With features like an FC indicator, custom track themes, an increased song limit, and various chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
+### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
@@ -40,7 +40,7 @@
 
 📥 [RB3DX (With Keys Stems) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Keys-Moggs.zip)
 
-> Contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
+> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
 
 <br/>
 
@@ -56,7 +56,7 @@ Continue to:
 
 📥 [RB3DX (With Keys Stems) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Keys-Moggs.zip)
 
-> This build contains stems for Keys upgrades. File size is significantly larger.
+> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
 
 📥 [RB3DX (Vanilla Song Data) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
 
