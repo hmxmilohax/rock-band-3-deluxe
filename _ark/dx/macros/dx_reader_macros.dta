@@ -2,6 +2,7 @@
 (
    {if {file_exists "GD:/dev_hdd0/game/BLES80608/USRDIR/COLOR.INI"} ; used for hw detection, BLES80608 is multiman
       {set $dx_ps3hw TRUE}
+      {set $dx_author_finder_disabled TRUE} ;these two vars do the same thing
    }
 )
 #define DX_FILE_PATH
@@ -61,7 +62,7 @@
    (check_dx
       {unless {file_exists DX_FILE_PATH}
          {unless $dxwelcomeseen
-            {dx_log_writer {sprint "Cannot find DX.dta"}}
+            {dx_log_writer FALSE {sprint "Cannot find DX.dta"}}
             {ui push_screen hint_dx_welcome_screen}
          }
       }
@@ -70,25 +71,17 @@
       {unless {file_exists DX_FILE_PATH}
          {if $dxwelcomeseen
             {unless $dx_settings_error
-               {dx_log_writer {sprint "Cannot write DX.dta"}}
+               {dx_log_writer FALSE {sprint "Cannot write DX.dta"}}
                {ui push_screen hint_relative_writes_screen}
             }
          }
       }
    )
 )
-#define DX_TOGGLE_POST_FX_FROM_BOOT
-(
-   {if {&& $toggle_postfx {! $bootpostfxtoggled}} ; dx - ensure we are properly keeping track of the state of the post proc toggle
-      {set $bootpostfxtoggled TRUE}
-      {dx_log_writer {sprint "Toggling Post Processing FX. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-      {rnd toggle_all_postprocs}
-   }
-)
 #define INIT_DX_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {foreach $entry {read_file DX_FILE_PATH}
       {if {== {elem $entry 0} {basename mtv_position}}
          {set $mtvpos_0
@@ -350,11 +343,6 @@
             {elem {find $entry keyboard_texture} 1}
          }
       }
-      {if {== {elem $entry 0} {basename emissive_texture}}
-         {set $emissive
-            {elem {find $entry emissive_texture} 1}
-         }
-      }
       {if {== {elem $entry 0} {basename emissive_color}}
          {set $emissive_r
             {elem {find $entry emissive_color} 1}
@@ -386,11 +374,6 @@
             {elem {find $entry emissive_keys_texture} 1}
          }
       }
-      {if {== {elem $entry 0} {basename spotlight_texture}}
-         {set $spotlight
-            {elem {find $entry spotlight_texture} 1}
-         }
-      }
       {if {== {elem $entry 0} {basename spotlight_gtr_texture}}
          {set $spotlightgtr
             {elem {find $entry spotlight_gtr_texture} 1}
@@ -409,11 +392,6 @@
       {if {== {elem $entry 0} {basename spotlight_keys_texture}}
          {set $spotlightkeys
             {elem {find $entry spotlight_keys_texture} 1}
-         }
-      }
-      {if {== {elem $entry 0} {basename highway_texture}}
-         {set $highway
-            {elem {find $entry highway_texture} 1}
          }
       }
       {if {== {elem $entry 0} {basename highway_gtr_texture}}
@@ -456,6 +434,31 @@
             {elem {find $entry dx_artist_mtv_line} 1}
          }
       }
+      {if {== {elem $entry 0} {basename fullcombo_sfx}}
+         {set $fcsfx
+            {elem {find $entry fullcombo_sfx} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_jurgen_sound}}
+         {set $dx_jurgen_sound
+            {elem {find $entry dx_jurgen_sound} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_nice_sound}}
+         {set $dx_nice_sound
+            {elem {find $entry dx_nice_sound} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_song_select_noise}}
+         {set $dx_song_select_noise
+            {elem {find $entry dx_song_select_noise} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_no_instrument_fx}}
+         {set $dx_no_instrument_fx
+            {elem {find $entry dx_no_instrument_fx} 1}
+         }
+      }
       {if {== {elem $entry 0} {basename dx_year_on_mtv}}
          {set $dx_year_on_mtv
             {elem {find $entry dx_year_on_mtv} 1}
@@ -474,6 +477,11 @@
       {if {== {elem $entry 0} {basename dx_song_title_mtv_line}}
          {set $dx_song_title_mtv_line
             {elem {find $entry dx_song_title_mtv_line} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_author_finder_disabled}}
+         {set $dx_author_finder_disabled
+            {elem {find $entry dx_author_finder_disabled} 1}
          }
       }
       {if {== {elem $entry 0} {basename dx_genre_mtv_line}}
@@ -556,6 +564,9 @@
             {modifier_mgr toggle_modifier_enabled mod_ps3os}
          }
       }
+      {if {== {elem $entry 0} {basename dx_set_postfx}}
+         {dx_set_postfx {elem {find $entry dx_set_postfx} 1}}
+      }
       {if {== {elem $entry 0} {basename mod_wiios}}
          {if {== {elem {find $entry mod_wiios} 1} 1}
             {modifier_mgr toggle_modifier_enabled mod_wiios}
@@ -593,14 +604,19 @@
             {modifier_mgr toggle_modifier_enabled mod_blackmenu}
          }
       }
-      {if {== {elem $entry 0} {basename blur_restored}}
-         {set $blurisbackon
-            {elem {find $entry blur_restored} 1}
+      {if {== {elem $entry 0} {basename dx_blur_val}}
+         {set $dx_blur_val
+            {elem {find $entry dx_blur_val} 1}
          }
       }
-      {if {== {elem $entry 0} {basename crust_restored}}
-         {set $crustisbackon
-            {elem {find $entry crust_restored} 1}
+      {if {== {elem $entry 0} {basename dx_noise_val}}
+         {set $dx_noise_val
+            {elem {find $entry dx_noise_val} 1}
+         }
+      }
+      {if {== {elem $entry 0} {basename dx_auto_endgame}}
+         {set $dx_auto_endgame
+            {elem {find $entry dx_auto_endgame} 1}
          }
       }
    }
@@ -609,7 +625,7 @@
 #define INIT_DX_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write DX.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to write DX.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file DX_FILE_PATH
       {array
          (
@@ -706,9 +722,6 @@
             (keyboard_texture
                (keyboard_texture $keyboard)
             )
-            (emissive_texture
-               (emissive_texture $emissive)
-            )
             (emissive_color
                (emissive_color $emissive_r $emissive_g $emissive_b)
             )
@@ -724,9 +737,6 @@
             (emissive_keys_texture
                (emissive_keys_texture $emissivekeys)
             )
-            (spotlight_texture
-               (spotlight_texture $spotlight)
-            )
             (spotlight_gtr_texture
                (spotlight_gtr_texture $spotlightgtr)
             )
@@ -738,9 +748,6 @@
             )
             (spotlight_keys_texture
                (spotlight_keys_texture $spotlightkeys)
-            )
-            (highway_texture
-               (highway_texture $highway)
             )
             (highway_gtr_texture
                (highway_gtr_texture $highwaygtr)
@@ -760,11 +767,23 @@
             (fullcombo_sfx
                (fullcombo_sfx $fcsfx)
             )
+            (dx_jurgen_sound
+               (dx_jurgen_sound $dx_jurgen_sound)
+            )
+            (dx_nice_sound
+               (dx_nice_sound $dx_nice_sound)
+            )
+            (dx_song_select_noise
+               (dx_song_select_noise $dx_song_select_noise)
+            )
+            (dx_no_instrument_fx
+               (dx_no_instrument_fx $dx_no_instrument_fx)
+            )
             (dx_long_mtv_delay
                (dx_long_mtv_delay $dx_long_mtv_delay)
             )
-            (toggle_postfx
-               (toggle_postfx $toggle_postfx)
+            (dx_set_postfx
+               (dx_set_postfx $dx_postfx)
             )
             (dx_currentsong_prefix
                (dx_currentsong_prefix $dx_currentsong_prefix)
@@ -783,6 +802,9 @@
             )
             (dx_song_title_mtv_line
                (dx_song_title_mtv_line $dx_song_title_mtv_line)
+            )
+            (dx_author_finder_disabled
+               (dx_author_finder_disabled $dx_author_finder_disabled)
             )
             (dx_genre_mtv_line
                (dx_genre_mtv_line $dx_genre_mtv_line)
@@ -873,11 +895,14 @@
             (mod_blackmenu
                (mod_blackmenu {modifier_mgr is_modifier_active mod_blackmenu})
             )
-            (blur_restored
-               (blur_restored $blurisbackon)
+            (dx_blur_val
+               (dx_blur_val $dx_blur_val)
             )
-            (crust_restored
-               (crust_restored $crustisbackon)
+            (dx_noise_val
+               (dx_noise_val $dx_noise_val)
+            )
+            (dx_auto_endgame
+               (dx_auto_endgame $dx_auto_endgame)
             )
          )
       }
@@ -887,13 +912,12 @@
 #define INIT_MOD_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {dx_modifier_reader mod_static_fills}
    {dx_modifier_reader mod_chord_numbers}
    {dx_modifier_reader mod_nohud}
    {dx_modifier_reader mod_miss_sounds}
    {dx_modifier_reader mod_whammyfx}
-   {dx_modifier_reader mod_songselectnoise}
    {dx_modifier_reader mod_practiceoverdrive}
    {dx_modifier_reader mod_nolanes}
    {dx_modifier_reader mod_rb4lanes}
@@ -901,7 +925,6 @@
    {dx_modifier_reader mod_venue_swap}
    {dx_modifier_reader mod_char_swap}
    {dx_modifier_reader mod_nointro}
-   {dx_modifier_reader mod_nosfx}
    {dx_modifier_reader mod_synced_track_speeds}
    {dx_modifier_reader mod_nopause}
    {dx_modifier_reader mod_skipsavemsg}
@@ -916,7 +939,7 @@
 #define INIT_MOD_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to write mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file MOD_FILE_PATH
       {array
          (
@@ -937,9 +960,6 @@
             )
             (mod_whammyfx
                (mod_whammyfx {modifier_mgr is_modifier_active mod_whammyfx})
-            )
-            (mod_songselectnoise
-               (mod_songselectnoise {modifier_mgr is_modifier_active mod_songselectnoise})
             )
             (mod_practiceoverdrive
                (mod_practiceoverdrive {modifier_mgr is_modifier_active mod_practiceoverdrive})
@@ -962,9 +982,6 @@
             (mod_nointro
                (mod_nointro {modifier_mgr is_modifier_active mod_nointro})
             )
-            (mod_nosfx
-               (mod_nosfx {modifier_mgr is_modifier_active mod_nosfx})
-            )
             (mod_synced_track_speeds
                (mod_synced_track_speeds {modifier_mgr is_modifier_active mod_synced_track_speeds})
             )
@@ -985,7 +1002,7 @@
 #define INIT_VAL_READER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {foreach $entry {read_file VAL_FILE_PATH}
       {if {== {elem $entry 0} {basename mic_vols}}
          {set $mic_vol_1
@@ -1024,7 +1041,7 @@
 #define INIT_VAL_WRITER
 (
    #ifndef HX_WII
-   {dx_log_writer {sprint "Attempting to write val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer FALSE {sprint "Attempting to write val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {write_file VAL_FILE_PATH
       {array
          (
@@ -1141,7 +1158,7 @@
 #define DX_JSON_WRITER
 (
    #ifndef HX_WII
-   {unless $dx_ps3hw
+   {unless {|| $dx_author_finder_disabled $dx_ps3hw}
       {set $dx_current_song ()}
       {resize $dx_current_song 0}
       {push_back $dx_current_song {sprint "{" "\q" "Playlist" "\q" ":" "\q\q" "\q" "," "\q" "SubPlaylist" "\q" ":" "\q" "\q" "," "\q" "IsModChart" "\q" ":" "false" ","
@@ -1173,4 +1190,22 @@
       }
    }
    #endif
+)
+#define DX_SONG_CACHE
+(
+   {set $dx_song_cache_holder
+      (
+         #include ../../songs/missing_song_data.dta
+      )
+   }
+   ;{dx_log_writer TRUE $dx_song_cache_holder}
+)
+#define DX_RAW_SONG_CACHE
+(
+   {set $dx_raw_song_cache_holder
+      (
+         #include ../../songs/dta_collection/mega_songs_data.dta
+      )
+   }
+   ;{dx_log_writer TRUE $dx_raw_song_cache_holder}
 )

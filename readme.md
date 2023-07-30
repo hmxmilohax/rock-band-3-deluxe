@@ -34,17 +34,9 @@
 
 ## PlayStation 3
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe (Standard) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Base.zip)
+### 📥 [Rock Band 3 Deluxe for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-> The standard install, typical for most users.
-
-📥 [RB3DX (With rb3_plus Keys Upgrades) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip)
-
-> Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#-rb3_plus-keys-upgrades).
-
-📥 [RB3DX (Original Song Updates) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-original-mids.zip)
-
-> By default, *Rock Band 3 Deluxe* contains additional song updates. This version reverts them to vanilla.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for PS3.
 
 <br/>
 
@@ -54,25 +46,9 @@ Continue to:
 
 ## Xbox 360
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe (Standard) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base.zip)
+### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
-> The standard install, typical for most users.
-
-📥 [RB3DX (With rb3_plus Keys Upgrades) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip)
-
-> Contains additional Keys/Pro Keys upgrades from [rb3_plus](https://github.com/rjkiv/rb3_plus). Significantly larger file size. More info [here](#-rb3_plus-keys-upgrades).
-
-📥 [RB3DX (Original Song Updates) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids.zip)
-
-> By default, *Rock Band 3 Deluxe* contains additional song updates. This version reverts them to vanilla.
-
-📥 [RB3DX (Series X/S Xenia) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Base-Force-Guitar-Controller.zip)
-
-> Forces all instruments to be Guitar controllers since Xenia UWP does not support them at the moment.
-
-📥 [RB3DX (Series X/S Xenia, Original Song Updates) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-original-mids-Force-Guitar-Controller.zip)
-
-> See above two.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for Xbox 360.
 
 <br/>
 
@@ -84,13 +60,19 @@ Continue to:
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
-> The standard install, typical for most users.
+> The most recent Nightly build of *Rock Band 3 Deluxe* for Wii.
 
 <br/>
 
 Continue to: 
     - [Installing on Wii](#-installing-on-wii)
     - [Installing on Dolphin Emulator](#-installing-on-dolphin-emulator)
+
+## [YARG](https://yarg.in/) Song Updates
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
+### 📥 [RB3DX Song Updates for YARG](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-YARG-Updates.zip)
+
+> All song updates and upgrades included in RB3DX for use in YARG.
 
 <br/>
 
@@ -114,7 +96,7 @@ Continue to:
 
 <img src="dependencies/images/serial.png" alt="Serial">
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
   * Select `Yes` to confirm.
 
@@ -140,7 +122,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 **NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
   * Navigate to `Package Manager > Install Package Files > Standard` in the XMB and install it just like any other package.
@@ -162,7 +144,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 * **Disable updates** for Rock Band 3 in Aurora. *Rock Band 3 Deluxe* rolls `TU5` into its base installation.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). 
+* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip). 
   * **Copy the contents of it to where your copy of Rock Band 3 is installed** (we recommend using FTP to do so).
   * Select `Yes` to overwrite the files if it asks you to.
 
@@ -252,7 +234,7 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 * **Extract and copy your vanilla copy of Rock Band 3** to your USB drive.
   * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). Xenia UWP currently does not have guitar support so you need to download one of the `Series X/S Xenia` versions.
+* Download [**Rock Band 3 Deluxe for Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip).
   * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**.
   * Click `Yes` to overwrite the files if it asks you to.
 
@@ -308,7 +290,6 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
     - [PS3](#-installing-songs-on-ps3)
     - [Xbox 360](#-installing-songs-on-xbox-360)
     - [Xenia](#-installing-songs-on-xenia-desktop-and-uwp)
-  - [rb3_plus Keys Upgrades](#-rb3_plus-keys-upgrades)
   - [Custom Textures](#-custom-textures-ps3360-only)
 
 <br/>
@@ -363,14 +344,6 @@ You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite
 
 <br/>
 
-## 🎹 [rb3_plus](https://github.com/rjkiv/rb3_plus) Keys Upgrades
-
-[rb3_plus](https://github.com/rjkiv/rb3_plus) features optional Keys and Pro Keys upgrades that you can install alongside *Rock Band 3 Deluxe* fairly easily. These upgrades include new audio files (.mogg's) for the upgraded songs. These take up additional file size and generally are a generation removed from the original audio mix with additional processing, but can be a great addition for any Keys or Pro Keys player.
-
-You can download a build of *Rock Band 3 Deluxe* containing these upgrades for both [**PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-keys.zip) and [**Xbox 360**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-keys.zip).
-
-<br/>
-
 ## 🎨 Custom Textures (PS3/360 Only)
 
 By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
@@ -397,8 +370,8 @@ By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in
 
 ### Initializing the Repo
 
-* Go to the **[Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `_init_repo.py`**.
-  * Make a new **empty** folder, **put `_init_repo.py` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+* Go to the **[Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `init_repo.py`**.
+  * Make a new **empty** folder, **put `init_repo.py` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
 
 ### ***The folder should look like this once it's done:***
 

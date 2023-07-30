@@ -1,23 +1,28 @@
 {func
    dx_log_writer
-   ($dx_log_writer)
+   ($write_file $dx_log_writer)
    #ifndef HX_WII
    {do
       DX_GAMEMODE_CHECKER
       {if_else {file_exists LOG_FILE_PATH}
-         {set $dx_log_reader {read_file LOG_FILE_PATH}}
+         {set $dx_log_reader {array $dx_log_reader}}
          {set $dx_log_reader ("start of log")}
       }
       {if {== $dx_log_counter 3}
          {push_back $dx_log_reader "Game Entered three times, starting new log."}
-         {write_file PREV_LOG_FILE_PATH $dx_log_reader}
-         {set $dx_log_counter 0}
+         {set $prev_dx_log_reader {array $dx_log_reader}}
+         {if $write_file
+            {write_file PREV_LOG_FILE_PATH $dx_log_reader}
+            {set $dx_log_counter 0}
+         }
          {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
       }
       {push_back $dx_log_reader $dx_log_writer}
-      {write_file LOG_FILE_PATH
-         {array
-            $dx_log_reader
+      {if $write_file
+         {write_file LOG_FILE_PATH
+            {array
+               $dx_log_reader
+            }
          }
       }
    }
@@ -59,5 +64,93 @@
          {set $dx_mtv_elements {+ $dx_mtv_elements 1}}
       }
    }
-   ;{dx_log_writer $dx_mtv_addition}
+   ;{dx_log_writer FALSE $dx_mtv_addition}
+}
+{func
+   dx_rank_var_finder
+   ($instrument $var_rankvar $rank_threshold_0 $rank_threshold_1 $rank_threshold_2 $rank_threshold_3 $rank_threshold_4 $rank_threshold_5)
+   {foreach $entry $var_rankvar
+      {if {== {elem $entry 0} {basename rank}}
+         {if {elem {find $entry $instrument} 1}
+            {set $var_actual_rankvar
+               {elem {find $entry $instrument} 1}
+            }
+         }
+      }
+      {cond
+         ({< $var_actual_rankvar $rank_threshold_0}
+            {set $var_instrument_rankvar 0})
+         ({&& {>= $var_actual_rankvar $rank_threshold_0} {< $var_actual_rankvar $rank_threshold_1}}
+            {set $var_instrument_rankvar 1})
+         ({&& {>= $var_actual_rankvar $rank_threshold_1} {< $var_actual_rankvar $rank_threshold_2}}
+            {set $var_instrument_rankvar 2})
+         ({&& {>= $var_actual_rankvar $rank_threshold_2} {< $var_actual_rankvar $rank_threshold_3}}
+            {set $var_instrument_rankvar 3})
+         ({&& {>= $var_actual_rankvar $rank_threshold_3} {< $var_actual_rankvar $rank_threshold_4}}
+            {set $var_instrument_rankvar 4})
+         ({&& {>= $var_actual_rankvar $rank_threshold_4} {< $var_actual_rankvar $rank_threshold_5}}
+            {set $var_instrument_rankvar 5})
+         ({>= $var_actual_rankvar $rank_threshold_5}
+            {set $var_instrument_rankvar 6})
+      }
+   }
+   {switch $instrument
+      (guitar {set $guitarrankvar $var_instrument_rankvar})
+      (bass {set $bassrankvar $var_instrument_rankvar})
+      (drum {set $drumrankvar $var_instrument_rankvar})
+      (vocals {set $vocalsrankvar $var_instrument_rankvar})
+      (band {set $bandrankvar $var_instrument_rankvar})
+      (keys {set $keysrankvar $var_instrument_rankvar})
+      (real_keys {set $real_keysrankvar $var_instrument_rankvar})
+      (real_guitar {set $real_guitarrankvar $var_instrument_rankvar})
+      (real_bass {set $real_bassrankvar $var_instrument_rankvar})
+   }
+}
+{func
+   dx_set_postfx
+   ($dx_postfx_state)
+   {switch $dx_postfx
+      (0 ;if post proc is currently off
+         {if $dx_postfx_state ;and we want to turn it on
+            {set $dx_postfx TRUE}
+            {rnd toggle_all_postprocs}
+         }
+      )
+      (1 ;if post proc is currently on
+         {unless $dx_postfx_state ;and we want to turn it off
+            {set $dx_postfx FALSE}
+            {rnd toggle_all_postprocs}
+         }
+      )
+   }
+}
+#define DX_POST_PROC_HANDLER
+(
+   {if {!= $emulatefps 30}
+      {$dx_this_var iterate PostProc $p {$p set emulate_fps $emulatefps}}
+   }
+   {if {!= $dx_noise_val 3}
+      {$dx_this_var iterate PostProc $p {$p set noise_intensity $dx_noise_val}}
+   }
+   {if {!= $dx_blur_val 1}
+      {$dx_this_var iterate PostProc $p {$p set motion_blur_velocity $dx_blur_val}}
+      {$dx_this_var iterate PostProc $p {$p set motion_blur_blend $dx_blur_val}}
+      {$dx_this_var iterate PostProc $p {$p set motion_blur_weight $dx_blur_val}}
+      {$dx_this_var iterate PostProc $p {$p set motion_blur_exposure $dx_blur_val}}
+   }
+)
+{func
+   dx_postfx_setter
+   {if {exists game}
+      {if $world
+         {set $dx_this_var $world}
+         DX_POST_PROC_HANDLER
+      }
+   }
+   {set $dx_this_var $this}
+   DX_POST_PROC_HANDLER
+   {if $post_proc_needs_reset
+      {set $post_proc_needs_reset FALSE}
+      {rnd reset_postproc}
+   }
 }
