@@ -1,46 +1,38 @@
 (kState_RB3ESettings
-   (view #ifdef HX_WII choose_profile_wii #else options_audio #endif)
+   (view {overshell_view_chooser 6})
    (enter
-   {options.lst set_selected 0}
-      #ifdef HX_WII {choose_profile.lbl set text_token os_blnk} #endif
-      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set circular 0}
-      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_selected $rb3esettingsval}
-   ;   {set $rb3esettingsval 2}
-      {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 0}
-      {#ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif set_data DX_RB3E_SETTINGS_LIST}
+      {overshell_list_chooser 6} ;must match view number
+      ;-----func----------state name--------auto list----circ------data macro
+      {dx_state_setup kState_RB3ESettings $current_list FALSE DX_RB3E_SETTINGS_LIST}
    )
    (SELECT_MSG
-      {set $rb3esettingsval {$component selected_sym}}
-   {switch
-      {$component selected_sym}
-   (os_spds
-      {$this show_state kState_RB3ESpeedMenu})
-   (os_thm
-      {$this show_state kState_RB3EAppearanceMenu})
-   (os_venuesel
-      {$this show_state kState_RB3EVenueSelector})
-   (os_cam
-      {$this show_state kState_RB3ECameraMenu})
-   (os_audiomenu
-      {$this show_state kState_RB3EAudioMenu})
-   (os_ctrlmenu
-      {$this show_state kState_RB3EControllerMenu})
-   })
+      {dx_state_pos_tracker kState_RB3ESettings}
+      {switch {$component selected_sym}
+         (os_spds
+            {$this show_state kState_RB3ESpeedMenu})
+         (os_thm
+            {$this show_state kState_RB3EAppearanceMenu})
+         (os_venuesel
+            {$this show_state kState_RB3EVenueSelector})
+         (os_cam
+            {$this show_state kState_RB3ECameraMenu})
+         (os_audiomenu
+            {$this show_state kState_RB3EAudioMenu})
+         (os_ctrlmenu
+            {$this show_state kState_RB3EControllerMenu})
+      }
+   )
 	(on_cancel
-   ;   {options.lst set_selected #ifdef HX_WII 4 #else 3 #endif}
-       ;restore original online_options upon exit
 	   {do
-         ($options
-            {array 0})
-            {push_back $options overshell_invite}
-            #ifdef HX_XBOX {push_back $options overshell_invite_xbox_party} #endif
-            #ifdef HX_PS3 {push_back $options overshell_check_invites} #endif
-            {push_back $options overshell_kick}
-            {push_back $options
-               #ifdef HX_XBOX overshell_gamercard #else
-               overshell_mute #endif}
-            {push_back $options overshell_disconnect}
-            {online_options.lst set_data $options}}
+         ($options {array 0})
+         {push_back $options overshell_invite}
+         #ifdef HX_XBOX {push_back $options overshell_invite_xbox_party} #endif
+         #ifdef HX_PS3 {push_back $options overshell_check_invites} #endif
+         {push_back $options overshell_kick}
+         {push_back $options #ifdef HX_XBOX overshell_gamercard #else overshell_mute #endif}
+         {push_back $options overshell_disconnect}
+         {online_options.lst set_data $options}
+      }
       #ifndef HX_WII
       {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
          {if_else $dx_settings_error
@@ -49,10 +41,12 @@
          {$this show_state kState_RB3ESaveWarn}}
       #else
       {$this show_game_options}
-      #endif))
+      #endif
+   )
+)
 
 (kState_RB3EVenueSelector
-   (view #ifdef HX_WII options #else online_options #endif)
+   (view {overshell_view_chooser 6})
    (enter
       DX_OS_OPEN_MSG
       {set $dx_menu_message os_venue_select_warn}
@@ -68,43 +62,40 @@
          {insert_elem $venue_array 4 arena_venues}
          {insert_elem $venue_array 5 festival_venues}
          {insert_elem $venue_array 6 venues_video}
-         {#ifdef HX_WII options.lst #else online_options.lst #endif set_data $venue_array}
-         {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 1}
-         {#ifdef HX_WII options.lst #else online_options.lst #endif set_selected $rb3evenueval}
-         {$this update_venue_selection}})
-   (update_venue_selection
-      {options_extras.lst
-         set_selected
-         {{set $force TRUE} {set $venue {#ifdef HX_WII options.lst #else online_options.lst #endif selected_sym}} {ui goto_screen meta_loading_main_screen}}})
+         {overshell_list_chooser 6} ;must match view number
+         {dx_state_setup kState_RB3EVenueSelector $current_list TRUE $venue_array}
+      }
+   )
    (SELECT_MSG
-      {set $rb3evenueval {$component selected_sym}}
-      {set $force TRUE} {set $venue {#ifdef HX_WII options.lst #else online_options.lst #endif selected_sym}} {ui goto_screen meta_loading_main_screen}
+      {set $force TRUE}
+      {dx_state_pos_tracker kState_RB3EVenueSelector}
+      {set $venue {{overshell_list_chooser 6} selected_sym}}
       {switch
          {$component selected_sym}
          (random
-            {set $force FALSE} {set $venue VENUES} {ui goto_screen meta_loading_main_screen})
+            {set $force FALSE} {set $venue VENUES})
          (small_venues
-            {set $force TRUE} {set $venue small_venues} {ui goto_screen meta_loading_main_screen})
+            {set $force TRUE} {set $venue small_venues})
          (big_venues
-            {set $force TRUE} {set $venue big_venues} {ui goto_screen meta_loading_main_screen})
+            {set $force TRUE} {set $venue big_venues})
          (arena_venues
-            {set $force TRUE} {set $venue arena_venues} {ui goto_screen meta_loading_main_screen})
+            {set $force TRUE} {set $venue arena_venues})
          (festival_venues
-            {set $force TRUE} {set $venue festival_venues} {ui goto_screen meta_loading_main_screen})
+            {set $force TRUE} {set $venue festival_venues})
          (venues_video
-            {set $force TRUE} {set $venue venues_video} {ui goto_screen meta_loading_main_screen})
+            {set $force TRUE} {set $venue venues_video})
          (none
-            {set $force TRUE} {set $venue BLACK_VENUE} {ui goto_screen meta_loading_main_screen})}
+            {set $force TRUE} {set $venue BLACK_VENUE})}
+      {ui goto_screen meta_loading_main_screen}
       DX_OS_CLOSE_MSG
-      {$this show_state kState_RB3ESettings} {ui pop_screen})
-  (exit
-  {#ifdef HX_WII options.lst #else online_options.lst #endif set circular 0}
-  {#ifdef HX_WII options.lst #else online_options.lst #endif set_selected 0})
-  (on_cancel
+      {$this show_state kState_RB3ESettings}
+      {ui pop_screen}
+   )
+   (on_cancel
       DX_OS_CLOSE_MSG
-      {options.lst set_selected 2}
-      {$this show_state kState_RB3ESettings}))
-
+      {$this show_state kState_RB3ESettings}
+   )
+)
 ;save warnings
 
 (kState_SettingsWarn
@@ -182,7 +173,6 @@
 (kState_AutoPlayWarn
    (view confirm_action)
    (enter
-      {confirm_action.lst set_selected 1}
       {handle
          ($this set_confirm_actions autoplay_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
@@ -201,7 +191,6 @@
 (kState_FakeJukeWarn
    (view confirm_action)
    (enter
-      {confirm_action.lst set_selected 1}
       {handle
          ($this set_confirm_actions fakejuke_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG

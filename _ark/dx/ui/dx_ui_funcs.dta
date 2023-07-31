@@ -157,3 +157,58 @@
       {rnd reset_postproc}
    }
 }
+{func
+   dx_state_setup
+   ($current_overshell_state $tracked_current_list $circular $list_data)
+   {$tracked_current_list set circular $circular}
+   {set $current_state $current_overshell_state}
+   {foreach $entry $dx_state_tracker
+      {if {== {elem $entry 0} {basename $current_overshell_state}}
+         {set $current_state_pos
+            {elem {find $entry {sprint $current_overshell_state}} 1}
+         }
+         {$tracked_current_list set_selected $current_state_pos}
+      }
+   }
+   {$tracked_current_list set_data $list_data}
+   #ifdef HX_WII {choose_profile.lbl set text_token os_blnk} #endif
+}
+{func
+   dx_state_pos_tracker
+   {set $dx_state_tracker {array $dx_state_tracker}} ;re read the array so the vars enumerate and the array becomes static
+   {set $current_state_pos {$component selected_sym}} ;probe the current list position
+   {set $needs_push TRUE}
+   {foreach $entry $dx_state_tracker
+      {if {== {elem $entry 0} {basename $current_state}}
+         {set $needs_push FALSE} ;if an array is already made for the current state, disable the push_back component
+         {remove_elem {find $dx_state_tracker $current_state} {elem {find $dx_state_tracker $current_state} 1}} ;removed the previously tracked list position
+         {push_back {find $dx_state_tracker $current_state} $current_state_pos} ;add in the new list position
+      }
+   }
+   {if $needs_push ;if we did not push a new state into the array
+      {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+   }
+   {dx_log_writer $dx_state_tracker}
+}
+{func
+   overshell_view_chooser
+   ($num_of_slots)
+   {switch $num_of_slots
+      (2 options_end_game)
+      (3 options_extras)
+      (4 #ifdef HX_WII online_options #else gamercard_users #endif)
+      (5 #ifdef HX_WII options_audio #else options #endif)
+      (6 #ifdef HX_WII choose_profile_wii #else options_audio #endif)
+   }
+}
+{func
+   overshell_list_chooser
+   ($num_of_slots)
+   {switch $num_of_slots
+      (2 {do {set $current_list options_end_game.lst}})
+      (3 {do {set $current_list options_extras.lst}})
+      (4 {do {set $current_list #ifdef HX_WII online_options.lst #else users.lst #endif}})
+      (5 {do {set $current_list #ifdef HX_WII options_audio.lst #else options.lst #endif}})
+      (6 {do {set $current_list #ifdef HX_WII profiles_wii.lst #else options_audio.lst #endif}})
+   }
+}
