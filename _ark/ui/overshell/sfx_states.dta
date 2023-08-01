@@ -1,52 +1,60 @@
-#define IMSOTIREDOFTHISRESET
+#define DX_AUDIO_SFX_DATA
 (
-   {options.lst set_data
-   (
-      os_fcaudio
-      os_cyclefx
-      {if_else $dx_song_select_noise os_audio_ambience_on os_audio_ambience_off}
-      {if_else $dx_instrument_fx os_audio_instsfx_on os_audio_instsfx_off}
-      {if_else $dx_jurgen_sound os_jurgen_sound_on os_jurgen_sound_off}
-      {if_else $dx_nice_sound os_nice_sound_on os_nice_sound_off}
-   )}
-   {options.lst set_selected $rb3audval}
+   {do
+      ($options
+         {array 0})
+      {push_back $options os_fcaudio}
+      {push_back $options {if_else $dx_song_select_noise os_audio_ambience_on os_audio_ambience_off}}
+      {push_back $options {if_else $dx_instrument_fx os_audio_instsfx_on os_audio_instsfx_off}}
+      {push_back $options {if_else $dx_jurgen_sound os_jurgen_sound_on os_jurgen_sound_off}}
+      {push_back $options {if_else $dx_nice_sound os_nice_sound_on os_nice_sound_off}}
+      ;-----func----------state name------message
+      {dx_state_setup dxState_AudioSFX FALSE}
+   }
 )
-(kState_RB3EAudioMenu
-   (view options)
-   (enter
-   IMSOTIREDOFTHISRESET
+(dxState_AudioSFX
+   (view
+      DX_AUDIO_SFX_DATA
+      {overshell_view_chooser}
    )
    (SELECT_MSG
-      {set $rb3audval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   ((os_jurgen_sound_on os_jurgen_sound_off)
-      {set $dx_jurgen_sound {! $dx_jurgen_sound}}
-      IMSOTIREDOFTHISRESET)
-   ((os_audio_ambience_on os_audio_ambience_off)
-      {set $dx_song_select_noise {! $dx_song_select_noise}}
-      IMSOTIREDOFTHISRESET)
-   ((os_audio_instsfx_on os_audio_instsfx_off)
-      {set $dx_instrument_fx {! $dx_instrument_fx}}
-      IMSOTIREDOFTHISRESET)
-   ((os_nice_sound_on os_nice_sound_off)
-      {set $dx_nice_sound {! $dx_nice_sound}}
-      IMSOTIREDOFTHISRESET)
-   (os_cyclefx
-      {cycle_guitar_fx})
-   (os_fcaudio
-      {$this show_state kState_RB3EFullComboSFXSelector})
-   })
+      {switch {$component selected_sym}
+         ((os_jurgen_sound_on os_jurgen_sound_off)
+            {set $dx_jurgen_sound {! $dx_jurgen_sound}})
+         ((os_audio_ambience_on os_audio_ambience_off)
+            {set $dx_song_select_noise {! $dx_song_select_noise}})
+         ((os_audio_instsfx_on os_audio_instsfx_off)
+            {set $dx_instrument_fx {! $dx_instrument_fx}})
+         ((os_nice_sound_on os_nice_sound_off)
+            {set $dx_nice_sound {! $dx_nice_sound}})
+         (os_cyclefx
+            {cycle_guitar_fx})
+         (os_fcaudio
+            {$this show_state dxState_FullComboSFX})
+      }
+      {set $in_state FALSE}
+      DX_AUDIO_SFX_DATA
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
    (on_cancel
-      {$this show_state kState_RB3ESettings}
-      {options.lst set_selected 4}))
+      {$this show_state dxState_DeluxeSettings}
+   )
+)
 
-(kState_RB3EFullComboSFXSelector
-   (view #ifdef HX_WII options #else options_audio #endif)
-   (enter
-      {#ifdef HX_WII options.lst #else options_audio.lst #endif set circular 1}
-      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $fcsfx}
-      {#ifdef HX_WII options.lst #else options_audio.lst #endif set_data (#include ../endgame/fullcombo.dta)})
+(dxState_FullComboSFX
+   (view
+      {do
+         ($options
+            {array 0})
+         ($options
+            (#include ../endgame/fullcombo.dta))
+         {dx_state_setup dxState_FullComboSFX FALSE}
+      }
+      {overshell_view_chooser}
+   )
    (SELECT_MSG
       {set $fcsfx {$component selected_sym}}
       {if_else {exists fc_preview_clip}
@@ -61,5 +69,7 @@
       {fc_preview_clip set volume -8}
       {fc_preview_clip play}
    )
-(on_cancel
-   {$this show_state kState_RB3EAudioMenu}))
+   (on_cancel
+      {$this show_state dxState_AudioSFX}
+   )
+)
