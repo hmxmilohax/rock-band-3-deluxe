@@ -20,6 +20,7 @@
          {push_back $options os_voxhw}         
          {push_back $options os_voxarrow}         
          {dx_state_setup dxState_TextureMenu FALSE}
+         {set $state_hold dxState_TextureMenu}
       }
       {overshell_view_chooser}
    )
@@ -128,6 +129,10 @@
             (vocal_arrow {dx_state_setup dxState_DTAVocalArrowLoader FALSE})
             (animated_gems {dx_state_setup dxState_DTAAnimatedGemsLoader FALSE})
          }
+         {if $state_hold ;we need to ignore this state when leaving to the instrument checker
+            {set $previous_state $state_hold}
+            {set $state_hold FALSE}
+        }
       }
       {overshell_view_chooser}
    )
@@ -238,50 +243,63 @@
             {choose_character.tex set_bitmap {sprint "ui/track/animated_gems/prism_gems_" $dx_list_scroll_texture "/prism_gems_" $dx_list_scroll_texture "_0.png"}}
          )
       }
-      {$this update}
+      ;{$this update}
    )
    (SELECT_MSG
       {switch $dx_tracked_texture_loader
          (emissives
-            {set $dx_emissiveupdate TRUE}
-            {set $emissivegtrcustomtexture TRUE} {set $emissivebasscustomtexture TRUE} {set $emissivedrumcustomtexture TRUE} {set $emissivekeyscustomtexture TRUE}
-            {set $emissivegtr {$component selected_sym}} {set $emissivebass {$component selected_sym}} {set $emissivedrum {$component selected_sym}} {set $emissivekeys {$component selected_sym}}
+            {set $dx_tracked_emissive {$component selected_sym}}
+            {$this show_state dxState_InstrumentTextureChooser}
          )
          (score
             {set $scorecustomtexture TRUE}
             {set $scoretex {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (smasher
             {set $smashercustomtexture TRUE}
             {set $smasher {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (flames
             {set $flamescustomtexture TRUE}
             {set $flames {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (rails
             {set $railscustomtexture TRUE}
             {set $rails {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (overdrive_bar
             {set $odbarcustomtexture TRUE}
             {set $odbar {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (highway
-            {set $highwaygtrcustomtexture TRUE} {set $highwaybasscustomtexture TRUE} {set $highwaydrumcustomtexture TRUE} {set $highwaykeyscustomtexture TRUE}
-            {set $highwaygtr {$component selected_sym}} {set $highwaybass {$component selected_sym}} {set $highwaydrum {$component selected_sym}} {set $highwaykeys {$component selected_sym}}
+            {set $dx_tracked_highway {$component selected_sym}}
+            {$this show_state dxState_InstrumentTextureChooser}
          )
          (spotlight
-            {set $spotlightgtrcustomtexture TRUE} {set $spotlightbasscustomtexture TRUE} {set $spotlightdrumcustomtexture TRUE} {set $spotlightkeyscustomtexture TRUE}
-            {set $spotlightgtr {$component selected_sym}} {set $spotlightbass {$component selected_sym}} {set $spotlightdrum {$component selected_sym}} {set $spotlightkeys {$component selected_sym}}
+            {set $dx_tracked_spotlight {$component selected_sym}}
+            {$this show_state dxState_InstrumentTextureChooser}
          )
          (multiplier_ring
             {set $multiringcustomtexture TRUE}
             {set $multiring {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (crowd_meter
             {set $crowdmetercustomtexture TRUE}
             {set $crowdmeter {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (gems
             {set $animatedgems FALSE}
@@ -289,18 +307,26 @@
             {set $animatedgemname none}
             {set $gemcustomtexture TRUE}
             {set $gem {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (keyboard_lanes
             {set $keyboardcustomtexture TRUE}
             {set $keyboard {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (vocal_highway
             {set $voxhwcustomtexture TRUE}
             {set $voxhw {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (vocal_arrow
             {set $voxarrowcustomtexture TRUE}
             {set $voxarrow {$component selected_sym}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
          (animated_gems
             {set $gemcustomtexture TRUE}
@@ -309,6 +335,8 @@
             {set $animatedgemscustomtexture TRUE}
             {set $animatedgemname {$component selected_sym}}
             {choose_character.tex set_bitmap {sprint "ui/track/animated_gems/prism_gems_" $animatedgemname "/prism_gems_" $animatedgemname "_0.png"}}
+            {dx_revert_choose_char_mesh}
+            {$this show_state $previous_state}
          )
       }
    )
@@ -317,14 +345,89 @@
    )
    (on_cancel
       {$this show_state $previous_state}
+      {dx_revert_choose_char_mesh}
+   )
+)
+
+(dxState_InstrumentTextureChooser
+   (view
       {do
-         {choose_character.mesh set_local_scale_index 0 0.5}
-         {choose_character.mesh set_local_scale_index 2 1}
-         {choose_character.mesh set_local_pos_index 2 300}
-         {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-         {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-         {online_options.grp remove_object choose_character.mesh}
+         ($options
+            {array 0})
+         {push_back $options all_instruments}
+         {push_back $options guitar}
+         {push_back $options bass}
+         {push_back $options drums}
+         {push_back $options keys}
+         ;{push_back $options pro_guitar}
+         ;{push_back $options pro_bass}
+         {set $state_hold $previous_state}
+         {dx_state_setup dxState_InstrumentTextureChooser FALSE}
       }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (all
+            {switch $dx_tracked_texture_loader
+                (emissives
+                    {set $dx_emissiveupdate TRUE}
+                    {set $emissivegtrcustomtexture TRUE} {set $emissivegtr $dx_tracked_emissive}
+                    {set $emissivebasscustomtexture TRUE} {set $emissivebass $dx_tracked_emissive}
+                    {set $emissivedrumcustomtexture TRUE} {set $emissivedrum $dx_tracked_emissive}
+                    {set $emissivekeyscustomtexture TRUE} {set $emissivekeys $dx_tracked_emissive}
+                )
+                (highway
+                    {set $highwaygtrcustomtexture TRUE} {set $highwaygtr $dx_tracked_highway}
+                    {set $highwaybasscustomtexture TRUE} {set $highwaybass $dx_tracked_highway}
+                    {set $highwaydrumcustomtexture TRUE} {set $highwaydrum $dx_tracked_highway}
+                    {set $highwaykeyscustomtexture TRUE} {set $highwaykeys $dx_tracked_highway}
+                )
+                (spotlight
+                    {set $spotlightgtrcustomtexture TRUE} {set $spotlightgtr $dx_tracked_spotlight}
+                    {set $spotlightbasscustomtexture TRUE} {set $spotlightbass $dx_tracked_spotlight}
+                    {set $spotlightdrumcustomtexture TRUE} {set $spotlightdrum $dx_tracked_spotlight}
+                    {set $spotlightkeyscustomtexture TRUE} {set $spotlightkeys $dx_tracked_spotlight}
+                )
+            }
+         )
+         (guitar
+            {switch $dx_tracked_texture_loader
+                (emissives {set $dx_emissiveupdate TRUE} {set $emissivegtrcustomtexture TRUE} {set $emissivegtr $dx_tracked_emissive})
+                (highway {set $highwaygtrcustomtexture TRUE} {set $highwaygtr $dx_tracked_highway})
+                (spotlight {set $spotlightgtrcustomtexture TRUE} {set $spotlightgtr $dx_tracked_spotlight})
+            }
+         )
+         (bass
+            {switch $dx_tracked_texture_loader
+                (emissives {set $dx_emissiveupdate TRUE} {set $emissivebasscustomtexture TRUE} {set $emissivebass $dx_tracked_emissive})
+                (highway {set $highwaybasscustomtexture TRUE} {set $highwaybass $dx_tracked_highway})
+                (spotlight {set $spotlightbasscustomtexture TRUE} {set $spotlightbass $dx_tracked_spotlight})
+            }
+         )
+         (drums
+            {switch $dx_tracked_texture_loader
+                (emissives {set $dx_emissiveupdate TRUE} {set $emissivedrumcustomtexture TRUE} {set $emissivedrum $dx_tracked_emissive})
+                (highway {set $highwaydrumcustomtexture TRUE} {set $highwaydrum $dx_tracked_highway})
+                (spotlight {set $spotlightdrumcustomtexture TRUE} {set $spotlightdrum $dx_tracked_spotlight})
+            }
+         )
+         (keys
+            {switch $dx_tracked_texture_loader
+                (emissives {set $dx_emissiveupdate TRUE} {set $emissivekeyscustomtexture TRUE} {set $emissivekeys $dx_tracked_emissive})
+                (highway {set $highwaykeyscustomtexture TRUE} {set $highwaykeys $dx_tracked_highway})
+                (spotlight {set $spotlightkeyscustomtexture TRUE} {set $spotlightkeys $dx_tracked_spotlight})
+            }
+         )
+      }
+      {$this show_state dxState_TextureMenu}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      {dx_revert_choose_char_mesh}
+   )
+   (on_cancel
+      {$this show_state dxState_TextureMenu}
    )
 )
 
@@ -394,809 +497,3 @@
          {$this show_state dxState_TextureMenu})})
       (on_cancel
          {$this show_state dxState_TextureMenu}))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;i pooped
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(dxState_InstOD
-   (view options)
-   (enter
-   {options.lst set circular 0}
-   {options.lst set_selected $rb3einstodval}
-   {options.lst set_data 
-   (
-      os_allod
-      os_guitarod
-      os_bassod
-      os_drumsod
-      os_keysod
-   )})
-   (SELECT_MSG
-   {set $rb3einstodval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_allod
-      {set $dx_tracked_texture_loader emissives}
-      {$this show_state dxState_DTATextureLoader})
-   (os_guitarod
-      {$this show_state dxState_EmissiveSelectorGtr})
-   (os_bassod
-      {$this show_state dxState_EmissiveSelectorBass})
-   (os_drumsod
-     {$this show_state dxState_EmissiveSelectorDrum})
-   (os_keysod
-     {$this show_state dxState_EmissiveSelectorKeys})
-   })
-   (on_cancel
-      {$this show_state dxState_TextureMenu}))
-
-(dxState_InstHW
-   (view options)
-   (enter
-   {options.lst set circular 0}
-   {options.lst set_selected $rb3einsthwval}
-   {options.lst set_data 
-   (
-      os_allhw
-      os_guitarhw
-      os_basshw
-      os_drumshw
-      os_keyshw
-   )})
-   (SELECT_MSG
-   {set $rb3einsthwval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_allhw
-      {$this show_state dxState_FretboardSelectorAll})
-   (os_guitarhw
-      {$this show_state dxState_FretboardSelectorGtr})
-   (os_basshw
-      {$this show_state dxState_FretboardSelectorBass})
-   (os_drumshw
-     {$this show_state dxState_FretboardSelectorDrum})
-   (os_keyshw
-     {$this show_state dxState_FretboardSelectorKeys})
-   })
-   (on_cancel
-      {$this show_state dxState_TextureMenu}))
-
-(dxState_InstStrk
-   (view options)
-   (enter
-   {options.lst set circular 0}
-   {options.lst set_selected $rb3einststrkval}
-   {options.lst set_data 
-   (
-      os_allstrk
-      os_guitarstrk
-      os_bassstrk
-      os_drumsstrk
-      os_keysstrk
-   )})
-   (SELECT_MSG
-   {set $rb3einststrkval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_allstrk
-      {$this show_state dxState_SpotlightSelectorAll})
-   (os_guitarstrk
-      {$this show_state dxState_SpotlightSelectorGtr})
-   (os_bassstrk
-      {$this show_state dxState_SpotlightSelectorBass})
-   (os_drumsstrk
-     {$this show_state dxState_SpotlightSelectorDrum})
-   (os_keysstrk
-     {$this show_state dxState_SpotlightSelectorKeys})
-   })
-   (on_cancel
-      {$this show_state dxState_TextureMenu}))
-
-(dxState_EmissiveSelectorGtr
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $emissivegtr}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivegtr ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {choose_character.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}}
-    {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/emissives/emissives.dta)}
- )
-   (SCROLL_MSG
-      {set $emissivegtrmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivegtrmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $dx_emissiveupdate TRUE}
-        {set $emissivegtrcustomtexture TRUE}
-        {set $emissivegtr {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivegtr ".png"}})
- (on_cancel
-  {$this show_state dxState_InstOD}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-  {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_EmissiveSelectorBass
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $emissivebass}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivebass ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {choose_character.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}}
-    {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/emissives/emissives.dta)}
- )
-   (SCROLL_MSG
-      {set $emissivebassmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivebassmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $dx_emissiveupdate TRUE}
-        {set $emissivebasscustomtexture TRUE}
-        {set $emissivebass {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivebass ".png"}})
- (on_cancel
-  {$this show_state dxState_InstOD}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-  {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_EmissiveSelectorDrum
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $emissivedrum}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivedrum ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {choose_character.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}}
-    {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/emissives/emissives.dta)}
- )
-   (SCROLL_MSG
-      {set $emissivedrummenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivedrummenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $dx_emissiveupdate TRUE}
-        {set $emissivedrumcustomtexture TRUE}
-        {set $emissivedrum {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivedrum ".png"}})
- (on_cancel
-  {$this show_state dxState_InstOD}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-  {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_EmissiveSelectorKeys
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $emissivekeys}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {choose_character.tex iterate_refs $ref {$ref set color {pack_color $emissive_r $emissive_g $emissive_b}}}
-    {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/emissives/emissives.dta)}
- )
-   (SCROLL_MSG
-      {set $emissivekeysmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeysmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $dx_emissiveupdate TRUE}
-        {set $emissivekeyscustomtexture TRUE}
-        {set $emissivekeys {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/emissives/" $emissivekeys ".png"}})
- (on_cancel
-  {$this show_state dxState_InstOD}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-  {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_SpotlightSelectorGtr
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $spotlightgtr}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightgtr ".png"}} ;hide the texture on first entry because the script is bad whatever
-    ;{choose_character.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}}
-    ;{choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/spotlights/spotlights.dta)}
- )
-   (SCROLL_MSG
-      {set $spotlightgtrmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightgtrmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $spotlightgtrcustomtexture TRUE}
-        {set $spotlightgtr {$component selected_sym}}
-        {set $spotlight none}
-        {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightgtr ".png"}})
- (on_cancel
-  {$this show_state dxState_InstStrk}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_SpotlightSelectorBass
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $spotlightbass}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightbass ".png"}} ;hide the texture on first entry because the script is bad whatever
-    ;{choose_character.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}}
-    ;{choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/spotlights/spotlights.dta)}
- )
-   (SCROLL_MSG
-      {set $spotlightbassmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightbassmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $spotlightbasscustomtexture TRUE}
-        {set $spotlightbass {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightbass ".png"}})
- (on_cancel
-  {$this show_state dxState_InstStrk}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_SpotlightSelectorDrum
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $spotlightdrum}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightdrum ".png"}} ;hide the texture on first entry because the script is bad whatever
-    ;{choose_character.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}}
-    ;{choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/spotlights/spotlights.dta)}
- )
-   (SCROLL_MSG
-      {set $spotlightdrummenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightdrummenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $spotlightdrumcustomtexture TRUE}
-        {set $spotlightdrum {$component selected_sym}}
-        {set $spotlight none}
-        {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightdrum ".png"}})
- (on_cancel
-  {$this show_state dxState_InstStrk}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_SpotlightSelectorKeys
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $spotlightkeys}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}} ;hide the texture on first entry because the script is bad whatever
-    ;{choose_character.tex iterate_refs $ref {$ref set color {pack_color $spotlight_r $spotlight_g $spotlight_b}}}
-    ;{choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-    {online_options.lst set_data (#include ../track/spotlights/spotlights.dta)}
- )
-   (SCROLL_MSG
-      {set $spotlightkeysmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeysmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $spotlightkeyscustomtexture TRUE}
-        {set $spotlightkeys {$component selected_sym}}
-        {set $spotlight none}
-        {choose_character.tex set_bitmap {sprint "ui/track/spotlights/" $spotlightkeys ".png"}})
- (on_cancel
-  {$this show_state dxState_InstStrk}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_FretboardSelectorGtr
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $highwaygtr}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaygtr ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {online_options.lst set_data (#include ../track/highways/highways.dta)}
- )
-   (SCROLL_MSG
-      {set $highwaygtrmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaygtrmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $highwaygtrcustomtexture TRUE}
-        {set $highwaygtr {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaygtr ".png"}})
- (on_cancel
-  {$this show_state dxState_InstHW}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-  
-(dxState_FretboardSelectorBass
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $highwaybass}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaybass ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {online_options.lst set_data (#include ../track/highways/highways.dta)}
- )
-   (SCROLL_MSG
-      {set $highwaybassmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaybassmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $highwaybasscustomtexture TRUE}
-        {set $highwaybass {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaybass ".png"}})
- (on_cancel
-  {$this show_state dxState_InstHW}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_FretboardSelectorDrum
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $highwaydrum}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaydrum ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {online_options.lst set_data (#include ../track/highways/highways.dta)}
- )
-   (SCROLL_MSG
-      {set $highwaydrummenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaydrummenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $highwaydrumcustomtexture TRUE}
-        {set $highwaydrum {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaydrum ".png"}})
- (on_cancel
-  {$this show_state dxState_InstHW}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
-
-(dxState_FretboardSelectorKeys
- (view online_options)
- (enter
-    {online_options.lst set circular 1}
-    {online_options.lst set_selected $highwaykeys}
-    {online_options.grp add_object choose_character.mesh}
-    {choose_character.mesh set_local_pos_index 2 175}
-    {choose_character.mesh set_local_scale_index 0 0.2}
-    {choose_character.mesh set_local_scale_index 2 0.4}
-    {choose_character.mat set diffuse_tex choose_character.tex}
-    {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaykeys ".png"}} ;hide the texture on first entry because the script is bad whatever
-    {online_options.lst set_data (#include ../track/highways/highways.dta)}
- )
-   (SCROLL_MSG
-      {set $highwaykeysmenu {$component selected_sym}}
-      {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaykeysmenu ".png"}}
-      {$this update})
-   (SELECT_MSG
-        {set $highwaykeyscustomtexture TRUE}
-        {set $highwaykeys {$component selected_sym}}
-        {choose_character.tex set_bitmap {sprint "ui/track/highways/" $highwaykeys ".png"}})
- (on_cancel
-  {$this show_state dxState_InstHW}
-  {choose_character.mesh set_local_scale_index 0 0.5}
-  {choose_character.mesh set_local_scale_index 2 1}
-  {choose_character.mesh set_local_pos_index 2 300}
-  {online_options.grp remove_object choose_character.mesh}))
