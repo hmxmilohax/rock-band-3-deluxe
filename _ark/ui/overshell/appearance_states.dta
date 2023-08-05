@@ -306,12 +306,10 @@
    {do
       ($options
          {array 0})
-      {if_else {modifier_mgr is_modifier_active mod_songtitle}
-         {push_back $options os_mtv_vis_never}
-         {if_else {modifier_mgr is_modifier_active mod_no_mtv_overlay}
-            {push_back $options os_mtv_vis_default}
-            {push_back $options os_mtv_vis_always}
-         }
+      {switch $dx_song_title
+         (always {push_back $options os_mtv_vis_always})
+         (never {push_back $options os_mtv_vis_never})
+         (default {push_back $options os_mtv_vis_default})
       }
       {push_back $options os_pos}
       {if_else $dx_long_mtv_delay
@@ -322,6 +320,12 @@
       {if_else $dx_author_finder
          {unless $dx_ps3hw {push_back $options os_author_finder_on}}
          {unless $dx_ps3hw {push_back $options os_author_finder_off}}
+      }
+      {if $dx_ps3hw ;put this here if we dont have access to current song menu
+         {if_else $dx_bpm_report
+            {push_back $options os_bpm_on}
+            {push_back $options os_bpm_off}
+         }
       }
       {unless $dx_ps3hw {push_back $options os_currentsong}}
       #endif
@@ -336,9 +340,25 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (os_mtv_vis_default
-            {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay})
+            {set $dx_song_title always}
+            {if
+               {exists beatmatch}
+               {if
+                  {||
+                     {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                     {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                     {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+                  }
+                  ;{{coop_track_panel find crowd_meter} set_showing {! {modifier_mgr is_modifier_active mod_no_crowd_meter}}}
+                  ;{{coop_track_panel find scoreboard} set_showing {! {modifier_mgr is_modifier_active mod_no_scoreboard}}}
+                  {if $dx_mtvup
+                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
+                  }
+               }
+            }
+         )
          (os_mtv_vis_always
-            {modifier_mgr toggle_modifier_enabled mod_songtitle}
+            {set $dx_song_title never}
             {if
                {exists beatmatch}
                {if
@@ -356,8 +376,7 @@
             }
          )
          (os_mtv_vis_never
-            {modifier_mgr toggle_modifier_enabled mod_songtitle}
-            {modifier_mgr toggle_modifier_enabled mod_no_mtv_overlay}
+            {set $dx_song_title default}
             {if
                {exists beatmatch}
                {if
@@ -394,6 +413,18 @@
          (os_pos
             {set $dx_set_ui_pos_tracked_ui mtv}
             {$this show_state dxState_AxisPositionSetup})
+         (os_bpm_on
+            {set $dx_bpm_report FALSE}
+            {if $dx_mtvup
+               {{{gamemode get track_panel} find mtv_overlay} mtv_song_title_writer} ;refresh the mtv overlay
+            }
+         )
+         (os_bpm_off
+            {set $dx_bpm_report TRUE}
+            {if $dx_mtvup
+               {{{gamemode get track_panel} find mtv_overlay} mtv_song_title_writer} ;refresh the mtv overlay
+            }
+         )
          (os_currentsong
             {$this show_state dxState_CurrentSongSetup}
          )
@@ -999,61 +1030,12 @@
       ($options
          {array 0})
       ;{if_else $dx_currentsong_prefix
-      ;   {push_back $options os_prefix_on}
-      ;   {push_back $options os_prefix_off}
-      ;}
-      {if_else {modifier_mgr is_modifier_active mod_dx_showbpm}
-         {push_back $options os_bpm_on}
-         {push_back $options os_bpm_enable}
-      }
-      {if_else $dx_song_title_mtv_line
-         {push_back $options os_song_title_on}
-         {push_back $options os_song_title_off}
-      }
-      {if_else $dx_artist_mtv_line
-         {push_back $options os_artist_on}
-         {push_back $options os_artist_off}
-      }
-      {if_else $dx_year_on_mtv
-         {push_back $options os_year_on}
-         {push_back $options os_year_off}
-      }
-      {if_else $dx_year_on_one_mtv_line
-         {push_back $options os_yearonline_on}
-         {push_back $options os_yearonline_off}
-      }
-      {if_else $dx_album_mtv_line
-         {push_back $options os_album_on}
-         {push_back $options os_album_off}
-      }
-      {if_else $dx_genre_mtv_line
-         {push_back $options os_genre_on}
-         {push_back $options os_genre_off}
-      }
-      {if_else $dx_game_origin_mtv_line
-         {push_back $options os_source_on}
-         {push_back $options os_source_off}
-      }
-      {if_else $dx_author_mtv_line
-         {push_back $options os_author_on}
-         {push_back $options os_author_off}
-      }
-      {dx_state_setup dxState_CurrentSongSetup FALSE}
-   }
-)
-
-#define DX_CURRENT_SONG_SETUP_DATA
-(
-   {do
-      ($options
-         {array 0})
-      ;{if_else $dx_currentsong_prefix
       ;   {push_back $options os_prefix_disable}
       ;   {push_back $options os_prefix_enable}
       ;}
-      {if_else {modifier_mgr is_modifier_active mod_dx_showbpm}
-         {push_back $options os_bpm_disable}
-         {push_back $options os_bpm_enable}
+      {if_else $dx_bpm_report
+         {push_back $options os_bpm_on}
+         {push_back $options os_bpm_off}
       }
       {if_else $dx_song_title_mtv_line
          {push_back $options os_song_title_disable}
@@ -1122,14 +1104,14 @@
             {set $dx_author_mtv_line FALSE})
          (os_prefix_enable
             {set $dx_currentsong_year TRUE})
-         (os_bpm_enable
-            {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+         (os_bpm_on
+            {set $dx_bpm_report FALSE}
             {if $dx_mtvup
                {{{gamemode get track_panel} find mtv_overlay} mtv_song_title_writer} ;refresh the mtv overlay
             }
          )
-         (os_bpm_disable
-            {modifier_mgr toggle_modifier_enabled mod_dx_showbpm}
+         (os_bpm_off
+            {set $dx_bpm_report TRUE}
             {if $dx_mtvup
                {{{gamemode get track_panel} find mtv_overlay} mtv_song_title_writer} ;refresh the mtv overlay
             }
