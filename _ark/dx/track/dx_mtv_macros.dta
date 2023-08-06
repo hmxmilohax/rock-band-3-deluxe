@@ -93,6 +93,11 @@
       {set $current_song_dta ({find $entry {basename {meta_performer song}}})}
       {foreach $entry $current_song_dta
          {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry name}
+               {set $namevar {elem {find $entry name} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
             {if {find $entry artist}
                {set $artistvar {elem {find $entry artist} 1}}
             }
@@ -312,43 +317,47 @@
 )
 #define MTV_WRITER_CHOOSER
 (
-   {unless $dx_ps3hw ; don't run on ps3 hardware
-      {if_else $dx_author_finder_active
-         {if
-            {||
-               {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle} ;only run stuff in normal game modes
-               {gamemode in_mode qp_coop} {gamemode in_mode campaign}
-               {gamemode in_mode party_shuffle} {gamemode in_mode tour}
-               {gamemode in_mode practice} {gamemode in_mode qp_practice}
-            }
-            {set $author_finder_disabled FALSE}
-            {unless $dx_path_failed
-               {do
-                  {unless $dx_mtv_dta_reader_once
-                     {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
-                     MTV_DTA_READER
+   {if_else $dx_author_finder_active
+      {if
+         {||
+            {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle} ;only run stuff in normal game modes
+            {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+            {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+            {gamemode in_mode practice} {gamemode in_mode qp_practice}
+         }
+         {set $author_finder_disabled FALSE}
+         {unless $dx_path_failed
+            {do
+               {unless $dx_mtv_dta_reader_once
+                  {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
+                  MTV_DTA_READER
+               }
+               {if
+                  {&&
+                     {! $artistvar}
+                     {! $namevar}
                   }
-                  {if {! $artistvar} {set $artistvar "No Artist Found"}}
-                  {if {! $yearvar} {set $yearvar "No Year Found"}}
-                  {if {! $albumvar} {set $albumvar "No Album Found"}}
-                  {if {! $genrevar} {set $genrevar "No Genre Found"}}
-                  {if {! $sourcevar} {set $sourcevar "No Source Found"}}
-                  {if {exists song.lbl}
-                     {song.lbl set fixed_length 1000}
-                     {$this mtv_song_title_writer}
-                  }
-                  {if {exists artist.lbl}
-                     MTV_SONG_WRITER
-                  }
+                  {set $author_finder_disabled TRUE}
+               }
+               {if {! $artistvar} {set $artistvar "No Artist Found"}}
+               {if {! $yearvar} {set $yearvar "No Year Found"}}
+               {if {! $albumvar} {set $albumvar "No Album Found"}}
+               {if {! $genrevar} {set $genrevar "No Genre Found"}}
+               {if {! $sourcevar} {set $sourcevar "No Source Found"}}
+               {if {exists song.lbl}
+                  {song.lbl set fixed_length 1000}
+                  {$this mtv_song_title_writer}
+               }
+               {if {exists artist.lbl}
+                  MTV_SONG_WRITER
                }
             }
          }
-         {set $author_finder_disabled TRUE}
       }
+      {set $author_finder_disabled TRUE}
    }
    {if
       {||
-         $dx_ps3hw ; don't run on ps3 hardware
          $dx_path_failed
          $author_finder_disabled
       }
