@@ -20,7 +20,7 @@
 )
 #define DX_MTV_BPM_HANDLER
 (
-   {if {&& {modifier_mgr is_modifier_active mod_dx_showbpm} $dx_mtvup}
+   {if {&& $dx_bpm_report $dx_mtvup}
       {set $dx_tmp {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}
       {set $dx_bpm_counter {* {* 60 {/ 1 {- {beat_to_seconds {+ $dx_tmp 1}} {beat_to_seconds $dx_tmp}}}} $speedmod}}
       DX_MTV_SETUP_TEXT
@@ -42,37 +42,20 @@
    {dx_rank_var_finder bass $rankvar 135 181 228 293 364 436}
    {dx_rank_var_finder vocals $rankvar 132 175 218 279 353 427}
    {dx_rank_var_finder band $rankvar 163 215 243 267 292 345}
-   {if $hackydisabled ;disabled for now because author finder cannot properly find pro upgrade dta ranks
-      {if {== $keysplayeractive true}
-         {dx_rank_var_finder keys $rankvar 153 211 269 327 385 443}
-      }
-      {if {== $real_keysplayeractive true}
-         {dx_rank_var_finder real_keys $rankvar 153 211 269 327 385 443}
-      }
-      {if {== $real_guitarplayeractive true}
-         {dx_rank_var_finder real_guitar $rankvar 150 205 264 323 382 442}
-      }
-      {if {== $real_bassplayeractive true}
-         {dx_rank_var_finder real_bass $rankvar 150 208 267 325 384 442}
-      }
+   {if {== $keysplayeractive true}
+      {dx_rank_var_finder keys $rankvar 153 211 269 327 385 443}
+   }
+   {if {== $real_keysplayeractive true}
+      {dx_rank_var_finder real_keys $rankvar 153 211 269 327 385 443}
+   }
+   {if {== $real_guitarplayeractive true}
+      {dx_rank_var_finder real_guitar $rankvar 150 205 264 323 382 442}
+   }
+   {if {== $real_bassplayeractive true}
+      {dx_rank_var_finder real_bass $rankvar 150 208 267 325 384 442}
    }
 )
 
-#define DX_ENTRY_SWITCH
-(
-   {switch $dx_entry_finder
-      (author {set $authorvar {elem {find $entry $dx_entry_finder} 1}})
-      (artist {set $artistvar {elem {find $entry $dx_entry_finder} 1}})
-      (year_released {set $yearvar {elem {find $entry $dx_entry_finder} 1}})
-      (album_name {set $albumvar {elem {find $entry $dx_entry_finder} 1}})
-      (game_origin {set $sourcevar {elem {find $entry $dx_entry_finder} 1}})
-      (genre {set $genrevar {elem {find $entry $dx_entry_finder} 1}})
-      (master {set $mastervar {elem {find $entry $dx_entry_finder} 1}})
-      (strings_author {set $stringsauthorvar {elem {find $entry $dx_entry_finder} 1}})
-      (keys_author {set $keysauthorvar {elem {find $entry $dx_entry_finder} 1}})
-      (rank {set $rankvar ({find $entry $dx_entry_finder})} {if $rankvar DX_RANK_VAR_HANDLER})
-   }
-)
 #define MTV_DTA_PREPPER
 (
    {dx_log_writer FALSE {sprint "Attempting to read loaded song DTA. - Gamemode: " $dx_gamemode}}
@@ -104,19 +87,80 @@
       }
    }
 )
-#define MTV_DTA_READER
+#define DX_ARRAY_READER
 (
-   {foreach $entry $songdtareader
-      {if {== {elem $entry 0} {basename {meta_performer song}}}
-         {if_else {find $entry $dx_entry_finder}
-            DX_ENTRY_SWITCH
+   {if {== {elem $entry 0} {basename {meta_performer song}}}
+      {set $current_song_dta ({find $entry {basename {meta_performer song}}})}
+      {foreach $entry $current_song_dta
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry name}
+               {set $namevar {elem {find $entry name} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry artist}
+               {set $artistvar {elem {find $entry artist} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry year_released}
+               {set $yearvar {elem {find $entry year_released} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry album_name}
+               {set $albumvar {elem {find $entry album_name} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry game_origin}
+               {set $sourcevar {elem {find $entry game_origin} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry genre}
+               {set $genrevar {elem {find $entry genre} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if_else {find $entry master}
+               {set $mastervar {elem {find $entry master} 1}}
+               {set $mastervar TRUE}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry author}
+               {set $authorvar {elem {find $entry author} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry strings_author}
+               {set $stringsauthorvar {elem {find $entry strings_author} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry keys_author}
+               {set $keysauthorvar {elem {find $entry keys_author} 1}}
+            }
+         }
+         {if {== {elem $entry 0} {basename {meta_performer song}}}
+            {if {find $entry rank}
+               {set $rankvar ({find $entry rank})}
+               {if $rankvar DX_RANK_VAR_HANDLER}
+            }
          }
       }
    }
-   {foreach $entry $dx_song_cache_holder ;if we didnt find album_name there, we need to scan our updates dta
-      {if {== {elem $entry 0} {basename {meta_performer song}}} ;find the current song's shortname
-         {if_else {find $entry $dx_entry_finder} ;check for album_name again
-            DX_ENTRY_SWITCH
+)
+#define MTV_DTA_READER
+(
+   {foreach $entry $songdtareader
+      DX_ARRAY_READER
+   }
+   {if $dx_song_cache_holder
+      {if {== $theactualpath SONGPATH3}
+         {foreach $entry $dx_song_cache_holder
+            DX_ARRAY_READER
          }
       }
    }
@@ -214,7 +258,7 @@
       {if {&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
          {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "AUTOPLAY"}}
       }
-      {if {modifier_mgr is_modifier_active mod_dx_showbpm}
+      {if $dx_bpm_report
          {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "BPM: " $dx_bpm_counter}}
       }
       {if {&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
@@ -266,64 +310,61 @@
          }
       }
    }
-   {unless {&& {modifier_mgr is_modifier_active mod_dx_showbpm} $dx_mtv_formatted_once} ;show bpm formats way too often to be formatted multiple times
+   {unless {&& $dx_bpm_report $dx_mtv_formatted_once} ;show bpm formats way too often to be formatted multiple times
       {set $dx_mtv_formatted_once TRUE}
       {$this mtv_formatter}
    }
 )
 #define MTV_WRITER_CHOOSER
 (
-   #ifndef HX_WII
-   {if
-      {||
-         {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle} ;only run stuff in normal game modes
-         {gamemode in_mode qp_coop} {gamemode in_mode campaign}
-         {gamemode in_mode party_shuffle} {gamemode in_mode tour}
-         {gamemode in_mode practice} {gamemode in_mode qp_practice}
-      }
-      {unless
+   {if_else $dx_author_finder_active
+      {if
          {||
-            $dx_ps3hw ; don't run on ps3 hardware
-            $dx_path_failed
+            {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle} ;only run stuff in normal game modes
+            {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+            {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+            {gamemode in_mode practice} {gamemode in_mode qp_practice}
          }
-         {do
-            {unless $dx_mtv_dta_reader_once
-               {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
-               {set $dx_entry_finder artist} MTV_DTA_READER ;find the shit TODO make a func instead
-               {set $dx_entry_finder author} MTV_DTA_READER
-               {set $dx_entry_finder year_released} MTV_DTA_READER
-               {set $dx_entry_finder album_name} MTV_DTA_READER
-               {set $dx_entry_finder genre} MTV_DTA_READER
-               {set $dx_entry_finder game_origin} MTV_DTA_READER
-               {set $dx_entry_finder master} MTV_DTA_READER
-               {set $dx_entry_finder strings_author} MTV_DTA_READER
-               {set $dx_entry_finder keys_author} MTV_DTA_READER
-               {set $dx_entry_finder rank} MTV_DTA_READER
-            }
-            {if {! $artistvar} {set $artistvar "No Artist Found"}}
-            {if {! $yearvar} {set $yearvar "No Year Found"}}
-            {if {! $albumvar} {set $albumvar "No Album Found"}}
-            {if {! $genrevar} {set $genrevar "No Genre Found"}}
-            {if {exists song.lbl}
-               {song.lbl set fixed_length 1000}
-               {$this mtv_song_title_writer}
-            }
-            {if {exists artist.lbl}
-               MTV_SONG_WRITER
+         {set $author_finder_disabled FALSE}
+         {unless $dx_path_failed
+            {do
+               {unless $dx_mtv_dta_reader_once
+                  {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
+                  MTV_DTA_READER
+               }
+               {if
+                  {&&
+                     {! $artistvar}
+                     {! $namevar}
+                  }
+                  {set $author_finder_disabled TRUE}
+               }
+               {if {! $artistvar} {set $artistvar "No Artist Found"}}
+               {if {! $yearvar} {set $yearvar "No Year Found"}}
+               {if {! $albumvar} {set $albumvar "No Album Found"}}
+               {if {! $genrevar} {set $genrevar "No Genre Found"}}
+               {if {! $sourcevar} {set $sourcevar "No Source Found"}}
+               {if {exists song.lbl}
+                  {song.lbl set fixed_length 1000}
+                  {$this mtv_song_title_writer}
+               }
+               {if {exists artist.lbl}
+                  MTV_SONG_WRITER
+               }
             }
          }
       }
+      {set $author_finder_disabled TRUE}
    }
    {if
       {||
-         $dx_ps3hw ; don't run on ps3 hardware
          $dx_path_failed
+         $author_finder_disabled
       }
       {unless $dx_author_finder_failed
          {set $dx_author_finder_failed TRUE}
          {dx_log_writer TRUE {sprint "Author Finder Failed - Song Loaded: " $song_title}}
       }
-   #endif
       {if
          {exists song.lbl}
          {song.lbl set fixed_length 1000}
@@ -333,7 +374,5 @@
          {exists artist.lbl}
          {artist.lbl set_artist_name_from_shortname $short_name}
       }
-   #ifndef HX_WII
    }
-   #endif
 )

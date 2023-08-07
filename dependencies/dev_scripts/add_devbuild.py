@@ -13,8 +13,8 @@ def main():
         # get the root directory of the repo
         root_dir = Path(__file__).parents[2]
         print(root_dir)
-        # sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/*/locale_updates_keep.dta
-        for locale in root_dir.joinpath("_ark/ui/locale").glob("*/locale_updates_keep.dta"):
+        # sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/locale_dx_keep.dta
+        for locale in root_dir.joinpath("_ark/ui/locale").glob("locale_dx_keep.dta"):
             print(locale)
             with open(locale, "r", encoding="ISO-8859=1") as f:
                 the_locale = [line for line in f.readlines()]

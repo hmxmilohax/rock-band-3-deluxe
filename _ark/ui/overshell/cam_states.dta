@@ -1,242 +1,200 @@
-(kState_RB3ECameraMenu
-   (view online_options)
-   (enter
-   {online_options.lst set_selected $rb3camval}
-   {online_options.lst set_data 
-   (
-      #ifndef HX_WII
-      os_menubg
-      overshell_postproc
-      #else
-      os_menubg_wii
-      #endif
-      overshell_freecam
-      os_reload
-      os_scrsvr
-   )})
+(dxState_CameraMenu
+   (view
+      {do
+         ($options
+            {array 0})
+         #ifndef HX_WII
+         {push_back $options os_menubg}
+         {push_back $options overshell_postproc}
+         #endif
+         {if {&& {$this in_song} {modifier_mgr is_modifier_active mod_auto_play}}
+            {push_back $options overshell_freecam}
+         }
+         {push_back $options os_reload}
+         {push_back $options os_scrsvr}
+         {dx_state_setup dxState_CameraMenu FALSE}
+      }
+      {overshell_view_chooser}
+   )
    (SELECT_MSG
-      {set $rb3camval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_menubg
-      {$this show_state kState_RB3EMenuBG})
-   (os_menubg_wii
-      {$this show_state kState_RB3EMenuBGWii})
-   (overshell_freecam
-      {if {&& {$this in_song} {modifier_mgr is_modifier_active mod_auto_play}} {cycle_free_camera}})
-   (overshell_postproc
-      {$this show_state kState_RB3EPostFX})
-   (os_reload
-      {if_else {$this in_game}
-      {$this show_state kState_RB3EReloadDenyMsg}
-      {ui goto_screen meta_loading_main_screen}})
-   (os_scrsvr
-      {$this show_state kState_RB3EScreensaver})
-   })
-   (on_cancel
-      {$this show_state kState_RB3ESettings}
-      {options_audio.lst set_selected 3}))
-
-(kState_RB3EMenuBG
-   (view options)
-   (enter
-   {options.lst set_selected $rb3bgval}
-   {options.lst set circular 1}
-   {options.lst set_data
-   (
-      os_nobg
-      os_bg8
-      os_bg3
-      os_bg4
-      os_bg5
-      os_bg2
-   )})
-   (SELECT_MSG
-      {set $rb3bgval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_nobg
-      {unless {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
+      {switch {$component selected_sym}
+         (os_menubg
+            {$this show_state dxState_MenuBG})
+         (overshell_freecam
+            {cycle_free_camera})
+         (overshell_postproc
+            {$this show_state dxState_PostFX})
+         (os_reload
+            {if_else {$this in_game}
+               {$this show_state dxState_ReloadDenyMsg}
+               {ui goto_screen meta_loading_main_screen}
+            }
+         )
+         (os_scrsvr
+            {$this show_state dxState_Screensaver})
       }
    )
-   (os_bg8
-      {set $svnumber 8}
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-      {$this show_state kState_RB3EMenuBGWarn})
-   (os_bg3
-      {set $svnumber 3}
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-      {$this show_state kState_RB3EMenuBGWarn})
-   (os_bg2
-      {set $svnumber 2}
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-      {$this show_state kState_RB3EMenuBGWarn})
-   (os_bg4
-      {set $svnumber 4}
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-      {$this show_state kState_RB3EMenuBGWarn})
-   (os_bg5
-      {set $svnumber 5}
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-      {$this show_state kState_RB3EMenuBGWarn})
-   })
-   (on_cancel
-      {$this show_state kState_RB3ECameraMenu}))
-
-(kState_RB3EMenuBGWii
-   (view options_end_game)
-   (enter
-   {options_end_game.lst set_selected $rb3bgwiival}
-   {options_end_game.lst set_data
-   (
-      os_nobg_wii
-      os_yesbg
-   )})
-   (SELECT_MSG
-      {set $rb3bgwiival {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_nobg_wii
-      {unless {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
+   (exit 
+      {dx_state_pos_tracker}
    )
-   (os_yesbg
-      {if {modifier_mgr is_modifier_active mod_blackmenu}
-         {modifier_mgr toggle_modifier_enabled mod_blackmenu}
-         {ui goto_screen meta_loading_main_screen}
-      }
-   )})
    (on_cancel
-      {$this show_state kState_RB3ECameraMenu}))
+      {$this show_state dxState_DeluxeSettings}
+   )
+)
 
-#define POST_FX_DATA
+(dxState_MenuBG
+   (view
+      {do
+         ($options
+            {array 0})
+         {push_back $options os_nobg}
+         #ifndef HX_WII
+         {push_back $options os_bg8}
+         {push_back $options os_bg3}
+         {push_back $options os_bg4}
+         {push_back $options os_bg5}
+         {push_back $options os_bg2}
+         #endif
+         {dx_state_setup dxState_MenuBG FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_nobg
+            {unless {modifier_mgr is_modifier_active mod_blackmenu}
+               {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+               {ui goto_screen meta_loading_main_screen}
+               {set $dx_state_no_menu_toggled TRUE}
+            }
+         )
+         (os_bg8
+            {set $dx_main_menu_background 8})
+         (os_bg3
+            {set $dx_main_menu_background 3})
+         (os_bg2
+            {set $dx_main_menu_background 2})
+         (os_bg4
+            {set $dx_main_menu_background 4})
+         (os_bg5
+            {set $dx_main_menu_background 5})
+      }
+      {if_else {&& {! $dx_state_no_menu_toggled} {modifier_mgr is_modifier_active mod_blackmenu}}
+         {do
+            {modifier_mgr toggle_modifier_enabled mod_blackmenu}
+            {ui goto_screen meta_loading_main_screen}
+         }
+         {unless $dx_state_no_menu_toggled {$this show_state dxState_MenuBGWarn}}
+      }
+      {set $dx_state_no_menu_toggled FALSE}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_CameraMenu}
+   )
+)
+
+#define DX_POST_FX_DATA
 (
-   {if_else $dx_postfx
-      os_postfx_disable
-      os_postfx_enable
-   }
-   {if_else $dx_blur_val
-      os_blur_disable
-      os_blur_enable
-   }
-   {if_else $dx_noise_val
-      os_crust_disable
-      os_crust_enable
+   {do
+      ($options
+         {array 0})
+      {push_back $options {if_else $dx_postfx os_postfx_disable os_postfx_enable}}
+      {push_back $options {if_else $dx_blur os_blur_on os_blur_off}}
+      {push_back $options {if_else $dx_noise os_noise_on os_noise_off}}
+      {dx_state_setup dxState_PostFX FALSE}
    }
 )
-#define POST_FX_LST_RESET
-(
-   {options_extras.lst set_data (POST_FX_DATA)}
-   {if $rb3ecrowdelval
-      {options_extras.lst set_selected $rb3ecrowdelval}
-   }
-)
-(kState_RB3EPostFX
-   (view options_extras)
-   (lst_reset
-      {options_extras.lst set_data (POST_FX_DATA)}
-      {if $rb3ecrowdelval
-         {options_extras.lst set_selected $rb3ecrowdelval}
-      }
+(dxState_PostFX
+   (view
+      DX_POST_FX_DATA
+      {overshell_view_chooser}
    )
-   (enter
-   POST_FX_LST_RESET
-   {options_extras.lst set_selected $rb3ecrowdelval}
-   {options_extras.lst set circular 0}
-   {set $fromelmenu FALSE}
-   {options_extras.lst set_data 
-   (
-      POST_FX_DATA
-   )})
    (SELECT_MSG
-   {set $rb3ecrowdelval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_postfx_disable
-      {dx_set_postfx 0}
-      POST_FX_LST_RESET)
-   (os_postfx_enable
-      {dx_set_postfx 1}
-      POST_FX_LST_RESET)
-   (os_blur_disable
-      {set $dx_blur_val 0}
-      {dx_postfx_setter}
-      POST_FX_LST_RESET)
-   (os_blur_enable
-      {set $dx_blur_val 1}
-      {set $post_proc_needs_reset TRUE}
-      {dx_postfx_setter}
-      POST_FX_LST_RESET)
-   (os_crust_disable
-      {set $dx_noise_val 0}
-      {dx_postfx_setter}
-      POST_FX_LST_RESET)
-   (os_crust_enable
-      {set $dx_noise_val 3}
-      {set $post_proc_needs_reset TRUE}
-      {dx_postfx_setter}
-      POST_FX_LST_RESET)
-   })
+      {switch {$component selected_sym}
+         (os_postfx_disable
+            {dx_set_postfx 0}
+            {set $dx_tracked_changed os_postfx_enable}
+            {dx_state_pos_tracker}
+            DX_POST_FX_DATA
+            {set $previous_state dxState_PostFX}
+         )
+         (os_postfx_enable
+            {dx_set_postfx 1}
+            {set $dx_tracked_changed os_postfx_disable}
+            {dx_state_pos_tracker}
+            DX_POST_FX_DATA
+            {set $previous_state dxState_PostFX}
+         )
+         ((os_blur_off os_blur_on)
+            {set $dx_blur {! $dx_blur}}
+            {if $dx_blur
+               {set $post_proc_needs_reset TRUE}
+            }
+            {dx_postfx_setter}
+            {if_else $dx_blur
+               {set $dx_tracked_changed os_blur_on}
+               {set $dx_tracked_changed os_blur_off}
+            }
+            {dx_state_pos_tracker}
+            DX_POST_FX_DATA
+            {set $previous_state dxState_PostFX}
+            {$this show_state kState_PostFXWarn}
+         )
+         ((os_noise_off os_noise_on)
+            {set $dx_noise {! $dx_noise}}
+            {if $dx_noise
+               {set $post_proc_needs_reset TRUE}
+            }
+            {dx_postfx_setter}
+            {if_else $dx_noise
+               {set $dx_tracked_changed os_noise_on}
+               {set $dx_tracked_changed os_noise_off}
+            }
+            {dx_state_pos_tracker}
+            DX_POST_FX_DATA
+            {set $previous_state dxState_PostFX}
+            {$this show_state kState_PostFXWarn}
+         )
+      }
+      {set $in_state FALSE}
+      DX_POST_FX_DATA
+      {set $previous_state dxState_PostFX}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
    (on_cancel
-      {$this show_state kState_RB3ECameraMenu}
-      {online_options.lst set_selected 1}))
+      {$this show_state dxState_CameraMenu}
+   )
+)
 
-(kState_RB3EMenuBGWarn
+(dxState_Screensaver
    (view confirm_action)
    (enter
-      {handle
-         ($this set_confirm_message {sprintf {localize os_bgwarn}})})
-   (SELECT_MSG
-      {set $fpsslider FALSE}
-      {$this show_state kState_RB3EMenuBG}))
-
-(kState_RB3EReloadDenyMsg
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message os_reload_deny)})
-   (SELECT_MSG
-      {$this show_state kState_RB3ECameraMenu}))
-
-(kState_RB3EScreensaver
- (view confirm_action)
- (enter
-   {confirm_action.lst set_selected 1}
+      {confirm_action.lst set_selected 1}
       {handle
          ($this set_confirm_actions screensaver_warning (overshell_continue overshell_cancel))})
- (SELECT_MSG
-  {switch
-   {$component selected_sym}
-   (overshell_continue
-   {set $screensaver FALSE}
-   {unless
-   {$this in_song}
-   {do
-    {ui goto_screen meta_loading_main_screen}
-    {overshell exit}}})
-   (overshell_cancel
-   {$this show_state kState_RB3ECameraMenu})
-   })
- (on_cancel
-  {$this show_state kState_RB3ECameraMenu})
- (exit
- {options_end_game.lst set_selected 0}))
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {set $screensaver FALSE}
+            {unless {$this in_game}
+               {do
+                  {ui goto_screen meta_loading_main_screen}
+                  {overshell exit}
+               }
+            }
+         )
+         (overshell_cancel
+            {$this show_state dxState_CameraMenu})
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_CameraMenu})
+   (exit
+      {options_end_game.lst set_selected 0}
+   )
+)
