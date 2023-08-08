@@ -36,7 +36,7 @@
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-> The most recent Nightly build of *Rock Band 3 Deluxe* for PS3.
+> The most recent version of *Rock Band 3 Deluxe* for PS3.
 
 📥 [RB3DX (With Keys Stems) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Keys-Moggs.zip)
 
@@ -52,7 +52,7 @@ Continue to:
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
-> The most recent Nightly build of *Rock Band 3 Deluxe* for Xbox 360.
+> The most recent version of *Rock Band 3 Deluxe* for Xbox 360.
 
 📥 [RB3DX (With Keys Stems) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Keys-Moggs.zip)
 
@@ -72,13 +72,26 @@ Continue to:
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
-> The most recent Nightly build of *Rock Band 3 Deluxe* for Wii.
+> The most recent version of *Rock Band 3 Deluxe* for Wii.
 
 <br/>
 
 Continue to: 
     - [Installing on Wii](#-installing-on-wii)
     - [Installing on Dolphin Emulator](#-installing-on-dolphin-emulator)
+
+<br/>
+
+## Bleeding-Edge Development Builds
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/develop?label=last%20updated%3A)
+
+***These are highly experimental and early, NOT RECOMMENDED!!***
+
+### 📥 [RB3DX Development Builds](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/develop)
+
+> Experimental testing builds for developers and testers. Proceed with caution.
+
+<br/>
 
 ## [YARG](https://yarg.in/) Song Updates
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
