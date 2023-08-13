@@ -3,26 +3,28 @@
    ($write_file $dx_log_writer)
    #ifdef HX_WII {set $nothing $nothing} #endif
    #ifndef HX_WII
-   {do
-      DX_GAMEMODE_CHECKER
-      {if_else {file_exists LOG_FILE_PATH}
-         {set $dx_log_reader {array $dx_log_reader}}
-         {set $dx_log_reader ("start of log")}
-      }
-      {if {== $dx_log_counter 3}
-         {push_back $dx_log_reader "Game Entered three times, starting new log."}
-         {set $prev_dx_log_reader {array $dx_log_reader}}
-         {if $write_file
-            {write_file PREV_LOG_FILE_PATH $dx_log_reader}
-            {set $dx_log_counter 0}
+   {unless {== $dx_logging never}
+      {do
+         DX_GAMEMODE_CHECKER
+         {if_else {file_exists LOG_FILE_PATH}
+            {set $dx_log_reader {array $dx_log_reader}}
+            {set $dx_log_reader ("start of log")}
          }
-         {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
-      }
-      {push_back $dx_log_reader $dx_log_writer}
-      {if $write_file
-         {write_file LOG_FILE_PATH
-            {array
-               $dx_log_reader
+         {if {== $dx_log_counter 3}
+            {push_back $dx_log_reader "Game Entered three times, starting new log."}
+            {set $prev_dx_log_reader {array $dx_log_reader}}
+            {if $write_file
+               {write_file PREV_LOG_FILE_PATH $dx_log_reader}
+               {set $dx_log_counter 0}
+            }
+            {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
+         }
+         {push_back $dx_log_reader $dx_log_writer}
+         {if {|| {&& $write_file {== $dx_logging default}} {== $dx_logging always}}
+            {write_file LOG_FILE_PATH
+               {array
+                  $dx_log_reader
+               }
             }
          }
       }
