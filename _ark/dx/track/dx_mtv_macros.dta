@@ -1,18 +1,22 @@
 ;welcome to jnacks hell
 ;inside the ark
-#define SONGPATH
+#define SONGPATH_DISC
 (
    {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
 )
 ;a dlc dta
-#define SONGPATH2
+#define SONGPATH_DLC
 (
    {song_mgr song_file_path {meta_performer song} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
 )
 ;on disc update
-#define SONGPATH3
+#define SONGPATH_UPDATE
 (
    {song_mgr song_file_path {meta_performer song} "/../../../gen/missing_song_data_updates.dtb"} ;if we loaded a dlc song that has an on disc update
+)
+#define SONGPATH_RAW_DTB
+(
+   {sprint "songs/dta_collection/gen/" {meta_performer song} ".dtb"}
 )
 #define DX_MTV_SETUP_TEXT
 (
@@ -63,20 +67,28 @@
       {set $dx_readdtaonce TRUE}
       {set $dx_readadditionaldtaonce FALSE}
       {set $theactualpath FALSE}
-      {if_else {file_exists SONGPATH2}
-         {set $theactualpath SONGPATH2} ;a dlc dta
-         {if_else {file_exists SONGPATH3}
-            {set $theactualpath SONGPATH3} ;on disc update
-            {if_else {file_exists SONGPATH}
-               {set $theactualpath SONGPATH} ;inside the ark
+      {if_else {file_exists SONGPATH_DLC}
+         {set $theactualpath SONGPATH_DLC} ;a dlc dta
+         {if_else {file_exists SONGPATH_UPDATE}
+            {set $theactualpath SONGPATH_UPDATE} ;on disc update
+            {if_else {file_exists SONGPATH_DISC}
+               {set $theactualpath SONGPATH_DISC} ;inside the ark
                {set $dx_author_finder_is_enabled FALSE}
             }
          }
       }
       {if_else $theactualpath
          {do
-            {if_else {== $theactualpath SONGPATH3}
-               {set $songdtareader $dx_raw_song_cache_holder}
+            {if_else {== $theactualpath SONGPATH_UPDATE} ;check if this is an on disc update 
+               {if_else {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
+                  {do
+                     {set $songdtareader {read_file SONGPATH_RAW_DTB}} ; read the raw dtb
+                  }
+                  {do
+                     {set $dx_path_failed} ;failure (shouldnt happen)
+                     {dx_log_writer TRUE {sprint "Found DTA update path, but couldn't find raw dtb"}}
+                  }
+               }
                {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
             }
             {dx_log_writer FALSE {sprint "Found DTA path: " $theactualpath}}
@@ -159,7 +171,7 @@
       DX_ARRAY_READER
    }
    {if $dx_song_cache_holder
-      {if {== $theactualpath SONGPATH3}
+      {if {== $theactualpath SONGPATH_UPDATE}
          {foreach $entry $dx_song_cache_holder
             DX_ARRAY_READER
          }
@@ -295,10 +307,8 @@
    }
    {unless $dx_hmxcheckedonce
       {set $dx_hmxcheckedonce TRUE}
-      {foreach $entry $dx_raw_song_cache_holder ;check mega song dta for shortname, if exists its ham-ron-ecks
-         {if {== {elem $entry 0} {basename {meta_performer song}}}
-            {set $authorvar "Harmonix"}
-         }
+      {if {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
+         {set $authorvar "Harmonix"} ;good a time as any
       }
       DX_CURRENT_SONG_WRITER
       DX_JSON_WRITER
