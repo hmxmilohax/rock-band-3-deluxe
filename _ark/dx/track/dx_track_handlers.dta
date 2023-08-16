@@ -11,67 +11,6 @@
       }
    }
 )
-#define FASTERMODE_FASTER
-(
-   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
-      {unless {>= $speedmod $speedmod_cap} ;only run the following script if we are currently below our max speed cap
-         {set $speedmod {+ $speedmod 0.002}} ;add a small amount of speed to the current song speed on note hit
-         {beatmatch set_music_speed $speedmod} ;apply that speed in game
-         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
-         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
-         DX_MTV_SETUP_TEXT
-         {if {> $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
-            {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
-         }
-      }
-   }
-)
-#define FASTERMODE_SLOWER
-(
-   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
-      {unless {<= $speedmod $leaderspeed} ;only run the following script if we are currently above our original speed
-         {set $speedmod {- $speedmod 0.004}} ;remove a greater amount of speed than we add, to the current song speed on note miss/pass
-         {beatmatch set_music_speed $speedmod} ;apply that speed in game
-         {{{gamemode get track_panel} loaded_dir} set view_time_easy {* {/ 2.4 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
-         {{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
-         DX_MTV_SETUP_TEXT
-      }
-   }
-)
-#define RESET_GEM_CALLBACK
-(
-   {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
-   {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
-   {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
-   {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
-)
-#define FRAME_CATCHER
-(
-   {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find multframe.tex}}} ;remove the FC ring and replace it with the normal ring (the player just missed)
-)
-#define MISS_CATCHER
-(
-   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-      {switch {$player instrument} ;switch based off the currently loaded instrument
-         (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-         (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE} FRAME_CATCHER}) ;if the player has not missed yet, track that the player just missed, remove fc ring as in macro above
-      }
-   }
-)
-#define MISS_INSTRUMENT_CATCHER
-(
-   {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-   {set [num_gems_combo] 0} ;reset the notes comboed counter
-   {$this check_missed} ;run the logic to check our current misses
-   MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
-   FASTERMODE_SLOWER
-)
 #define DX_ANIMATED_TASK_KILLER
 (
    {if {exists animated_gems} ;check if the above task is running
@@ -140,30 +79,6 @@ DX_ANIMATED_TASK_KILLER
          {if {>= $dx_gemframecountdif 60} {set $dx_gemframecountdif 0}} ;only run the task until the variable reaches 60
          {$task loop} ;loop the task
       )
-   }
-}
-
-{if_else $fcringonce ;check if we have already generated new textures for the fc ring
-   {do ;if we have
-      {{coop_track_panel find fcframe.tex} set_bitmap {if_else {== $dx_multiplier_ring none} {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_rb3.png"} {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $dx_multiplier_ring ".png"}}} ;load texture onto the generated texture
-      {{coop_track_panel find multframe.tex} set_bitmap {if_else {== $dx_multiplier_ring none} {sprint "ui/track/multiplier_ring/streak_meter_plate_rb3.png"} {sprint "ui/track/multiplier_ring/streak_meter_plate_" $dx_multiplier_ring ".png"}}} ;load texture onto the generated texture
-      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
-      {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
-      ;{{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the fc texture to the ring material
-      ;{{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the fc texture to the ring material
-      {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the multiplier texture to the second ring material
-      ;{{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the multiplier texture to the second ring material
-      ;{{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the multiplier texture to the second ring material
-   }
-   {do ;if we havent
-      {set $fcringonce TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
-      {new Tex fcframe.tex} ;generate a new texture to hold the fc indicator
-      {new Tex multframe.tex} ;generate a new texture to hold the non fc texture
-      {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
-      ;{{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set emissive_map fcframe.tex}} ;apply the fc texture to the ring material
-      ;{{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set normal_map fcframe.tex}} ;apply the fc texture to the ring material
-      {{coop_track_panel find fcframe.tex} set_bitmap {if_else {== $dx_multiplier_ring none} {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_rb3.png"} {sprint "ui/track/multiplier_ring/streak_meter_plate_fc_" $dx_multiplier_ring ".png"}}} ;load texture onto the generated texture
-      {{coop_track_panel find multframe.tex} set_bitmap {if_else {== $dx_multiplier_ring none} {sprint "ui/track/multiplier_ring/streak_meter_plate_rb3.png"} {sprint "ui/track/multiplier_ring/streak_meter_plate_" $dx_multiplier_ring ".png"}}} ;load texture onto the generated texture
    }
 }
 
