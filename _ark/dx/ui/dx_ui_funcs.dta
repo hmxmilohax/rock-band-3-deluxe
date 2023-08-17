@@ -3,26 +3,31 @@
    ($write_file $dx_log_writer)
    #ifdef HX_WII {set $nothing $nothing} #endif
    #ifndef HX_WII
-   {do
-      DX_GAMEMODE_CHECKER
-      {if_else {file_exists LOG_FILE_PATH}
-         {set $dx_log_reader {array $dx_log_reader}}
-         {set $dx_log_reader ("start of log")}
-      }
-      {if {== $dx_log_counter 3}
-         {push_back $dx_log_reader "Game Entered three times, starting new log."}
-         {set $prev_dx_log_reader {array $dx_log_reader}}
-         {if $write_file
-            {write_file PREV_LOG_FILE_PATH $dx_log_reader}
-            {set $dx_log_counter 0}
+   #ifdef RB3E
+   {print_debug $dx_log_writer}
+   #endif
+   {unless {== $dx_logging never}
+      {do
+         DX_GAMEMODE_CHECKER
+         {if_else {file_exists LOG_FILE_PATH}
+            {set $dx_log_reader {array $dx_log_reader}}
+            {set $dx_log_reader ("start of log")}
          }
-         {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
-      }
-      {push_back $dx_log_reader $dx_log_writer}
-      {if $write_file
-         {write_file LOG_FILE_PATH
-            {array
-               $dx_log_reader
+         {if {== $dx_log_counter 3}
+            {push_back $dx_log_reader "Game Entered three times, starting new log."}
+            {set $prev_dx_log_reader {array $dx_log_reader}}
+            {if $write_file
+               {write_file PREV_LOG_FILE_PATH $dx_log_reader}
+               {set $dx_log_counter 0}
+            }
+            {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
+         }
+         {push_back $dx_log_reader $dx_log_writer}
+         {if {|| {&& $write_file {== $dx_logging default}} {== $dx_logging always}}
+            {write_file LOG_FILE_PATH
+               {array
+                  $dx_log_reader
+               }
             }
          }
       }
@@ -206,19 +211,63 @@
          {push_back {find $dx_state_tracker $current_state} $current_state_pos} ;add in the new list position
       }
    }
+
    {foreach $entry $dx_state_tracker
       {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
-         {set $pushtime TRUE} ;get ready to push it
+         {set $pushtime_guitar TRUE} ;get ready to push it
       }
    }
    {foreach $entry $dx_state_tracker
       {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
-         {set $pushtime FALSE} ;dont push it
+         {set $pushtime_guitar FALSE} ;dont push it
       }
    }
-   {if $pushtime ;if we need to push
+   {if $pushtime_guitar ;if we need to push
       {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
    }
+
+   {foreach $entry $dx_state_tracker
+      {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+         {set $pushtime_drum TRUE} ;get ready to push it
+      }
+   }
+   {foreach $entry $dx_state_tracker
+      {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+         {set $pushtime_drum FALSE} ;dont push it
+      }
+   }
+   {if $pushtime_drum ;if we need to push
+      {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+   }
+   
+   {foreach $entry $dx_state_tracker
+      {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+         {set $pushtime_bass TRUE} ;get ready to push it
+      }
+   }
+   {foreach $entry $dx_state_tracker
+      {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+         {set $pushtime_bass FALSE} ;dont push it
+      }
+   }
+   {if $pushtime_bass ;if we need to push
+      {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+   }
+   
+   {foreach $entry $dx_state_tracker
+      {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+         {set $pushtime_keys TRUE} ;get ready to push it
+      }
+   }
+   {foreach $entry $dx_state_tracker
+      {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+         {set $pushtime_keys FALSE} ;dont push it
+      }
+   }
+   {if $pushtime_keys ;if we need to push
+      {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+   }
+
    {set $dx_state_tracker {array $dx_state_tracker}} ;re read the array so the vars enumerate and the array becomes static
    {$current_list set circular FALSE}
    {set $in_state FALSE}
@@ -265,8 +314,8 @@
       {set $options_circular TRUE}
       {set $options_circular FALSE}
    }
-   {if {>= $num_of_slots 7}
-      {set $num_of_slots 7}
+   {if {>= $num_of_slots 6}
+      {set $num_of_slots 6}
    }
    {set $current_slots $num_of_slots}
    {if {== $current_slots $previous_num_slot}
@@ -292,16 +341,68 @@
    }
 }
 {func
-   dx_revert_choose_char_mesh
-   {choose_character.mesh set_local_scale_index 0 0.5}
-   {choose_character.mesh set_local_scale_index 2 1}
-   {choose_character.mesh set_local_pos_index 2 300}
-   {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
-   {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
-   {online_options.grp remove_object choose_character.mesh}
-}
-{func
    dx_passive_messenger
    ($message)
    {passive_messages_panel queue_message $message}
+}
+{func
+   dx_check_for_dupe ; function to allow 5L/Pro instruments together but still block same parts from being selected
+   ($slot) ; current slot number of the user
+   {do
+      {set $selected_part ; grabs the currently selected part of the user
+         {switch $slot
+            (0 $default_slot0)
+            (1 $default_slot1)
+            (2 $default_slot2)
+            (3 $default_slot3)
+         }
+      }
+      (set $dupe_allowed TRUE) ; allows dupe TRUE by default, any check below will set it to FALSE
+      {switch $selected_part
+         ((overshell_drums overshell_drums_pro) {set $dupe_allowed FALSE}) ; don't allow drums/drums_pro together, crashes game
+         (overshell_guitar
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+         (overshell_real_guitar
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackRealGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+         (overshell_bass
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+         (overshell_real_bass
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackRealBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+         (overshell_keys
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+         (overshell_real_keys
+            {user_mgr foreach_user $user
+               {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                  {if {== {$user get_track_type} kTrackRealKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+               }
+            }
+         )
+      }
+      $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
+   }
 }

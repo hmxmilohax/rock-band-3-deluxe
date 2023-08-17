@@ -776,11 +776,13 @@
             (overshell_restart
                {if_else
                   {gamemode get skip_restart_prompt}
-                  {if_else
-                     {gamemode in_mode trainer}
-                     {{gamemode get game_panel}
-                        restart_section}
-                     {session end_game kRestart}}
+                  {if_else {gamemode in_mode trainer}
+                     {{gamemode get game_panel} restart_section}
+                     {do
+                        ONLY_RESET_CURRENT_BEAT_STUFF
+                        {session end_game kRestart}
+                     }
+                  }
                   {$this show_state kState_RestartConfirm}})
             (os_pause
                {do
@@ -932,11 +934,14 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {if_else
-               {gamemode in_mode trainer}
-               {{gamemode get game_panel}
-                  restart_section}
-               {session end_game kRestart}})
+            {if_else {gamemode in_mode trainer}
+               {{gamemode get game_panel} restart_section}
+               {do
+                  ONLY_RESET_CURRENT_BEAT_STUFF
+                  {session end_game kRestart}
+               }
+            }
+         )
          (overshell_confirm_no
             {$this show_options})})
    (on_cancel
@@ -2069,6 +2074,16 @@
    (enter
       {$this update_part_select_list}
       DX_PART_SELECT_HANDLERS
+      {if $dx_auto_endurance
+         {switch
+            {$this get_slot_num}
+            (0 {$this select_part kTrackGuitar})
+            (1 {$this select_drum_part TRUE})
+            (2 {$this select_vocal_part FALSE})
+            (3 {$this select_part kTrackBass})
+            {fail {set $default_slot0 {$component selected_sym}}}
+         }
+      }
    )
    (exit
       {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
@@ -2140,7 +2155,8 @@
          (overshell_drums
             {$this select_drum_part FALSE})
          (overshell_drums_pro
-            {$this select_drum_part TRUE})})
+            {$this select_drum_part TRUE})
+      })
    (SCROLL_MSG
       {$this update})
    (get_focus_is_harmony
@@ -2176,6 +2192,8 @@
             (overshell_keys kTrackKeys)
             (overshell_real_guitar kTrackRealGuitar)
             (overshell_real_bass kTrackRealBass)
+            (overshell_real_guitar_22 kTrackRealGuitar) ; dx - shows real_guitar diff on 22 part
+            (overshell_real_bass_22 kTrackRealBass) ; dx - shows real_bass diff on 22 part
             (overshell_real_keys kTrackRealKeys)
             (overshell_vocal_solo kTrackVocals)
             (overshell_vocal_harmony kTrackVocals)
@@ -2224,7 +2242,11 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {$this show_choose_part_wait})
+            {if_else {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+               {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
+               {$this show_choose_part_wait} ; dx - use vanilla behavior if 2 same parts are selected
+            }
+         )
          (overshell_confirm_no
             {$this leave_choose_part_wait})})
    (on_cancel
@@ -2246,7 +2268,11 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {$this show_choose_part_wait})
+            {if_else {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+               {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
+               {$this show_choose_part_wait} ; dx - use vanilla behavior if 2 same parts are selected
+            }
+         )
          (overshell_confirm_no
             {$this leave_choose_part_wait})})
    (on_cancel
@@ -2266,6 +2292,11 @@
    (song_settings_flow TRUE)
    (part_unresolved TRUE)
    (shows_extended_mic_arrows TRUE)
+   (enter
+      {if {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+         {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
+      }
+   )
    (update_remote_feedback
       ($focus_item)
       {choose_part.lst set_selected $focus_item})
@@ -2384,6 +2415,9 @@
       {if {! $dx_first_diff} ; dx - hacky way to default to expert on first boot
          {set $dx_first_diff TRUE}
          {choose_diff.lst set_selected 3}
+      }
+      {if $dx_auto_endurance
+         {$this select_difficulty kDifficultyExpert}
       }
    )
    (SELECT_MSG

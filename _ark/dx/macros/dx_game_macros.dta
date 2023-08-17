@@ -242,6 +242,18 @@
 #define DX_PLAYER_SINKS
 (
    {$player add_sink fc_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}
+   {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+         {switch {$player instrument}
+            (bass {$player add_sink fc_bass_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (real_guitar {$player add_sink fc_real_guitar_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (real_bass {$player add_sink fc_real_bass_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (keys {$player add_sink fc_keys_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (real_keys {$player add_sink fc_real_keys_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (guitar {$player add_sink fc_guitar_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (drum {$player add_sink fc_drum_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+            (real_drum {$player add_sink fc_real_drum_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
+         }
+      }
 )
 #define ACTIVE_PLAYER_RESET_HANDLER
 (
@@ -323,12 +335,78 @@
    {set $bass_groove_active FALSE}
    {set $drum_groove_active FALSE}
    {set $guitar_groove_active FALSE}
+   ;callbacks
+   {set $guitar_missed_once FALSE}
+   {set $real_guitar_missed_once FALSE}
+   {set $bass_missed_once FALSE}
+   {set $real_bass_missed_once FALSE}
+   {set $drum_missed_once FALSE}
+   {set $real_drum_missed_once FALSE}
+   {set $keys_missed_once FALSE}
+   {set $real_keys_missed_once FALSE}
    ;acceleration mode
    {set $speedmod_top $leaderspeed}
    ;endgame sound effects
    {set $dx_someone_fcd FALSE}
    {set $dx_someone_niced FALSE}
    {set $dx_someone_jurgend FALSE}
+)
+#define ONLY_RESET_CURRENT_BEAT_STUFF
+(
+   {set $current_beat 0}
+   {set $startingbpm FALSE}
+   {set $dx_bpm_counter_for_countdown FALSE}
+   {set $solo_box_up_0 FALSE}
+   {set $solo_box_up_1 FALSE}
+   {set $solo_box_up_2 FALSE}
+   {set $solo_box_up_3 FALSE}
+   {set $delay_tracked_0 FALSE}
+   {set $delay_tracked_1 FALSE}
+   {set $delay_tracked_2 FALSE}
+   {set $delay_tracked_3 FALSE}
+   {set $current_tracked_beat_0 0}
+   {set $current_tracked_beat_1 0}
+   {set $current_tracked_beat_2 0}
+   {set $current_tracked_beat_3 0}
+
+   {set $tracked_beat_no_notes_start_guitar 0}
+   {set $tracked_beat_no_notes_end_guitar 0}
+   {set $first_guitar_gem_tracked FALSE}
+
+   {set $tracked_beat_no_notes_start_bass 0}
+   {set $tracked_beat_no_notes_end_bass 0}
+   {set $first_bass_gem_tracked FALSE}
+
+   {set $tracked_beat_no_notes_start_drum 0}
+   {set $tracked_beat_no_notes_end_drum 0}
+   {set $first_drum_gem_tracked FALSE}
+
+   {set $tracked_beat_no_notes_start_keys 0}
+   {set $tracked_beat_no_notes_end_keys 0}
+   {set $first_keys_gem_tracked FALSE}
+)
+#define RESET_MIDI_COUNTDOWN_TRACKING
+(
+   {set $guitar_note_tracker ()}
+   {resize $guitar_note_tracker 0} ;resize the array
+   {push_back $guitar_note_tracker (none none)} ;push_back a new state into the array
+
+   {set $drum_note_tracker ()}
+   {resize $drum_note_tracker 0} ;resize the array
+   {push_back $drum_note_tracker (none none)} ;push_back a new state into the array
+
+   {set $bass_note_tracker ()}
+   {resize $bass_note_tracker 0} ;resize the array
+   {push_back $bass_note_tracker (none none)} ;push_back a new state into the array
+
+   {set $keys_note_tracker ()}
+   {resize $keys_note_tracker 0} ;resize the array
+   {push_back $keys_note_tracker (none none)} ;push_back a new state into the array
+)
+#define GAME_EXIT_RESET_HANDLER
+(
+   ONLY_RESET_CURRENT_BEAT_STUFF
+   RESET_MIDI_COUNTDOWN_TRACKING
 )
 #define DX_MTV_RESET_HANDLER
 (
@@ -393,6 +471,10 @@
    {if {== $dx_vocal_arrow rb3} {set $dx_vocal_arrow none}}
 
    {if {== $dx_vocal_highway rb3} {set $dx_vocal_highway none}}
+   
+   {if {== $dx_vocal_notes rb3} {set $dx_vocal_notes none}}
+   
+   {if {== $dx_vocal_overdrive rb3} {set $dx_vocal_overdrive none}}
 
    {if {== $dx_keyboard original} {set $dx_keyboard none}}
 
@@ -401,15 +483,15 @@
    {if {== $dx_highway_drum _rb3_drum} {set $dx_highway_drum none}}
    {if {== $dx_highway_keys _rb3_keys} {set $dx_highway_keys none}}
 
-   {if {== $dx_spotlight_guitar _spotlight_guitar_track} {set $dx_spotlight_guitar none}}
-   {if {== $dx_spotlight_bass _spotlight_bass_track} {set $dx_spotlight_bass none}}
-   {if {== $dx_spotlight_drum _spotlight_drums_track} {set $dx_spotlight_drum none}}
-   {if {== $dx_spotlight_keys _spotlight_prokeys_track} {set $dx_spotlight_keys none}}
+   {if {== $dx_streak_guitar _spotlight_guitar_track} {set $dx_streak_guitar none}}
+   {if {== $dx_streak_bass _spotlight_bass_track} {set $dx_streak_bass none}}
+   {if {== $dx_streak_drum _spotlight_drums_track} {set $dx_streak_drum none}}
+   {if {== $dx_streak_keys _spotlight_prokeys_track} {set $dx_streak_keys none}}
 
-   {if {== $dx_emissive_guitar rb3_guitar} {set $dx_emissive_guitar none}}
-   {if {== $dx_emissive_bass rb3_bass} {set $dx_emissive_bass none}}
-   {if {== $dx_emissive_drum rb3_drums} {set $dx_emissive_drum none}}
-   {if {== $dx_emissive_keys rb3_keys} {set $dx_emissive_keys none}}
+   {if {== $dx_overdrive_guitar rb3_guitar} {set $dx_overdrive_guitar none}}
+   {if {== $dx_overdrive_bass rb3_bass} {set $dx_overdrive_bass none}}
+   {if {== $dx_overdrive_drum rb3_drums} {set $dx_overdrive_drum none}}
+   {if {== $dx_overdrive_keys rb3_keys} {set $dx_overdrive_keys none}}
 
 )
 #define DX_ANGLE_RESET_HANDLER

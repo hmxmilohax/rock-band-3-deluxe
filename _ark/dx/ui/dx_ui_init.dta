@@ -4,6 +4,22 @@ DX_JSON_CLEAR
 DX_CURRENT_SONG_CLEAR
 #endif
 
+{set $guitar_note_tracker ()}
+{resize $guitar_note_tracker 0} ;resize the array
+{push_back $guitar_note_tracker (none none)} ;push_back a new state into the array
+
+{set $drum_note_tracker ()}
+{resize $drum_note_tracker 0} ;resize the array
+{push_back $drum_note_tracker (none none)} ;push_back a new state into the array
+
+{set $bass_note_tracker ()}
+{resize $bass_note_tracker 0} ;resize the array
+{push_back $bass_note_tracker (none none)} ;push_back a new state into the array
+
+{set $keys_note_tracker ()}
+{resize $keys_note_tracker 0} ;resize the array
+{push_back $keys_note_tracker (none none)} ;push_back a new state into the array
+
 ;platform detection
 #ifdef HX_PS3
 DX_PS3_HW_DETECTION
@@ -19,15 +35,25 @@ DX_PS3_HW_DETECTION
 #else
 {set $dx_detected_platform platform_xbox}
 #endif
-#endif 
-
 #ifdef RB3E_EMULATOR 
 {set $dx_detected_platform platform_xenia_rb3e}
 #endif
+#endif
 
 #ifdef HX_WII
+#ifdef RB3E
+{set $dx_detected_platform platform_wii_rb3e}
+#else
 {set $dx_detected_platform platform_wii}
 #endif
+#ifdef RB3E_EMULATOR
+{set $dx_detected_platform platform_dolphin_rb3e}
+#endif
+#endif
+
+{unless $dx_detected_platform
+   {set $dx_detected_platform platform_unknown}
+}
 
 {dx_log_writer TRUE {localize $dx_detected_platform}}
 
@@ -72,29 +98,29 @@ DX_PS3_HW_DETECTION
 
 ;spotlights, list can be found in _ark\ui\track\spotlights\spotlights.dta
 ;sets default guitar spotlight
-{set $dx_spotlight_guitar none}
+{set $dx_streak_guitar none}
 
 ;sets default bass spotlight
-{set $dx_spotlight_bass none}
+{set $dx_streak_bass none}
 
 ;sets default drums spotlight
-{set $dx_spotlight_drum none}
+{set $dx_streak_drum none}
 
 ;sets default keys spotlight
-{set $dx_spotlight_keys none}
+{set $dx_streak_keys none}
 
 ;emissives, list can be found in _ark\ui\track\emissives\emissives.dta
 ;sets default guitar emissive. same as above.
-{set $dx_emissive_guitar none}
+{set $dx_overdrive_guitar none}
 
 ;sets default bass emissive. same as above.
-{set $dx_emissive_bass none}
+{set $dx_overdrive_bass none}
 
 ;sets default drums emissive. same as above.
-{set $dx_emissive_drum none}
+{set $dx_overdrive_drum none}
 
 ;sets default keys emissive. same as above.
-{set $dx_emissive_keys none}
+{set $dx_overdrive_keys none}
 
 ;sets default keyboard track colors.
 ;list can be found in _ark\ui\track\keyboards\keyboards.dta
@@ -145,6 +171,14 @@ DX_PS3_HW_DETECTION
 ;list can be found in _ark\ui\track\voxhw\voxhw.dta
 {set $dx_vocal_highway none}
 
+;sets default vocal notes track textures.
+;list can be found in _ark\ui\track\voxnotes\voxnotes.dta
+{set $dx_vocal_notes none}
+
+;sets default vocal overdrive track textures.
+;list can be found in _ark\ui\track\voxod\voxod.dta
+{set $dx_vocal_overdrive none}
+
 ;enable custom track angles
 {set $dx_forcedx_multiangle FALSE}
 
@@ -174,6 +208,9 @@ DX_PS3_HW_DETECTION
 ;animated texture name. must have ran "enable_animation.bat" first. current animated gems are
 ;rb4
 {set $dx_animated_gem none}
+
+;sets default track theme name, this will be read from track_theme.dta
+{set $dx_track_theme_name "My track theme"}
 
 ;chooses which main menu to load, if you dont like the new one, vanilla is "3"
 ;valid sv values are 2, 3, 4, 5, 7, 8
@@ -244,9 +281,9 @@ DX_PS3_HW_DETECTION
 {set $dx_protar_color6 5}
 
 ;set default colors for overdrive textures (gold)
-{set $dx_emissive_r 0.71}
-{set $dx_emissive_g 0.54}
-{set $dx_emissive_b 0.0}
+{set $dx_overdrive_r 0.71}
+{set $dx_overdrive_g 0.54}
+{set $dx_overdrive_b 0.0}
 
 ;set default colors for overdrive textures (gold)
 {set $spotlight_r 0.05}
@@ -311,12 +348,18 @@ DX_PS3_HW_DETECTION
 {set $dx_noise 0}
 {set $dx_blur 0}
 
+{set $dx_logging never}
+
+{set $dx_fctype both}
+
 #ifndef HX_WII
 {if {file_exists #ifdef HX_XBOX "GAME:/dx.dta" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx.dta" #endif} INIT_DX_READER}
 
 {if {file_exists #ifdef HX_XBOX "GAME:/mod.dta" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/mod.dta" #endif} INIT_MOD_READER}
 
 {if {file_exists #ifdef HX_XBOX "GAME:/val.dta" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/val.dta" #endif} INIT_VAL_READER}
+
+{if {file_exists #ifdef HX_XBOX "GAME:/track_theme.dta" #endif #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/track_theme.dta" #endif} INIT_TRACK_THEME_READER}
 #endif
 
 #ifndef HX_WII
@@ -325,6 +368,12 @@ DX_PS3_HW_DETECTION
    DX_RAW_SONG_CACHE
 }
 #endif
+
+{switch $dx_fctype
+   (ring {set $dx_fc_ring TRUE} {set $dx_fc_glow FALSE})
+   (glow {set $dx_fc_ring FALSE} {set $dx_fc_glow TRUE})
+   (both {set $dx_fc_ring TRUE} {set $dx_fc_glow TRUE})
+}
 
 ;developer settings below do not modify
 {set $screensaver TRUE}
@@ -355,21 +404,21 @@ DX_PS3_HW_DETECTION
 ;reset textures and angle if set to rb3
 {do DX_TEXTURE_RESET_HANDLER DX_ANGLE_RESET_HANDLER}
 
-{unless {== $dx_spotlight_guitar none} {set $dx_spotlight_guitar_needs_reset TRUE}}
+{unless {== $dx_streak_guitar none} {set $dx_streak_guitar_needs_reset TRUE}}
 
-{unless {== $dx_spotlight_bass none} {set $dx_spotlight_bass_needs_reset TRUE}}
+{unless {== $dx_streak_bass none} {set $dx_streak_bass_needs_reset TRUE}}
 
-{unless {== $dx_spotlight_drum none} {set $dx_spotlight_drum_needs_reset TRUE}}
+{unless {== $dx_streak_drum none} {set $dx_streak_drum_needs_reset TRUE}}
 
-{unless {== $dx_spotlight_keys none} {set $dx_spotlight_keys_needs_reset TRUE}}
+{unless {== $dx_streak_keys none} {set $dx_streak_keys_needs_reset TRUE}}
 
-{unless {== $dx_emissive_guitar none} {set $dx_emissive_guitar_needs_reset TRUE}}
+{unless {== $dx_overdrive_guitar none} {set $dx_overdrive_guitar_needs_reset TRUE}}
 
-{unless {== $dx_emissive_bass none} {set $dx_emissive_bass_needs_reset TRUE}}
+{unless {== $dx_overdrive_bass none} {set $dx_overdrive_bass_needs_reset TRUE}}
 
-{unless {== $dx_emissive_drum none} {set $dx_emissive_drum_needs_reset TRUE}}
+{unless {== $dx_overdrive_drum none} {set $dx_overdrive_drum_needs_reset TRUE}}
 
-{unless {== $dx_emissive_keys none} {set $dx_emissive_keys_needs_reset TRUE}}
+{unless {== $dx_overdrive_keys none} {set $dx_overdrive_keys_needs_reset TRUE}}
 
 {unless {== $dx_keyboard none} {set $dx_keyboard_needs_reset TRUE}}
 
@@ -403,6 +452,10 @@ DX_PS3_HW_DETECTION
 
 {unless {== $dx_vocal_highway none} {set $dx_vocal_highway_needs_reset TRUE}}
 
+{unless {== $dx_vocal_notes none} {set $dx_vocal_notes_needs_reset TRUE}}
+
+{unless {== $dx_vocal_overdrive none} {set $dx_vocal_overdrive_needs_reset TRUE}}
+
 {unless {== $dx_multiangle 1} {set $dx_forcedx_multiangle TRUE}}
 
 {unless {== $dx_animated_gem none} {do {set $dx_animated_gems_enabled TRUE} {set $dx_animated_gem_needs_reset TRUE}}}
@@ -432,5 +485,6 @@ DX_PS3_HW_DETECTION
    INIT_DX_WRITER
    INIT_MOD_WRITER
    INIT_VAL_WRITER
+   INIT_TRACK_THEME_WRITER
 }
 #endif

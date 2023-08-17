@@ -139,18 +139,38 @@
    {ingame_pause_bg.mat set color {pack_color 1.0 1.0 1.0}}
    {ingame_pausebg.mat set color {pack_color 1.0 1.0 1.0}}
 )
-#define DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
+#define DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER ; forcefully drops any player on a non-standard slot when turning off AIM
 (
-   {if {> $dx_os_slot_counter 3}
+   {if {> $dx_os_slot_counter 4}
       {set $dx_os_slot_counter 0}
-   }
-   {if {== $dx_os_slot_counter 2}
-      {set $dx_os_slot_counter 3}
    }
    {if 
       {&&
          {user_mgr get_user_from_slot $dx_os_slot_counter}
-         {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerVocals}
+         {||
+            {switch $dx_os_slot_counter
+               (0
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerVocals}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerDrum}
+               )
+               (1
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerGuitar}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerRealGuitar}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerKeys}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerVocals}
+               )
+               (2
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerGuitar}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerRealGuitar}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerKeys}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerDrum}
+               )
+               (3
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerVocals}
+                  {== {{user_mgr get_user_from_slot $dx_os_slot_counter} get_controller_type} kControllerDrum}
+               )
+            }
+         }
       }
       {{overshell get_slot {user_mgr get_user_from_slot $dx_os_slot_counter}} remove_user}
    }
@@ -161,9 +181,9 @@
    {if_else {modifier_mgr is_modifier_active mod_auto_vocals}
       {do
          {$this attempt_toggle_auto_vocals} ;vanilla function to turn off AIM
-         ;if AIM successfully turns off, proceed to remove extra vocalists
+         ;if AIM successfully turns off, proceed to remove any players on a non-standard slot
          {if {! {modifier_mgr is_modifier_active mod_auto_vocals}}
-            ;Checks whether or not a player exists and if they're a vocalist on slots 0, 1, 3 before removing them
+            DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
             DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
             DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
             DX_AUTO_VOCAL_PLAYER_DROPPER_HANDLER
@@ -348,6 +368,25 @@
          {do
             {modifier_mgr toggle_modifier_enabled $modifier}
             {overshell update_all}
+            {ui goto_screen meta_loading_main_screen}
+         }
+      }
+   )
+   (mod_precision
+      {unless
+         {modifier_mgr is_modifier_active mod_precision}
+         {$this show_state kState_PrecisionWarn}
+      }
+      {if
+         {modifier_mgr is_modifier_active mod_precision}
+         {do
+            {set $dx_rails_needs_reset TRUE}
+            {if {== $dx_rails none}
+               {set $dx_rails rb3}
+            }
+            {modifier_mgr toggle_modifier_enabled $modifier}
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen}
          }
       }
    )

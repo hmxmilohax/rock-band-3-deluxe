@@ -1,70 +1,109 @@
+#define FASTERMODE_FASTER
+(
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {>= $speedmod $speedmod_cap} ;only run the following script if we are currently below our max speed cap
+         {set $speedmod {+ $speedmod 0.002}} ;add a small amount of speed to the current song speed on note hit
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         ;{{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         DX_MTV_SETUP_TEXT
+         {if {> $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
+            {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
+         }
+      }
+   }
+)
+#define FASTERMODE_SLOWER
+(
+   {if {modifier_mgr is_modifier_active mod_fastermode} ;check if we are in acceleration mode
+      {unless {<= $speedmod $leaderspeed} ;only run the following script if we are currently above our original speed
+         {set $speedmod {- $speedmod 0.004}} ;remove a greater amount of speed than we add, to the current song speed on note miss/pass
+         {beatmatch set_music_speed $speedmod} ;apply that speed in game
+         ;{{{gamemode get track_panel} loaded_dir} set view_time_expert {* {/ 1.2 $trackspeed} $speedmod}} ;try (and fail) to match track speed to the current song speed
+         DX_MTV_SETUP_TEXT
+      }
+   }
+)
+#define ADD_GOLD_STATE
+(
+   {switch {{$player get_user} get_slot_num}
+      (0
+         {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy.trig} trigger}
+      )
+      (1
+         {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy.trig} trigger}
+      )
+      (2
+         {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy.trig} trigger}
+      )
+      (3
+         {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy.trig} trigger}
+      )
+   }
+)
+#define REMOVE_GOLD_STATE
+(
+   {switch {{$player get_user} get_slot_num}
+      (0
+         {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy_stop.trig} trigger}
+      )
+      (1
+         {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy_stop.trig} trigger}
+      )
+      (2
+         {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy_stop.trig} trigger}
+      )
+      (3
+         {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy_stop.trig} trigger}
+      )
+   }
+)
+#define RESET_STREAK_BLOWN
+(
+   {switch {{$player get_user} get_slot_num}
+      (0
+         {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find end_streak.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy_stop.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find reset.trig} trigger}
+      )
+      (1
+         {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find end_streak.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy_stop.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find reset.trig} trigger}
+      )
+      (2
+         {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find end_streak.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy_stop.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find reset.trig} trigger}
+      )
+      (3
+         {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find end_streak.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy_stop.trig} trigger}
+         {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find reset.trig} trigger}
+      )
+   }
+)
 (new Object fc_callback ;the main callback for all instruments
    (hit ;when a note is hit
       {coop_track_panel dx_set_star_display_pos}
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {switch {$player instrument} ;switch based off the currently loaded instrument
-            (bass
-               {if {! $bass_firstnote} {set $bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $bass_milosong} {set $bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (real_guitar
-               {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (real_bass
-               {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (real_keys
-               {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (keys
-               {if {! $keys_firstnote} {set $keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $keys_milosong} {set $keys_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (guitar
-               {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $guitar_milosong} {set $guitar_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (drum
-               {if {! $drum_firstnote} {set $drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $drum_milosong} {set $drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-            (real_drum
-               {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-               {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} RESET_GEM_CALLBACK} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-            )
-         }
-      }
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
    )
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {switch {$player instrument} ;switch based off the currently loaded instrument
-            (bass {unless {! $bass_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (real_guitar {unless {! $real_guitar_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (real_bass {unless {! $real_bass_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (keys {unless {! $keys_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (real_keys {unless {! $real_keys_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (guitar {unless {! $guitar_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (drum {unless {! $drum_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
-            (real_drum {unless {! $real_drum_firstnote} MISS_INSTRUMENT_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (bass {unless {! $bass_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (real_guitar {unless {! $real_guitar_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (real_bass {unless {! $real_bass_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (keys {unless {! $keys_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (real_keys {unless {! $real_keys_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (guitar {unless {! $guitar_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (drum {unless {! $drum_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
+            (real_drum {unless {! $real_drum_firstnote} MISS_CATCHER}) ;if the first note has not been hit/missed/passed yet
          }
       }
    )
    (pass ;when a note is passed (ignored)
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {$this check_missed} ;run the logic to check our current misses
       MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
-      FASTERMODE_SLOWER
    )
    (check_fc
-      {$this check_missed} ;run the logic to check our current misses
       {if {== {'+' [num_gems_pass] [num_gems_miss]} 0} ;check that if we add our notes passed and notes missed together, it still equals 0 (fc)
          {set $fc TRUE} ;tell the logic that we are still fc'ing
       }
@@ -72,6 +111,478 @@
    (check_missed
       {if {> {'+' [num_gems_miss] [num_gems_pass]} 0} ;check that if we add our notes passed and notes missed together, it is any number higher than 0 (non fc)
          MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_guitar_callback
+   (hit ;when a note is hit
+      {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $guitar_milosong} {set $guitar_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $guitar_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (guitar ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $guitar_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (guitar REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (guitar {set $guitar_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_bass_callback
+   (hit ;when a note is hit
+      {if {! $bass_firstnote} {set $bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $bass_milosong} {set $bass_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $bass_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (bass ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $bass_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (bass REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (bass {set $bass_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_real_guitar_callback
+   (hit ;when a note is hit
+      {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $real_guitar_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (real_guitar ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $real_guitar_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_guitar REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_guitar {set $real_guitar_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_real_bass_callback
+   (hit ;when a note is hit
+      {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $real_bass_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (real_bass ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $real_bass_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_bass REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_bass {set $real_bass_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_drum_callback
+   (hit ;when a note is hit
+      {if {! $drum_firstnote} {set $drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $drum_milosong} {set $drum_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $drum_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (drum ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $drum_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (drum REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (drum {set $drum_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_real_drum_callback
+   (hit ;when a note is hit
+      {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $real_drum_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (real_drum ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $real_drum_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_drum REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_drum {set $real_drum_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_keys_callback
+   (hit ;when a note is hit
+      {if {! $keys_firstnote} {set $keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $keys_milosong} {set $keys_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $keys_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (keys ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $keys_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (keys REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (keys {set $keys_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
+      }
+   )
+   (num_gems_hit 0) ;default setup state and storage for note counters
+   (num_gems_combo 0) ;default setup state and storage for note counters
+   (num_gems_miss 0) ;default setup state and storage for note counters
+   (num_gems_pass 0) ;default setup state and storage for note counters
+)
+(new Object fc_real_keys_callback
+   (hit ;when a note is hit
+      {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+      {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
+         {set [num_gems_hit] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_miss] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_pass] 0} ;reset our current callback tracker back to 0 to begin new tracking
+         {set [num_gems_combo] 0} ;reset our current callback tracker back to 0 to begin new tracking
+      }
+      {$this check_fc} ;run the logic to check if we are in an fc or not
+      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+      FASTERMODE_FASTER ;speed up the song a little if in acceleration mode
+   )
+   (miss ;when a note is missed (overstrum)
+      {unless {! $real_keys_firstnote}
+         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+         {set [num_gems_combo] 0} ;reset the notes comboed counter
+         {$this check_missed} ;run the logic to check our current misses
+         FASTERMODE_SLOWER ;if the first note has not been hit/missed/passed yet
+      }
+   )
+   (pass ;when a note is passed (ignored)
+      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
+      {set [num_gems_combo] 0} ;reset the notes comboed counter
+      {$this check_missed} ;run the logic to check our current misses
+      FASTERMODE_SLOWER
+   )
+   (check_fc
+      {$this check_missed} ;run the logic to check our current misses
+      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {switch {$player instrument}
+               (real_keys ADD_GOLD_STATE)
+            }
+         }
+      }
+   )
+   (check_missed
+      {if {> {'+' [num_gems_pass] [num_gems_miss]} 0}
+         {if_else $real_keys_missed_once
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_keys REMOVE_GOLD_STATE)
+               }
+            }
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {switch {$player instrument}
+                  (real_keys {set $real_keys_missed_once TRUE} RESET_STREAK_BLOWN)
+               }
+            }
+         }
       }
    )
    (num_gems_hit 0) ;default setup state and storage for note counters
