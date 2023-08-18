@@ -253,12 +253,17 @@
                            {if {== {elem $entry 0} {sprint "delay_" $current_tracked_beat_0}}
                               {set $tracked_beat_no_notes_start_guitar {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 1}}
                               {set $tracked_beat_no_notes_end_guitar {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 2}}
+                              ;{dx_log_writer TRUE {sprint "delay_" $current_tracked_beat_0 " found, Start: " $tracked_beat_no_notes_start_guitar ", End: " $tracked_beat_no_notes_end_guitar ", Current Beat: " $current_beat}}
                               {set $delay_tracked_0 TRUE}
                            }
                         }
                      }
                      {if $delay_tracked_0
                         {if {>= $current_beat $tracked_beat_no_notes_start_guitar}
+                           {unless $dx_log_stopper
+                              {set $dx_log_stopper TRUE}
+                              ;{dx_log_writer TRUE {sprint "Current Beat: " $current_beat " matches break start: " $tracked_beat_no_notes_start_guitar ", counting down to end of break at: " $tracked_beat_no_notes_end_guitar}}
+                           }
                            {switch {- $tracked_beat_no_notes_end_guitar $current_beat}
                               A_BUNCH_OF_NUMBERS
                            }
@@ -519,7 +524,11 @@
             )
          }
       }
-      {set $current_beat {+ $current_beat {int {/ {seconds_to_beat {/ 1000 {beatmatch ms_per_beat}}} 4}}}}
+      {set $beat_adder {int {/ {int {seconds_to_beat {int {/ 1000 {beatmatch ms_per_beat}}}}} 4}}}
+      {if_else {> $beat_adder 0}
+         {set $current_beat {+ $current_beat $beat_adder}}
+         {set $current_beat {+ $current_beat 1}}
+      }
       ;{dx_log_writer TRUE {sprint "Current Beat: " $current_beat}}
    }
 )
