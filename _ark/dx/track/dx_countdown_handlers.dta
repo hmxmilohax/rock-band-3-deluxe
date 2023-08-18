@@ -148,6 +148,8 @@
 #define A_BUNCH_OF_NUMBERS
 (
    (4.0
+      {set $dx_log_stopper FALSE}
+      ;{dx_log_writer TRUE {sprint "Countdown successfully complete. Current beat: " $current_beat}}
       {switch {{$player get_user} get_slot_num}
          (0
             {if $solo_box_up_0 HIDE_SOLO_BOX}
@@ -197,6 +199,7 @@
          {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle} ;only run stuff in normal game modes
          {gamemode in_mode qp_coop} {gamemode in_mode campaign}
          {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+         #ifdef HX_XBOX {gamemode in_mode audition} #endif
          ;{gamemode in_mode practice} {gamemode in_mode qp_practice} ;dont do it in practice
       }
       {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
@@ -227,12 +230,17 @@
                            {if {== {elem $entry 0} {sprint "delay_" $current_tracked_beat_0}}
                               {set $tracked_beat_no_notes_start_keys {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 1}}
                               {set $tracked_beat_no_notes_end_keys {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 2}}
+                              ;{dx_log_writer TRUE {sprint "delay_" $current_tracked_beat_0 " found, Start: " $tracked_beat_no_notes_start_keys ", End: " $tracked_beat_no_notes_end_keys ", Current Beat: " $current_beat}}
                               {set $delay_tracked_0 TRUE}
                            }
                         }
                      }
                      {if $delay_tracked_0
                         {if {>= $current_beat $tracked_beat_no_notes_start_keys}
+                           {unless $dx_log_stopper
+                              {set $dx_log_stopper TRUE}
+                              ;{dx_log_writer TRUE {sprint "Current Beat: " $current_beat " matches break start: " $tracked_beat_no_notes_start_keys ", counting down to end of break at: " $tracked_beat_no_notes_end_keys}}
+                           }
                            {switch {- $tracked_beat_no_notes_end_keys $current_beat}
                               A_BUNCH_OF_NUMBERS
                            }
@@ -511,6 +519,7 @@
             )
          }
       }
-      {set $current_beat {+ $current_beat 0.25}}
+      {set $current_beat {+ $current_beat {int {/ {seconds_to_beat {/ 1000 {beatmatch ms_per_beat}}} 4}}}}
+      ;{dx_log_writer TRUE {sprint "Current Beat: " $current_beat}}
    }
 )
