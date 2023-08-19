@@ -76,6 +76,7 @@ if successful_extraction:
     if build_patch_ark(False, rpcs3_directory, rpcs3_mode=True):
         close_rpcs3_process()
 
+        print("PS3 ARK built successfully!")
         # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
         source_dir = "../_build/ps3"
         # Delete _build/ps3/USRDIR/gen folder if it exists
@@ -112,6 +113,7 @@ if successful_extraction:
         subprocess.Popen(["python", discordrichpresence_path, suffix])
 
         # Run rpcs3 with the appropriate suffix in a detached process
+        print("Complete! Launching RPCS3...")
         eboot_bin_path = os.path.join(rpcs3_directory, "game", "BLUS30463", "USRDIR", "eboot.bin")
         run_in_detached_process([rpcs3_exe_path, eboot_bin_path])
 

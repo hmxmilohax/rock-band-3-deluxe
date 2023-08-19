@@ -8,7 +8,7 @@ successful_extraction = download_mackiloha()
 
 if successful_extraction:
     build_patch_ark(False, rpcs3_mode=False)
-    print("PS3 ARK built successfully.")
-    print("You may find the files needed to place on your PS3 in /_build/PS3/.")
+    print("PS3 ARK built successfully!")
+    print("Complete! You may find the files needed to place on your PS3 in /_build/PS3/.")
 else:
     print("Failed to extract Mackiloha-suite-archive.zip. Please check the download and extraction process.")

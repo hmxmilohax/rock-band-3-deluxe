@@ -38,7 +38,6 @@ def make_executable_binaries():
 # else, build the PS3 ARK
 def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = False):
     # directories used in this script
-    print("Building Rock Band 3 Deluxe patch arks...")
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
@@ -75,6 +74,7 @@ def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = 
         f.rename(the_new_filename)
 
     # build the ark
+    print("Building Rock Band 3 Deluxe ARK...")
     failed = False
     try:
         if platform == "win32":
@@ -99,7 +99,7 @@ def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = 
         rm_tree(root_dir.joinpath("_tmp"))
 
     if not failed:
-        print("Successfully built Rock Band 3 Deluxe ARK.")
+        # print("Successfully built Rock Band 3 Deluxe ARK.")
         return True
     else:
         print("Error building ARK. Check your modifications or run git_reset.py to rebase your repo.")
