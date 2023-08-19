@@ -106,9 +106,11 @@ if successful_extraction:
                 source_file = os.path.join(root, file)
                 if is_macos:
                     destination_file = os.path.join(destination_dir, relative_path, file)
-                    destination_file = os.path.normpath(destination_file)  # Normalize the path to handle spaces
                 else:
                     relative_file_path = os.path.normpath(os.path.join(relative_path, file))
+                if is_macos:
+                    destination_file = os.path.normpath(destination_file)  # Normalize the path to handle spaces
+                else:
                     destination_file = os.path.normpath(os.path.join(destination_dir, relative_file_path))
                 
                 if is_macos:
