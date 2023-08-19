@@ -90,7 +90,7 @@ def download_and_extract_x360ce(url, output_dir):
     source_txt = output_dir / "x360ce_source.txt"
 
     if source_txt.is_file():
-        print("x360ce_source.txt exists, skipping download")
+        # print("x360ce_source.txt exists, skipping download")
         return
 
     print("Downloading x360ce_x64.zip...")

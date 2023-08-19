@@ -48,7 +48,7 @@ if build_patch_ark(True, rpcs3_mode=False):
         file.write(json_path)
     setup_xenia()
     # Now run discordrichpresence.py with _xenia argument
-    subprocess.Popen(["python", discordrichpresence_path, "_xenia"])
+    # subprocess.Popen(["python", discordrichpresence_path, "_xenia"])
     # Run xenia with _xenia argument
     print("Complete! Launching Xenia...")
     cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"

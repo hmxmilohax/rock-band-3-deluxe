@@ -110,7 +110,7 @@ if successful_extraction:
             file.write(json_path)
 
         # Run discordrichpresence.py with the appropriate suffix
-        subprocess.Popen(["python", discordrichpresence_path, suffix])
+        # subprocess.Popen(["python", discordrichpresence_path, suffix])
 
         # Run rpcs3 with the appropriate suffix in a detached process
         print("Complete! Launching RPCS3...")
