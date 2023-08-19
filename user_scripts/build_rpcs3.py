@@ -46,12 +46,12 @@ def get_rpcs3_directory():
     if os.path.exists(directory_file):
         with open(directory_file, "r") as file:
             rpcs3_directory = file.readline().strip()
-
-            # Remove any leading/trailing quotes and whitespace
-            rpcs3_directory = rpcs3_directory.strip('"\' ')
-
-            # Replace escaped backslashes with regular slashes
-            rpcs3_directory = rpcs3_directory.replace("\\", "")
+            if is_macos:
+                # Remove any leading/trailing quotes and whitespace
+                rpcs3_directory = rpcs3_directory.strip('"\' ')
+            if is_macos:
+                # Replace escaped backslashes with regular slashes
+                rpcs3_directory = rpcs3_directory.replace("\\", "")
 
             if rpcs3_directory and validate_rpcs3_directory(rpcs3_directory):
                 return rpcs3_directory
@@ -92,7 +92,6 @@ if successful_extraction:
         print("PS3 ARK built successfully!")
         # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
         source_dir = "../_build/ps3"
-        # Delete _build/ps3/USRDIR/gen folder if it exists
         destination_dir = os.path.join(rpcs3_directory, "game", "BLUS30463")
 
         # Ensure destination_dir exists before copying
@@ -101,11 +100,23 @@ if successful_extraction:
         # Copy files
         for root, dirs, files in os.walk(source_dir):
             relative_path = os.path.relpath(root, source_dir)
-            relative_path = relative_path.replace("\\", "/")  # Replace backslashes with forward slashes
+            if is_macos:
+                relative_path = relative_path.replace("\\", "/")  # Replace backslashes with forward slashes
             for file in files:
                 source_file = os.path.join(root, file)
-                destination_file = os.path.join(destination_dir, relative_path, file)
-                destination_file = os.path.normpath(destination_file)  # Normalize the path to handle spaces
+                if is_macos:
+                    destination_file = os.path.join(destination_dir, relative_path, file)
+                    destination_file = os.path.normpath(destination_file)  # Normalize the path to handle spaces
+                else:
+                    relative_file_path = os.path.normpath(os.path.join(relative_path, file))
+                    destination_file = os.path.normpath(os.path.join(destination_dir, relative_file_path))
+                
+                if is_macos:
+                    # Remove leading/trailing quotes and whitespace
+                    destination_file = destination_file.strip('"\' ')
+                    # Remove escaped backslashes
+                    destination_file = destination_file.replace("\\", "")
+                    
                 os.makedirs(os.path.dirname(destination_file), exist_ok=True)
                 shutil.copy2(source_file, destination_file)
                 
@@ -140,7 +151,10 @@ if successful_extraction:
 
         print(f"Launching RPCS3 with eboot.bin: {eboot_bin_path_escaped}")
 
-        run_in_detached_process([rpcs3_app_path, eboot_bin_path])
+        if is_macos:
+            run_in_detached_process([rpcs3_app_path, eboot_bin_path])
+        else:
+            run_in_detached_process([rpcs3_exe_path, eboot_bin_path])
 
     else:
         print("Error building PS3 ARK. Check your modifications or run git_reset.py to rebase your repo.")
