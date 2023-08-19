@@ -6,6 +6,9 @@ import os
 import logging
 from pathlib import Path
 
+# Check if the system is running on macOS
+is_macos = sys.platform == "darwin"
+
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -19,7 +22,11 @@ for package in required_packages:
         __import__(package)
     except ImportError:
         print(f"{package} not found. Installing...")
-        subprocess.check_call(["pip", "install", package])
+        
+        # Use "pip3" on macOS and Linux, and "pip" on Windows
+        pip_command = "pip3" if is_macos or sys.platform.startswith("linux") else "pip"
+        
+        subprocess.check_call([pip_command, "install", package])
 
 # Now you can import the required packages
 import pypresence
