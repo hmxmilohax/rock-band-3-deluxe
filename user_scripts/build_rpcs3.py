@@ -100,18 +100,10 @@ if successful_extraction:
         # Copy files
         for root, dirs, files in os.walk(source_dir):
             relative_path = os.path.relpath(root, source_dir)
-            if is_macos:
-                relative_path = relative_path.replace("\\", "/")  # Replace backslashes with forward slashes
             for file in files:
                 source_file = os.path.join(root, file)
-                if is_macos:
-                    destination_file = os.path.join(destination_dir, relative_path, file)
-                else:
-                    relative_file_path = os.path.normpath(os.path.join(relative_path, file))
-                if is_macos:
-                    destination_file = os.path.normpath(destination_file)  # Normalize the path to handle spaces
-                else:
-                    destination_file = os.path.normpath(os.path.join(destination_dir, relative_file_path))
+                relative_file_path = os.path.normpath(os.path.join(relative_path, file))
+                destination_file = os.path.normpath(os.path.join(destination_dir, relative_file_path))
                 
                 if is_macos:
                     # Remove leading/trailing quotes and whitespace
