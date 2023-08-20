@@ -30,7 +30,15 @@ for package in required_packages:
 def run_in_detached_process(command):
     subprocess.Popen(command, close_fds=True)
 
-def close_rpcs3_process():
+def close_rpcs3_process_windows():
+    for process in psutil.process_iter(['pid', 'name']):
+        if process.info['name'] == 'rpcs3.exe':
+            print(f"Terminating rpcs3.exe (PID: {process.info['pid']})")
+            process.terminate()
+            process.wait()  # Wait for the process to terminate
+            break
+
+def close_rpcs3_process_mac():
     for process in psutil.process_iter(['pid', 'name']):
         process_name = process.info['name']
         if process_name.lower() == 'rpcs3':
@@ -87,7 +95,10 @@ successful_extraction = download_mackiloha()
 
 if successful_extraction:
     if build_patch_ark(False, rpcs3_mode=False):
-        close_rpcs3_process()
+        if is_macos:
+            close_rpcs3_process_mac()
+        else:
+            close_rpcs3_process_windows()
 
         print("PS3 ARK built successfully!")
         # Copy files from _build/ps3 to rpcs3_directory/game/BLUS30463
