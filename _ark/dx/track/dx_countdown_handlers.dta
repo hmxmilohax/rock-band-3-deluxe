@@ -650,12 +650,17 @@
                            {if {== {elem $entry 0} {sprint "delay_" $current_tracked_beat_0}}
                               {set $tracked_beat_no_notes_start_drum {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 1}}
                               {set $tracked_beat_no_notes_end_drum {elem {find $entry {sprint "delay_" $current_tracked_beat_0}} 2}}
+                              ;{dx_log_writer TRUE {sprint "delay_" $current_tracked_beat_0 " found, Start: " $tracked_beat_no_notes_start_drum ", End: " $tracked_beat_no_notes_end_drum ", Current Beat: " $current_beat}}
                               {set $delay_tracked_0 TRUE}
                            }
                         }
                      }
                      {if $delay_tracked_0
                         {if {>= $current_beat $tracked_beat_no_notes_start_drum}
+                           {unless $dx_log_stopper
+                              {set $dx_log_stopper TRUE}
+                              ;{dx_log_writer TRUE {sprint "Current Beat: " $current_beat " matches break start: " $tracked_beat_no_notes_start_drum ", counting down to end of break at: " $tracked_beat_no_notes_end_drum}}
+                           }
                            {switch {- $tracked_beat_no_notes_end_drum $current_beat}
                               A_BUNCH_OF_NUMBERS
                            }
@@ -951,7 +956,16 @@
          }
       }
       {set $beat_adder {int {/ {int {seconds_to_beat {int {/ 1000 {beatmatch ms_per_beat}}}}} 4}}}
-      {if_else {> $beat_adder 0}
+      {if {&& {>= $beat_adder 2.00} {<= $beat_adder 2.99}}
+         {set $beat_adder {int {/ {int {seconds_to_beat {int {/ 1000 {beatmatch ms_per_beat}}}}} 8}}}
+      }
+      {if {&& {>= $beat_adder 3.00} {<= $beat_adder 3.99}}
+         {set $beat_adder {int {/ {int {seconds_to_beat {int {/ 1000 {beatmatch ms_per_beat}}}}} 16}}}
+      }
+      {if {&& {>= $beat_adder 4.00} {<= $beat_adder 4.99}}
+         {set $beat_adder {int {/ {int {seconds_to_beat {int {/ 1000 {beatmatch ms_per_beat}}}}} 32}}}
+      }
+      {if_else {> $beat_adder 1}
          {set $current_beat {+ $current_beat $beat_adder}}
          {set $current_beat {+ $current_beat 1}}
       }
