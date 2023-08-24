@@ -38,10 +38,6 @@
 
 > The most recent version of *Rock Band 3 Deluxe* for PS3.
 
-📥 [RB3DX (With Keys Stems) for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3-Keys-Moggs.zip)
-
-> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
-
 <br/>
 
 Continue to: 
@@ -53,10 +49,6 @@ Continue to:
 ### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
 > The most recent version of *Rock Band 3 Deluxe* for Xbox 360.
-
-📥 [RB3DX (With Keys Stems) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Keys-Moggs.zip)
-
-> This build contains stems for the many Keys upgrades in RB3DX. File size is significantly larger.
 
 📥 [RB3DX (Vanilla Song Data) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
 
