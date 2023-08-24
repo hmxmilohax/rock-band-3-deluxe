@@ -127,3 +127,40 @@
       {set $dx_final_note_keys {int $mp.start}}
    )
 }
+{new
+   MidiParser
+   vocals_timer
+   (track_name 'PART VOCALS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   (message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      {if_else {== $dx_vocal_type solo} 
+         (36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 96)
+         (36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84)
+      }
+   )
+   (midi
+      {$this rt_compute_space}
+      {unless $first_vocals_gem_tracked
+         {set $first_vocals_gem_tracked TRUE}
+         {set $first_vocals_gem_beat {int $mp.start}}
+         {push_back $vocals_note_tracker ("delay_0" 0 $first_vocals_gem_beat)}
+         {set $vocals_note_tracker {array $vocals_note_tracker}}
+         {set $tracked_break_num_vocals 1}
+      }
+      {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
+         {set $vocals_tracked_start {int $mp.start}}
+         {set $vocals_tracked_prev_end {int {- $vocals_tracked_start $mp.prev_start}}}
+         {push_back $vocals_note_tracker ({sprint "delay_" $tracked_break_num_vocals} $vocals_tracked_prev_end $vocals_tracked_start)}
+         {set $vocals_note_tracker {array $vocals_note_tracker}}
+         {set $tracked_break_num_vocals {+ $tracked_break_num_vocals 1}}
+         {dx_log_writer TRUE $vocals_note_tracker}
+      }
+      {set $dx_final_note_vocals {int $mp.start}}
+   )
+}
