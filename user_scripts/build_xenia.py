@@ -36,8 +36,8 @@ if not download_mackiloha():
     sys.exit(1)
 
 if build_patch_ark(True, rpcs3_mode=False):
-    print("Xbox ARK built successfully.")
-    print("Checking for updates to Xenia Canary")
+    print("Xbox ARK built successfully!")
+    print("Checking for updates to Xenia Canary...")
     # Get the full path to the build folder
     current_script_directory = os.path.dirname(os.path.abspath(__file__))
     build_folder = os.path.join(current_script_directory, "..", "_build", "xbox")
@@ -50,6 +50,7 @@ if build_patch_ark(True, rpcs3_mode=False):
     # Now run discordrichpresence.py with _xenia argument
     subprocess.Popen(["python", discordrichpresence_path, "_xenia"])
     # Run xenia with _xenia argument
+    print("Complete! Launching Xenia...")
     cmd_xenia = "_xenia\\xenia_canary.exe _build\\xbox\\default.xex"
     subprocess.run(cmd_xenia, shell=True, cwd="..")
 else:

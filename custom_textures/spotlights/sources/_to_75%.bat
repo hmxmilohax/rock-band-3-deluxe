@@ -1,0 +1,1 @@
+FOR /F "tokens=*" %%G IN ('dir /b *.png') DO C:\tools\ImageMagick\convert.exe "%%G" -resize 512x512! -filter Box -alpha set -background none -channel A -evaluate multiply 0.75 +channel "out\%%~nG.png"

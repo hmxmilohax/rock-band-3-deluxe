@@ -68,7 +68,7 @@ def download_mackiloha() -> bool:
     extracted_contents_exist = check_extracted_contents(output_dir)
     
     if extracted_contents_exist:
-        print("Extracted contents already exist. Skipping the download.")
+        # print("Extracted contents already exist. Skipping the download.")
         return True
 
     # Download Mackiloha-suite-archive.zip
