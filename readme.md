@@ -45,7 +45,7 @@
     - [Installing on Xbox 360](#-installing-on-xbox-360)
     - [Installing on Xbox Series X/S](#-installing-on-xbox-series-xs-xenia-uwp)
 
-### 📥 [Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
+### 📥 [Wii (Riivolution)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip)
 
 > Continue to: 
     - [Installing on Wii](#-installing-on-wii)
@@ -111,6 +111,8 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 **NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
 
+<br/>
+
 * Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
@@ -151,68 +153,49 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 ## 📩 Installing on Wii
 
-**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii in order to play this mod on console. You also cannot play this mod on a Wii Mini. We hope this is clear.**
-
-**NOTE: *Rock Band 3 Deluxe* is compatible with both Wii and vWii, as well as [Dolphin Emulator](#-installing-on-dolphin-emulator).**
+**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii or vWii in order to play this mod on console. We hope this is clear.**
 
 <br/>
 
-***You need to have [RB3Enhanced](https://rb3e.rbenhanced.rocks/) installed before you do anything. Install that first using its guide and then come back.***
+***You need [**Riivolution**](https://aerialx.github.io/rvlution.net/riivolution.zip) installed in order for this mod to work, copy it to the `apps` folder on your SD card.***
 
-* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip).
-* Copy the `rb3` folder to the **root of your SD card**. Click `Yes` to overwrite the files if it asks you to.
-* When you launch *RB3Enhanced* through the Homebrew Channel, ***Deluxe*** **will be loaded as well**.
+* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip).
+* Copy everything to the **root of your SD card**. Click `Yes` to overwrite the files if it asks you to.
+* Insert your *Rock Band 3* game disc and launch Riivolution.
+    * **Make sure `RB3DX` is enabled** and launch the game.
 
 ### ✅ ***Rock Band 3 Deluxe is now installed!***
 
 <br/>
 
 ***NOTE: The following features are currently unsupported on Wii:***
-* FC Indicator
 * Track Themes
 * Overdrive Color Selection
 * RB4/Rivals Menu Themes
-* Venue FPS Selection
-* Post Processing Menu
 * Song Title Overlay Customization
-* Song Upgrades
-* currentsong.txt/json
-* RB3DX Discord Rich Presence (for Dolphin)
 * Saving *Deluxe Settings* for future sessions
-* Debug Logging
 
 <br/>
 
 ## 📩 Installing on [Dolphin Emulator](https://dolphin-emu.org/)
 
-* **Enable `Insert SD Card` and `Automatically Sync with Folder`** in your Dolphin config under the `Wii` tab in SD Card Settings.
-* Right-click Rock Band 3 in your games list and **set it as your Default ISO**.
-* Download the latest version of [**RB3Enhanced**](https://rb3e.rbenhanced.rocks/) for Wii. ***This is required in order to run Deluxe***.
-    * **Copy the files to `\Load\WiiSDSync\`** in your Dolphin Emulator folder. This is usually in Documents.
-* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip).
-    * Copy the `rb3` folder to `\Load\WiiSDSync\`.
+* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip).
+    * Copy everything to the `\Load\` folder in your Dolphin Emulator folder. This is usually in Documents.
     * Click `Yes` to overwrite the files if it asks you to.
-* Launch the *RB3Enhanced* loader to **start** ***RB3Enhanced*** **alongside** ***Rock Band 3 Deluxe***.
-    * Either: click `Open` on the top left, navigate to `\Load\WiiSDSync\rb3\rb3e\` and **open `launcher.dol`**.
-    * Or: **add `\Load\WiiSDSync\rb3\rb3e\` as a game folder** in your game path settings.
+* Right-Click *Rock Band 3* in your games list and **select "Start with Riivolution Patches..."**
+    * Navigate to `\Load\Riivolution\` and **open `RB3DX.xml`**.
+    * **Make sure `RB3DX` is enabled** and click start, you can also select "Save as Preset..." to add it to your games list.
 
 ### ✅ ***Rock Band 3 Deluxe is now installed!***
 
 <br/>
 
 ***NOTE: The following features are currently unsupported on Wii:***
-* FC Indicator
 * Track Themes
 * Overdrive Color Selection
 * RB4/Rivals Menu Themes
-* Venue FPS Selection
-* Post Processing Menu
 * Song Title Overlay Customization
-* Song Upgrades
-* currentsong.txt/json
-* RB3DX Discord Rich Presence (for Dolphin)
 * Saving *Deluxe Settings* for future sessions
-* Debug Logging
 
 <br/>
 
