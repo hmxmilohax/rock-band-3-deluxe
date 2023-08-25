@@ -190,6 +190,9 @@ def update_presence(client_id, parsed_input, RPC, large_text):
                     break
             else:
                 active_instrument_text = ""
+                
+        if parsed_input.get('Online', '') == "true":
+            game_mode = "Online " + game_mode
 
         #logger.debug(f"Large text: {large_text}")
 
