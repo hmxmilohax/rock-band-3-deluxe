@@ -36,13 +36,14 @@ def make_executable_binaries():
 
 # if xbox is true, build the Xbox ARK
 # else, build the PS3 ARK
-def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = False):
+def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = False):
     # directories used in this script
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
+    files_to_remove_wii = "*_xbox" if wii
     if rpcs3_mode:
         if platform == "win32":
             build_location = rpcs3_directory + "\\game\\BLUS30463\\USRDIR\\gen"
@@ -53,6 +54,13 @@ def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = 
             build_location = "_build\\xbox\gen" if xbox else "_build\ps3\\USRDIR\gen"
         else:
             build_location = "_build/xbox/gen" if xbox else "_build/ps3/USRDIR/gen"
+    if wii:
+        if platform == "win32":
+            build_location = "_build\\wii\wit_input\\files"
+            hdr_location = "_build\\wii\wit_input\\files\\gen\\main_wii.hdr"
+        else:
+            build_location = "_build/wii/wit_input/files"
+            hdr_location = "_build/wii/wit_input/files/gen/main_wii.hdr"
 
         # build the binaries if on linux/other OS
         if platform != "darwin":
@@ -72,18 +80,38 @@ def build_patch_ark(xbox: bool, rpcs3_directory: str = None, rpcs3_mode: bool = 
         the_new_filename.parent.mkdir(parents=True, exist_ok=True)
         # print(f"moving file {temp_path} to {the_new_filename}")
         f.rename(the_new_filename)
+        
+        # temporarily move other console's files out of the ark to reduce overall size
+    if wii:
+        for f in ark_dir.rglob(files_to_remove_wii):
+            temp_path = str(f).replace(f"{str(root_dir)}\\", "").replace(f"{str(root_dir)}/","")
+            # print(temp_path)
+            the_new_filename = root_dir.joinpath("_tmp").joinpath(temp_path)
+            the_new_filename.parent.mkdir(parents=True, exist_ok=True)
+            # print(f"moving file {temp_path} to {the_new_filename}")
+            f.rename(the_new_filename)
 
     # build the ark
     print("Building Rock Band 3 Deluxe ARK...")
     failed = False
-    try:
-        if platform == "win32":
-            cmd_build = f"dependencies\windows\\arkhelper.exe dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
-        elif platform == "darwin":
-            cmd_build = f"dependencies/macos/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
-        else:
-            cmd_build = f"dependencies/linux/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
-        subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
+    if wii:
+        try:
+            if platform == "win32":
+                cmd_build = f"dependencies\windows\\arkhelper.exe patchcreator {hdr_location} -a _ark -o {build_location}".split()
+            elif platform == "darwin":
+                cmd_build = f"dependencies/macos/arkhelper patchcreator {hdr_location} -a _ark -o {build_location}".split()
+            else:
+                cmd_build = f"dependencies/linux/arkhelper patchcreator {hdr_location} -a _ark -o {build_location}".split()
+            subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
+    else:
+        try:
+            if platform == "win32":
+                cmd_build = f"dependencies\windows\\arkhelper.exe dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            elif platform == "darwin":
+                cmd_build = f"dependencies/macos/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            else:
+                cmd_build = f"dependencies/linux/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
+            subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
     except CalledProcessError as e:
         print(e.output)
         failed = True

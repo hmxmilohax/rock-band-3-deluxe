@@ -73,7 +73,7 @@ rpcs3_directory = get_rpcs3_directory()
 successful_extraction = download_mackiloha()
 
 if successful_extraction:
-    if build_patch_ark(False, rpcs3_directory, rpcs3_mode=True):
+    if build_patch_ark(False, False, rpcs3_directory, rpcs3_mode=True):
         close_rpcs3_process()
 
         print("PS3 ARK built successfully!")

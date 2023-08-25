@@ -94,7 +94,7 @@ rpcs3_directory = get_rpcs3_directory()
 successful_extraction = download_mackiloha()
 
 if successful_extraction:
-    if build_patch_ark(False, rpcs3_mode=False):
+    if build_patch_ark(False, False, rpcs3_mode=False):
         if is_macos:
             close_rpcs3_process_mac()
         else:

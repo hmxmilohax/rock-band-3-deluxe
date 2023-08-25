@@ -1,0 +1,367 @@
+
+*******************************************************************************
+*******                      A few truths about WBFS                    *******
+*******************************************************************************
+
+This file is part of the documentation of 'WIT' (Wiimms ISO Tools).
+
+
+ CONTENTS:
+
+    Sector size and maximal number of discs
+    Free Blocks Table
+    Extension called 'INODE INFO'.
+
+
+*******************************************************************************
+*******             Sector size and maximal number of discs             *******
+*******************************************************************************
+
+Overall in the internet you can read that the maximal number of discs is that
+a WBFS partition can contain is about 500. This is true but not the whole truth.
+The value depends of the sector size parameter. It defines the number of bytes
+of 1 hd sector. The first sector of a WBFS partition is reserved for the WBFS
+header (12 bytes) and for a disc table (all other bytes, 1 byte per disc).
+
+The user/tool can set the sector size while formatting a WBFS partition. The
+default sector size is 512. WWT knows the option --hss and may format
+a WBFS partition with different sector sizes. This is nice for testing.
+
+The following dump shows the specific parameters of a WBFS partition with about
+2 tera bytes (a file with exact 2.000.000.000.000 bytes). WWT creates this as
+sparse file so that the WBFS partition only needs 16 KiB disc space after
+formatting:
+
+ | DUMP of a.wbfs
+ |
+ |   WBFS-Header:
+ |     MAGIC:                  'WBFS' = 57 42 46 53
+ |     number of sectors:   279303400
+ |     hd sector size:              9 ->        512
+ |     WBFS sector size:           26 ->   67108864
+ |
+ |   hd:   sector size:           512 = 2^9
+ |   hd:   num of sectors: 3906250000
+ |   hd:    total size:       1907349 MiB
+ |
+ |   wii:  sector size:         32768 = 2^15
+ |   wii:  num of sectors:   61035008
+ |   wii:  sectors/disc:       286864
+ |   wii:   total size:       1907344 MiB
+ |
+ |   wbfs: sector size:      67108864 = 2^26
+ |   wbfs: num of sectors:      29802
+ |   wbfs: sectors/disc:          140
+ |   wbfs:  total size:       1907328 MiB
+ |
+ |   partition lba:                 0
+ |   free blocks lba:          131064
+ |   disc info size:             1024
+ |
+ |   used disk space:             640 MiB =   1%
+ |   free disk space:         1906688 MiB =  99%
+ |   total disk space:        1907328 MiB = 100%
+ |
+ |   number of wii discs:           0     =   0%
+ |   max disc:                    500
+ |   disc open:                     0
+
+With sector size 512 the maximal number of discs is set to 500 (=512-12).
+But when a WBFS is formatted with sector size 2048 than it may contain up
+to 2036 (2048-12) discs. See the dump:
+
+ | DUMP of a.wbfs
+ |
+ |   WBFS-Header:
+ |     MAGIC:                  'WBFS' = 57 42 46 53
+ |     number of sectors:  1143551290
+ |     hd sector size:             11 ->       2048
+ |     WBFS sector size:           25 ->   33554432
+ |
+ |   hd:   sector size:          2048 = 2^11
+ |   hd:   num of sectors:  976562500
+ |   hd:    total size:       1907349 MiB
+ |
+ |   wii:  sector size:         32768 = 2^15
+ |   wii:  num of sectors:   61034496
+ |   wii:  sectors/disc:       286864
+ |   wii:   total size:       1907328 MiB
+ |
+ |   wbfs: sector size:      33554432 = 2^25
+ |   wbfs: num of sectors:      59604
+ |   wbfs: sectors/disc:          280
+ |   wbfs:  total size:       1907328 MiB
+ |
+ |   partition lba:                 0
+ |   free blocks lba:           16380
+ |   disc info size:             2048
+ |
+ |   used disk space:             640 MiB =   1%
+ |   free disk space:         1906688 MiB =  99%
+ |   total disk space:        1907328 MiB = 100%
+ |
+ |   number of wii discs:           0     =   0%
+ |   max disc:                   2036
+ |   disc open:                     0
+
+I don't know if other tools and the usb loaders support other sector sizes
+(this is subject of later tests) but the solution is very easy: Read the WBFS
+sectors before calling the function wbfs_open_partition() and calculate the
+sector size:
+
+ | wbfs_head_t whead;
+ | stat = ReadAt(file,0,&whead,sizeof(whead));
+ | if (stat) { ERROR_HANDLING; }
+ | sector_size = 1 << whead.hd_sec_sz_s;
+ | wbfs_open_partition( ReadSector, WriteSector, file, sector_size, 0,0,0 );
+
+The functions ReadSector() and WriteSector() should look like this:
+
+ | int ReadSector ( void * handle, u32 lba, u32 count, void * iobuf )
+ | {
+ |     return ReadAt( handle, (off_t)lba * sector_size,
+ |                    iobuf, count * sector_size );
+ | }
+ |
+ | int WriteSector ( void * handle, u32 lba, u32 count, void * iobuf )
+ | {
+ |     return WriteAt( handle, (off_t)lba * sector_size,
+ |                    iobuf, count * sector_size );
+ | }
+
+That's all!
+
+
+*******************************************************************************
+*******                        Free Blocks Table                        *******
+*******************************************************************************
+
+--------------
+ Introduction
+--------------
+
+A WBFS is divided into blocks with equal size. The block size is a power of 2.
+The calculation of of the block size is made when formatting a WBFS:
+ 1) Use the minimal blocksize so that there are less than 2^16 blocks.
+ 2) Adjust the block size so that all management data fits into one block.
+The block size power is stored into the WBFS header (struct wbfs_head) as
+member 'wbfs_sec_sz_s'.
+
+Based on this calculation only whole multiple of the sector size of the WBFS
+file or device can be used. The rest is not used. "wwt DUMP" shows the end of
+the used are in the memory map.
+
+After formatting we have N blocks, addressed by 0..N-1. Block #0 contains the
+managment data. All other blocks (1..N-1) are used to store the discs. A block
+is not used or exactly assigned to 1 disc.
+
+The "free block table" (FBT) is located at the end of block #0, beginning at
+a hd sector (parameter "sector size"). For each block there is exact one bit
+reserved. Is the bit set (1), the block is free (not assigned to a disc).
+If the bit is unset (0), the block is used by a disc.
+
+Each byte of the FBT contains the status of 8 blocks. The first byte is to
+manage the blocks 1..8, the next byte for blocks 9..15 and so on. As you see
+this assignments are NOT zero based! In the beginning of the WBFS there was a
+"delete bug": The function free_block() used a zero based calculation of the
+FBT and marked the wrong blocks for free (e.g. marked block 2 instead of block
+1 for free). But there are some more bugs in libwbfs. And the more bugs are
+the reason of this article.
+
+I plan to publish a patch for all discussed bugs later.
+
+
+------------------
+1.) Formatting bug
+------------------
+
+While formatting the WBFS only the first N/8 bytes (N=number of WBFS blocks)
+of the FBT are set with the value 0xff. Remember: A set bit means "free block".
+
+a) If N is a multiple of 8 (N%8 == 0) then 1 block to much is marked as free.
+   But because of the allocation bug (see below) this bug appears only, if N
+   is a multiple of 32.
+
+b) If N%8 > 1 then to less blocks are marked as free. But this means only that
+   not the whole WBFS is used for discs.
+
+c) If N%8 == 1 then the correct number of blocks is marked as free.
+
+This formatting bugs can be fixed very easy:
+
+a) Just unset the wrong bit when opening the WBFS.
+
+b) When formatting or checking the disc then mark all blocks free. This can
+   not be done if there is no space for the additional needed byte in block #0.
+
+
+------------------
+2.) Allocation bug
+------------------
+
+libwbfs uses a run time optimization and scans the FBT in u32 (32 bits) steps.
+Because of this optimization only the first (N/32)*4 bytes of the FBT are used.
+And this means that up to to 4 bytes of the FBT are ignored. And this means
+that up to 30 WBFS blocks will not be used for storing discs. On a WBFS with
+about 500 GiB the WBFS block size is 2^23 -> up to 240 MiB wasted space.
+
+A patch must be compatible to already existing WBFS. And this means, that only
+(N/8)*8 blocks can be used, because they are set correctly by the old
+formatting. The last up to 7 blocks should never be used.
+
+
+------------------
+3.) Free-Block bug
+------------------
+
+The free block function free_block() doe's not make a check of the block
+number. If the block number is =0 or >=N wrong bits anywhere in the memory
+are set. No problem is the WBFS is valid.
+
+But because of other errors in the WBFS file/device it is possible that there
+are wrong values in the disc memory maps. I have already seen dumps with such
+errors.
+
+
+------------------
+4.) Add-Disc bug
+------------------
+
+If the WBFS becomes full while adding a disc the disc will not added to the
+WBFS, that's ok. But the already allocated blocks are not freed.
+
+
+*******************************************************************************
+*******                  Extension called 'INODE INFO'                  *******
+*******************************************************************************
+
+I have implemented a WBFS extension that I call 'INODE INFO'.
+
+There is a discussion thread about this in GBAtemp:
+http://gbatemp.net/index.php?showtopic=210772
+
+The idea:
+For each disc slot within WBFS there is place to manage the disc. I call this
+area INODE (It's not a real inode, but simmilar). Every inode habe two parts:
+ - Copy of the first 256 bytes of the ISO image
+ - Memory mapping table (location if the ISO blocks within the WBFS).
+To manage the disc only the first 128 bytes of the ISO header copy are needed.
+The second half is unused memory. Up from wwt v0.33a I use this area for
+additional information.
+
+The following are definitons and data structure of the INODE INFO:
+
+    WBFS_INODE_INFO_VERSION	=    1,
+    WBFS_INODE_INFO_HEAD_SIZE	=   12,
+    WBFS_INODE_INFO_CMP_SIZE	=   10,
+    WBFS_INODE_INFO_OFF		= 0x80,
+    WBFS_INODE_INFO_SIZE	= 0x100 - WBFS_INODE_INFO_OFF,
+
+typedef struct wbfs_inode_info_t
+{
+	// A complete copy of the first WBFS_INODE_INFO_HEAD_SIZE (12) bytes
+	// of the WBFS header. The first WBFS_INODE_INFO_CMP_SIZE (10)
+	// bytes can be used to validate the existence of this info block.
+	// They are also good for recovery.
+
+	be32_t magic;		// the magic (char*)"WBFS"
+	be32_t n_hd_sec;	// total number of hd_sec in this partition
+	u8  hd_sec_sz_s;	// sector size in this partition
+	u8  wbfs_sec_sz_s;	// size of a wbfs sec
+
+	u8  wbfs_version;	// informative version number
+	u8  head_padding;
+
+	// The version number of this data structure.
+	// I may be important for future extensions
+
+	be32_t info_version;	// == WBFS_INODE_INFO_VERSION
+
+	// 64 bit time stamps: They are only informative but nice to have.
+	//  - itime is ths disc inserting time.
+	//    If 2 discs uses the same wbfs block a repair function knows
+	//    which one disc are newer and which is definitly bad.
+	//  - mtime is a copy of the mtime of the source file.
+	//    It is also changed if the the ISO-header is modified (renamed).
+	//    While extrating the mtime of dest file is set by this mtime.
+	//  - ctime is updated if adding, renaming.
+	//  - atime can be updated by usb loaders when loading the disc.
+	//  - dtime is only set for deleted games.
+
+	be64_t itime;		// the disc insertion time
+	be64_t mtime;		// the last modification time (copied from source)
+	be64_t ctime;		// the last status changed time
+	be64_t atime;		// the last access time
+	be64_t dtime;		// the deletion time
+
+	// there is enough space for more information like a game load counter
+	// or other statistics and game settings. This infos can be share across
+	// usb loaders.
+
+	// EXAMPLES:
+	//	be32_t	load_count;
+	//	u8	favorite
+	//	u8	ios
+
+	// padding up to WBFS_INODE_INFO_SIZE bytes, always filled with zeros
+
+	u8 padding[ WBFS_INODE_INFO_SIZE - WBFS_INODE_INFO_HEAD_SIZE
+			- 0 /* num of  8 bit parameters */ * sizeof(u8)
+			- 0 /* num of 16 bit parameters */ * sizeof(be16_t)
+			- 1 /* num of 32 bit parameters */ * sizeof(be32_t)
+			- 5 /* num of 64 bit parameters */ * sizeof(be64_t) ];
+
+}
+
+The first 10 bytes can be used to check the existence of a valid inode info.
+This data is also good for recovering. Because of this validation check this
+extension is abolut compatible with all other USB loaders and WBFS managers:
+ 1.) They ignore this indoe information.
+ 2.) They copy the contents of the ISO image and the INDOE-INFO-area is always
+     filled with garbage (zeros).
+
+The time stamps are informative. wit and wwt uses them in the following way:
+
+ All commands:
+    If creating a inode info because the previous is invalid, then itime,
+    mtime, ctime and atime are set to the current time and dtime is cleared.
+
+ wwt FORMAT:
+    Clear all time stamps. dtime is set to current time.
+
+ wwt ADD:
+    Set itime, ctime, and atime to the current time. mtime is copied from the
+    source mtime. dtime is cleared. Adding can be done conditionally with the
+    option --newer.
+
+ wwt PHANTOM:
+    Set itime, mtime, ctime, and atime to the current time. dtime is cleared.
+
+ wwt EXTRACT:
+    Use mtime to set mtime of the destination file. If extracting to a WBFS
+    then the time stamps within the inode is set like the ADD command. The
+    atime of the source is set to the current time.
+
+ wwt RENAME+SETTITLE:
+    If only ID or title of the inode info is changed, then ctime and atime are
+    set to the current time. If ID or title of the ISO are changed, then mtime,
+    ctime and atime are set.
+
+ wwt REMOVE:
+    The dtime is set to the current time.
+
+ wwt TOUCH:
+    itime, mtime, ctime and/or atime can be changed to the current time or
+    to a user defined time.
+
+ wwt LIST:
+    In the extended view it shows the mtime (default) or any other time, but
+    only one, controlled by options. Sorting by time is also possible.
+
+ wwt DUMP:
+    In disc view it shows all non zero time stamps of each valid inode.
+
+
+*******************************************************************************
+*******                              END                                *******
+*******************************************************************************
