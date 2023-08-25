@@ -5,6 +5,7 @@ from sys import platform
 import subprocess
 from check_git_updated import check_git_updated
 import os
+import shutil
 
 def rm_tree(pth):
     pth = Path(pth)
@@ -41,9 +42,28 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
     cwd = Path().absolute() # current working directory (dev_scripts)
     root_dir = cwd.parents[0] # root directory of the repo
     ark_dir = root_dir.joinpath("_ark")
+    if wii:
+        hdr_location = root_dir.joinpath("_build/wii/wit_input/files/gen/main_wii.hdr")
+        ark_location = root_dir.joinpath("_build/wii/wit_input/files/gen/main_wii_10.ark")
+
+        # Delete existing Wii files
+        if hdr_location.exists():
+            hdr_location.unlink()
+        if ark_location.exists():
+            ark_location.unlink()
+
+        # Copy Wii header and ark files from dependencies if they don't exist
+        rebuild_hdr_location = root_dir.joinpath("dependencies/rebuild_files/main_wii.hdr")
+        rebuild_ark_location = root_dir.joinpath("dependencies/rebuild_files/main_wii_10.ark")
+
+        if not hdr_location.exists() and rebuild_hdr_location.exists():
+            shutil.copyfile(rebuild_hdr_location, hdr_location)
+        if not ark_location.exists() and rebuild_ark_location.exists():
+            shutil.copyfile(rebuild_ark_location, ark_location)
+
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
-    files_to_remove_wii = "*_xbox"
+    files_to_remove_wii = "*_ps3"
     if rpcs3_mode:
         if platform == "win32":
             build_location = rpcs3_directory + "\\game\\BLUS30463\\USRDIR\\gen"
@@ -84,12 +104,12 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
         # temporarily move other console's files out of the ark to reduce overall size
     if wii:
         for f in ark_dir.rglob(files_to_remove_wii):
-            temp_path = str(f).replace(f"{str(root_dir)}\\", "").replace(f"{str(root_dir)}/","")
-            # print(temp_path)
-            the_new_filename = root_dir.joinpath("_tmp").joinpath(temp_path)
-            the_new_filename.parent.mkdir(parents=True, exist_ok=True)
-            # print(f"moving file {temp_path} to {the_new_filename}")
-            f.rename(the_new_filename)
+            temp_path2 = str(f).replace(f"{str(root_dir)}\\", "").replace(f"{str(root_dir)}/","")
+            # print(temp_path2)
+            the_new_filename2 = root_dir.joinpath("_tmp2").joinpath(temp_path2)
+            the_new_filename2.parent.mkdir(parents=True, exist_ok=True)
+            # print(f"moving file {temp_path2} to {the_new_filename2}")
+            f.rename(the_new_filename2)
 
     # build the ark
     print("Building Rock Band 3 Deluxe ARK...")
@@ -123,10 +143,17 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
         final_path = str(g).replace(f"{str(root_dir)}\\_tmp\\", "").replace(f"{str(root_dir)}/_tmp/","")
         # print(final_path)
         g.rename(root_dir.joinpath(final_path))
+    if wii:
+        for g in root_dir.joinpath("_tmp2").rglob(files_to_remove_wii):
+            final_path = str(g).replace(f"{str(root_dir)}\\_tmp2\\", "").replace(f"{str(root_dir)}/_tmp2/","")
+            # print(final_path)
+            g.rename(root_dir.joinpath(final_path))
 
     # remove temp directory
     if os.path.exists(root_dir.joinpath("_tmp")):
         rm_tree(root_dir.joinpath("_tmp"))
+    if os.path.exists(root_dir.joinpath("_tmp2")):
+        rm_tree(root_dir.joinpath("_tmp2"))
 
     if not failed:
         # print("Successfully built Rock Band 3 Deluxe ARK.")
