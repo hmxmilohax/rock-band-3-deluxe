@@ -9,7 +9,7 @@ if not download_mackiloha():
     print("Failed to download and extract Mackiloha-suite-archive.zip. Exiting.")
     sys.exit(1)
 
-if build_patch_ark(True, rpcs3_mode=False):
+if build_patch_ark(False, True, rpcs3_mode=False):
     print("Xbox ARK built successfully!")
     print("Complete! You may find the files needed to place on your Xbox 360 in /_build/Xbox/.")
 else:
