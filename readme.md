@@ -29,46 +29,25 @@
 <br/>
 
 # 📥 Downloads
+![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 
 *Rock Band 3 Deluxe recieves very frequent updates. You can click the `Watch` button (All Activity) to be notified about any updates that occur.*
 
-## PlayStation 3
-![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe for PS3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
+### 📥 [PlayStation 3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-> The most recent version of *Rock Band 3 Deluxe* for PS3.
-
-<br/>
-
-Continue to: 
+> Continue to: 
     - [Installing on RPCS3](#-installing-on-rpcs3)
     - [Installing on PS3](#-installing-on-ps3)
 
-## Xbox 360
-![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
+### 📥 [Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip) 📥 [Xbox 360 (Vanilla Song Data)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
 
-> The most recent version of *Rock Band 3 Deluxe* for Xbox 360.
-
-📥 [RB3DX (Vanilla Song Data) for Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
-
-> By default, RB3DX contains many song updates and pro upgrades. This build does not have those.
-
-<br/>
-
-Continue to: 
+> Continue to: 
     - [Installing on Xbox 360](#-installing-on-xbox-360)
     - [Installing on Xbox Series X/S](#-installing-on-xbox-series-xs-xenia-uwp)
 
-## Wii
-![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
-### 📥 [Rock Band 3 Deluxe for Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
+### 📥 [Wii](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
-> The most recent version of *Rock Band 3 Deluxe* for Wii.
-
-<br/>
-
-Continue to: 
+> Continue to: 
     - [Installing on Wii](#-installing-on-wii)
     - [Installing on Dolphin Emulator](#-installing-on-dolphin-emulator)
 
