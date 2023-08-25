@@ -8,6 +8,7 @@
          {push_back $options os_thm}
          {push_back $options os_cam}
          {push_back $options os_audiomenu}
+         {push_back $options os_debug}
          #ifdef HX_XBOX
          #ifdef RB3E
          #ifndef RB3E_EMULATOR
@@ -58,6 +59,8 @@
             {$this show_state dxState_ControllerMenu})
          (os_reboot
             {$this show_state kState_RebootWarn})
+         (os_debug
+            {$this show_state dxState_DebugSettings})
       }
    )
    (exit 
@@ -350,5 +353,67 @@
    )
 	(on_cancel
       {$this show_options}
+   )
+)
+
+#define DX_DEBUG_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options print_objects}
+      {switch $dx_logging
+         (always {push_back $options os_logging_always})
+         (never {push_back $options os_logging_never})
+         (default {push_back $options os_logging_default})
+      }
+      {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
+      {dx_state_setup dxState_DebugSettings FALSE}
+   }
+)
+
+(dxState_DebugSettings
+   (view
+      DX_DEBUG_DATA
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (print_objects
+            {dx_print_objects}
+         )
+         (overshell_dx_bot_settings
+               {$this show_state dxState_BotSettings})
+         (os_logging_always
+            {set $dx_logging never}
+            {set $dx_tracked_changed os_logging_never}
+            {dx_state_pos_tracker}
+            DX_DEBUG_DATA
+            {set $previous_state dxState_DebugSettings}
+         )
+         (os_logging_never
+            {set $dx_logging default}
+            {set $dx_tracked_changed os_logging_default}
+            {dx_state_pos_tracker}
+            DX_DEBUG_DATA
+            {set $previous_state dxState_DebugSettings}
+         )
+         (os_logging_default
+            {set $dx_logging always}
+            {set $dx_tracked_changed os_logging_always}
+            {dx_state_pos_tracker}
+            DX_DEBUG_DATA
+            {set $previous_state dxState_DebugSettings}
+         )
+      }
+      {set $in_state FALSE}
+      DX_DEBUG_DATA
+      {set $previous_state dxState_DebugSettings}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_DeluxeSettings}
    )
 )
