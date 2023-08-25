@@ -39,7 +39,7 @@
     - [Installing on RPCS3](#-installing-on-rpcs3)
     - [Installing on PS3](#-installing-on-ps3)
 
-### 📥 [Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip) 📥 [Xbox 360 (Vanilla Song Data)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox-Vanilla-Song-Data.zip)
+### 📥 [Xbox 360](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
 
 > Continue to: 
     - [Installing on Xbox 360](#-installing-on-xbox-360)
