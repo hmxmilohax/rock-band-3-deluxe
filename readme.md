@@ -112,6 +112,8 @@ Continue to:
 
 *This covers everything, from installing the base game, to setting up your instruments, and even playing online after the original servers shut down!*
 
+<br/>
+
 * Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
   * Select `Yes` to confirm.
