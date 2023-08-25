@@ -43,7 +43,7 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
     ark_dir = root_dir.joinpath("_ark")
 
     files_to_remove = "*_ps3" if xbox else "*_xbox"
-    files_to_remove_wii = "*_xbox" if wii
+    files_to_remove_wii = "*_xbox"
     if rpcs3_mode:
         if platform == "win32":
             build_location = rpcs3_directory + "\\game\\BLUS30463\\USRDIR\\gen"
@@ -103,6 +103,8 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
             else:
                 cmd_build = f"dependencies/linux/arkhelper patchcreator {hdr_location} -a _ark -o {build_location}".split()
             subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
+        except CalledProcessError as e:
+            failed = False
     else:
         try:
             if platform == "win32":
@@ -112,9 +114,9 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
             else:
                 cmd_build = f"dependencies/linux/arkhelper dir2ark _ark {build_location} -n {patch_hdr_version} -e -v 6".split()
             subprocess.check_output(cmd_build, shell=(platform == "win32"), cwd="..")
-    except CalledProcessError as e:
-        print(e.output)
-        failed = True
+        except CalledProcessError as e:
+            print(e.output)
+            failed = True
 
     # move the other console's files back
     for g in root_dir.joinpath("_tmp").rglob(files_to_remove):
