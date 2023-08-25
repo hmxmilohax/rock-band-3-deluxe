@@ -108,12 +108,11 @@ Continue to:
 
 ## 📩 Installing on [RPCS3](https://rpcs3.net/)
 
-* **Install your North American copy of Rock Band 3** through the emulator. The [**official RPCS3 site covers this nicely**](https://rpcs3.net/quickstart).
-  * Remember, **Rock Band 3 needs to be** ***BLUS30463***. RPCS3 will tell you this in the game selection GUI under the `Serial` column.
+### *Before you start, check out the [Definitive RB3 PC Setup Guide](https://github.com/carlmylo/rb3-pc#readme)*
 
-<img src="dependencies/images/serial.png" alt="Serial">
+*This covers everything, from installing the base game, to setting up your instruments, and even playing online after the original servers shut down!*
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
   * Select `Yes` to confirm.
 
@@ -125,21 +124,13 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
 
 <br/>
 
-***Sidenote:*** *we recommend* ***enabling `Write Color Buffers`*** *for Rock Band 3 to prevent any character model issues.*
-
-![Custom Configuration](dependencies/images/customconfig.png)
-![GPU Tab](dependencies/images/gputab.png)
-![Write Color Buffers](dependencies/images/writecolorbuffers.png)
-
-<br/>
-
 ## 📩 Installing on PS3
 
 **NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
 
 **NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
 
-* Download [**Rock Band 3 Deluxe for PS3**](#playstation-3). 
+* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
   * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
   * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
   * Navigate to `Package Manager > Install Package Files > Standard` in the XMB and install it just like any other package.
