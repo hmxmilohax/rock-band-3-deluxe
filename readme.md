@@ -45,7 +45,7 @@
     - [Installing on Xbox 360](#-installing-on-xbox-360)
     - [Installing on Xbox Series X/S](#-installing-on-xbox-series-xs-xenia-uwp)
 
-### 📥 [Wii (Riivolution)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip)
+### 📥 [Wii (Riivolution)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip) 📥 [Wii (RB3E Rawfiles)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
 
 > Continue to: 
     - [Installing on Wii](#-installing-on-wii)
