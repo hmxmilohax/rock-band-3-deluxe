@@ -473,3 +473,50 @@
       }
    }
 }
+
+{func dx_mtv_time_remaining_handler_old ;made this a function because a macro can't expand within itself, jnack's version that uses beats
+   {if $dx_time_remaining
+      {set $dx_song_length {+ $dx_final_note 2}}
+      {set $dx_current_progress CURRENTBEAT}
+      {set $dx_time_total {int {beat_to_seconds $dx_final_note}}}
+      {set $dx_time_remaining_counter {int {beat_to_seconds {- $dx_song_length $dx_current_progress}}}}
+      {set $dx_timer_total_minutes {int {/ $dx_time_total 60}}}
+      {set $dx_timer_minutes {int {/ $dx_time_remaining_counter 60}}}
+      {set $dx_timer_total_seconds {int {- $dx_time_total {* $dx_timer_total_minutes 60}}}}
+      {set $dx_timer_seconds {int {- $dx_time_remaining_counter {* $dx_timer_minutes 60}}}}
+      {if {< $dx_timer_seconds 0} {set $dx_timer_seconds 0}}
+      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprint $dx_timer_minutes ":" {sprintf "%02d" $dx_timer_seconds} "/" $dx_timer_total_minutes ":" {sprintf "%02d" $dx_timer_total_seconds}}}
+      {script_task
+         kTaskSeconds
+         (delay 0.5)
+         (script {dx_mtv_time_remaining_handler_old})
+      }
+      ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+   }
+}
+
+{func dx_mtv_time_remaining_handler
+   {if $dx_time_remaining
+      {set $dx_song_length {+ $dx_final_note 2}}
+      {set $dx_get_song_ms {beatmatch get_song_ms}}
+      {set $dx_current_progress {int {/ $dx_get_song_ms 1000}}}
+      {set $dx_time_total {int {beat_to_seconds $dx_final_note}}}
+      {set $dx_time_remaining_counter {int {- {beat_to_seconds $dx_song_length} $dx_current_progress}}}
+;      {set $dx_time_remaining_counter {int {beat_to_seconds {- $dx_song_length $dx_current_progress}}}}
+      {set $dx_timer_total_minutes {int {/ $dx_time_total 60}}}
+      {set $dx_timer_minutes {int {/ $dx_time_remaining_counter 60}}}
+      {set $dx_timer_total_seconds {int {- $dx_time_total {* $dx_timer_total_minutes 60}}}}
+      {set $dx_timer_seconds {int {- $dx_time_remaining_counter {* $dx_timer_minutes 60}}}}
+      {if {< $dx_timer_seconds 0} {set $dx_timer_seconds 0}}
+      {if_else $dx_time_remain_dbg
+         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%d:%02d / %d:%02d\nDBG: %.3f / %d" $dx_timer_minutes $dx_timer_seconds $dx_timer_total_minutes $dx_timer_total_seconds {- $dx_time_total {/ $dx_get_song_ms 1000}} $dx_time_total}} ;include debug line
+         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%d:%02d / %d:%02d" $dx_timer_minutes $dx_timer_seconds $dx_timer_total_minutes $dx_timer_total_seconds}} ;don't include debug line
+      }
+      {script_task
+         kTaskUISeconds
+         (delay 1)
+         (script {dx_mtv_time_remaining_handler})
+      }
+      ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+   }
+}
