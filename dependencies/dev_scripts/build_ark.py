@@ -112,7 +112,10 @@ def build_patch_ark(wii: bool, xbox: bool, rpcs3_directory: str = None, rpcs3_mo
             f.rename(the_new_filename2)
 
     # build the ark
-    print("Building Rock Band 3 Deluxe ARK...")
+    if wii:
+        print("Building Rock Band 3 Deluxe ARK... the 'Unhandled exception' below is expected.")
+    else:
+        print("Building Rock Band 3 Deluxe ARK...")
     failed = False
     if wii:
         try:
