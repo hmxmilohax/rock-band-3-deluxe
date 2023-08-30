@@ -35,7 +35,7 @@ if not download_mackiloha():
     print("Failed to download and extract Mackiloha-suite-archive.zip. Exiting.")
     sys.exit(1)
 
-if build_patch_ark(True, rpcs3_mode=False):
+if build_patch_ark(False, True, rpcs3_mode=False):
     print("Xbox ARK built successfully!")
     print("Checking for updates to Xenia Canary...")
     # Get the full path to the build folder
