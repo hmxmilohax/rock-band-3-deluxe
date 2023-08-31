@@ -24,16 +24,18 @@ def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
     match sys.platform:
         case "win32":
+            ninja.variable("silence", "")
             ninja.rule("copy", "cmd /c copy $in $out")
             ninja.rule("bswap", "python dependencies\\python\\swap_rb_art_bytes.py $in $out")
             ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
-            ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe > nul")
+            ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
             ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
         case "linux":
+            ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp --reflink=auto $in $out")
             ninja.rule("bswap", "python dependencies/python/swap_rb_art_bytes.py $in $out")
             ninja.variable("superfreq", "dependencies/linux/superfreq")
-            ninja.variable("arkhelper", "dependencies/linux/arkhelper > /dev/null")
+            ninja.variable("arkhelper", "dependencies/linux/arkhelper")
             ninja.variable("dtab", "dependencies/linux/dtab")
 
     match platform:
@@ -41,14 +43,14 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "USRDIR", "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -v 6",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -v 6 $silence",
                 description="Building ARK",
             )
         case "xbox":
             out_dir = Path("out", platform, "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 $silence",
                 description="Building ARK",
             )
 
