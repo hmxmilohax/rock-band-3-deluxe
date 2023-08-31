@@ -24,8 +24,8 @@ def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
     match sys.platform:
         case "win32":
-            ninja.variable("silence", "")
-            ninja.rule("copy", "cmd /c copy $in $out")
+            ninja.variable("silence", ">nul")
+            ninja.rule("copy", "cmd /c copy $in $out $silence")
             ninja.rule("bswap", "python dependencies\\python\\swap_rb_art_bytes.py $in $out")
             ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
             ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
@@ -179,7 +179,7 @@ def generate_ark(platform, deps):
         case "xbox":
             hdr = str(Path("out", platform, "gen", "patch_xbox.hdr"))
             ninja.build(
-                str(Path("out", platform, "USRDIR","patch_xbox_0.ark")),
+                str(Path("out", platform, "patch_xbox_0.ark")),
                 "ark",
                 implicit=deps,
                 implicit_outputs=hdr,
