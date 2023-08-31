@@ -322,7 +322,7 @@ arkfiles += process_textures(
 
 arkfiles += process_textures(
     platform,
-    Path("custom_textures", "spotlights", "sources", "out"),
+    Path("custom_textures", "spotlights"),
     Path("ui", "track", "spotlights"),
     "spotlights",
     "",
