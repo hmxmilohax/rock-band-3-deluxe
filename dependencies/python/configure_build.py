@@ -179,7 +179,7 @@ def generate_ark(platform, deps):
         case "xbox":
             hdr = str(Path("out", platform, "gen", "patch_xbox.hdr"))
             ninja.build(
-                str(Path("out", platform, "patch_xbox_0.ark")),
+                str(Path("out", platform, "gen", "patch_xbox_0.ark")),
                 "ark",
                 implicit=deps,
                 implicit_outputs=hdr,
