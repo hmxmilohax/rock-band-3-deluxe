@@ -48,65 +48,6 @@
 (
 ;{dx_log_writer FALSE {sprint "Setting Custom Track Textures"}}
 {unless {modifier_mgr is_modifier_active mod_nohud} ;don't run anything if performance mode is enabled
-DX_ANIMATED_TASK_KILLER
-
-;populate memory with animated gems textures for replacement
-{if $dx_animated_gem_needs_reset ;if we have an animated gem update queued
-   {if $dx_animated_gems_enabled ;if we have animated gems enabled
-      {dx_log_writer FALSE {sprint "Animated Gems are on. Pain:" $dx_animated_gem}}
-      {set $dx_animated_gem_texture_frame_count 0} ;we need to ensure we start at 0 before running the following task
-      {thread_task kTaskSeconds ;create a new task
-         (script ;task contents
-            {if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
-               {new Tex {sprint "gemframe" $dx_animated_gem_texture_frame_count ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
-               {{sprint "gemframe" $dx_animated_gem_texture_frame_count ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gems_" $dx_animated_gem "/prism_gems_" $dx_animated_gem "_" $dx_animated_gem_texture_frame_count ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
-            }
-            {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
-               {new Tex {sprint "gemdrumframe" $dx_animated_gem_texture_frame_count ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
-               {{sprint "gemdrumframe" $dx_animated_gem_texture_frame_count ".tex"} set_bitmap {sprint "ui/track/animated_gems/gem_cymbal_diffuse_" $dx_animated_gem "/gem_cymbal_diffuse_" $dx_animated_gem "_" $dx_animated_gem_texture_frame_count ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
-            }
-            {if {== {$user get_track_type} kTrackRealKeys} ;check the currently loaded instrument
-               {new Tex {sprint "gemkeysframe" $dx_animated_gem_texture_frame_count ".tex"}} ;create a new texture with a numerical index of the currently tracked variable for it's specific instrument gem type
-               {{sprint "gemkeysframe" $dx_animated_gem_texture_frame_count ".tex"} set_bitmap {sprint "ui/track/animated_gems/prism_gem_keyboard_style_" $dx_animated_gem "/prism_gem_keyboard_style_" $dx_animated_gem "_" $dx_animated_gem_texture_frame_count ".png"}} ;populate the currently created texture index with the selected animated gem index for it's specific instrument gem type
-            }
-            {set $dx_animated_gem_texture_frame_count {+ $dx_animated_gem_texture_frame_count 1}} ;increment the variable to setup the next texture creation index
-            {unless {>= $dx_animated_gem_texture_frame_count 60} ;only run the task until the variable reaches 60
-               {$task loop} ;loop the task if variable is below 60
-            }
-         )
-      }
-   }
-}
-
-;apply animated gems in game task
-{if $dx_animated_gems_enabled ;if we have animated gem enabled
-   {set $dx_gemframecountdif 0} ;we need to ensure we start at 0 before running the following task
-   {thread_task kTaskSeconds ;create a new task
-      (name animated_gems) ;name the current task for deletion tracking
-      (delay 0.1) ;delay the start of the task
-      (script ;task contents
-         {if {== {$user get_track_type} kTrackDrum} ;check the currently loaded instrument
-            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set diffuse_tex {sprint "gemdrumframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set emissive_map {sprint "gemdrumframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {gem_cymbal_diffuse.tex iterate_refs $ref {$ref set normal_map {sprint "gemdrumframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {gem_cymbal_ems.tex iterate_refs $ref {$ref set diffuse_tex {sprint "gemdrumframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {if {|| {$user get_track_type} kTrackDrum kTrackGuitar kTrackBass kTrackKeys kTrackRealKeys} ;check the currently loaded instrument
-            {prism_gems.tex iterate_refs $ref {$ref set diffuse_tex {sprint "gemframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {prism_gems.tex iterate_refs $ref {$ref set emissive_map {sprint "gemframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {prism_gems.tex iterate_refs $ref {$ref set normal_map {sprint "gemframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-            {prism_gem_emissive.tex iterate_refs $ref {$ref set diffuse_tex {sprint "gemframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {if {== {$user get_track_type} kTrackRealKeys} ;check the currently loaded instrument
-            {prism_gem_keyboard_style.tex iterate_refs $ref {$ref set diffuse_tex {sprint "gemkeysframe" $dx_gemframecountdif '.tex'}}} ;apply the currently selected animated texture index with the selected animated highway index image we pre generated
-         }
-         {set $dx_gemframecountdif {+ $dx_gemframecountdif 1}} ;increment the variable to setup the next texture application index
-         {$task sleep 0.016} ;delay the next step of the task for roughly 1 frame at 60fps
-         {if {>= $dx_gemframecountdif 60} {set $dx_gemframecountdif 0}} ;only run the task until the variable reaches 60
-         {$task loop} ;loop the task
-      )
-   }
-}
 
 {if_else $fcringonce ;check if we have already generated new textures for the fc ring
    {do ;if we have
@@ -155,7 +96,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_highway_bass_needs_reset ;if we are queued to update a per instrument highway texture
    {unless {== $dx_highway_bass none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Bass Highway to: " $dx_highway_bass}}
-      {watermark_guitar.tex set_bitmap {sprint "ui/track/highways/" $dx_highway_bass ".png"}} ;load selected texture into tex memory
+      {watermark_guitar.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/gen/" $dx_highway_bass ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/" $dx_highway_bass ".png"}
+            {sprint "ui/track/highways/" $dx_highway_bass ".png"}
+         }
+      } ;load selected texture into tex memory
       {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex watermark_guitar.tex}} ;load the tex into the material
       {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
       {watermark_guitar.tex iterate_refs $ref {$ref set normal_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
@@ -166,7 +112,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_highway_drum_needs_reset ;if we are queued to update a per instrument highway texture
    {unless {== $dx_highway_drum none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Drum Highway to: " $dx_highway_drum}}
-      {watermark_drum.tex set_bitmap {sprint "ui/track/highways/" $dx_highway_drum ".png"}} ;load selected texture into tex memory
+      {watermark_drum.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/gen/" $dx_highway_drum ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/" $dx_highway_drum ".png"}
+            {sprint "ui/track/highways/" $dx_highway_drum ".png"}
+         }
+      } ;load selected texture into tex memory
       {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex watermark_drum.tex}} ;load the tex into the material
       {watermark_drum.tex iterate_refs $ref {$ref set emissive_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
       {watermark_drum.tex iterate_refs $ref {$ref set normal_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
@@ -177,7 +128,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_highway_keys_needs_reset ;if we are queued to update a per instrument highway texture
    {unless {== $dx_highway_keys none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Keys Highway to: " $dx_highway_keys}}
-      {watermark_keys.tex set_bitmap {sprint "ui/track/highways/" $dx_highway_keys ".png"}} ;load selected texture into tex memory
+      {watermark_keys.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/gen/" $dx_highway_keys ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/highways/" $dx_highway_keys ".png"}
+            {sprint "ui/track/highways/" $dx_highway_keys ".png"}
+         }
+      } ;load selected texture into tex memory
       {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex watermark_keys.tex}} ;load the tex into the material
       {watermark_keys.tex iterate_refs $ref {$ref set emissive_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
       {watermark_keys.tex iterate_refs $ref {$ref set normal_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
@@ -188,7 +144,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_streak_guitar_needs_reset ;if we are queued to update a per instrument spotlight texture
    {unless {== $dx_streak_guitar none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Guitar Spotlight to: " $dx_streak_guitar}}
-      {spotlight_bass_track.tex set_bitmap {sprint "ui/track/spotlights/" $dx_streak_guitar ".png"}} ;load selected texture into tex memory
+      {spotlight_bass_track.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/gen/" $dx_streak_guitar ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/" $dx_streak_guitar ".png"}
+            {sprint "ui/track/spotlights/" $dx_streak_guitar ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
       {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
@@ -200,7 +161,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_streak_bass_needs_reset ;if we are queued to update a per instrument spotlight texture
    {unless {== $dx_streak_bass none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Bass Spotlight to: " $dx_streak_bass}}
-      {spotlight_bass_track.tex set_bitmap {sprint "ui/track/spotlights/" $dx_streak_bass ".png"}} ;load selected texture into tex memory
+      {spotlight_bass_track.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/gen/" $dx_streak_bass ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/" $dx_streak_bass ".png"}
+            {sprint "ui/track/spotlights/" $dx_streak_bass ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
       {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
@@ -212,7 +178,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_streak_drum_needs_reset ;if we are queued to update a per instrument spotlight texture
    {unless {== $dx_streak_drum none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Drum Spotlight to: " $dx_streak_drum}}
-      {spotlight_drums_track.tex set_bitmap {sprint "ui/track/spotlights/" $dx_streak_drum ".png"}} ;load selected texture into tex memory
+      {spotlight_drums_track.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/gen/" $dx_streak_drum ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/" $dx_streak_drum ".png"}
+            {sprint "ui/track/spotlights/" $dx_streak_drum ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_drum_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track.tex}} ;load the tex into the material
       {spotlight_drum_track.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_drum_track.tex iterate_refs $ref {$ref set normal_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
@@ -224,8 +195,18 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_streak_keys_needs_reset ;if we are queued to update a per instrument spotlight texture
    {unless {== $dx_streak_keys none}
       {dx_log_writer FALSE {sprint "Setting Keys Spotlight to: " $dx_streak_keys}}
-      {spotlight_prokeys_track.tex set_bitmap {sprint "ui/track/spotlights/" $dx_streak_keys ".png"}} ;load selected texture into tex memory
-      {spotlight_keys_track.tex set_bitmap {sprint "ui/track/spotlights/" $dx_streak_keys ".png"}} ;load selected texture into tex memory
+      {spotlight_prokeys_track.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/gen/" $dx_streak_keys ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/" $dx_streak_keys ".png"}
+            {sprint "ui/track/spotlights/" $dx_streak_keys ".png"}
+         }
+      } ;load selected texture into tex memory
+      {spotlight_keys_track.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/gen/" $dx_streak_keys ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/spotlights/" $dx_streak_keys ".png"}
+            {sprint "ui/track/spotlights/" $dx_streak_keys ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}} ;load the tex into the material
       {spotlight_keys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track.tex}} ;load the tex into the material
       {spotlight_keys_track.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track.tex}} ;load the tex into the material
@@ -242,7 +223,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_overdrive_guitar_needs_reset ;if we are queued to update a per instrument emissive texture
    {unless {== $dx_overdrive_guitar none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Guitar Emissive to: " $dx_overdrive_guitar}}
-      {spotlight_bass_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $dx_overdrive_guitar ".png"}} ;load selected texture into tex memory
+      {spotlight_bass_track_emissive.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/gen/" $dx_overdrive_guitar ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/" $dx_overdrive_guitar ".png"}
+            {sprint "ui/track/emissives/" $dx_overdrive_guitar ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track_emissive.tex}} ;load the tex into the material
       {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
@@ -254,7 +240,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_overdrive_bass_needs_reset ;if we are queued to update a per instrument emissive texture
    {unless {== $dx_overdrive_bass none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Bass Emissive to: " $dx_overdrive_bass}}
-      {spotlight_guitar_track_emmissive.tex set_bitmap {sprint "ui/track/emissives/" $dx_overdrive_bass ".png"}} ;load selected texture into tex memory
+      {spotlight_guitar_track_emmissive.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/gen/" $dx_overdrive_bass ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/" $dx_overdrive_bass ".png"}
+            {sprint "ui/track/emissives/" $dx_overdrive_bass ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track_emmissive.tex}} ;load the tex into the material
       {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track_emmissive.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set normal_map spotlight_guitar_track_emmissive.tex}} ;apply the emissive map as well so it looks proper
@@ -266,7 +257,12 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_overdrive_drum_needs_reset ;if we are queued to update a per instrument emissive texture
    {unless {== $dx_overdrive_drum none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Drum Emissive to: " $dx_overdrive_drum}}
-      {spotlight_drums_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $dx_overdrive_drum ".png"}} ;load selected texture into tex memory
+      {spotlight_drums_track_emissive.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/gen/" $dx_overdrive_drum ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/" $dx_overdrive_drum ".png"}
+            {sprint "ui/track/emissives/" $dx_overdrive_drum ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drums_track_emissive.tex}} ;load the tex into the material
       {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
       {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
@@ -278,8 +274,18 @@ DX_ANIMATED_TASK_KILLER
 {if $dx_overdrive_keys_needs_reset ;if we are queued to update a per instrument emissive texture
    {unless {== $dx_overdrive_keys none} ;check the texture is not set to default
       {dx_log_writer FALSE {sprint "Setting Keys Emissive to: " $dx_overdrive_keys}}
-      {spotlight_keys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $dx_overdrive_keys ".png"}} ;load selected texture into tex memory
-      {spotlight_prokeys_track_emissive.tex set_bitmap {sprint "ui/track/emissives/" $dx_overdrive_keys ".png"}} ;load selected texture into tex memory
+      {spotlight_keys_track_emissive.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/gen/" $dx_overdrive_keys ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/" $dx_overdrive_keys ".png"}
+            {sprint "ui/track/emissives/" $dx_overdrive_keys ".png"}
+         }
+      } ;load selected texture into tex memory
+      {spotlight_prokeys_track_emissive.tex set_bitmap
+         {if_else {file_exists {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/gen/" $dx_overdrive_keys ".png_ps3"}}
+            {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/emissives/" $dx_overdrive_keys ".png"}
+            {sprint "ui/track/emissives/" $dx_overdrive_keys ".png"}
+         }
+      } ;load selected texture into tex memory
       {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track_emissive.tex}} ;load the tex into the material
       {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track_emissive.tex}} ;load the tex into the material
       {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
