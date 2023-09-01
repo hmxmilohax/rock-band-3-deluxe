@@ -254,9 +254,11 @@
             (real_drum {$player add_sink fc_real_drum_callback (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)})
          }
       }
+   {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)} ;add the streak counter callback to each player
 )
 #define ACTIVE_PLAYER_RESET_HANDLER
 (
+   {set $dx_num_active_instruments 0}
    {set $bassplayeractive false}
    {set $vocalsplayeractive false}
    {set $real_guitarplayeractive false}
@@ -266,21 +268,22 @@
    {set $guitarplayeractive false}
    {set $drumplayeractive false}
    {set $drumplayeractive false}
+   {set $dx_active_vocals FALSE}
 )
 #define DX_CHECK_ACTIVE_PLAYERS
 (
    {do
       {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
          {switch {$player instrument}
-            (bass {do {set $bassplayeractive true}})
-            (real_guitar {do {set $real_guitarplayeractive true}})
-            (real_bass {do {set $real_bassplayeractive true}})
-            (keys {do {set $keysplayeractive true}})
-            (real_keys {do {set $real_keysplayeractive true}})
-            (guitar {do {set $guitarplayeractive true}})
-            (drum {do {set $drumplayeractive true}})
-            (real_drum {do {set $drumplayeractive true}})
-            (vocals {set $vocalsplayeractive true})
+            (bass {do {set $bassplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (real_guitar {do {set $real_guitarplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (real_bass {do {set $real_bassplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (keys {do {set $keysplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (real_keys {do {set $real_keysplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (guitar {do {set $guitarplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (drum {do {set $drumplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (real_drum {do {set $drumplayeractive true} {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}})
+            (vocals {set $vocalsplayeractive true} {set $dx_active_vocals TRUE})
          }
       }
    }
@@ -297,7 +300,7 @@
          (guitar {do {set $guitarplayeractive true} DX_PLAYER_SINKS})
          (drum {do {set $drumplayeractive true} DX_PLAYER_SINKS})
          (real_drum {do {set $drumplayeractive true} DX_PLAYER_SINKS})
-         (vocals {set $vocalsplayeractive true})
+         (vocals {set $vocalsplayeractive true} {set $dx_active_vocals TRUE})
       }
    }
 )
@@ -344,6 +347,15 @@
    {set $real_drum_missed_once FALSE}
    {set $keys_missed_once FALSE}
    {set $real_keys_missed_once FALSE}
+   ;callbacks
+   {set $num_gems_combo_bass 0} ;clear all the streak vars
+   {set $num_gems_combo_real_guitar 0}
+   {set $num_gems_combo_real_bass 0}
+   {set $num_gems_combo_keys 0}
+   {set $num_gems_combo_real_keys 0}
+   {set $num_gems_combo_guitar 0}
+   {set $num_gems_combo_drum 0}
+   {set $num_gems_combo_real_drum 0}
    ;acceleration mode
    {set $speedmod_top $leaderspeed}
    ;endgame sound effects
@@ -413,6 +425,7 @@
    {set $vocals_note_tracker ()}
    {resize $vocals_note_tracker 0} ;resize the array
    {push_back $vocals_note_tracker (none none)} ;push_back a new state into the array
+   {set $dx_final_note 0}
 )
 #define GAME_EXIT_RESET_HANDLER
 (
@@ -477,7 +490,11 @@
 
    {if {== $dx_lanes rb3} {set $dx_lanes none}}
 
-   {if {== $dx_score rb3} {set $dx_score none}}
+   {if {== $dx_score_box rb3} {set $dx_score_box none}}
+
+   {if {== $dx_stars rb3} {set $dx_stars none}}
+
+   {if {== $dx_font rb3} {set $dx_font none}}
 
    {if {== $dx_flames rb3} {set $dx_flames none}}
 
@@ -506,6 +523,12 @@
    {if {== $dx_overdrive_drum rb3_drums} {set $dx_overdrive_drum none}}
    {if {== $dx_overdrive_keys rb3_keys} {set $dx_overdrive_keys none}}
 
+)
+#define DX_OVERDRIVE_COLOR_RESET_HANDLER
+(
+	{unless {== $dx_overdrive_r 0.71} {set $dx_overdrive_color_needs_reset TRUE}}
+	{unless {== $dx_overdrive_g 0.54} {set $dx_overdrive_color_needs_reset TRUE}}
+	{unless {== $dx_overdrive_b 0.0} {set $dx_overdrive_color_needs_reset TRUE}}
 )
 #define DX_ANGLE_RESET_HANDLER
 (
