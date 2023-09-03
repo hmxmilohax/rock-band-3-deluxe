@@ -324,10 +324,8 @@ By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in
 
 *Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
 
-* Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, then navigate back to `windows_bats` and run `process_textures_***.bat`.
-  * These will make them show up in game, resize your images accordingly (including those with arbitrary resolutions), and convert them to the proper format for *Rock Band 3 Deluxe* to read.
-
-***You will need to rebuild Rock Band 3 Deluxe in order for these to take effect.***
+* Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, and then
+  rebuild the game.
 
 <br/>
 
@@ -335,7 +333,7 @@ By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in
 
 ### Installing Python (Required)
 
-* Head to the [**Python downloads**](https://www.python.org/downloads/), download and install Python (version 3.9 or later).
+* Head to the [**Python downloads**](https://www.python.org/downloads/), download and install Python (version 3.11 or later).
   * ***Select "Add python.exe to PATH"*** on the installer.
 
 ![Python PATH](dependencies/images/pythonpath.png)
@@ -353,11 +351,23 @@ By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in
 
 From here, you can make any personal modifications to the game or build it yourself.
 
-* Navigate to `windows_bats` if you're on Windows or `user_scripts` if you're on Linux.
+#### Windows `*.bat` files.
+
+* Navigate to `scripts` if you're on Windows.
   * Run the `build_` script for your platform of choice to build *Rock Band 3 Deluxe*.
-  * Built contents will be in the `_build` folder on the root of the repo.
+  * Built contents will be in the `out` folder on the root of the repo.
 
 You can now return to [**Installing on Xenia (Advanced)**](#-installing-on-xenia-advanced) or [**Custom Textures**](#-custom-textures).
+
+#### Manual
+
+* Navigate to the root of the repo in your shell of choice.
+
+* Run the following commands:
+  * `python3 dependencies/python/configure_build.py <platform>`
+  * `dependencies/<os>/ninja`
+
+* Built contents will be in the `out` folder on the root of the repo.
 
 <br/>
 
