@@ -381,31 +381,6 @@ arkfiles += process_textures(
     "pentatonic_hub_",
 )
 
-# these will still generate a dta list, but the game will not attempt to load it
-arkfiles += process_textures(
-    platform,
-    Path("custom_textures", "animated_gems", "gem_cymbal_diffuse_rb4"),
-    Path("ui", "track", "animated_gems", "gem_cymbal_diffuse_rb4"),
-    "rb4_anim1",
-    "",
-)
-
-arkfiles += process_textures(
-    platform,
-    Path("custom_textures", "animated_gems", "prism_gem_keyboard_style_rb4"),
-    Path("ui", "track", "animated_gems", "prism_gem_keyboard_style_rb4"),
-    "rb4_anim2",
-    "",
-)
-
-arkfiles += process_textures(
-    platform,
-    Path("custom_textures", "animated_gems", "prism_gems_rb4"),
-    Path("ui", "track", "animated_gems", "prism_gems_rb4"),
-    "rb4_anim3",
-    "",
-)
-
 # build ark
 buildfiles += generate_ark(platform, arkfiles)
 
