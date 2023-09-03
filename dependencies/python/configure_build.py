@@ -69,6 +69,8 @@ def copy_rawfiles(platform):
             return False
         if file.suffix.endswith(".dta"):
             return False
+        if file.suffix.endswith(".png"):
+            return False
         if file.is_dir():
             return False
         return True
@@ -91,13 +93,37 @@ def run_dtab():
         target_filename = Path("gen", f.stem + ".dtb")
 
         output_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
-        serialize_directory = Path("obj", platform, "dtab_raw").joinpath(*f.parent.parts[1:])
+        serialize_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
 
         serialize_output = serialize_directory.joinpath(target_filename)
         encryption_output = output_directory.joinpath(target_filename)
         ninja.build(str(serialize_output), "dtab_serialize", str(f))
         ninja.build(str(encryption_output), "dtab_encrypt", str(serialize_output))
         output_files.append(str(encryption_output))
+
+    return output_files
+
+def convert_pngs(platform):
+    files = list(Path("_ark").rglob("*.png"))
+    output_files = []
+    for f in files:
+        output_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
+        match platform:
+            case "ps3":
+                target_filename = Path("gen", f.stem + ".png_ps3")
+                xbox_filename = Path("gen", f.stem + ".png_xbox")
+                xbox_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
+                xbox_output = xbox_directory.joinpath(xbox_filename)
+                ps3_output = output_directory.joinpath(target_filename)
+                ninja.build(str(xbox_output), "sfreq", str(f))
+                ninja.build(str(ps3_output), "bswap", str(xbox_output))
+                output_files.append(str(ps3_output))
+            case "xbox":
+                target_filename = Path("gen", f.stem + ".png_xbox")
+                xbox_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
+                xbox_output = xbox_directory.joinpath(target_filename)
+                ninja.build(str(xbox_output), "sfreq", str(f))
+                output_files.append(str(xbox_output))
 
     return output_files
 
@@ -196,6 +222,7 @@ buildfiles = copy_buildfiles(platform)
 # generate and copy files into the ark
 arkfiles = copy_rawfiles(platform)
 arkfiles += run_dtab()
+arkfiles += convert_pngs(platform)
 arkfiles += process_textures(
     platform,
     Path("custom_textures", "multiplier_ring"),
