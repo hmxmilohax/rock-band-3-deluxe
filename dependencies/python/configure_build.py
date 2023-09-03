@@ -30,6 +30,13 @@ def configure_tools(platform="ps3"):
             ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
             ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
             ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
+        case "darwin":
+            ninja.variable("silence", "> /dev/null")
+            ninja.rule("copy", "cp $in $out")
+            ninja.rule("bswap", "python dependencies/python/swap_rb_art_bytes.py $in $out")
+            ninja.variable("superfreq", "dependencies/macos/superfreq")
+            ninja.variable("arkhelper", "dependencies/macos/arkhelper")
+            ninja.variable("dtab", "dependencies/macos/dtab")
         case "linux":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp --reflink=auto $in $out")
