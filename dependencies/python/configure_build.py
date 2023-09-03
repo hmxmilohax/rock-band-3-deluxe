@@ -1,4 +1,4 @@
-!/usr/bin/python3
+#!/usr/bin/python3
 from lib import ninja_syntax
 from pathlib import Path
 import sys
