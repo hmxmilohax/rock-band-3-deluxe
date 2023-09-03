@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+!/usr/bin/python3
 from lib import ninja_syntax
 from pathlib import Path
 import sys
@@ -33,7 +33,7 @@ def configure_tools(platform="ps3"):
         case "darwin":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp $in $out")
-            ninja.rule("bswap", "python dependencies/python/swap_rb_art_bytes.py $in $out")
+            ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out")
             ninja.variable("superfreq", "dependencies/macos/superfreq")
             ninja.variable("arkhelper", "dependencies/macos/arkhelper")
             ninja.variable("dtab", "dependencies/macos/dtab")
