@@ -26,14 +26,14 @@ def configure_tools(platform="ps3"):
         case "win32":
             ninja.variable("silence", ">nul")
             ninja.rule("copy", "cmd /c copy $in $out $silence")
-            ninja.rule("bswap", "python dependencies\\python\\swap_rb_art_bytes.py $in $out")
+            ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out")
             ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
             ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
             ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
         case "linux":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp --reflink=auto $in $out")
-            ninja.rule("bswap", "python dependencies/python/swap_rb_art_bytes.py $in $out")
+            ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out")
             ninja.variable("superfreq", "dependencies/linux/superfreq")
             ninja.variable("arkhelper", "dependencies/linux/arkhelper")
             ninja.variable("dtab", "dependencies/linux/dtab")
