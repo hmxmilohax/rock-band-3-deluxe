@@ -15,7 +15,7 @@ print(
   #     #   #      "# #   #   m#m  
   #     ##m#"  "mmm#" "#m##  m" "m 
                                    
-====================================                           """
+===================================="""
 )
 
 print(f"Platform: {platform}")
@@ -133,58 +133,6 @@ def convert_pngs(platform):
                 output_files.append(str(xbox_output))
 
     return output_files
-
-
-def process_textures(
-    platform, input_dir: Path, output_dir: Path, name: str, prefix: str
-):
-    names = []
-    output_files = []
-    texture_list = []
-
-    output_dir = Path("obj", platform, "ark").joinpath(output_dir.joinpath("gen"))
-    tmp_dir = Path("obj", platform, name)
-
-    # build list of files and convert textures
-    for i in input_dir.iterdir():
-        if i.is_dir():
-            continue
-
-        if i.stem.startswith(prefix):
-            texture_list.append(i.stem.removeprefix(prefix))
-
-        match platform:
-            case "ps3":
-                xbox_file = tmp_dir.joinpath(f"{i.stem}.png_xbox")
-                ps3_file = output_dir.joinpath(f"{i.stem}.png_ps3")
-
-                ninja.build(str(xbox_file), "sfreq", str(i))
-                ninja.build(str(ps3_file), "bswap", str(xbox_file))
-                output_files.append(str(ps3_file))
-            case "xbox":
-                xbox_file = output_dir.joinpath(f"{i.stem}.png_xbox")
-
-                ninja.build(str(xbox_file), "sfreq", str(i))
-                output_files.append(str(xbox_file))
-
-    # write the file list and run dtab on it
-    raw_file = tmp_dir.joinpath(f"{name}.dta")
-    serialized_file = tmp_dir.joinpath(f"{name}.dtb")
-    encrypted_file = output_dir.joinpath(f"{name}.dtb")
-
-    os.makedirs(tmp_dir, exist_ok=True)
-    f = open(raw_file, "w+")
-    texture_list.sort()
-    for i in texture_list:
-        f.write(f'"{i}"\n')
-
-    ninja.build(str(serialized_file), "dtab_serialize", str(raw_file))
-    ninja.build(str(encrypted_file), "dtab_encrypt", str(serialized_file))
-
-    output_files.append(str(encrypted_file))
-
-    return output_files
-
 
 def copy_buildfiles(platform):
     files = [x for x in Path("_build", platform).rglob("*") if x.is_file()]
