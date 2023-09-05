@@ -1,0 +1,89 @@
+(dxState_TrackThemeLoader
+   (view
+      {do
+         ($options
+            {array 0})
+         ($dx_track_theme_list_array
+            {array 0})
+         ($dx_track_theme_file_array
+            {array 0})
+         {set $dx_track_theme_file_array
+            #ifdef HX_PS3
+            {file_list {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_track_theme_*.dta"}}
+            #else
+            {file_list {sprint "GAME:/dx_track_theme_*.dta"}}
+            #endif
+         }
+         {foreach $file
+            $dx_track_theme_file_array
+            {if
+               {file_exists
+                  #ifdef HX_PS3
+                  {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $file ".dta"}
+                  #else
+                  {sprint "GAME:/" $file ".dta"}
+                  #endif
+               }
+               {foreach $entry
+                  {read_file 
+                     #ifdef HX_PS3
+                     {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $file ".dta"}
+                     #else
+                     {sprint "GAME:/" $file ".dta"}
+                     #endif
+                  }
+                  {if {== {elem $entry 0} {basename track_theme_name}}
+                     {push_back $options {elem {find $entry track_theme_name} 1}}
+                  }
+               }
+            }
+         }
+         {if {== {size $options} 0} ;if nothing was found at all
+            {set $options ('cant find' 'track themes' 'this is a bug')} ;fill the list so it doesnt crash
+         }
+         {dx_state_setup dxState_TrackThemeLoader FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {set $load_dta {$component selected_sym}}
+      {set $dx_track_theme_file_array
+         #ifdef HX_PS3
+         {file_list {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_track_theme_*.dta"}}
+         #else
+         {file_list {sprint "GAME:/dx_track_theme_*.dta"}}
+         #endif
+      }
+      {foreach $file
+         $dx_track_theme_file_array
+         {if
+            {file_exists
+               #ifdef HX_PS3
+               {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $file ".dta"}
+               #else
+               {sprint "GAME:/" $file ".dta"}
+               #endif
+            }
+            {foreach $entry
+               {read_file 
+                  #ifdef HX_PS3
+                  {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $file ".dta"}
+                  #else
+                  {sprint "GAME:/" $file ".dta"}
+                  #endif
+               }
+               {if {== {elem $entry 0} {basename track_theme_name}}
+                  {if {== $load_dta {elem {find $entry track_theme_name} 1}}
+                     {set $dta_to_load $file}
+                     LOAD_TRACK_THEME_READER
+                     DX_TEXTURE_CORRECTOR
+                  }
+               }
+            }
+         }
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_DebugSettings}
+   )
+)
