@@ -1,0 +1,71 @@
+{func
+   dx_log_writer
+   ($write_file $dx_log_writer)
+   #ifdef RB3E
+   {print_debug $dx_log_writer}
+   #endif
+   #ifndef HX_WII
+   {unless {== $dx_logging never}
+      {do
+         DX_GAMEMODE_CHECKER
+         {if_else {file_exists DX_LOG_FILE_PATH}
+            {set $dx_log_reader {array $dx_log_reader}}
+            {set $dx_log_reader ("start of log")}
+         }
+         {if {== $dx_log_counter 3}
+            {push_back $dx_log_reader "Game Entered three times, starting new log."}
+            {set $prev_dx_log_reader {array $dx_log_reader}}
+            {if $write_file
+               {write_file DX_LAST_LOG_FILE_PATH $dx_log_reader}
+               {set $dx_log_counter 0}
+            }
+            {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
+         }
+         {push_back $dx_log_reader $dx_log_writer}
+         {if {|| {&& $write_file {== $dx_logging default}} {== $dx_logging always}}
+            {write_file DX_LOG_FILE_PATH
+               {array
+                  $dx_log_reader
+               }
+            }
+         }
+      }
+   }
+   #endif
+}
+{func
+   dx_discordrp_writer
+   ($dx_discordrp_writer)
+   #ifndef HX_WII
+   {do
+      {write_file DX_RICH_PRESENCE_FILE_PATH {array ($dx_discordrp_writer)}}
+   }
+   #endif
+}
+{func
+   dx_passive_messenger
+   ($message)
+   {passive_messages_panel queue_message $message}
+}
+{func dx_print_objects
+   {if_else {$this in_game}
+      {do
+         ($focus_panel {get_track_panel})
+         {set $objArray {array ({sprintf "List of objects" })}}
+         {{{get_track_panel} loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
+         #ifndef HX_WII
+         {write_file DX_OBJECTS_FILE_PATH $objArray}
+         #endif
+      }
+      {ui foreach_screen $screen
+         {do
+            ($focus_panel {$screen focus_panel})
+            {set $objArray {array ({sprintf "List of objects" })}}
+            {{$focus_panel loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
+            #ifndef HX_WII
+            {write_file DX_OBJECTS_FILE_PATH $objArray}
+            #endif
+         }
+      }
+   }
+}
