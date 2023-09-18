@@ -42,6 +42,57 @@
    (TRANSITION_COMPLETE_MSG
       DX_AUTOSAVE)
    (exit)
+   #ifdef HX_WII
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if_else
+         {&&
+            $ok
+            $this
+            {ui focus_panel}
+            {$this is_up}
+            {==
+               {ui focus_panel}
+               $this}
+            {!
+               {==
+                  $text
+                  ""}}
+            {!
+               {==
+                  $text
+                  " "}}}
+         {do
+            {{$this get_profile}
+               set_band_name
+               $text}
+            {acc_mgr
+               earn_accomplishment
+               {$this get_profile}
+               acc_bandcreate}
+            {$this update_band_name_label}
+            {saveload_mgr autosave}}
+         {do
+            {if
+               {&&
+                  $ok
+                  $this
+                  {ui focus_panel}
+                  {$this is_up}
+                  {==
+                     {ui focus_panel}
+                     $this}}
+               {do
+                  {{$this get_profile}
+                     set_band_name
+                     $defaultName}
+                  {acc_mgr
+                     earn_accomplishment
+                     {$this get_profile}
+                     acc_bandcreate}
+                  {$this update_band_name_label}
+                  DX_AUTOSAVE}}}}
+      {$this set_paused 0})
+   #else
    (VIRTUAL_KEYBOARD_RESULT_MSG
       {if
          {&&
@@ -69,6 +120,7 @@
             acc_bandcreate}
          {$this update_band_name_label}
          DX_AUTOSAVE})
+   #endif
    (SCROLL_MSG
       {cond
          ({== $component standins.lst}
@@ -83,6 +135,21 @@
       {switch
          $component
          (edit_band_name.btn
+			#ifdef HX_WII
+            {$this set_paused 1}
+                  {set
+                     $defaultName
+                     {$this get_default_vk_name TRUE}}
+            {virtual_keyboard
+                     show_keyboard
+                     $user
+                     kBandNameLength
+                     {localize create_band_vk_title}
+                     {localize create_band_vk_desc}
+                     $defaultName
+                     $this
+                     kVkNormalEntry}
+            #else
             {virtual_keyboard
                show_keyboard
                $user
@@ -90,7 +157,8 @@
                {localize create_band_vk_title}
                {localize create_band_vk_desc}
                {$this get_default_vk_name TRUE}
-               $this})
+               $this}
+            #endif)
          (edit_logo.btn
             {closet_mgr set_no_user_mode TRUE}
             {critical_user_listener set_critical_user $user}
@@ -164,6 +232,7 @@
       {band_name.lbl
          set_band_name
          {$this get_profile}})
+   #ifdef HX_WII
    (get_default_vk_name
       ($band_name)
       {do
@@ -180,6 +249,24 @@
                   {name_generator get_random_name band_firstnames}}
                {localize
                   {name_generator get_random_name band_secondnames}}}}})
+   #else
+   (get_default_vk_name
+      ($band_name)
+      {do
+         ($name
+            {{$this get_profile}
+               get_band_name})
+         {if_else
+            {{$this get_profile}
+               has_band_name_been_set}
+            $name
+            {sprintf
+               "%s %s"
+               {localize
+                  {name_generator get_random_name band_firstnames}}
+               {localize
+                  {name_generator get_random_name band_secondnames}}}}})
+   #endif
    (update_state
       ($new_state $old_state)
       {switch
@@ -249,6 +336,9 @@
    (panels meta practice_space_panel manage_band_panel accomplishments_status_panel)
    (focus manage_band_panel)
    (enter
+      #ifdef HX_WII
+      {overshell set_active_status kOvershellInactive}
+      #endif
       {manage_band_panel set_state kManageBand_StandInsMenu}
       {profile_mgr
          add_sink
@@ -257,7 +347,10 @@
    (exit
       {closet_mgr set_no_user_mode FALSE}
       {char_sync update_char_cache}
-      {profile_mgr remove_sink $this primary_profile_changed_msg})
+      {profile_mgr remove_sink $this primary_profile_changed_msg}
+      #ifdef HX_WII
+      {overshell set_active_status kOvershellInShell}
+      #endif)
    (primary_profile_changed_msg
       {if
          {profile_mgr has_primary_profile}
