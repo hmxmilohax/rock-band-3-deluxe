@@ -2,7 +2,7 @@
 
 <img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
 
-## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PlayStation 3, Xbox 360, and Wii.
+## *Rock Band 3 Deluxe* is a Massive Quality-of-Life Improvement Mod for PS3 and Xbox 360
 
 ### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
 
@@ -21,17 +21,17 @@
 
 ### Playing *Rock Band 3 Deluxe* requires these things:
 
-- **A vanilla copy of Rock Band 3** for PS3, Xbox 360, or Wii that you can extract onto your PC.
+- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC.
     - The **USA** version is required for PS3 (`BLUS30463`).
-- For Console: A **modded/hacked PS3, Xbox 360, or Wii** and a way to transfer files to it. An SD card is required for Wii.
-- For Emulator: A PC capable of running RPCS3 or Dolphin.
+- For Console: A **MODDED/HACKED PS3 or Xbox 360** and a way to transfer files to it. We recommend using FTP.
+- For Emulator: A PC capable of running RPCS3.
 
 <br/>
 
 # 📥 Downloads
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 
-*Rock Band 3 Deluxe recieves very frequent updates. You can click the `Watch` button (All Activity) to be notified about any updates that occur.*
+***Rock Band 3 Deluxe recieves very frequent updates!***
 
 ### 📥 [PlayStation 3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
@@ -44,12 +44,6 @@
 > Continue to: 
     - [Installing on Xbox 360](#-installing-on-xbox-360)
     - [Installing on Xbox Series X/S](#-installing-on-xbox-series-xs-xenia-uwp)
-
-### 📥 [Wii (Riivolution)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip) 📥 [Wii (RB3E Rawfiles)](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii-rawfiles.zip)
-
-> Continue to: 
-    - [Installing on Wii](#-installing-on-wii)
-    - [Installing on Dolphin Emulator](#-installing-on-dolphin-emulator)
 
 <br/>
 
@@ -76,126 +70,85 @@
 
 ### Select your Platform of Choice
 
-  - [RPCS3 (Recommended for PC)](#-installing-on-rpcs3)
+  - [PC, via RPCS3](#-installing-on-pc-via-rpcs3)
   - [PlayStation 3](#-installing-on-ps3)
   - [Xbox 360](#-installing-on-xbox-360)
-  - [Wii](#-installing-on-wii)
-  - [Dolphin Emulator](#-installing-on-dolphin-emulator)
   - [Xbox Series X/S (Xenia UWP)](#-installing-on-xbox-series-xs-xenia-uwp)
-  - [Xenia (Advanced)](#-installing-on-xenia-advanced)
 <br/>
 
-## 📩 Installing on [RPCS3](https://rpcs3.net/)
+## 📩 Installing on PC, via [RPCS3](https://rpcs3.net/)
 
-### *Before you start, check out the [Definitive RB3 PC Setup Guide](https://github.com/carlmylo/rb3-pc#readme)*
+> ***Before you start, check out the [Definitive RB3 PC Setup Guide](https://github.com/carlmylo/rb3-pc#readme)***. *This covers everything, from installing the base game, to setting up your instruments, and even playing online after the original servers shut down!*
 
-*This covers everything, from installing the base game, to setting up your instruments, and even playing online after the original servers shut down!*
 
-<br/>
+### Download [***Rock Band 3 Deluxe***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
-  * Extract the zip and **drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
-  * Select `Yes` to confirm.
+* Extract the `.zip` file.
+
+* **Drag and drop the `.pkg` file on top of the main RPCS3 window** to install it.
+* Select `Yes` to confirm.
 
 <img src="dependencies/images/rpcs3_dxpkg.png" alt="RPCS3 DX PKG">
 
-### ✅ ***Rock Band 3 Deluxe is now installed!***
+### ✅ ***Rock Band 3 Deluxe is now installed and ready to play!***
 
-We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
+> *Rock on!*
 
 <br/>
 
 ## 📩 Installing on PS3
 
-**NOTE: You WILL need a HACKED/MODDED (CFW or HFW/HEN) PS3 in order to play this mod on console. We hope this is clear.**
+> ***Rock Band 3 Deluxe will work on all modded PS3 systems, CFW or HEN.***
 
-**NOTE: *Rock Band 3 Deluxe* only works with** ***North American (`BLUS30463`)*** **copies of the game on PS3.**
+### Download [***Rock Band 3 Deluxe***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
-<br/>
+* Extract the `.zip` file.
 
-* Download [**Rock Band 3 Deluxe for PS3**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip). 
-  * Extract the zip and copy the `.pkg` file to the root of a FAT32 formatted USB drive.
-  * Remove it from your PC and plug it in to the *rightmost* USB port on your PS3.
-  * Navigate to `Package Manager > Install Package Files > Standard` in the XMB and install it just like any other package.
+* Copy the `.pkg` file to the root of a ***FAT32 formatted*** USB drive.
+* Remove it from your PC and **plug it in to the *far right* USB port on your PS3**.
+* On the XMB, **navigate to `Package Manager > Install Package Files > Standard`**.
+* **Install it** just like any other package.
 
 <img src="dependencies/images/ps3_dxpkg.png" width="75%" alt="PS3 DX PKG">
 
-### ✅ ***Rock Band 3 Deluxe is now installed!***
+### ✅ ***Rock Band 3 Deluxe is now installed and ready to play!***
 
-We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
+> *You can play the game using the original disc or via a backup on your hard drive. Rock on!*
 
 <br/>
 
 ## 📩 Installing on Xbox 360
 
-**NOTE: You WILL need a HACKED/MODDED (RGH or JTAG) Xbox 360 in order to play this mod on console. We hope this is clear.**
+> ***Rock Band 3 Deluxe will work on all modded Xbox 360 systems, RGH or JTAG.***
 
-* **Install your vanilla copy of Rock Band 3** to your console's hard drive.
-  * In case anything goes wrong, we recommend that you **rename `default.xex` to `default_vanilla.xex`**.
+* **Install your vanilla copy of *Rock Band 3*** to your console's hard drive.
 
-* **Disable updates** for Rock Band 3 in Aurora. *Rock Band 3 Deluxe* rolls `TU5` into its base installation.
+  * We recommend that you **rename its `default.xex` to `default_vanilla.xex`**, just as a backup in case you ever want to go back to vanilla (for whatever reason).
 
-* Download [**Rock Band 3 Deluxe for Xbox 360**](#xbox-360). 
-  * **Copy the contents of it to where your copy of Rock Band 3 is installed** (we recommend using FTP to do so).
-  * Select `Yes` to overwrite the files if it asks you to.
+### Download [***Rock Band 3 Deluxe***](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Xbox.zip)
+* Extract the `.zip` file.
 
-### ✅ ***Rock Band 3 Deluxe is now installed!***
-
-We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
-
+* **Copy the contents of it to where you have *Rock Band 3* installed**, we recommend using FTP to do so.
+* Select `Yes` to overwrite the files if it asks you to.
 <br/>
 
-***Sidenote:*** We also recommend **clearing your song cache**, as well as your **system cache**.
-* *To clear your **song cache**, navigate to `System Settings > Storage > Rock Band 3` and delete the song cache.*
-* *To clear your **system cache**, navigate to `System Settings > Storage` and press `Y` to clear the system cache.*
+### ***Before you launch the game for the first time, we recommend that you...***
 
-<br/>
+* **Disable any title updates** you may have for Rock Band 3 in Aurora.
+    * *Rock Band 3 Deluxe* **rolls the latest one into its installation**.
+* Clear your **song cache**.
+    * In the dashboard, navigate to `System Settings > Storage > Rock Band 3` and **delete the song cache**.
+* Clear your **system cache**.
+    * In the dashboard, navigate to `System Settings > Storage` and **press `Y` to clear the system cache**.
+* **Download the *Rock Band 3 Deluxe* cover art** in Aurora.
+    * Hover over Rock Band 3 in your games list and **press `Y`**.
+    * Scroll all the way down, then scroll left until you get to **`Download Cover`**.
+    * **Download the one uploaded by `jnack`**, it should be all the way at the bottom.
+    * You can also **rename the game in the list to *Rock Band 3 Deluxe*** if you so choose.
 
-## 📩 Installing on Wii
+### ✅ ***Rock Band 3 Deluxe is now installed and ready to play!***
 
-**NOTE: You WILL need a HACKED/MODDED/HOMEBREWED Wii or vWii in order to play this mod on console. We hope this is clear.**
-
-<br/>
-
-***You need [**Riivolution**](https://aerialx.github.io/rvlution.net/riivolution.zip) installed in order for this mod to work, copy it to the `apps` folder on your SD card.***
-
-* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip).
-* Copy everything to the **root of your SD card**. Click `Yes` to overwrite the files if it asks you to.
-* Insert your *Rock Band 3* game disc and launch Riivolution.
-    * **Make sure `RB3DX` is enabled** and launch the game.
-
-### ✅ ***Rock Band 3 Deluxe is now installed!***
-
-<br/>
-
-***NOTE: The following features are currently unsupported on Wii:***
-* Track Themes
-* Overdrive Color Selection
-* RB4/Rivals Menu Themes
-* Song Title Overlay Customization
-* Saving *Deluxe Settings* for future sessions
-
-<br/>
-
-## 📩 Installing on [Dolphin Emulator](https://dolphin-emu.org/)
-
-* Download [**Rock Band 3 Deluxe for Wii**](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-Wii.zip).
-    * Copy everything to the `\Load\` folder in your Dolphin Emulator folder. This is usually in Documents.
-    * Click `Yes` to overwrite the files if it asks you to.
-* Right-Click *Rock Band 3* in your games list and **select "Start with Riivolution Patches..."**
-    * Navigate to `\Load\Riivolution\` and **open `RB3DX.xml`**.
-    * **Make sure `RB3DX` is enabled** and click start, you can also select "Save as Preset..." to add it to your games list.
-
-### ✅ ***Rock Band 3 Deluxe is now installed!***
-
-<br/>
-
-***NOTE: The following features are currently unsupported on Wii:***
-* Track Themes
-* Overdrive Color Selection
-* RB4/Rivals Menu Themes
-* Song Title Overlay Customization
-* Saving *Deluxe Settings* for future sessions
+> *Rock on!*
 
 <br/>
 
@@ -210,122 +163,15 @@ We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) f
   * **Copy the contents of it and paste them on top of your vanilla copy of Rock Band 3**.
   * Click `Yes` to overwrite the files if it asks you to.
 
-### ✅ ***Rock Band 3 Deluxe is now installed!***
+### ✅ ***Rock Band 3 Deluxe is now installed and ready to play!***
 
-We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
-
-<br/>
-
-***Sidenote:*** *we recommend* ***enabling `Readback Resolve`*** *in Xenia settings to prevent any character model issues.*
+> *We recommend **enabling `Readback Resolve`** in Xenia settings to prevent issues with character models. Rock on!*
 
 <br/>
 
 ## 📩 Installing on Xenia (Advanced)
 
-*Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
-
-* **Extract your vanilla copy of Rock Band 3** and copy the contents of the `gen` folder to `\_build\xbox\gen\`.
-
-* Then, **navigate to `windows_bats`** if you're on Windows or **`user_scripts`** if you're on Linux and **run `build_xenia` to automatically update, build, and run Rock Band 3 Deluxe.**
-  * *You need to run this script every time in order to play and update the game.*
-
-* If your controller does not respond, navigate to the `_xenia` folder and **map your controller with x360ce**.
-  * When it asks you to create `xinput1_3.dll`, create it and **rename it to `xinput1_4.dll`**.
-  * If your controller is mapped and recognized and still doesn't register any inputs, unplug it from your PC and plug it back in while Xenia is still open.
-
-### ✅ ***Rock Band 3 Deluxe is now installed!***
-
-We highly recommend you check out [**Optional Upgrades**](#-optional-upgrades) for songs and other cool stuff you can add to your game.
-
-<br/>
-
-***Sidenote:*** *if you're experiencing issues regarding character models,*
-
-* Navigate to `_xenia`, open `xenia-canary.config.toml` in your text editor of choice.
-* Change the following settings (you may need to press `CTRL + F` to find these):
-  *  `gpu` from `vulkan` to `d3d12`,
-  *  `d3d12_readback_resolve` from `false` to `true`. 
-
-![D3D12](dependencies/images/d3d12.png)
-![Readback Resolve](dependencies/images/readbackresolve.png)
-
-*This will fix all texture issues but will drastically affect the framerate, you also may experience BSODs. If you don't want to deal with any of this, we recommend using [RPCS3](#-installing-on-rpcs3) instead.*
-
-<br/>
-
-# 🔥 Optional Upgrades
-
-### These are some optional, but very handy additions you can make to your *Rock Band 3 Deluxe* installation.
-
-  - [Additional Songs](#-additional-songs)
-    - [RPCS3](#-installing-songs-on-rpcs3)
-    - [PS3](#-installing-songs-on-ps3)
-    - [Xbox 360](#-installing-songs-on-xbox-360)
-    - [Xenia](#-installing-songs-on-xenia-desktop-and-uwp)
-  - [Custom Textures](#-custom-textures-ps3360-only)
-
-<br/>
-
-## 🎵 Additional Songs
-
-You can find song packs compatible with all Rock Band titles for both platforms on [**This Spreadsheet**](https://docs.google.com/spreadsheets/d/1-3lo2ASxM-3yVr_JH14F7-Lc1v2_FcS5Rv_yDCANEmk/edit#gid=0).
-
-You can also use [**Onyx Music Game Toolkit**](https://github.com/mtolly/onyxite-customs) to generate your own custom song packs for Rock Band games or convert Xbox 360 packs to PS3, and vice versa. Converting custom songs from games like Clone Hero is a breeze.
-
-### 🎵 Installing Songs on RPCS3
-
-* Download a PS3 song pack of your choice and open RPCS3.
-* Drag and drop the song pack you want to install on top of the main RPCS3 window and select `Yes` to install it.
-
-<img src="dependencies/images/rpcs3_pkg.png" alt="RPCS3 PKG">
-
-### 🎵 Installing Songs on PS3
-
-* Download a PS3 song pack of your choice and put it on the root of a USB drive.
-* Open `Package Manager` and select the song pack you want to install.
-
-<img src="dependencies/images/ps3_pkg.png" width="50%" alt="PS3 PKG">
-
-### 🎵 Installing Songs on Xbox 360
-
-* Download an Xbox 360 song pack of your choice.
-* Copy it to its respective folder.
-
-***For RB3 LIVE files, install them to:***
-
-<img src="dependencies/images/360_rb3live.png" width="50%" alt="RB3 LIVE">
-
-***For RB3 CON files, install them to:***
-
-<img src="dependencies/images/360_rb3con.png" width="50%" alt="RB3 CON">
-
-***For RB2 LIVE files, install them to:***
-
-<img src="dependencies/images/360_rb2live.png" width="50%" alt="RB2 LIVE">
-
-### 🎵 Installing Songs on Xenia (Desktop and UWP)
-
-* Download an Xbox 360 song pack of your choice.
-* Open Xenia, navigate to `File > Install Content`, and select your song pack(s) of choice. You can select more than one at a time.
-  * Xenia supports both CON and LIVE files.
-
-![Xenia Songs](dependencies/images/xenia_installcontent.png)
-
-* If you're on Xbox Series X/S, copy the entire `content` folder to your USB drive.
-  * Click `Yes` to overwrite the files if it asks you to.
-
-<br/>
-
-## 🎨 Custom Textures (PS3/360 Only)
-
-By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
-
-### Importing Your Own Textures
-
-*Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
-
-* Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, and then
-  rebuild the game.
+### *Not ready yet! We highly recommend you play on [RPCS3](#-installing-on-rpcs3) instead!*
 
 <br/>
 
@@ -368,6 +214,19 @@ You can now return to [**Installing on Xenia (Advanced)**](#-installing-on-xenia
   * `dependencies/<os>/ninja`
 
 * Built contents will be in the `out` folder on the root of the repo.
+
+<br/>
+
+## 🎨 Custom Textures
+
+By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
+
+### Importing Your Own Textures
+
+*Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
+
+* Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, and then
+  rebuild the game.
 
 <br/>
 
