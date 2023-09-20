@@ -2,7 +2,7 @@
 
 <img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
 
-## Feast your eyes on the biggest rhythm game mod ever concieved!
+## Feast your eyes on the biggest rhythm game mod ever conceived!
 
 ### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
 
@@ -21,17 +21,19 @@
 
 ### Playing *Rock Band 3 Deluxe* requires these things:
 
-- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360 that you can extract onto your PC.
+- **A vanilla copy of Rock Band 3** for PS3 or Xbox 360.
     - The **USA** version is required for PS3 (`BLUS30463`).
-- For Console: A **MODDED/HACKED PS3 or Xbox 360** and a way to transfer files to it. We recommend using FTP.
-- For Emulator: A PC capable of running RPCS3.
+- **For Console**: A modded/hacked PS3 or Xbox 360 and a way to transfer files to it. We recommend using FTP.
+- **For PC**: A machine capable of running RPCS3. It should work just fine on most mid-range PCs.
 
 <br/>
 
 # 📥 Downloads
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 
-***Rock Band 3 Deluxe recieves very frequent updates!***
+***Rock Band 3 Deluxe receives very frequent updates!***
+
+*The updating process is the exact same as installing for the first time.*
 
 ### 📥 [PlayStation 3](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-PS3.zip)
 
@@ -50,11 +52,11 @@
 ## Development Builds
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/develop?label=last%20updated%3A)
 
-***These are highly experimental and early, NOT RECOMMENDED!!***
+***These are highly experimental and may contain bugs! Not recommended unless advised!***
 
 ### 📥 [RB3DX Development Builds](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/develop)
 
-> Experimental testing builds for developers and testers. Proceed with caution.
+> From the "develop" branch of RB3DX. Proceed with caution.
 
 <br/>
 
@@ -62,7 +64,7 @@
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 ### 📥 [RB3DX Song Updates for YARG](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/main/RB3DX-YARG-Updates.zip)
 
-> All song updates and upgrades included in RB3DX for use in YARG.
+> All included song updates and pro upgrades for use in YARG.
 
 <br/>
 
@@ -149,7 +151,7 @@
 
 ### ✅ ***Rock Band 3 Deluxe is now installed and ready to play!***
 
-> *Rock on!*
+> *Don't forget to clear your song cache! Rock on!*
 
 <br/>
 
@@ -193,10 +195,6 @@
 
 # 🔨 Building (Advanced)
 
-## ***Under construction! This info may be outdated!***
-
-<br/>
-
 ### Installing Python (Required)
 
 * Head to the [**Python downloads**](https://www.python.org/downloads/), download and install Python (version 3.11 or later).
@@ -207,9 +205,11 @@
 ### Initializing the Repo
 
 * Go to the **[Releases](https://github.com/hmxmilohax/rock-band-3-deluxe/releases)** of this repo and **download `init_repo.py`**.
-  * Make a new **empty** folder, **put `init_repo.py` in the folder, and run it**. This will pull the repo down for you and make sure you're completely up to date. **This will take some time.**
+  * Make a new **empty** folder, **put `init_repo.py` in the folder, and run it**.
+      * This will pull the repo for you and install all required dependencies. **This will take some time.**
+      * You may have to run the script multiple times on Windows.
 
-### ***The folder should look like this once it's done:***
+### ***The folder should look something like this once it's done:***
 
 ![Repo Folder](dependencies/images/repofolder.png)
 
@@ -223,8 +223,6 @@ From here, you can make any personal modifications to the game or build it yours
   * Run the `build_` script for your platform of choice to build *Rock Band 3 Deluxe*.
   * Built contents will be in the `out` folder on the root of the repo.
 
-You can now return to [**Installing on Xenia (Advanced)**](#-installing-on-xenia-advanced) or [**Custom Textures**](#-custom-textures).
-
 #### Manual
 
 * Navigate to the root of the repo in your shell of choice.
@@ -235,22 +233,22 @@ You can now return to [**Installing on Xenia (Advanced)**](#-installing-on-xenia
 
 * Built contents will be in the `out` folder on the root of the repo.
 
+### ✅ ***You have now built Rock Band 3 Deluxe!***
+
 <br/>
 
 ## 🎨 Custom Textures
 
-## ***Under construction! This info may be outdated!***
-
-<br/>
-
-By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
+> By default, *Rock Band 3 Deluxe* contains a variety of custom textures, found in the `Deluxe Settings` menu in-game, as well as a way to import your own with relative ease.
 
 ### Importing Your Own Textures
 
 *Follow [**Building (Advanced)**](#-building-advanced) first in order to properly follow this guide.*
 
-* Copy any `.jpg`, `.png`, or `.bmp` file into `\custom_textures\***\`, and then
-  rebuild the game.
+* Copy any `.jpg`, `.png`, or `.bmp` file to the appropriate place in  `\_ark\dx\custom_textures\***\`.
+* Re-build the game!
+
+### ✅ ***Your custom textures have been converted and will show up ingame!***
 
 <br/>
 
