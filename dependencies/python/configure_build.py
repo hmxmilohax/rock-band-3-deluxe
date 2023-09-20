@@ -135,7 +135,7 @@ def convert_pngs(platform):
     return output_files
 
 def copy_buildfiles(platform):
-    files = [x for x in Path("_build", platform).rglob("*") if x.is_file()]
+    files = [x for x in Path("platform", platform).rglob("*") if x.is_file()]
     output_files = []
     for f in files:
         index = f.parts.index(platform)
