@@ -50,14 +50,14 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "USRDIR", "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -v 6 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -s 4073741823 -v 6 $silence",
                 description="Building ARK",
             )
         case "xbox":
             out_dir = Path("out", platform, "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 $silence",
                 description="Building ARK",
             )
 
