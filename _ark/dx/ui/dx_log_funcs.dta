@@ -1,6 +1,6 @@
 {func
    dx_log_writer
-   ($write_file $dx_log_writer)
+   ($loglevel $dx_log_writer)
    #ifdef RB3E
    {print_debug $dx_log_writer}
    #endif
@@ -12,17 +12,25 @@
             {set $dx_log_reader {array $dx_log_reader}}
             {set $dx_log_reader ("start of log")}
          }
-         {if {== $dx_log_counter 3}
-            {push_back $dx_log_reader "Game Entered three times, starting new log."}
-            {set $prev_dx_log_reader {array $dx_log_reader}}
-            {if $write_file
-               {write_file DX_LAST_LOG_FILE_PATH $dx_log_reader}
-               {set $dx_log_counter 0}
+         {if
+            {||
+               {&& {== $loglevel default} {> {size $dx_log_reader} 75}}
+               {&& {== $loglevel info} {> {size $dx_log_reader} 150}}
+               {&& {== $loglevel insane} {> {size $dx_log_reader} 600}}
             }
-            {set $dx_log_reader ({sprint "Game Entered three times, log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
+            {push_back $dx_log_reader "Log too big, starting new log."}
+            {set $prev_dx_log_reader {array $dx_log_reader}}
+            {write_file DX_LAST_LOG_FILE_PATH $dx_log_reader}
+            {set $dx_log_counter 0}
+            {set $dx_log_reader ({sprint "Log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
          }
-         {push_back $dx_log_reader $dx_log_writer}
-         {if {|| {&& $write_file {== $dx_logging default}} {== $dx_logging always}}
+         {if
+            {||
+                {&& {== $loglevel default} {== $dx_logging default}}
+                {&& {|| {== $loglevel default} {== $loglevel info}} {== $dx_logging info}}
+                {&& {|| {== $loglevel default} {== $loglevel info} {== $loglevel insane}} {== $dx_logging insane}}
+            }
+            {push_back $dx_log_reader $dx_log_writer}
             {write_file DX_LOG_FILE_PATH
                {array
                   $dx_log_reader
