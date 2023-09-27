@@ -158,7 +158,7 @@ def copy_buildfiles(platform):
     output_files = []
     for f in files:
         index = f.parts.index(platform)
-        out_path = Path("out", platform).joinpath(*f.parts[index + 2 :])
+        out_path = Path("out", platform).joinpath(*f.parts[index + 1 :])
         ninja.build(str(out_path), "copy", str(f))
         output_files.append(str(out_path))
 
