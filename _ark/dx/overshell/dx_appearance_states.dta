@@ -10,9 +10,23 @@
          {push_back $options os_screenel}
          {push_back $options os_angle}
          {push_back $options os_setcol}
+         {if $dx_customizer {push_back $options leave_customizer}}
          {dx_state_setup dxState_AppearanceMenu FALSE}
       }
       {overshell_view_chooser}
+   )
+   (enter
+      {if $dx_customizer
+         {$this iterate Mesh $m {$m set_showing FALSE}}
+         {choose_character.mesh set_showing TRUE}
+         {unless $dx_moved_once
+            {set $dx_moved_once TRUE}
+            {$this iterate UIList $l
+               {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}}
+               {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+            }
+         }
+      }
    )
    (SELECT_MSG
       {switch {$component selected_sym}
@@ -30,13 +44,30 @@
          (os_angle
            {$this show_state dxState_AngleMenu}
          )
+         (leave_customizer
+            {do
+               {session disconnect}
+               {session_mgr disconnect}
+               {$this iterate Mesh $m {$m set_showing TRUE}}
+               {$this iterate UIList $l
+                  {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+               }
+               {overshell update_all}
+               {set $dx_customizer FALSE}
+               {ui goto_screen meta_loading_main_screen}
+            }
+         )
       }
    )
    (exit 
       {dx_state_pos_tracker}
    )
    (on_cancel
-      {$this show_state dxState_DeluxeSettings}
+      {if_else $dx_customizer
+         kDataUnhandled
+         {$this show_state dxState_DeluxeSettings}
+      }
    )
 )
 
