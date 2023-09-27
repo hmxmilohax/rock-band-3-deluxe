@@ -42,6 +42,10 @@
    ;   }
    ;}
 }
+
+;usage: {dx_ms_to_time_str $ms $colon}
+;       $ms is an integer representing the number of milliseconds
+;       $colon is a bool indicating whether to do "XX:YY" formatting (TRUE) or "XXm XXs" formatting (FALSE)
 {func
    dx_ms_to_time_str
    ($ms $colon)
@@ -54,5 +58,72 @@
 {func
    dx_uptime
    {dx_passive_messenger_symbol {sprintf "RB3DX Uptime\n%s" {dx_ms_to_time_str {system_ms} FALSE}}}
-   {dx_log_writer TRUE {sprintf "RB3DX Uptime\n%s" {dx_ms_to_time_str {system_ms} FALSE}}}
+   {dx_log_writer default {sprintf "RB3DX Uptime: %s" {dx_ms_to_time_str {system_ms} FALSE}}}
+}
+
+;usage: {dx_log_objs_type $panel $type $suffix}
+;       $panel is a symbol representing the panel you wish to dump the object list from
+;       $type is a symbol representing the type of object to filter the list to
+;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
+{func dx_log_objs_type
+   ($obj $type $suffix)
+   {do
+      {set $objArray {array ({sprintf "List of %s in %s" $type $obj})}}
+;      {dx_log_writer default {sprintf "Iterating through %s and fetching list of objects of type %s..." $obj $type}}
+      {{$obj loaded_dir} iterate $type $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
+      {if_else $suffix
+         {do
+;            {dx_log_writer default {sprintf "Writing file to %s-%s-%s.dta..." $obj $type $suffix}}
+            #ifdef HX_PS3
+            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-%s-%s.dta" $obj $type $suffix} $objArray}
+            #endif
+            #ifdef HX_XBOX
+            {write_file {sprintf "GAME:/objects/%s-%s-%s.dta" $obj $type $suffix}}
+            #endif
+         }
+         {do
+;            {dx_log_writer default {sprintf "Writing file to %s-%s.dta..." $obj $type}}
+            #ifdef HX_PS3
+            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-%s.dta" $obj $suffix} $objArray}
+            #endif
+            #ifdef HX_XBOX
+            {write_file {sprintf "GAME:/objects/%s-%s.dta" $obj $suffix} $objArray}
+            #endif
+         }
+      }
+   }
+}
+
+;usage: {dx_log_objs $panel $suffix}
+;       $panel is a symbol representing the panel you wish to dump the object list from
+;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
+{func dx_log_objs
+   ($obj $suffix)
+   {do
+      ($objsize {size $obj})
+      {set $objArray {array ({sprintf "List of %d Objects in %s" $objsize $obj})}}
+;      {dx_log_writer default {sprintf "Iterating through %s and fetching list of objects..." $obj}}
+      {{$obj loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
+      {if_else $suffix
+         {do
+;            {dx_log_writer default {sprintf "Writing file to %s-Object-%s.dta..." $obj $suffix}}
+            #ifdef HX_PS3
+            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-Object-%s.dta" $obj $suffix}
+            $objArray}
+            #endif
+            #ifdef HX_XBOX
+            {write_file {sprintf "GAME:/objects/%s-Object-%s.dta" $obj $suffix} $objArray}
+            #endif
+         }
+         {do
+;            {dx_log_writer default {sprintf "Writing file to %s-Object.dta..." $obj}}
+            #ifdef HX_PS3
+            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-Object.dta" $obj} $objArray}
+            #endif
+            #ifdef HX_XBOX
+            {write_file {sprintf "GAME:/objects/%s-Object.dta" $obj} $objArray}
+            #endif
+         }
+      }
+   }
 }
