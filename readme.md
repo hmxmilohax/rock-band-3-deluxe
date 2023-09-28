@@ -28,10 +28,10 @@
 
 <br/>
 
-# 📥 Downloads
+# 📥 Downloads (v1.0)
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 
-***Rock Band 3 Deluxe receives very frequent updates!***
+***Rock Band 3 Deluxe receives frequent updates!***
 
 *The updating process is the exact same as installing for the first time.*
 
@@ -49,12 +49,12 @@
 
 <br/>
 
-## Development Builds
+## Beta Versions
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/develop?label=last%20updated%3A)
 
-***These are highly experimental and may contain bugs! Not recommended unless advised!***
+***These are highly experimental and may contain bugs! Not recommended unless you were told to use these!***
 
-### 📥 [RB3DX Development Builds](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/develop)
+### 📥 [RB3DX Beta Builds](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/develop)
 
 > From the "develop" branch of RB3DX. Proceed with caution.
 
