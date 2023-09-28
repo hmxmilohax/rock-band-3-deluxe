@@ -2,9 +2,9 @@
 
 <img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
 
-## Feast your eyes on the biggest rhythm game mod ever conceived!
+## Feast your eyes on the biggest rhythm game mod of all time!
 
-### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as definitive as possible!
+### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as ultimate as possible!
 
 ### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
 
@@ -52,11 +52,11 @@
 ## Beta Versions
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe/develop?label=last%20updated%3A)
 
-***These are highly experimental and may contain bugs! Not recommended unless you were told to use these!***
+***These are highly experimental and may contain bugs!***
 
 ### 📥 [RB3DX Beta Builds](https://nightly.link/hmxmilohax/rock-band-3-deluxe/workflows/build/develop)
 
-> From the "develop" branch of RB3DX. Proceed with caution.
+> Use these if you want to help us find bugs before releases are made.
 
 <br/>
 
