@@ -14,7 +14,7 @@ def main():
         root_dir = Path(__file__).parents[2]
         print(root_dir)
         # sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/locale_dx_keep.dta
-        for locale in root_dir.joinpath("_ark/dx/locale").glob("dx_locale_updates.dta"):
+        for locale in root_dir.joinpath("_ark/dx/locale").glob("dx_version.dta"):
             print(locale)
             with open(locale, "r", encoding="ISO-8859=1") as f:
                 the_locale = [line for line in f.readlines()]
