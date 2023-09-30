@@ -1,128 +1,111 @@
+#define DX_CALLBACK_HANDLES
+(
+   (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)
+)
 {func
-   dx_bot_overdrive_handler
-   ;runs in beatmatcher, do not add log
-   ;{dx_log_writer TRUE {sprint "func: dx_bot_overdrive_handler - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   ;{dx_log_writer TRUE
-   ;   {sprintf "Executed - time: %.4fms"
+   dx_add_player_sinks
+   {dx_log_writer info {sprint "func: dx_add_player_sinks - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_add_player_sinks - time: %.4fms"
+         {time
+            {dx_active_player_var_reset}
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {unless {== {$player instrument} vocals}
+                  {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}
+               }
+               {$player add_sink fc_callback DX_CALLBACK_HANDLES}
+               {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)}
+               {switch {$player instrument}
+                  (bass
+                     {set $bassplayeractive true}
+                     {$player add_sink fc_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_guitar
+                     {set $real_guitarplayeractive true}
+                     {$player add_sink fc_real_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_bass
+                     {set $real_bassplayeractive true}
+                     {$player add_sink fc_real_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (keys
+                     {set $keysplayeractive true}
+                     {$player add_sink fc_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_keys
+                     {set $real_keysplayeractive true}
+                     {$player add_sink fc_real_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (guitar
+                     {set $guitarplayeractive true}
+                     {$player add_sink fc_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_real_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (vocals
+                     {set $vocalsplayeractive true}
+                     {set $dx_active_vocals TRUE}
+                  )
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_set_song_speed
+   ;{dx_log_writer beatmatch {sprint "func: dx_set_song_speed - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   ;{dx_log_writer beatmatch
+   ;   {sprintf "Executed dx_set_song_speed - time: %.4fms"
    ;      {time
-            {if {&& {== $dx_bot_overdrive dx_on} {! DX_ALL_BOTS_ENABLED}}
-               {do
-                  {set $dx_tmp FALSE}
-                  {beatmatch foreach_active_player $player
-                     {if {$player is_deploying} {set $dx_tmp TRUE}}
+            {if {exists gamemode}
+               ;{dx_log_writer insane {sprint "Setting up song speeds. Song Speed: " $speedmod}} ;runs in beatmatcher, do not enable under penalty of stutter
+               {unless
+                  {|| ;check for a variety of game modes where song speed is not allowed to be adjusted
+                     {gamemode in_mode pro_song_lessons_keyboard}
+                     {gamemode in_mode pro_song_lessons_real_guitar}
+                     {gamemode in_mode pro_song_lessons_real_bass}
+                     {gamemode in_mode drum_freestyle}
+                     {gamemode in_mode trainer}
+                     {gamemode in_mode trainer_drums}
+                     {gamemode in_mode trainer_pro_drums}
+                     {gamemode in_mode trainer_real_guitar}
+                     {gamemode in_mode trainer_pro_keyboard}
+                     #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+                     {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
                   }
-                  {if {&& {>= {beatmatch num_active_players} 1} $dx_bot_1}
-                     {set $player {beatmatch active_player 0}}
-                     {if $dx_tmp {$player deploy_if_possible}}
-                     {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
+                  {if {is_leader_local}
+                     {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}
                   }
-                  {if {&& {>= {beatmatch num_active_players} 2} $dx_bot_2}
-                     {set $player {beatmatch active_player 1}}
-                     {if $dx_tmp {$player deploy_if_possible}}
-                     {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                  }
-                  {if {&& {>= {beatmatch num_active_players} 3} $dx_bot_3}
-                     {set $player {beatmatch active_player 2}}
-                     {if $dx_tmp {$player deploy_if_possible}}
-                     {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                  }
-                  {if {&& {>= {beatmatch num_active_players} 4} $dx_bot_4}
-                     {set $player {beatmatch active_player 3}}
-                     {if $dx_tmp {$player deploy_if_possible}}
-                     {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                  }
-                  {if {&& {>= {beatmatch num_active_players} 5} $dx_bot_5}
-                     {set $player {beatmatch active_player 4}}
-                     {if $dx_tmp {$player deploy_if_possible}}
-                     {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                  }
+                  {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
+               }
+               {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  {practice_panel update_speed {gamecfg get practice_speed}}
                }
             }
    ;      }
    ;   }
    ;}
 }
-
-;usage: {dx_ms_to_time_str $ms $colon}
-;       $ms is an integer representing the number of milliseconds
-;       $colon is a bool indicating whether to do "XX:YY" formatting (TRUE) or "XXm XXs" formatting (FALSE)
 {func
-   dx_ms_to_time_str
-   ($ms $colon)
-   {if_else $colon
-      {sprintf "%d:%02d" {int {mod {/ {/ $ms 1000.0} 60} 60}} {int {mod {/ $ms 1000.0} 60}}}
-      {sprintf "%dm %ds" {int {mod {/ {/ $ms 1000.0} 60} 60}} {int {mod {/ $ms 1000.0} 60}}}
-   }
-}
-
-{func
-   dx_uptime
-   {dx_passive_messenger_symbol {sprintf "RB3DX Uptime\n%s" {dx_ms_to_time_str {system_ms} FALSE}}}
-   {dx_log_writer default {sprintf "RB3DX Uptime: %s" {dx_ms_to_time_str {system_ms} FALSE}}}
-}
-
-;usage: {dx_log_objs_type $panel $type $suffix}
-;       $panel is a symbol representing the panel you wish to dump the object list from
-;       $type is a symbol representing the type of object to filter the list to
-;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
-{func dx_log_objs_type
-   ($obj $type $suffix)
-   {do
-      {set $objArray {array ({sprintf "List of %s in %s" $type $obj})}}
-;      {dx_log_writer default {sprintf "Iterating through %s and fetching list of objects of type %s..." $obj $type}}
-      {{$obj loaded_dir} iterate $type $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
-      {if_else $suffix
-         {do
-;            {dx_log_writer default {sprintf "Writing file to %s-%s-%s.dta..." $obj $type $suffix}}
-            #ifdef HX_PS3
-            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-%s-%s.dta" $obj $type $suffix} $objArray}
-            #endif
-            #ifdef HX_XBOX
-            {write_file {sprintf "GAME:/objects/%s-%s-%s.dta" $obj $type $suffix}}
-            #endif
-         }
-         {do
-;            {dx_log_writer default {sprintf "Writing file to %s-%s.dta..." $obj $type}}
-            #ifdef HX_PS3
-            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-%s.dta" $obj $suffix} $objArray}
-            #endif
-            #ifdef HX_XBOX
-            {write_file {sprintf "GAME:/objects/%s-%s.dta" $obj $suffix} $objArray}
-            #endif
-         }
-      }
-   }
-}
-
-;usage: {dx_log_objs $panel $suffix}
-;       $panel is a symbol representing the panel you wish to dump the object list from
-;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
-{func dx_log_objs
-   ($obj $suffix)
-   {do
-      ($objsize {size $obj})
-      {set $objArray {array ({sprintf "List of %d Objects in %s" $objsize $obj})}}
-;      {dx_log_writer default {sprintf "Iterating through %s and fetching list of objects..." $obj}}
-      {{$obj loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
-      {if_else $suffix
-         {do
-;            {dx_log_writer default {sprintf "Writing file to %s-Object-%s.dta..." $obj $suffix}}
-            #ifdef HX_PS3
-            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-Object-%s.dta" $obj $suffix}
-            $objArray}
-            #endif
-            #ifdef HX_XBOX
-            {write_file {sprintf "GAME:/objects/%s-Object-%s.dta" $obj $suffix} $objArray}
-            #endif
-         }
-         {do
-;            {dx_log_writer default {sprintf "Writing file to %s-Object.dta..." $obj}}
-            #ifdef HX_PS3
-            {write_file {sprintf "GD:/dev_hdd0/game/BLUS30463/USRDIR/objects/%s-Object.dta" $obj} $objArray}
-            #endif
-            #ifdef HX_XBOX
-            {write_file {sprintf "GAME:/objects/%s-Object.dta" $obj} $objArray}
-            #endif
+   dx_send_leader_song_speed
+   {dx_log_writer info {sprint "func: dx_send_leader_song_speed - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_send_leader_song_speed - time: %.4fms"
+         {time
+            {if {is_leader_local} ; dx - sync speeds only if currently the lobby leader
+               ;{dx_log_writer insane {sprint "Sending Leader Speed to peers, Leaderspeed: " $leaderspeed " - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+               DX_DISCONNECT
+               {set $speedmod $leaderspeed}
+               {set $speedmod_top $leaderspeed}
+               {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed}) kNetReliable}}
+            }
          }
       }
    }
