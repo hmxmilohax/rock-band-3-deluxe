@@ -39,7 +39,7 @@
 {func
    dx_custom_texture_setter
    ($category $path $sourcetex $customtex)
-   {dx_log_writer insane {sprint "func: dx_custom_texture_setter - Current Screen: " {ui current_screen} " - Gamemode: " $category ", " $path ", " $sourcetex ", " $customtex}}
+   {dx_log_writer insane {sprint "func: dx_custom_texture_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode " - " $category ", " $path ", " $sourcetex ", " $customtex}}
    {dx_log_writer insane
       {sprintf "Executed dx_custom_texture_setter - time: %.4fms"
          {time
@@ -67,6 +67,193 @@
                   {if_else $category
                      {$sourcetex set_bitmap {sprint "dx/custom_textures/" $category "/" $path "/rock band 3.png"}}
                      {$sourcetex set_bitmap {sprint "dx/custom_textures/" $path "/rock band 3.png"}}
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_track_bre_reset
+   {dx_log_writer info {sprint "func: dx_track_bre_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_track_bre_reset - time: %.4fms"
+         {time
+            {if {&& {modifier_mgr is_modifier_active mod_nobre} $imabigboy} ;check if we have no bre active, and we havent restarted already on this song
+               {if {! $dx_already_restarted} ;cheap attempt to fix the "notes too quick bug" by restarting once automatically on initial song start, this will at least work in black bg
+                  {do ;do
+                     {set $imabigboy FALSE} ;tell the logic we have restarted once to switch to expert
+                     {set $dx_already_restarted TRUE} ;also tell the logic we
+                     {{{beatmatch active_player 0} get_user} set_difficulty kDifficultyExpert} ;since we have entered the track on easy, set the player to expert to enable no bre behavior
+                     {game_restart} ;quick restart the song
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_track_streak_reset
+   {dx_log_writer info {sprint "func: dx_track_streak_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_track_streak_reset - time: %.4fms"
+         {time
+            {if
+               {&& {exists gamemode}
+                  {||
+                     {gamemode in_mode defaults} {gamemode in_mode qp_party_shuffle}
+                     {gamemode in_mode qp_coop} {gamemode in_mode campaign}
+                     {gamemode in_mode party_shuffle} {gamemode in_mode tour}
+                  }
+               }
+               {{coop_track_panel find crowd_meter} set_showing $dx_crowd_meter_visibility}
+               {{coop_track_panel find scoreboard} set_showing $dx_score_meter_visibility}
+               {unless {campaign has_current_goal}
+                  {if
+                     {||
+                        $dx_time_remaining
+                        {&& {== $dx_streak_counter single} {== $dx_num_active_instruments 1}}
+                        {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
+                     }
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh set_showing TRUE} ;ensure that it is visible at a base level
+                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_challenge_type kTrackerChallengeType_Streak} ;set tracker type to streak
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_showing TRUE} ;ensure that it is visible at a base level
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_local_pos_index 2 {+ {{{coop_track_panel find scoreboard} find tracker_band_display} get_local_pos_index 2} 1.35}} ;move it up a bit
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} show os_blnk} ;fire the tracker's show trigger, defaulting it to os_blnk string
+                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state TRUE} ;fire the tracker's show trigger, defaulting it to os_blnk string
+                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_int 0 TRUE} ;set the value to 0 to start
+                  }
+                  {if_else {== $dx_streak_counter off}
+                     {do
+                        {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
+                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
+                     }
+                     {if_else
+                        {||
+                           {&& {== $dx_streak_counter single} {== $dx_num_active_instruments 1}}
+                           {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
+                        }
+                        {do
+                           {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
+                           {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+                        }
+                        {do
+                           {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
+                           {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
+                        }
+                     }
+                  }
+                  {dx_mtv_time_remaining_handler} ;this will set up a script to run itself every half a second
+                  {if $dx_moved_up
+                     {set $dx_moved_up FALSE}
+                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+                  }
+                  {unless $dx_moved_up
+                     {set $dx_moved_up TRUE}
+                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_track_fc_reset
+   {dx_log_writer info {sprint "func: dx_track_fc_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_track_fc_reset - time: %.4fms"
+         {time
+            {if $dx_fc_glow
+               {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+                  {switch {{$player get_user} get_slot_num}
+                     (0
+                        {switch {$player instrument}
+                           ((bass real_bass)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((keys real_keys)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((guitar real_guitar)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((drum real_drum)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_0} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           (vocals kDataUnhandled) ;lol vox
+                        }
+                     )
+                     (1
+                        {switch {$player instrument}
+                           ((bass real_bass)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((keys real_keys)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((guitar real_guitar)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((drum real_drum)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_1} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           (vocals kDataUnhandled) ;lol vox
+                        }
+                     )
+                     (2
+                        {switch {$player instrument}
+                           ((bass real_bass)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((keys real_keys)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((guitar real_guitar)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((drum real_drum)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_2} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           (vocals kDataUnhandled) ;lol vox
+                        }
+                     )
+                     (3
+                        {switch {$player instrument}
+                           ((bass real_bass)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((keys real_keys)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((guitar real_guitar)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           ((drum real_drum)
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find peak_state.trig} trigger}
+                              {{{{find_obj {{get_track_panel} loaded_dir} track_3} find streak_meter} find star_deploy.trig} trigger}
+                           )
+                           (vocals kDataUnhandled) ;lol vox
+                        }
+                     )
                   }
                }
             }
