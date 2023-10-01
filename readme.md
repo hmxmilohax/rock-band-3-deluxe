@@ -31,9 +31,7 @@
 # 📥 Downloads (v1.0)
 ![last updated:](https://img.shields.io/github/last-commit/hmxmilohax/rock-band-3-deluxe?label=last%20updated%3A)
 
-### [**Changelog**](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/develop/dependencies/changelog.md#changelog)
-
-***Rock Band 3 Deluxe receives frequent updates!***
+***Rock Band 3 Deluxe receives frequent updates! [View the changelog here](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/develop/dependencies/changelog.md#changelog).***
 
 *The updating process is the exact same as installing for the first time.*
 
