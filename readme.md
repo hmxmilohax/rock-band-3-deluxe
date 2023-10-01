@@ -6,7 +6,7 @@
 
 ### With features like an FC indicator, custom track themes, an increased song limit, and many pro chart upgrades, *Rock Band 3 Deluxe* makes the experience as ultimate as possible!
 
-### 👉 See [Full Feature List](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/main/dependencies/features.md#features)
+### 👉 [User Manual](https://github.com/hmxmilohax/rock-band-3-deluxe/blob/develop/dependencies/manual/manual.md#modifiers)
 
 ### 📥 [Download Now!](#%EF%B8%8F-what-youll-need)
 
