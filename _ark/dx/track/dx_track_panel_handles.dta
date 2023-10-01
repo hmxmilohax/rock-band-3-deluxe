@@ -1,0 +1,534 @@
+#define DX_TRACK_PANEL_HANDLES
+(
+   (dx_set_scoreboard_pos
+      {{{coop_track_panel find scoreboard} find scoreboard.grp} set_local_pos $scoreboardpos_0 $scoreboardpos_1 $scoreboardpos_2}
+   )
+   (dx_set_star_display_pos
+      {unless {&& {! $star_displaypos_0} {! $star_displaypos_1} {! $star_displaypos_2}}
+         {{{{coop_track_panel find scoreboard} find star_display} find stars.grp} set_local_pos $star_displaypos_0 $star_displaypos_1 $star_displaypos_2}
+      }
+   )
+   (dx_set_solo_box_pos
+      {unless {&& {! $solo_boxpos_0} {! $solo_boxpos_1} {! $solo_boxpos_2}}
+         {beatmatch foreach_active_player $player
+            {switch {{$player get_user} get_slot_num}
+               (0
+                  {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
+               )
+               (1
+                  {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
+               )
+               (2
+                  {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
+               )
+               (3
+                  {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
+               )
+            }
+         }
+      }
+   )
+   (dx_force_remote_vox
+      {if_else {session_mgr is_local}
+         {beatmatch foreach_active_player $player
+            {if {== {$player instrument} vocals}
+               {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} set remote $dx_force_remote_vox}
+               {{{{get_track_panel} find vocals} find tubes.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find tubes_milo.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find tube_range.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find pitched_effect01.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find pitched_effect02.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find pitch_mid_marker.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find phoneme0.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find phoneme1.grp} set_showing {! $dx_force_remote_vox}}
+               {{{{get_track_panel} find vocals} find phoneme2.grp} set_showing {! $dx_force_remote_vox}}
+               {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} milo_apply}
+            }
+         }
+         ; allows 2+ vocalists in an online session to view the pitch window
+         {beatmatch foreach_active_player $player
+            {if {&& {== {$player instrument} vocals} {{$player get_user} is_local}}
+               {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} set remote FALSE}
+               {{{{get_track_panel} find vocals} find tubes.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find tubes_milo.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find tube_range.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find pitched_effect01.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find pitched_effect02.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find pitch_mid_marker.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find phoneme0.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find phoneme1.grp} set_showing TRUE}
+               {{{{get_track_panel} find vocals} find phoneme2.grp} set_showing TRUE}
+               {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} milo_apply}
+            }
+         }
+      }
+   )
+)
+#define DX_TRACK_TEXTURE_HANDLER
+(
+   (track_texture_reset_handler
+      {unless {modifier_mgr is_modifier_active mod_nohud} ;don't run anything if performance mode is enabled
+
+         {if_else $fcringonce ;check if we have already generated new textures for the fc ring
+            {do ;if we have
+               {{coop_track_panel find fcframe.tex} set_bitmap
+                  {if_else {== $dx_multiplier_ring none}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/rock band 3.png"}
+                     {do
+                        {set $temp $dx_multiplier_ring}
+                        {search_replace $temp "'" "" $temp}
+                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/" $temp ".png"}
+                     }
+                  }
+               }
+               {{coop_track_panel find multframe.tex} set_bitmap
+                  {if_else {== $dx_multiplier_ring none}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/rock band 3.png"}
+                     {do
+                        {set $temp $dx_multiplier_ring}
+                        {search_replace $temp "'" "" $temp}
+                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/" $temp ".png"}
+                     }
+                  }
+               }
+               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+               {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+               {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the multiplier texture to the second ring material
+            }
+            {do ;if we havent
+               {set $fcringonce TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
+               {new Tex fcframe.tex} ;generate a new texture to hold the fc indicator
+               {new Tex multframe.tex} ;generate a new texture to hold the non fc texture
+               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
+               {{coop_track_panel find fcframe.tex} set_bitmap
+                  {if_else {== $dx_multiplier_ring none}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/rock band 3.png"}
+                     {do
+                        {set $temp $dx_multiplier_ring}
+                        {search_replace $temp "'" "" $temp}
+                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/" $temp ".png"}
+                     }
+                  }
+               }
+               {{coop_track_panel find multframe.tex} set_bitmap
+                  {if_else {== $dx_multiplier_ring none}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/rock band 3.png"}
+                     {do
+                        {set $temp $dx_multiplier_ring}
+                        {search_replace $temp "'" "" $temp}
+                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/" $temp ".png"}
+                     }
+                  }
+               }
+            }
+         }
+
+         {unless $dx_fc_ring
+            FRAME_CATCHER ;immediately kill the fc ring if its disabled
+         }
+
+         {if $dx_highway_guitar_needs_reset
+            {dx_custom_texture_setter FALSE highways watermark_bass.tex $dx_highway_guitar}
+            {unless $dx_highway_guitar_shading
+               {watermark_bass.tex iterate_refs $ref {$ref set diffuse_tex watermark_bass.tex}} ;load the tex into the material
+               {watermark_bass.tex iterate_refs $ref {$ref set emissive_map watermark_bass.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_bass.tex iterate_refs $ref {$ref set normal_map watermark_bass.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_bass.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+            }
+         }
+
+         {if $dx_highway_bass_needs_reset
+            {dx_custom_texture_setter FALSE highways watermark_guitar.tex $dx_highway_bass}
+            {unless $dx_highway_bass_shading
+               {watermark_guitar.tex iterate_refs $ref {$ref set diffuse_tex watermark_guitar.tex}} ;load the tex into the material
+               {watermark_guitar.tex iterate_refs $ref {$ref set emissive_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_guitar.tex iterate_refs $ref {$ref set normal_map watermark_guitar.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_guitar.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+            }
+         }
+
+         {if $dx_highway_drum_needs_reset
+            {dx_custom_texture_setter FALSE highways watermark_drum.tex $dx_highway_drum}
+            {unless $dx_highway_drum_shading
+               {watermark_drum.tex iterate_refs $ref {$ref set diffuse_tex watermark_drum.tex}} ;load the tex into the material
+               {watermark_drum.tex iterate_refs $ref {$ref set emissive_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_drum.tex iterate_refs $ref {$ref set normal_map watermark_drum.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_drum.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+            }
+         }
+
+         {if $dx_highway_keys_needs_reset
+            {dx_custom_texture_setter FALSE highways watermark_keys.tex $dx_highway_keys}
+            {unless $dx_highway_keys_shading
+               {watermark_keys.tex iterate_refs $ref {$ref set diffuse_tex watermark_keys.tex}} ;load the tex into the material
+               {watermark_keys.tex iterate_refs $ref {$ref set emissive_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_keys.tex iterate_refs $ref {$ref set normal_map watermark_keys.tex}} ;apply the emissive map as well so it looks proper
+               {watermark_keys.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
+            }
+         }
+
+         {if $dx_streak_guitar_needs_reset
+            {dx_custom_texture_setter FALSE streaks spotlight_bass_track.tex $dx_streak_guitar}
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+         }
+
+         {if $dx_streak_bass_needs_reset
+            {dx_custom_texture_setter FALSE streaks spotlight_bass_track.tex $dx_streak_bass}
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+            {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
+         }
+
+         {if $dx_streak_drum_needs_reset
+            {dx_custom_texture_setter FALSE streaks spotlight_drums_track.tex $dx_streak_drum}
+            {spotlight_drum_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drum_track.tex}} ;load the tex into the material
+            {spotlight_drum_track.tex iterate_refs $ref {$ref set emissive_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
+            {spotlight_drum_track.tex iterate_refs $ref {$ref set normal_map spotlight_drum_track.tex}} ;apply the emissive map as well so it looks proper
+         }
+
+         {if $dx_streak_keys_needs_reset
+            {dx_custom_texture_setter FALSE streaks spotlight_keys_track.tex $dx_streak_keys}
+            {spotlight_keys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track.tex}} ;load the tex into the material
+            {spotlight_keys_track.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track.tex}} ;load the tex into the material
+            {spotlight_keys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track.tex}} ;apply the emissive map as well so it looks proper
+         }
+
+         {if $dx_streak_prokeys_needs_reset
+            {dx_custom_texture_setter FALSE streaks spotlight_prokeys_track.tex $dx_streak_prokeys}
+            {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}} ;load the tex into the material
+            {spotlight_prokeys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track.tex}} ;apply the emissive map as well so it looks proper
+            {spotlight_prokeys_track.tex iterate_refs $ref {$ref set normal_map spotlight_prokeys_track.tex}} ;apply the emissive map as well so it looks proper
+         } 
+
+         {if $dx_overdrive_guitar_needs_reset
+            {dx_custom_texture_setter FALSE overdrive spotlight_bass_track_emissive.tex $dx_overdrive_guitar}
+            {unless $dx_overdrive_guitar_shading
+               {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track_emissive.tex}} ;load the tex into the material
+               {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            }
+            {set $dx_overdrive_color_needs_reset TRUE}
+         }
+
+         {if $dx_overdrive_bass_needs_reset
+            {dx_custom_texture_setter FALSE overdrive spotlight_guitar_track_emmissive.tex $dx_overdrive_bass}
+            {unless $dx_overdrive_bass_shading
+               {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_guitar_track_emmissive.tex}} ;load the tex into the material
+               {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set emissive_map spotlight_guitar_track_emmissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set normal_map spotlight_guitar_track_emmissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            }
+            {set $dx_overdrive_color_needs_reset TRUE}
+         }
+
+         {if $dx_overdrive_drum_needs_reset
+            {dx_custom_texture_setter FALSE overdrive spotlight_drums_track_emissive.tex $dx_overdrive_drum}
+            {unless $dx_overdrive_drum_shading
+               {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_drums_track_emissive.tex}} ;load the tex into the material
+               {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_drums_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            }
+            {set $dx_overdrive_color_needs_reset TRUE}
+         }
+
+         {if $dx_overdrive_prokeys_needs_reset
+            {dx_custom_texture_setter FALSE overdrive spotlight_prokeys_track_emissive.tex $dx_overdrive_prokeys}
+            {unless $dx_overdrive_keys_shading
+               {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track_emissive.tex}} ;load the tex into the material
+               {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_prokeys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            }
+            {set $dx_overdrive_color_needs_reset TRUE}
+         }
+
+
+         {if $dx_overdrive_keys_needs_reset
+            {dx_custom_texture_setter FALSE overdrive spotlight_keys_track_emissive.tex $dx_overdrive_keys}
+            {unless $dx_overdrive_keys_shading
+               {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set diffuse_tex spotlight_keys_track_emissive.tex}} ;load the tex into the material
+               {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set emissive_map spotlight_keys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set normal_map spotlight_keys_track_emissive.tex}} ;apply the emissive map as well so it looks proper
+               {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            }
+            {set $dx_overdrive_color_needs_reset TRUE}
+         }
+
+         {if $dx_overdrive_color_needs_reset ;if we are queued to update a per instrument emissive texture
+            {unless {== $dx_overdrive_color none} ;check the texture is not set to default
+               {dx_log_writer insane {sprint "Setting Emissive Color to: " {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}}
+               {spotlight_bass_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}} ;apply the custom color selected to the material
+               {spotlight_guitar_track_emmissive.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}} ;apply the custom color selected to the material
+               {spotlight_drums_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}} ;apply the custom color selected to the material
+               {spotlight_keys_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}} ;apply the custom color selected to the material
+               {spotlight_prokeys_track_emissive.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}} ;apply the custom color selected to the material
+            }
+         }
+
+         {if $dx_gem_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter gems gems_default prism_gems.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_emissive prism_gem_emissive.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_emissive_dynamic prism_gem_emissive_dynamic.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_keys prism_gem_keyboard_style.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_cymbals gem_cymbal_diffuse.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_cymbals_emissive gem_cymbal_ems.tex $dx_gem}
+            {dx_custom_texture_setter gems gems_gliss gliss_gems.tex $dx_gem}
+         }
+
+         {if $dx_smasher_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter strikeline strikeline_guitar gem_smashers_guitar_nomip.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_guitar gem_smashers_guitar.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_drums gem_smashers_drum_nomip.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_drums gem_smashers_drum.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_green square_smasher_bright_green.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_red square_smasher_bright_red.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_yellow square_smasher_bright_yellow.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_blue square_smasher_bright_blue.tex $dx_smasher}
+            {dx_custom_texture_setter strikeline strikeline_orange square_smasher_bright_orange.tex $dx_smasher}
+            {unless {== $dx_smasher none} ;check the texture is not set to default
+               {if_else {|| {!= $dx_smasher rb4v2} {!= $dx_smasher rb2}}
+                  {do
+                     {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set prelit TRUE}}
+                     {gem_smashers_guitar.tex iterate_refs $ref {$ref set prelit TRUE}}
+                     {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set prelit TRUE}}
+                     {gem_smashers_drum.tex iterate_refs $ref {$ref set prelit TRUE}}
+                  }
+                  {do
+                     {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set prelit FALSE}}
+                     {gem_smashers_guitar.tex iterate_refs $ref {$ref set prelit FALSE}}
+                     {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set prelit FALSE}}
+                     {gem_smashers_drum.tex iterate_refs $ref {$ref set prelit FALSE}}
+                  }
+               }
+            }
+         }
+
+         {if $dx_flames_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter flames flames_caps gem_cap.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_glass1 broken_glass01.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_glass1_neg broken_glass01_neg.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_glass2 broken_glass02.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_guitar_inner flare_gtr_inner.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_guitar_outer flare_gtr_outer.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_guitar_style flare_gtr_style.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_inner flare_inner.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_outer flare_outer.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_style flare_style.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_smoke fx_smasher_smoke.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_shockwave radial_shockwave.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_spark spark.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_sparks_radial sparks_radial.tex $dx_flames}
+            {dx_custom_texture_setter flames flames_sparks_vertical sparks_vertical.tex $dx_flames}
+         }
+
+         {if $dx_sustain_needs_reset
+            {dx_custom_texture_setter FALSE sustains gem_tails.tex $dx_sustain}
+         }
+
+         {if $dx_lanes_needs_reset
+            {dx_custom_texture_setter lanes gem_mash_green_emmisive gem_mash_green_emmisive.tex $dx_lanes}
+            {dx_custom_texture_setter lanes gem_mash_red_emmisive gem_mash_red_emmisive.tex $dx_lanes}
+            {dx_custom_texture_setter lanes gem_mash_yellow_emmisive gem_mash_yellow_emmisive.tex $dx_lanes}
+            {dx_custom_texture_setter lanes gem_mash_blue_emmisive gem_mash_blue_emmisive.tex $dx_lanes}
+            {dx_custom_texture_setter lanes gem_mash_orange_emmisive gem_mash_orange_emmisive.tex $dx_lanes}
+         }
+
+         {if $dx_score_box_needs_reset
+            {dx_custom_texture_setter score scoreboard_frame scoreboard_frame.tex $dx_score_box}
+            {dx_custom_texture_setter score scoreboard_lens scoreboard_lens.tex $dx_score_box}
+            {dx_custom_texture_setter score star_multiplier_meter_frame star_multiplier_meter_frame.tex $dx_score_box}
+            {dx_custom_texture_setter score star_multiplier_meter_lens star_multiplier_meter_lens.tex $dx_score_box}
+         }
+
+         {if $dx_font_needs_reset
+            {dx_custom_texture_setter FALSE font 'Pentatonic_Hub(5_00)4x.tex' $dx_font}
+         }
+
+         {if $dx_solo_box_needs_reset
+            {dx_custom_texture_setter FALSE solo_box vox_slider_bkgrnd.tex $dx_solo_box}
+            	{if_else {== $dx_solo_box "rock band 3"}
+                  {do
+                     {beatmatch foreach_active_player $player
+   					      {switch {{$player get_user} get_slot_num}
+   					         (0
+   					            {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64}
+   					         )
+   					         (1
+   					            {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64}
+   					         )
+   					         (2
+   					            {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64}
+   					         )
+   					         (3
+   					            {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64}
+   					         )
+   					      }
+   			   		}
+                  }
+                  {do
+                     {beatmatch foreach_active_player $player
+   			            {switch {{$player get_user} get_slot_num}
+   			               (0
+   			                  {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find tamb_Background.mesh} set_local_scale 3.5 3 4}
+   			               )
+   			               (1
+   			                  {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find tamb_Background.mesh} set_local_scale 3.5 3 4}
+   			               )
+   			               (2
+   			                  {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find tamb_Background.mesh} set_local_scale 3.5 3 4}
+   			               )
+   			               (3
+   			                  {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find tamb_Background.mesh} set_local_scale 3.5 3 4}
+   			               )
+   			            }
+   			         }
+                  }
+            	}
+         }
+
+         {if $dx_bre_needs_reset
+            {dx_custom_texture_setter bre bre_shield bre_shield.tex $dx_bre}
+            {dx_custom_texture_setter bre bre_black_wing bre_black_wing.tex $dx_bre}
+            {dx_custom_texture_setter bre bre_blossom blossom.tex $dx_bre}
+         }
+
+         {if $dx_crowd_meter_needs_reset
+            {dx_custom_texture_setter crowd_meter crowd_meter_frame crowd_meter_frame.tex $dx_crowd_meter}
+            {dx_custom_texture_setter crowd_meter crowd_meter_lens crowd_meter_lens.tex $dx_crowd_meter}
+         }
+
+         {if $dx_stars_needs_reset
+            {dx_custom_texture_setter stars score_meter_wipe score_meter_wipe.tex $dx_stars}
+            {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $dx_stars}
+            {dx_custom_texture_setter stars score_star_gold score_star_gold.tex $dx_stars}
+            {dx_custom_texture_setter stars score_tour_icon tour_icon.tex $dx_stars}
+         }
+
+         {if $dx_rails_needs_reset ;check if a new texture is queued
+            ;{dx_custom_texture_setter rails rails_beat beat_marker.tex $dx_rails}
+            {dx_custom_texture_setter rails rails_track rails.tex $dx_rails}
+            {dx_custom_texture_setter rails rails_track rails_keyboard.tex $dx_rails}
+            {dx_custom_texture_setter rails rails_track rails_rg.tex $dx_rails}
+            {dx_custom_texture_setter rails rails_bracket smasher_plate_bracket.tex $dx_rails}
+            {unless {== $dx_rails none} ;check the texture is not set to default
+               {smasher_plate_bracket.tex iterate_refs $ref {$ref set alpha_cut true}} ;alpha_cut fixes some specific issues where the transparant part of one texture "cuts" into another texture in use
+            }
+         }
+
+         {if $dx_beat_lines_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter rails beat_lines beat_marker.tex $dx_beatlines}
+         }
+
+         {if $dx_overdrive_bar_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter overdrive_bar od_bar_sun_fx fx_rising_sun.tex $dx_overdrive_bar}
+            {dx_custom_texture_setter overdrive_bar od_bar_background overdrive_meter_background_fill.tex $dx_overdrive_bar}
+            {dx_custom_texture_setter overdrive_bar od_bar_glass overdrive_meter_glass.tex $dx_overdrive_bar}
+            {dx_custom_texture_setter overdrive_bar od_bar_lens player_meter_long_lens.tex $dx_overdrive_bar}
+            {dx_custom_texture_setter overdrive_bar od_bar_long player_meter_long.tex $dx_overdrive_bar}
+         }
+
+         {if $dx_multiplier_ring_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_fx_stripes fx_peak_stripes.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_glow multiplier_meter_glow.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_bg streak_meter_bg.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_bg_vox streak_meter_bg_vox.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_lens streak_meter_lens.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_lens_vox streak_meter_lens_vox.tex $dx_multiplier_ring}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_plate streak_meter_plate.tex $dx_multiplier_ring}
+         }
+
+         {if $dx_keyboard_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter keyboard keyboard_lanes track_lanes_keyboard.tex $dx_keyboard}
+            {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex $dx_keyboard}
+            {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex $dx_keyboard}
+            {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex $dx_keyboard}
+            {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex $dx_keyboard}
+         }
+
+         {if $dx_vocal_highway_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter vocal_highway vocal_highway_bg vocals_bg_combined.tex $dx_vocal_highway}
+            {dx_custom_texture_setter vocal_highway vocal_highway_no_tonic vocal_bg_notonic.tex $dx_vocal_highway}
+            {dx_custom_texture_setter vocal_highway vocal_highway_bg_blue lyrics_bg_blue.tex $dx_vocal_highway}
+            {dx_custom_texture_setter vocal_highway vocal_highway_bg_brown lyrics_bg_brown.tex $dx_vocal_highway}
+            {dx_custom_texture_setter vocal_highway vocal_highway_now_bar vocal_now_bar.tex $dx_vocal_highway}
+         }
+               
+         {if $dx_vocal_arrow_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter vocal_arrows vocal_arrow pitch_arrow_lead_c.tex $dx_vocal_arrow}
+            {dx_custom_texture_setter vocal_arrows vocal_arrow_outline arrow_lead_outline.tex $dx_vocal_arrow}
+         }
+
+         {if $dx_vocal_notes_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter vocal_note vocal_note_tube vocal_tube_matrix.tex $dx_vocal_notes}
+            {dx_custom_texture_setter vocal_note vocal_note_talkie talky_mask.tex $dx_vocal_notes}
+            {dx_custom_texture_setter vocal_note vocal_note_tamb_gem vocal_tambourine_gem.tex $dx_vocal_notes}
+            {dx_custom_texture_setter vocal_note vocal_note_off buttonoff.tex $dx_vocal_notes}
+            {dx_custom_texture_setter vocal_note vocal_note_on buttonon.tex $dx_vocal_notes}
+         }
+
+         {if $dx_vocal_overdrive_needs_reset ;check if a new texture is queued
+            {dx_custom_texture_setter vocal_overdrive vocal_overdrive_sunburst sunburst.tex $dx_vocal_overdrive}
+            {dx_custom_texture_setter vocal_overdrive vocal_overdrive_now_bar VOX_now_bar_od.tex $dx_vocal_overdrive}
+         }
+
+         ;watermarking for ch mode via coloring the rails
+         {if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
+            {dx_log_writer default {sprint "Setting CH Mode Watermark Textures - Gamemode: " $dx_gamemode}}
+            {rails.tex set_bitmap "dx/custom_textures/_additional_textures/rails_drunk.png"}
+            {rails_keyboard.tex set_bitmap "dx/custom_textures/_additional_textures/rails_drunk.png"}
+            {rails_rg.tex set_bitmap "dx/custom_textures/_additional_textures/rails_drunk.png"}
+            {smasher_plate_bracket.tex set_bitmap "dx/custom_textures/_additional_textures/smasher_plate_bracket_drunk.png"}
+         }
+
+         ;watermarking for precision mode via coloring the rails
+         {if {modifier_mgr is_modifier_active mod_precision} ;if precision mode is currently enabled (must run last for watermark)
+            {dx_log_writer default {sprint "Setting Precision Mode Watermark Textures - Gamemode: " $dx_gamemode}}
+            {rails.tex set_bitmap "dx/custom_textures/_additional_textures/rails_precision.png"}
+            {rails_keyboard.tex set_bitmap "dx/custom_textures/_additional_textures/rails_precision.png"}
+            {rails_rg.tex set_bitmap "dx/custom_textures/_additional_textures/rails_precision.png"}
+            {smasher_plate_bracket.tex set_bitmap "dx/custom_textures/_additional_textures/smasher_plate_bracket_precision.png"}
+         }
+
+         ;after all of the queued texture updates are completed, set them to false so they do not run again until a new texture is queued via overshell
+         {set $dx_overdrive_guitar_needs_reset FALSE}
+         {set $dx_overdrive_bass_needs_reset FALSE}
+         {set $dx_overdrive_drum_needs_reset FALSE}
+         {set $dx_overdrive_keys_needs_reset FALSE}
+         {set $dx_streak_guitar_needs_reset FALSE}
+         {set $dx_streak_bass_needs_reset FALSE}
+         {set $dx_streak_drum_needs_reset FALSE}
+         {set $dx_streak_keys_needs_reset FALSE}
+         {set $dx_streak_prokeys_needs_reset FALSE}
+         {set $dx_highway_guitar_needs_reset FALSE}
+         {set $dx_highway_bass_needs_reset FALSE}
+         {set $dx_highway_drum_needs_reset FALSE}
+         {set $dx_highway_keys_needs_reset FALSE}
+         {set $dx_crowd_meter_needs_reset FALSE}
+         {set $dx_multiplier_ring_needs_reset FALSE}
+         {set $dx_overdrive_bar_needs_reset FALSE}
+         {set $dx_rails_needs_reset FALSE}
+         {set $dx_score_box_needs_reset FALSE}
+         {set $dx_stars_needs_reset FALSE}
+         {set $dx_font_needs_reset FALSE}
+         {set $dx_solo_box_needs_reset FALSE}
+         {set $dx_bre_needs_reset FALSE}
+         {set $dx_flames_needs_reset FALSE}
+         {set $dx_smasher_needs_reset FALSE}
+         {set $dx_gem_needs_reset FALSE}
+         {set $dx_sustain_needs_reset FALSE}
+         {set $dx_lanes_needs_reset FALSE}
+         {set $dx_vocal_arrow_needs_reset FALSE}
+         {set $dx_vocal_highway_needs_reset FALSE}
+         {set $dx_vocal_notes_needs_reset FALSE}
+         {set $dx_vocal_overdrive_needs_reset FALSE}
+         {set $dx_animated_gem_needs_reset FALSE}
+         {set $dx_texloadonce TRUE} ;indicates textures have been loaded this session
+         {dx_log_writer default {sprint "Custom Track Textures Successfully Set - Gamemode: " $dx_gamemode}}
+      }
+   )
+)
