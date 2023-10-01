@@ -250,7 +250,7 @@
 
 #### DELUXE HUD:
 * Countdown:
-	* *Toggles a countdown popup between long breaks, similar to Guitar Hero World Tour and Rock Band 4.*
+	* *Toggles a countdown popup between long breaks, similar to Clone Hero and Rock Band 4.*
 	
 	![Countdown.](images/countdown.gif "Countdown")
 
