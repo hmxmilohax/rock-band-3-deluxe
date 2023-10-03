@@ -139,10 +139,12 @@
 
 * **Disable any title updates** you may have for Rock Band 3 in Aurora.
     * *Rock Band 3 Deluxe* **rolls the latest one into its installation**.
+    * If you've never played *Rock Band 3* on your console, you don't need to do this.
 * Clear your **song cache**.
     * In the dashboard, navigate to `System Settings > Storage > Rock Band 3` and **delete the song cache**.
 * Clear your **system cache**.
     * In the dashboard, navigate to `System Settings > Storage` and **press `Y` to clear the system cache**.
+    * If you've never played *Rock Band 3* on your console, you don't need to do this.
 * **Download the *Rock Band 3 Deluxe* cover art** in Aurora.
     * Hover over Rock Band 3 in your games list and **press `Y`**.
     * Scroll all the way down, then scroll left until you get to **`Download Cover`**.
