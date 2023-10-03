@@ -20,6 +20,7 @@ print(
 
 print(f"Platform: {platform}")
 
+
 def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
     match sys.platform:
@@ -33,7 +34,9 @@ def configure_tools(platform="ps3"):
         case "darwin":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp $in $out")
-            ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out")
+            ninja.rule(
+                "bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out"
+            )
             ninja.variable("superfreq", "dependencies/macos/superfreq")
             ninja.variable("arkhelper", "dependencies/macos/arkhelper")
             ninja.variable("dtab", "dependencies/macos/dtab")
@@ -50,14 +53,14 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "USRDIR", "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -v 6 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -s 4073741823 -v 6 $silence",
                 description="Building ARK",
             )
         case "xbox":
             out_dir = Path("out", platform, "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 $silence",
                 description="Building ARK",
             )
 
@@ -72,8 +75,6 @@ def copy_rawfiles(platform):
             return False
         if file.suffix.endswith("_xbox") and platform != "xbox":
             return False
-        if file.suffix.endswith("_wii"): # TODO: remove this when we clean up the wii files
-            return False
         if file.suffix.endswith(".dta"):
             return False
         if file.suffix.endswith(".png"):
@@ -83,6 +84,7 @@ def copy_rawfiles(platform):
         return True
 
     files = filter(file_filter, Path("_ark").rglob("*"))
+
     output_files = []
     for f in files:
         index = f.parts.index("_ark")
@@ -110,8 +112,12 @@ def run_dtab():
 
     return output_files
 
+
 def convert_pngs(platform):
     files = list(Path("_ark").rglob("*.png"))
+
+    if platform == "yarg":
+        files = list(Path("_ark", "songs").rglob("*.png"))
     output_files = []
     for f in files:
         output_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
@@ -119,7 +125,9 @@ def convert_pngs(platform):
             case "ps3":
                 target_filename = Path("gen", f.stem + ".png_ps3")
                 xbox_filename = Path("gen", f.stem + ".png_xbox")
-                xbox_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
+                xbox_directory = Path("obj", platform, "raw").joinpath(
+                    *f.parent.parts[1:]
+                )
                 xbox_output = xbox_directory.joinpath(xbox_filename)
                 ps3_output = output_directory.joinpath(target_filename)
                 ninja.build(str(xbox_output), "sfreq", str(f))
@@ -127,15 +135,26 @@ def convert_pngs(platform):
                 output_files.append(str(ps3_output))
             case "xbox":
                 target_filename = Path("gen", f.stem + ".png_xbox")
-                xbox_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
+                xbox_directory = Path("obj", platform, "ark").joinpath(
+                    *f.parent.parts[1:]
+                )
+                xbox_output = xbox_directory.joinpath(target_filename)
+                ninja.build(str(xbox_output), "sfreq", str(f))
+                output_files.append(str(xbox_output))
+            case "yarg":
+                target_filename = Path("gen", f.stem + ".bmp_xbox")
+                xbox_directory = Path("obj", platform, "ark").joinpath(
+                    *f.parent.parts[1:]
+                )
                 xbox_output = xbox_directory.joinpath(target_filename)
                 ninja.build(str(xbox_output), "sfreq", str(f))
                 output_files.append(str(xbox_output))
 
     return output_files
 
+
 def copy_buildfiles(platform):
-    files = [x for x in Path("_build", platform).rglob("*") if x.is_file()]
+    files = [x for x in Path("platform", platform).rglob("*") if x.is_file()]
     output_files = []
     for f in files:
         index = f.parts.index(platform)
@@ -151,7 +170,7 @@ def generate_ark(platform, deps):
         case "ps3":
             hdr = str(Path("out", platform, "USRDIR", "gen", "patch_xbox.hdr"))
             ninja.build(
-                str(Path("out", platform, "USRDIR","gen", "patch_ps3_0.ark")),
+                str(Path("out", platform, "USRDIR", "gen", "patch_ps3_0.ark")),
                 "ark",
                 implicit=deps,
                 implicit_outputs=[hdr],
@@ -170,16 +189,95 @@ def generate_ark(platform, deps):
     raise Exception("invalid platform")
 
 
+
+# this is greasy but i don't see a better way of doing this
+def yarg_rewrite_output_path(path: Path):
+    path_parts = list(path.parts)
+    if "updates" not in  path.parts:
+        path_parts.insert(3, "updates")
+
+
+    path_parts.pop(2)
+    path_parts.pop(2)
+    path_parts.insert(2, "songs_updates")
+
+    return Path(*path_parts)
+
+def copy_yarg_built_files(files):
+    output_files = []
+    for i in files:
+        in_path = Path(i)
+        index = in_path.parts.index("ark")
+        out_path = Path("out", platform).joinpath(*in_path.parts[index + 1 :])
+        out_path = yarg_rewrite_output_path(out_path)
+        ninja.build(str(out_path), "copy", str(in_path))
+        output_files.append(str(out_path))
+
+
+    return output_files
+
+
+def copy_yarg_rawfiles(platform):
+    def file_filter(file: Path):
+        if file.suffix.endswith("_ps3") and platform != "ps3":
+            return False
+        if file.suffix.endswith("_xbox") and platform != "xbox":
+            return False
+        if file.suffix.endswith(".png"):
+            return False
+        if file.is_dir():
+            return False
+        return True
+
+    files = filter(file_filter, Path("_ark", "songs").rglob("*"))
+
+    output_files = []
+    for f in files:
+        index = f.parts.index("_ark")
+        out_path = Path("out", platform).joinpath(*f.parts[index + 1 :])
+        out_path = yarg_rewrite_output_path(out_path)
+
+        if "missing_song_data.dta" in out_path.parts:
+            continue
+        if "missing_song_data_updates.dta" in out_path.parts:
+            continue
+
+        ninja.build(str(out_path), "copy", str(f))
+        output_files.append(str(out_path))
+
+    # manually copy the songs dta
+    ninja.build(
+        str(Path("out", platform, "songs_updates", "songs_updates.dta")),
+        "copy",
+        str(Path("_ark", "dx", "song_updates", "songs_updates.dta")),
+    )
+
+    return output_files
+
+
 configure_tools(platform)
-# copy initial build files
-buildfiles = copy_buildfiles(platform)
 
-# generate and copy files into the ark
-arkfiles = copy_rawfiles(platform)
-arkfiles += run_dtab()
-arkfiles += convert_pngs(platform)
+match platform:
+    case "yarg":
+        # generate and copy files into the ark
+        arkfiles = convert_pngs(platform)
 
-# build ark
-buildfiles += generate_ark(platform, arkfiles)
+        # copy files
+        buildfiles = copy_yarg_built_files(arkfiles)
+        buildfiles += copy_yarg_rawfiles("yarg")
 
-ninja.build("all", "phony", buildfiles)
+        ninja.build("all", "phony", buildfiles)
+
+    case _:
+        buildfiles = []
+        buildfiles += copy_buildfiles(platform)
+
+        # generate and copy files into the ark
+        arkfiles = copy_rawfiles(platform)
+        arkfiles += run_dtab()
+        arkfiles += convert_pngs(platform)
+
+        # build ark
+        buildfiles += generate_ark(platform, arkfiles)
+
+        ninja.build("all", "phony", buildfiles)

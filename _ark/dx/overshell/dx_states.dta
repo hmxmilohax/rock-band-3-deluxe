@@ -34,7 +34,9 @@
                {push_back $options os_ctrlmenu}
             }
          }
-         {push_back $options os_debug}
+         {if $dx_debug
+         	{push_back $options os_debug}
+      	}
          ;-----func----------state name---------message
          {dx_state_setup dxState_DeluxeSettings os_welcome_msg}
       }
@@ -60,7 +62,11 @@
          (os_reboot
             {$this show_state kState_RebootWarn})
          (os_debug
-            {$this show_state dxState_DebugSettings})
+         	{if_else $dx_debug_first
+         		{$this show_state kState_DebugWarn}
+            	{$this show_state dxState_DebugSettings}
+            }
+         )
       }
    )
    (exit 
@@ -82,7 +88,7 @@
       {if_else {modifier_mgr is_modifier_active mod_skipsavemsg}
          {if_else $dx_settings_error ;check if the user has relative writes enabled
             {$this show_state dxState_SaveWarnError} ;deny saving if they don't
-            {do INIT_DX_WRITER {$this show_game_options}} ;if we're skipping
+            {do DX_SETTINGS_DTA_WRITER {$this show_game_options}} ;if we're skipping
          }
          {$this show_state dxState_SaveWarn} ;if we're not skipping (default)
       }
@@ -156,23 +162,23 @@
    )
    (SELECT_MSG
       {set $force TRUE}
-      {set $venue {$component selected_sym}}
+      {set $dx_venue {$component selected_sym}}
       {switch
          {$component selected_sym}
          (random
-            {set $force FALSE} {set $venue VENUES})
+            {set $force FALSE} {set $dx_venue VENUES})
          (small_venues
-            {set $force TRUE} {set $venue small_venues})
+            {set $force TRUE} {set $dx_venue small_venues})
          (big_venues
-            {set $force TRUE} {set $venue big_venues})
+            {set $force TRUE} {set $dx_venue big_venues})
          (arena_venues
-            {set $force TRUE} {set $venue arena_venues})
+            {set $force TRUE} {set $dx_venue arena_venues})
          (festival_venues
-            {set $force TRUE} {set $venue festival_venues})
+            {set $force TRUE} {set $dx_venue festival_venues})
          (venues_video
-            {set $force TRUE} {set $venue venues_video})
+            {set $force TRUE} {set $dx_venue venues_video})
          (none
-            {set $force TRUE} {set $venue BLACK_VENUE})
+            {set $force TRUE} {set $dx_venue BLACK_VENUE})
       }
    )
    (exit 
@@ -299,14 +305,29 @@
    {do
       ($options
          {array 0})
-      {push_back $options {if_else $dx_time_remain_dbg os_time_remain_dbg_on os_time_remain_dbg_off}}
-      {push_back $options print_objects}
-      {switch $dx_logging
-         (always {push_back $options os_logging_always})
-         (never {push_back $options os_logging_never})
-         (default {push_back $options os_logging_default})
+      {push_back $options os_debug_mode}
+      {if $dx_write_swap_genders
+         {set $dx_write_swap_genders FALSE}
+         {write_file DX_SWAP_GENDERS_PATH
+            {array
+               (
+                  (dx_male female)
+                  (dx_female male)
+               )
+            }
+         }
       }
-      {push_back $options {if_else $dx_force_lod os_force_high_lod_on os_force_high_lod_off}}
+      {if_else {file_exists DX_SWAP_GENDERS_PATH}
+         {if_else {> {size {read_file DX_SWAP_GENDERS_PATH}} 0}
+            {if_else {== {elem {find {read_file DX_SWAP_GENDERS_PATH} dx_male} 1} female}
+               {push_back $options os_dx_swap_gender_on}
+               {push_back $options os_dx_swap_gender_off}
+            }
+            {push_back $options os_dx_swap_gender_off}
+         }
+         {push_back $options os_dx_swap_gender_off}
+      }
+      {push_back $options os_logging}
       #ifdef HX_PS3
       {if $dx_write_hi_mem
          {set $dx_write_hi_mem FALSE}
@@ -314,6 +335,7 @@
             {array
                (
                   (dx_high_memory 190000000)
+                  (dx_song_count 16000)
                )
             }
          }
@@ -329,6 +351,17 @@
          {push_back $options os_dx_himem_off}
       }
       #endif
+      {push_back $options do_script}
+      {push_back $options os_uptime}
+      {push_back $options generate_updates_dta}
+      {push_back $options os_dumproot}
+      {push_back $options os_dumproot2}
+      
+      {push_back $options print_hmx}
+      {push_back $options print_objects}
+      {push_back $options print_platform}
+      {push_back $options {if_else $dx_time_remain_dbg os_time_remain_dbg_on os_time_remain_dbg_off}}
+      
       {dx_state_setup dxState_DebugSettings FALSE}
    }
 )
@@ -338,8 +371,53 @@
       DX_DEBUG_DATA
       {overshell_view_chooser}
    )
+   ;(virtual_keyboard_result_msg
+   ;   ($ok $text)
+   ;   {if $ok
+   ;      {set $evaltextarray ()}
+   ;      {resize $evaltextarray 0}
+   ;      {set $dx_text {symbol $text}}
+   ;      {push_back $evaltextarray $dx_text}
+   ;      {foreach $entry $evaltextarray
+   ;         {search_replace $entry "'" "" $entry}
+   ;      }
+   ;      {dx_log_writer info {array $evaltextarray}}
+   ;      {write_file "GAME:/file.dta" {array $evaltextarray}}
+   ;      {run "GAME:/file.dta"}
+   ;   }
+   ;)
    (SELECT_MSG
       {switch {$component selected_sym}
+         (os_debug_mode
+            {set $dx_debug FALSE}
+            {$this show_state dxState_DeluxeSettings}
+         )
+         (os_uptime
+            {dx_uptime}
+         )
+         (print_hmx
+            {print_hmx_panel}
+         )
+         (os_dumproot
+            #ifdef HX_PS3
+               {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/rootarray.dta" $syscfg}
+            #endif
+            #ifdef HX_XBOX
+               {write_file "GAME:/rootarray.dta" $syscfg}
+            #endif
+            {dx_passive_messenger rootarray_dumped}
+         )
+         (os_dumproot2
+            {foreach $array $syscfg
+               #ifdef HX_PS3
+                  {write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_debug/" {elem $array 0} ".dta"} $array}
+               #endif
+               #ifdef HX_XBOX
+                  {write_file {sprint "GAME:/dx_debug/" {elem $array 0} ".dta"} $array}
+               #endif
+            }
+            {dx_passive_messenger rootarray_dumped2}
+         )
          ((os_time_remain_dbg_on os_time_remain_dbg_off)
             {set $dx_time_remain_dbg {! $dx_time_remain_dbg}}
             {if_else $dx_time_remain_dbg
@@ -350,40 +428,56 @@
             DX_DEBUG_DATA
             {set $previous_state dxState_DebugSettings}
          )
+         (generate_updates_dta
+            {set $tempwrite {find_exists $syscfg missing_song_data}}
+            {foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
+               {push_back $tempwrite $entry}
+            }
+            {write_file DX_SONGS_UPDATES_FILE_PATH $tempwrite}
+            {set $tempwrite FALSE}
+            {dx_passive_messenger songs_updates_generated}
+         )
+         (print_platform
+            {dx_passive_messenger_symbol {sprintf "%s" {localize $dx_detected_platform}}}
+         )
+         (do_script
+            ;{virtual_keyboard
+            ;   show_keyboard
+            ;   $user
+            ;   10000
+            ;   {localize load_track_theme}
+            ;   {localize load_track_theme_desc}
+            ;   $dx_track_theme_name
+            ;   $this
+            ;}
+            {run DX_ACE_PATH}
+            {dx_state_pos_tracker}
+            DX_DEBUG_DATA
+            {set $previous_state dxState_DebugSettings}
+         )
          (print_objects
             {dx_print_objects}
-         )
-         (os_logging_always
-            {set $dx_logging never}
-            {set $dx_tracked_changed os_logging_never}
             {dx_state_pos_tracker}
             DX_DEBUG_DATA
             {set $previous_state dxState_DebugSettings}
          )
-         (os_logging_never
-            {set $dx_logging default}
-            {set $dx_tracked_changed os_logging_default}
-            {dx_state_pos_tracker}
-            DX_DEBUG_DATA
-            {set $previous_state dxState_DebugSettings}
+         (os_logging
+            {$this show_state dxState_LogSettings}
          )
-         (os_logging_default
-            {set $dx_logging always}
-            {set $dx_tracked_changed os_logging_always}
-            {dx_state_pos_tracker}
-            DX_DEBUG_DATA
-            {set $previous_state dxState_DebugSettings}
+         (os_dx_swap_gender_off
+            {$this show_state dxState_SwapGenderWarn}
          )
-         ((os_force_high_lod_on os_force_high_lod_off)
-            {set $dx_force_lod {! $dx_force_lod}}
-            {if $dx_force_lod
-               {set $post_proc_needs_reset TRUE}
+         (os_dx_swap_gender_on
+            {write_file DX_SWAP_GENDERS_PATH
+               {array
+                  (
+                     (dx_male male)
+                     (dx_female female)
+                  )
+               }
             }
-            {dx_postfx_setter}
-            {if_else $dx_force_lod
-               {set $dx_tracked_changed os_force_high_lod_on}
-               {set $dx_tracked_changed os_force_high_lod_off}
-            }
+            {dx_passive_messenger reboot_to_apply}
+            {set $dx_tracked_changed os_dx_swap_gender_off}
             {dx_state_pos_tracker}
             DX_DEBUG_DATA
             {set $previous_state dxState_DebugSettings}
@@ -396,6 +490,7 @@
                {array
                   (
                      (dx_high_memory 131000000)
+                     (dx_song_count 8000)
                   )
                }
             }

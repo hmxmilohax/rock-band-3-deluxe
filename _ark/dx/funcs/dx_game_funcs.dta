@@ -1,0 +1,112 @@
+#define DX_CALLBACK_HANDLES
+(
+   (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)
+)
+{func
+   dx_add_player_sinks
+   {dx_log_writer info {sprint "func: dx_add_player_sinks - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_add_player_sinks - time: %.4fms"
+         {time
+            {dx_active_player_var_reset}
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {unless {== {$player instrument} vocals}
+                  {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}
+               }
+               {$player add_sink fc_callback DX_CALLBACK_HANDLES}
+               {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)}
+               {switch {$player instrument}
+                  (bass
+                     {set $bassplayeractive true}
+                     {$player add_sink fc_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_guitar
+                     {set $real_guitarplayeractive true}
+                     {$player add_sink fc_real_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_bass
+                     {set $real_bassplayeractive true}
+                     {$player add_sink fc_real_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (keys
+                     {set $keysplayeractive true}
+                     {$player add_sink fc_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_keys
+                     {set $real_keysplayeractive true}
+                     {$player add_sink fc_real_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (guitar
+                     {set $guitarplayeractive true}
+                     {$player add_sink fc_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_real_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (vocals
+                     {set $vocalsplayeractive true}
+                     {set $dx_active_vocals TRUE}
+                  )
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_set_song_speed
+   {dx_log_writer beatmatch {sprint "func: dx_set_song_speed - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer beatmatch
+      {sprintf "Executed dx_set_song_speed - time: %.4fms"
+         {time
+            {if {exists gamemode}
+               {dx_log_writer beatmatch {sprint "Setting up song speeds. Song Speed: " $speedmod}} ;runs in beatmatcher, do not enable under penalty of stutter
+               {unless
+                  {|| ;check for a variety of game modes where song speed is not allowed to be adjusted
+                     {gamemode in_mode pro_song_lessons_keyboard}
+                     {gamemode in_mode pro_song_lessons_real_guitar}
+                     {gamemode in_mode pro_song_lessons_real_bass}
+                     {gamemode in_mode drum_freestyle}
+                     {gamemode in_mode trainer}
+                     {gamemode in_mode trainer_drums}
+                     {gamemode in_mode trainer_pro_drums}
+                     {gamemode in_mode trainer_real_guitar}
+                     {gamemode in_mode trainer_pro_keyboard}
+                     #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+                     {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  }
+                  {if {is_leader_local}
+                     {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}
+                  }
+                  {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
+               }
+               {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  {practice_panel update_speed {gamecfg get practice_speed}}
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_send_leader_song_speed
+   {dx_log_writer info {sprint "func: dx_send_leader_song_speed - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info
+      {sprintf "Executed dx_send_leader_song_speed - time: %.4fms"
+         {time
+            {if {is_leader_local} ; dx - sync speeds only if currently the lobby leader
+               {dx_log_writer beatmatch {sprint "Sending Leader Speed to peers, Leaderspeed: " $leaderspeed " - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+               DX_DISCONNECT
+               {set $speedmod $leaderspeed}
+               {set $speedmod_top $leaderspeed}
+               {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed}) kNetReliable}}
+            }
+         }
+      }
+   }
+}

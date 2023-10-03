@@ -18,7 +18,17 @@
          }
          {if {== {elem $entry 0} {basename track_theme_name}}
             {set $dx_track_theme_name $text}
-            INIT_TRACK_THEME_READER
+            {dx_special_char_sanitize}
+            {foreach $entry $dx_tracked_track_themes
+               {if {== $entry $text}
+                  {set $dx_pushed TRUE}
+               }
+            }
+            {if {! $dx_pushed}
+               {push_back $dx_tracked_track_themes $dx_track_theme_name}
+            }
+            {set $dx_pushed FALSE}
+            DX_TRACK_THEME_DTA_READER
             DX_TEXTURE_CORRECTOR
          }
       }
@@ -35,7 +45,9 @@
          ($dx_track_theme_file_array
             {array 0})
          {push_back $options os_settex}
+         #ifdef HX_XBOX
          {push_back $options load_theme}
+         #endif
          {push_back $options save_theme}
          {set $dx_track_theme_file_array
             #ifdef HX_PS3
@@ -68,6 +80,9 @@
                }
             }
          }
+         #ifdef HX_XBOX
+         {foreach $entry $dx_tracked_track_themes {push_back $options $entry}}
+         #endif
          {if {== {size $options} 0} ;if nothing was found at all
             {set $options ('cant find' 'track themes' 'this is a bug')} ;fill the list so it doesnt crash
          }
@@ -85,6 +100,7 @@
                   $text
                   ""}}}
          {set $dx_track_theme_name $text}
+         {dx_special_char_sanitize}
          {switch $dx_task
             (load LOAD_DTA_DIRECTLY)
             (save
@@ -93,7 +109,17 @@
                   {$this show_state dxState_ThemeOverwriteWarn}
                   {do
                      {set $dx_track_theme_name $text}
-                     INIT_TRACK_THEME_WRITER
+                     {dx_special_char_sanitize}
+                     {foreach $entry $dx_tracked_track_themes
+                        {if {== $entry $text}
+                           {set $dx_pushed TRUE}
+                        }
+                     }
+                     {if {! $dx_pushed}
+                        {push_back $dx_tracked_track_themes $dx_track_theme_name}
+                     }
+                     {set $dx_pushed FALSE}
+                     DX_TRACK_THEME_DTA_WRITER
                   }
                }
             )
@@ -135,8 +161,8 @@
                   }
                   {if {== {elem $entry 0} {basename track_theme_name}}
                      {if {== $load_dta {elem {find $entry track_theme_name} 1}}
-                        {set $dta_to_load $file}
-                        LOAD_TRACK_THEME_READER
+                        {set $dx_track_theme_name {elem {find $entry track_theme_name} 1}}
+                        DX_TRACK_THEME_DTA_READER
                         DX_TEXTURE_CORRECTOR
                         {dx_passive_messenger track_theme_successfully_loaded}
                      }

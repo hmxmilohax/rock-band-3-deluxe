@@ -165,7 +165,6 @@
    (view choose_profile_wii)
    (prevents_override TRUE)
    (enter
-      {choose_profile.lbl set text_token dx_choose_profile}
       {$this set_wiiprofile_list_mode kWiiProfileListMode_Entry})
    (on_cancel
       {$this attempt_remove_user})
@@ -673,6 +672,11 @@
             {gamemode in_mode drum_freestyle}}
          options_in_game
          options})
+   (enter
+      {if $dx_customizer
+         {$this show_state dxState_AppearanceMenu}
+      }
+   )
    (update_view
       {handle
          ($this
@@ -779,7 +783,7 @@
                   {if_else {gamemode in_mode trainer}
                      {{gamemode get game_panel} restart_section}
                      {do
-                        ONLY_RESET_CURRENT_BEAT_STUFF
+                        {dx_countdown_var_reset}
                         {session end_game kRestart}
                      }
                   }
@@ -834,7 +838,7 @@
                {$this attempt_remove_user})
             (overshell_dx_bot_settings
                {$this show_state dxState_BotSettings})
-                        #ifdef HX_WII
+            #ifdef HX_WII
             (overshell_wiiprofile_options
                {do
                   {$this
@@ -916,8 +920,18 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {ui_event_mgr trigger_event quit_early}
-            {$this leave_options})
+            {if_else {{$this get_session_mgr} is_local}
+               {set $dx_online_temp FALSE}
+               {set $dx_online_temp TRUE}
+            }
+            {if_else {&& $dx_online_temp {is_leader_local}}
+                  {ui sync_screen meta_loading_continue_screen 0}
+               {do
+                  {ui_event_mgr trigger_event quit_early}
+                  {$this leave_options}
+               }
+            }
+         )
          (overshell_confirm_no
             {$this show_options})})
    (on_cancel
@@ -937,7 +951,7 @@
             {if_else {gamemode in_mode trainer}
                {{gamemode get game_panel} restart_section}
                {do
-                  ONLY_RESET_CURRENT_BEAT_STUFF
+                  {dx_countdown_var_reset}
                   {session end_game kRestart}
                }
             }
@@ -1187,6 +1201,14 @@
       {$this show_options}))
 (kState_GameOptions
    (view game_options)
+   ;(enter
+   ;   {net_sync enable}
+   ;   {machine_mgr
+   ;      foreach_machine
+   ;      $machine
+   ;      {net_sync set_ui_state {$machine get_net_ui_state}}
+   ;   }
+   ;)
    (update_view
       {do
          ($controller
@@ -1277,11 +1299,21 @@
          (overshell_wiispeak_options
             {$this show_options_wiispeak})
          (overshell_rb3esettings
-            {$this show_state dxState_DeluxeSettings})
+            ;{unless {$this in_song}
+            ;   {net_sync disable}
+               {$this show_state dxState_DeluxeSettings}
+            ;}
+         )
          (overshell_modifiers
             {$this show_modifiers})})
    (on_cancel
       {$this show_options}
+      ;{net_sync enable}
+      ;{machine_mgr
+      ;   foreach_machine
+      ;   $machine
+      ;   {net_sync set_ui_state {$machine get_net_ui_state}}
+      ;}
       {options.lst set_selected #ifdef HX_WII 4 #else 3 #endif}))
 (kState_ToggleNoFailDenial
    (view confirm_action)
@@ -1296,6 +1328,11 @@
    (view options_av_settings)
    (on_cancel
       {$this show_game_options})
+   (enter
+      {if $dx_customizer
+         {$this show_state dxState_AppearanceMenu}
+      }
+   )
    (update_view
       {handle
          ($this update_dolby_check)}
@@ -1414,7 +1451,7 @@
    (view #ifdef HX_WII options #else options_audio #endif)
    (on_cancel
       {unless $dx_dont_save_mod
-         INIT_MOD_WRITER
+         DX_MODIFIER_DTA_WRITER
       }
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnErrorAV}
@@ -1428,6 +1465,9 @@
       }
    )
    (enter
+      {if $dx_customizer
+         {$this show_state dxState_AppearanceMenu}
+      }
       {$this lst_reset}
       {#ifdef HX_WII options.lst #else options_audio.lst #endif set_selected $audiomenuval}
       {instruments.sld set_num_steps 12}
@@ -1526,7 +1566,7 @@
 (kState_OptionsVocal
    (view options_vocal)
    (on_cancel
-      INIT_VAL_WRITER
+      DX_VALUES_DTA_WRITER
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnError}
          {$this show_game_options}
@@ -1980,7 +2020,7 @@
             {overshell update_all}}})
    (on_cancel
       {unless $dx_dont_save_mod
-         INIT_MOD_WRITER
+         DX_MODIFIER_DTA_WRITER
       }
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnError}
@@ -2074,21 +2114,7 @@
    (enter
       {$this update_part_select_list}
       DX_PART_SELECT_HANDLERS
-      {if $dx_auto_endurance
-         {switch
-            {$this get_slot_num}
-            (0 {$this select_part kTrackGuitar})
-            (1 {$this select_drum_part TRUE})
-            (2 {$this select_vocal_part FALSE})
-            (3 {$this select_part kTrackBass})
-            {fail {set $default_slot0 {$component selected_sym}}}
-         }
-      }
-   )
-   (exit
-      {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
-         INIT_VAL_WRITER
-      }
+      {dx_auto_endurance_handler}
    )
    (SELECT_MSG
       ;Saves default instrument by slot number
@@ -2244,9 +2270,10 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {if_else {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+            {if_else {dx_check_for_dupe {$this get_slot_num}}
                {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
-               {$this show_choose_part_wait} ; dx - use vanilla behavior if 2 same parts are selected
+               {$this show_state kState_ChoosePart} ; dx - returns to ChoosePart if another player already has the part
+               ;{$this show_choose_part_wait} ; dx - deprecated vanilla behavior
             }
          )
          (overshell_confirm_no
@@ -2270,9 +2297,10 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
-            {if_else {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+            {if_else {dx_check_for_dupe {$this get_slot_num}}
                {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
-               {$this show_choose_part_wait} ; dx - use vanilla behavior if 2 same parts are selected
+               {$this show_state kState_ChoosePart} ; dx - returns to ChoosePart if another player already has the part
+               ;{$this show_choose_part_wait} ; dx - deprecated vanilla behavior
             }
          )
          (overshell_confirm_no
@@ -2295,8 +2323,10 @@
    (part_unresolved TRUE)
    (shows_extended_mic_arrows TRUE)
    (enter
-      {if {&& {modifier_mgr is_modifier_active mod_allow_dupes} {dx_check_for_dupe {$this get_slot_num}}}
+      {if_else {dx_check_for_dupe {$this get_slot_num}}
          {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
+         {$this show_state kState_ChoosePart} ; dx - returns to ChoosePart if another player already has the part
+         ;{$this show_choose_part_wait} ; dx - deprecated vanilla behavior
       }
    )
    (update_remote_feedback
@@ -2414,15 +2444,32 @@
    (song_settings_flow TRUE)
    (shows_extended_mic_arrows TRUE)
    (enter
-      {if {! $dx_first_diff} ; dx - hacky way to default to expert on first boot
-         {set $dx_first_diff TRUE}
-         {choose_diff.lst set_selected 3}
-      }
-      {if $dx_auto_endurance
+      {if {|| $dx_customizer $dx_auto_endurance}
          {$this select_difficulty kDifficultyExpert}
+      }
+      {switch {$this get_slot_num}
+         (0 {if_else $default_diff0 {choose_diff.lst set_selected $default_diff0} {choose_diff.lst set_selected 3}})
+         (1 {if_else $default_diff1 {choose_diff.lst set_selected $default_diff1} {choose_diff.lst set_selected 3}})
+         (2 {if_else $default_diff2 {choose_diff.lst set_selected $default_diff2} {choose_diff.lst set_selected 3}})
+         (3 {if_else $default_diff3 {choose_diff.lst set_selected $default_diff3} {choose_diff.lst set_selected 3}})
+         {fail {if_else $default_diff0 {choose_diff.lst set_selected $default_slot0} {choose_diff.lst set_selected 3}}}
+      }
+   )
+   (exit
+      {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
+         DX_VALUES_DTA_WRITER
       }
    )
    (SELECT_MSG
+      ;Saves default instrument by slot number
+      {switch
+         {$this get_slot_num}
+         (0 {set $default_diff0 {$component selected_sym}})
+         (1 {set $default_diff1 {$component selected_sym}})
+         (2 {set $default_diff2 {$component selected_sym}})
+         (3 {set $default_diff3 {$component selected_sym}})
+         {fail {set $default_diff0 {$component selected_sym}}}
+      }
       {switch
          {choose_diff.lst selected_sym}
          (overshell_easy
@@ -2738,6 +2785,14 @@
    (view choose_char_edit)
    (choose_char_flow TRUE)
    (char_edit_flow TRUE)
+   #ifdef HX_WII
+   (enter
+      {if_else
+         {{$this get_session_mgr}
+            is_local}
+         {choose_char_edit.lst enable_data overshell_rename_character}
+         {choose_char_edit.lst disable_data overshell_rename_character}})
+   #endif
    (SELECT_MSG
       {switch
          {$component selected_sym}
@@ -2749,6 +2804,8 @@
                #else
                TRUE
                #endif
+               #ifdef HX_WII
+               {$this set_paused 1}
                {virtual_keyboard
                   show_keyboard
                   $user
@@ -2756,7 +2813,18 @@
                   {localize create_char_vk_title}
                   {localize create_char_vk_desc}
                   {$this character_name}
-                  $this}})
+                  $this
+                  kVkNormalEntry}
+               #else
+               {virtual_keyboard
+                  show_keyboard
+                  $user
+                  kCharNameLength
+                  {localize create_char_vk_title}
+                  {localize create_char_vk_desc}
+                  {$this character_name}
+                  $this}
+               #endif})
          (overshell_delete_character
             {$this attempt_show_char_delete})})
    (VIRTUAL_KEYBOARD_RESULT_MSG
@@ -2770,7 +2838,8 @@
                   ""}}}
          {$this rename_character $text}
          {$this show_chars}
-         DX_AUTOSAVE})
+         DX_AUTOSAVE}
+         #ifdef HX_WII {$this set_paused 0} #endif)
    (on_cancel
       {$this show_chars}))
 (kState_ChooseCharDelete
@@ -2823,11 +2892,24 @@
       {switch
          {$component selected_sym}
          (overshell_confirm_yes
+            #ifdef HX_WII
+            {if_else
+               {ui_event_mgr has_transition_event go_to_charactercreator}
+               {do
+                  {$this show_chars}}
+               {do
+                  {critical_user_listener set_critical_user $user}
+                  {closet_mgr set_user $user}
+                  {closet_mgr set_return_screen main_hub_screen}
+                  {$this leave_options}
+                  {ui_event_mgr trigger_event go_to_charactercreator}}}
+            #else
             {critical_user_listener set_critical_user $user}
             {closet_mgr set_user $user}
             {closet_mgr set_return_screen main_hub_screen}
             {$this leave_options}
-            {ui_event_mgr trigger_event go_to_charactercreator})
+            {ui_event_mgr trigger_event go_to_charactercreator}
+            #endif)
          (overshell_confirm_no
             {$this show_chars})})
    (on_cancel
@@ -2873,7 +2955,15 @@
       {switch
          {$component selected_sym}
          (overshell_sign_in
-            {platform_mgr signin 1})
+            #ifdef HX_WII
+            {platform_mgr
+               signin
+               1
+               FALSE
+               {$this get_user}}
+            #else
+            {platform_mgr signin 1}
+            #endif)
          (overshell_sign_in_cancel
             {$this show_chars})})
    (on_cancel

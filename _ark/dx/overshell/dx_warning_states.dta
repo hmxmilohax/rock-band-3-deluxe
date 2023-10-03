@@ -35,7 +35,7 @@
          (os_save
             {if_else $dx_settings_error
             {$this show_state dxState_SaveWarnError}
-            {do INIT_DX_WRITER {$this show_game_options}}})
+            {do DX_SETTINGS_DTA_WRITER {$this show_game_options}}})
          (os_dontsave
             {$this show_game_options})}))
 
@@ -48,12 +48,15 @@
       {$this show_state dxState_TrackThemeLoader})
    (SELECT_MSG
       {switch {$component selected_sym}
-         (os_save
+         (os_overwrite
             {if_else $dx_settings_error
                {$this show_state dxState_SaveWarnError}
-               {do
-                  INIT_TRACK_THEME_WRITER
-                  {$this show_state dxState_TrackThemeLoader}
+               {if_else {== $dx_track_theme_name default}
+                  {dx_passive_messenger os_dont_overwrite_default}
+                  {do
+                     DX_TRACK_THEME_DTA_WRITER
+                     {$this show_state dxState_TrackThemeLoader}
+                  }
                }
             }
          )
@@ -72,7 +75,7 @@
          (os_save
             {if_else $dx_settings_error
             {$this show_state dxState_ThemeSaveWarnError}
-            {do {set $dx_track_theme_name $text} INIT_TRACK_THEME_WRITER {$this show_state dxState_TrackThemeLoader}}})
+            {do {set $dx_track_theme_name $text} DX_TRACK_THEME_DTA_WRITER {$this show_state dxState_TrackThemeLoader}}})
          (os_dontsave
             {$this show_state dxState_AppearanceMenu})}))
 
@@ -171,6 +174,34 @@
    )
    (on_cancel
       {$this show_state dxState_PostFX}
+   )
+)
+
+(kState_CustomizerWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions customizer_warn (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {ui_event_mgr trigger_event error_message
+               (dummy init {symbol "You are being taken to the in game Theme Customizer. In this mode you will be able to see your theme settings reflected in real time. You will not be able to play the game or leave until you specifically click 'Leave Customizer'. To begin, click continue and pause the game when the song has started."})
+            }
+            {set $dx_customizer TRUE}
+            {set $dx_moved_once FALSE}
+            {session disconnect}
+            {session_mgr disconnect}
+            ;{overshell set_active_status kOvershellInactive}
+            {ui goto_screen song_select_enter_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_AppearanceMenu}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_AppearanceMenu}
    )
 )
 
@@ -309,6 +340,30 @@
    )
 )
 
+(kState_DebugWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions debug_warning (os_iunderstand os_takemeback))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_iunderstand
+            {$this show_state dxState_DebugSettings}
+            {set $dx_debug_first FALSE}
+         )
+         (os_takemeback
+            {$this show_state dxState_DeluxeSettings}
+         )
+      }
+   ;   {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_state dxState_DeluxeSettings}
+   )
+)
+
 (kState_ModifierSongLoad
    (view confirm_action)
    (enter
@@ -356,6 +411,25 @@
          {set $dx_tracked_changed os_dx_himem_on}
          {set $in_state FALSE}
          {set $dx_write_hi_mem TRUE}
+         {$this show_state dxState_DebugSettings}
+      )
+      (overshell_cancel
+         {$this show_state dxState_DebugSettings})})
+      (on_cancel
+         {$this show_state dxState_DebugSettings}))
+
+(dxState_SwapGenderWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions swap_gender_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+         {set $dx_tracked_changed os_dx_swap_gender_on}
+         {set $in_state FALSE}
+         {set $dx_write_swap_genders TRUE}
          {$this show_state dxState_DebugSettings}
       )
       (overshell_cancel

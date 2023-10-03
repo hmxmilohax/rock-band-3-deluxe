@@ -5,20 +5,6 @@
    (file
       "song_select.milo")
    (focus song.lst)
-   (get_page_up_button
-      {if_else
-         {modifier_mgr is_modifier_active mod_dx_left_right_jump}
-         kAction_Left
-         kAction_PageUp
-      }
-   )
-   (get_page_down_button
-      {if_else
-         {modifier_mgr is_modifier_active mod_dx_left_right_jump}
-         kAction_Right
-         kAction_PageDown
-      }
-   )
    (held_buttons
       (kAction_PageUp 0.25)
       (kAction_PageDown 0.25)
@@ -52,9 +38,10 @@
       #else
       kAction_Option
       #endif)
-   (enter DX_PRESENCE_MANGER
+   (enter
+      {dx_presence_manager}
       {unless $dx_song_select_noise {synth stop_all_sfx TRUE}} ; dx - removes the annoying noises in song select
-      DX_LEADER_SPEED_SETTER
+      {dx_send_leader_song_speed}
       {net_sync set_ui_state kNetUI_MusicLibrary}
       {set
          [should_go_to_art_maker]
@@ -120,7 +107,7 @@
          {set
             [should_go_to_art_maker]
             FALSE}}
-      {if $dx_auto_endurance
+      {if {|| $dx_customizer $dx_auto_endurance}
          {music_library select_highlighted_node {input_mgr get_user}}
       })
    (exit
@@ -783,7 +770,7 @@
          ({&&
                {==
                   $action
-                  {$this get_page_down_button}}
+                  kAction_PageDown}
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -793,13 +780,33 @@
          ({&&
                {==
                   $action
-                  {$this get_page_up_button}}
+                  kAction_Right}
+               {!
+                  {song.lst is_scrolling}}}
+            {unless
+               [waiting_for_sort]
+               {song.lst set_scroll_user $user}
+               {song.lst scroll 10}})
+         ({&&
+               {==
+                  $action
+                  kAction_PageUp}
                {!
                   {song.lst is_scrolling}}}
             {unless
                [waiting_for_sort]
                {song.lst set_scroll_user $user}
                {music_library skip_to_prev_shortcut}})
+         ({&&
+               {==
+                  $action
+                  kAction_Left}
+               {!
+                  {song.lst is_scrolling}}}
+            {unless
+               [waiting_for_sort]
+               {song.lst set_scroll_user $user}
+               {song.lst scroll -10}})
          ({'||'
                {== $action kAction_Up}
                {== $action kAction_Down}}
@@ -888,14 +895,14 @@
                #ifdef HX_WII
                {==
                   $action
-                  {$this get_page_up_button}}
+                  kAction_Left}
                #else
                {== $action kAction_PageUp}
                #endif
                #ifdef HX_WII
                {==
                   $action
-                  {$this get_page_down_button}}
+                  kAction_Right}
                #else
                {== $action kAction_PageDown}
                #endif}
