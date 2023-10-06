@@ -113,7 +113,12 @@
             [should_go_to_art_maker]
             FALSE}}
       {if {|| $dx_customizer $dx_auto_endurance}
-         {music_library select_highlighted_node {input_mgr get_user}}
+         {script_task kTaskSeconds
+            (delay 1.5)
+            (script
+               {music_library select_highlighted_node {input_mgr get_user}}
+            )
+         }
       })
    (exit
       {set
@@ -187,214 +192,219 @@
                {set $ret $button}}}
          $ret})
    (SELECT_MSG
-      {with
-         song_select_details
-         {cond
-            ({== $component details_1.btn}
-               {music_library select_highlighted_node $user}
-               {song_select_panel hide_details})
-            ({==
-                  $component
-                  {song_select_panel get lb_list}}
-               {with
-                  song_select_panel
-                  {$this
-                     select_lb_row
-                     {[lb_list]
-                        selected_pos}
-                     $user}})
-            ({==
-                  {$component get text_token}
-                  review_song}
-               {buttons.grp set_showing FALSE}
-               {details_bottom.grp set_showing FALSE}
-               {review.grp set_showing TRUE}
-               {song_select_panel
-                  set_focus
-                  {$this
-                     find
-                     {sprintf
-                        "review_%i.rvw"
-                        {review.rvw get score}}}})
-            ({==
-                  {$component get text_token}
-                  delete_song}
-               {if_else
-                  {session_mgr is_local}
-                  {do
-                     {delete_content_confirm_screen
-                        set
-                        content
-                        #ifdef HX_WII
-                        {{music_library get_highlighted_node}
-                           id}
-                        #else
-                        {song_mgr
-                           content_name
-                           {{music_library get_highlighted_node}
-                              id}}
-                        #endif}
-                     {ui push_screen delete_content_confirm_screen}}
-                  {do
-                     {push_basic_confirm_dialog_small delete_song_no_online}}})
-            ({==
-                  {$component get text_token}
-                  leaderboard}
-               {buttons.grp set_showing FALSE}
-               {details_bottom.grp set_showing FALSE}
-               {performance.grp set_showing TRUE}
-               {if_else
-                  {==
-                     {{music_library get_highlighted_node}
-                        get_node_type}
-                     kNodeSetlist}
-                  {do
-                     {song_select_panel
-                        set
-                        lb_list
-                        {object performance.lst}}
-                     {leaderboard_instruments.lst set_showing FALSE}
-                     {leaderboard_help.ihp set_showing FALSE}}
-                  {do
-                     {song_select_panel
-                        set
-                        lb_list
-                        {object performance.lst}}
-                     {leaderboard_instruments.lst set_showing TRUE}
-                     {leaderboard_help.ihp set_showing TRUE}
-                     {set
-                        $score_sym
-                        {elem
-                           (SCORE_TYPE_SYMBOLS)
-                           {music_library active_score_type}}}
-                     {set $score_index 0}
-                     {find_elem
-                        (ORDERED_SCORE_TYPE_SYMBOLS)
-                        $score_sym
-                        $score_index}
-                     {leaderboard_instruments.lst set_selected $score_index}}}
-               {with
-                  song_select_panel
-                  {$this refresh_leaderboard $user}
-                  {$this
-                     set_focus
-                     [lb_list]}})
-            ({==
-                  {$component get text_token}
-                  practice_or_train_song}
-               {cond
-                  ({!
-                        {gamemode get library_trainers_allowed}}
-                     {push_basic_confirm_dialog no_trainers_in_some_modes})
-                  ({!
-                        {session_mgr is_local}}
-                     {push_basic_confirm_dialog no_trainers_when_online})
-                  {submenu_buttons.grp set_showing TRUE}
-                  {buttons.grp set_showing FALSE}
-                  {submenu01.btn set text_token practice_song}
-                  {submenu02.btn set text_token train_song}
-                  {song_select_panel set_focus submenu01.btn}})
-            ({==
-                  {$component get text_token}
-                  practice_song}
-               {cond
-                  ({!
-                        {gamemode get library_trainers_allowed}}
-                     {push_basic_confirm_dialog no_trainers_in_some_modes})
-                  ({!
-                        {session_mgr is_local}}
-                     {push_basic_confirm_dialog no_trainers_when_online})
-                  {gamemode set_mode qp_practice}
-                  {training_mgr set_user $user}
-                  {critical_user_listener set_critical_user $user}
-                  {training_mgr set_return_info song_select_screen pause_quit}
-                  {practice_sel_section_panel clear_state}
-                  {music_library clear_setlist}
-                  {music_library set_making_setlist FALSE}
+      {unless {|| $dx_customizer $dx_auto_endurance}
+         {with
+            song_select_details
+            {cond
+               ({== $component details_1.btn}
                   {music_library select_highlighted_node $user}
-                  {unless
-                     {music_library setlist_size}
-                     {gamemode set_mode qp_coop}}})
-            ({==
-                  {$component get text_token}
-                  train_song}
-               {cond
-                  ({!
-                        {gamemode get library_trainers_allowed}}
-                     {push_basic_confirm_dialog no_trainers_in_some_modes})
-                  ({!
-                        {session_mgr is_local}}
-                     {push_basic_confirm_dialog no_trainers_when_online})
-                  ({!
-                        {profile_mgr get_profile $user}}
-                     {push_basic_confirm_dialog trainer_must_signin})
+                  {song_select_panel hide_details})
+               ({==
+                     $component
+                     {song_select_panel get lb_list}}
+                  {with
+                     song_select_panel
+                     {$this
+                        select_lb_row
+                        {[lb_list]
+                           selected_pos}
+                        $user}})
+               ({==
+                     {$component get text_token}
+                     review_song}
+                  {buttons.grp set_showing FALSE}
+                  {details_bottom.grp set_showing FALSE}
+                  {review.grp set_showing TRUE}
+                  {song_select_panel
+                     set_focus
+                     {$this
+                        find
+                        {sprintf
+                           "review_%i.rvw"
+                           {review.rvw get score}}}})
+               ({==
+                     {$component get text_token}
+                     delete_song}
+                  {if_else
+                     {session_mgr is_local}
+                     {do
+                        {delete_content_confirm_screen
+                           set
+                           content
+                           #ifdef HX_WII
+                           {{music_library get_highlighted_node}
+                              id}
+                           #else
+                           {song_mgr
+                              content_name
+                              {{music_library get_highlighted_node}
+                                 id}}
+                           #endif}
+                        {ui push_screen delete_content_confirm_screen}}
+                     {do
+                        {push_basic_confirm_dialog_small delete_song_no_online}}})
+               ({==
+                     {$component get text_token}
+                     leaderboard}
+                  {buttons.grp set_showing FALSE}
+                  {details_bottom.grp set_showing FALSE}
+                  {performance.grp set_showing TRUE}
+                  {if_else
+                     {==
+                        {{music_library get_highlighted_node}
+                           get_node_type}
+                        kNodeSetlist}
+                     {do
+                        {song_select_panel
+                           set
+                           lb_list
+                           {object performance.lst}}
+                        {leaderboard_instruments.lst set_showing FALSE}
+                        {leaderboard_help.ihp set_showing FALSE}}
+                     {do
+                        {song_select_panel
+                           set
+                           lb_list
+                           {object performance.lst}}
+                        {leaderboard_instruments.lst set_showing TRUE}
+                        {leaderboard_help.ihp set_showing TRUE}
+                        {set
+                           $score_sym
+                           {elem
+                              (SCORE_TYPE_SYMBOLS)
+                              {music_library active_score_type}}}
+                        {set $score_index 0}
+                        {find_elem
+                           (ORDERED_SCORE_TYPE_SYMBOLS)
+                           $score_sym
+                           $score_index}
+                        {leaderboard_instruments.lst set_selected $score_index}}}
+                  {with
+                     song_select_panel
+                     {$this refresh_leaderboard $user}
+                     {$this
+                        set_focus
+                        [lb_list]}})
+               ({==
+                     {$component get text_token}
+                     practice_or_train_song}
                   {cond
-                     ({==
-                           {$user get_controller_type}
-                           kControllerKeys}
-                        {gamemode set_mode pro_song_lessons_keyboard})
-                     ({==
-                           {$user get_controller_type}
-                           kControllerRealGuitar}
-                        {gamemode set_mode pro_song_lessons_real_guitar})}
-                  {training_mgr set_user $user}
-                  {training_mgr set_minimum_difficulty kDifficultyEasy}
-                  {training_mgr set_return_info song_select_screen pause_quit}
-                  {critical_user_listener set_critical_user $user}
-                  {song_select_panel set trainer_from_main_menu kControllerNone}
-                  {music_library clear_setlist}
-                  {music_library set_making_setlist FALSE}
-                  {music_library select_highlighted_node $user}})
-            ({==
-                  {$component get text_token}
-                  overshell_gamercard}
-               {{music_library get_highlighted_node}
-                  view_gamercard
-                  $user})
-            ({==
-                  {$component get text_token}
-                  edit_setlist}
-               {if
-                  {edit_setlist_panel
-                     edit_setlist
-                     $user
-                     {{music_library get_highlighted_node}
-                        get_setlist}}
-                  {song_select_panel hide_details}
-                  {ui push_screen edit_setlist_screen}})
-            ({==
-                  {$component get text_token}
-                  delete_setlist}
-               {ui push_screen delete_setlist_confirm_screen})
-            ({==
-                  {$component get text_token}
-                  share_setlist}
-               {do
-                  ($item
-                     {music_library get_highlighted_node})
-                  ($setlist
-                     {$item get_setlist})
-                  {$setlist set_shared TRUE}
-                  {{$setlist get_owner_profile}
-                     setlist_changed
-                     $setlist}
-                  DX_AUTOSAVE
-                  {$component set text_token unshare_setlist}})
-            ({==
-                  {$component get text_token}
-                  unshare_setlist}
-               {do
-                  ($item
-                     {music_library get_highlighted_node})
-                  ($setlist
-                     {$item get_setlist})
-                  {$setlist set_shared FALSE}
-                  {{$setlist get_owner_profile}
-                     setlist_changed
-                     $setlist}
-                  DX_AUTOSAVE
-                  {$component set text_token share_setlist}})
-            kDataUnhandled}})
+                     ({!
+                           {gamemode get library_trainers_allowed}}
+                        {push_basic_confirm_dialog no_trainers_in_some_modes})
+                     ({!
+                           {session_mgr is_local}}
+                        {push_basic_confirm_dialog no_trainers_when_online})
+                     {submenu_buttons.grp set_showing TRUE}
+                     {buttons.grp set_showing FALSE}
+                     {submenu01.btn set text_token practice_song}
+                     {submenu02.btn set text_token train_song}
+                     {song_select_panel set_focus submenu01.btn}})
+               ({==
+                     {$component get text_token}
+                     practice_song}
+                  {cond
+                     ({!
+                           {gamemode get library_trainers_allowed}}
+                        {push_basic_confirm_dialog no_trainers_in_some_modes})
+                     ({!
+                           {session_mgr is_local}}
+                        {push_basic_confirm_dialog no_trainers_when_online})
+                     {gamemode set_mode qp_practice}
+                     {training_mgr set_user $user}
+                     {critical_user_listener set_critical_user $user}
+                     {training_mgr set_return_info song_select_screen pause_quit}
+                     {practice_sel_section_panel clear_state}
+                     {music_library clear_setlist}
+                     {music_library set_making_setlist FALSE}
+                     {music_library select_highlighted_node $user}
+                     {unless
+                        {music_library setlist_size}
+                        {gamemode set_mode qp_coop}}})
+               ({==
+                     {$component get text_token}
+                     train_song}
+                  {cond
+                     ({!
+                           {gamemode get library_trainers_allowed}}
+                        {push_basic_confirm_dialog no_trainers_in_some_modes})
+                     ({!
+                           {session_mgr is_local}}
+                        {push_basic_confirm_dialog no_trainers_when_online})
+                     ({!
+                           {profile_mgr get_profile $user}}
+                        {push_basic_confirm_dialog trainer_must_signin})
+                     {cond
+                        ({==
+                              {$user get_controller_type}
+                              kControllerKeys}
+                           {gamemode set_mode pro_song_lessons_keyboard})
+                        ({==
+                              {$user get_controller_type}
+                              kControllerRealGuitar}
+                           {gamemode set_mode pro_song_lessons_real_guitar})}
+                     {training_mgr set_user $user}
+                     {training_mgr set_minimum_difficulty kDifficultyEasy}
+                     {training_mgr set_return_info song_select_screen pause_quit}
+                     {critical_user_listener set_critical_user $user}
+                     {song_select_panel set trainer_from_main_menu kControllerNone}
+                     {music_library clear_setlist}
+                     {music_library set_making_setlist FALSE}
+                     {music_library select_highlighted_node $user}})
+               ({==
+                     {$component get text_token}
+                     overshell_gamercard}
+                  {{music_library get_highlighted_node}
+                     view_gamercard
+                     $user})
+               ({==
+                     {$component get text_token}
+                     edit_setlist}
+                  {if
+                     {edit_setlist_panel
+                        edit_setlist
+                        $user
+                        {{music_library get_highlighted_node}
+                           get_setlist}}
+                     {song_select_panel hide_details}
+                     {ui push_screen edit_setlist_screen}})
+               ({==
+                     {$component get text_token}
+                     delete_setlist}
+                  {ui push_screen delete_setlist_confirm_screen})
+               ({==
+                     {$component get text_token}
+                     share_setlist}
+                  {do
+                     ($item
+                        {music_library get_highlighted_node})
+                     ($setlist
+                        {$item get_setlist})
+                     {$setlist set_shared TRUE}
+                     {{$setlist get_owner_profile}
+                        setlist_changed
+                        $setlist}
+                     DX_AUTOSAVE
+                     {$component set text_token unshare_setlist}})
+               ({==
+                     {$component get text_token}
+                     unshare_setlist}
+                  {do
+                     ($item
+                        {music_library get_highlighted_node})
+                     ($setlist
+                        {$item get_setlist})
+                     {$setlist set_shared FALSE}
+                     {{$setlist get_owner_profile}
+                        setlist_changed
+                        $setlist}
+                     DX_AUTOSAVE
+                     {$component set text_token share_setlist}})
+               kDataUnhandled
+            }
+         }
+      }
+   )
    (refresh_leaderboard
       ($user)
       {do
