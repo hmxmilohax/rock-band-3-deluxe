@@ -23,95 +23,128 @@
       }
    }
 }
-#define DX_POST_PROC_HANDLER
-(
-   {if {!= $emulatefps 30}
-      {$dx_this_var iterate PostProc $p {$p set emulate_fps $emulatefps}}
-   }
-   {if {! $dx_noise}
-      {$dx_this_var iterate PostProc $p {$p set noise_intensity $dx_noise}}
-   }
-   {if {! $dx_motion_blur}
-      {$dx_this_var iterate PostProc $p {$p set motion_blur_velocity $dx_motion_blur}}
-      {$dx_this_var iterate PostProc $p {$p set motion_blur_blend $dx_motion_blur}}
-      {$dx_this_var iterate PostProc $p {$p set motion_blur_weight $dx_motion_blur}}
-      {$dx_this_var iterate PostProc $p {$p set motion_blur_exposure $dx_motion_blur}}
-   }
-   {unless $dx_camera_shake
-      ;{$char iterate CharHair $hair {$hair reset 35}}
-      {$dx_this_var iterate WorldDir $wd
-;         {do
-;            {set $dx_cursysms {system_ms}}
-;            {set $dxdbg_objs {array ({sprint "List of BandCamShots in " {$wd name} " on " {ui current_screen} " at " $dx_cursysms "ms since boot"})}}
-;            {$wd iterate BandCamShot $p {push_back $dxdbg_objs {sprintf "%s : %s" {$p name} {$p class_name}}}}
-;            {write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" {sprintf "%010d" $dx_cursysms} "-BandCamShots-" {$wd name} "-" {ui current_screen} ".dta"} $dxdbg_objs}
-;         }
-         {$wd iterate BandCamShot $bcs
-            {do
-               ($dx_num_keyframes {$bcs size (keyframes)})
-;               {dx_log_writer insane {sprint "Number of keyframes in " {$wd name} "/" {$bcs name} " on " {ui current_screen}": " $dx_num_keyframes}}
-               {foreach_int $i 0 $dx_num_keyframes
-                  {$bcs set (keyframes $i shake_noisefreq) 0}
-                  {$bcs set (keyframes $i shake_noiseamp) 0}
-                  {$bcs set (keyframes $i shake_maxangle x) 0}
-                  {$bcs set (keyframes $i shake_maxangle y) 0}
-               }
-            }
-         }
-      }
-   }
-   {unless $dx_camera_blur
-      {$dx_this_var iterate WorldDir $wd
-         {$wd iterate BandCamShot $bcs
-            {do
-               ($dx_num_keyframes {$bcs size (keyframes)})
-               {foreach_int $i 0 $dx_num_keyframes
-                  {$bcs set (keyframes $i blur_depth) 0}
-                  {$bcs set (keyframes $i max_blur) 0}
-                  {$bcs set (keyframes $i focus_blur_multiplier) 0}
-               }
-            }
-         }
-      }
-   }
-   {if $dx_force_lod
-      {$dx_this_var iterate WorldDir $wd
-         {$wd iterate BandCamShot $bcs
-            {do
-               ($dx_num_targets {$bcs size (targets)})
-               {foreach_int $i 0 $dx_num_targets
-                  {$bcs set (targets $i force_lod) kLOD0}
-               }
-            }
-         }
-      }
-   }
-      {$dx_this_var iterate WorldDir $wd
-         {$wd iterate WorldCrowd $wc
-            {$wc set num 0}
-            {$wc generate}
-            ;{$wc set_showing FALSE}
-            ;{$wc set force_3D_crowd TRUE}
-         }
-      }
-)
 {func
-   dx_postfx_setter
-   {dx_log_writer insane {sprint "func: dx_postfx_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   dx_noise_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_noise_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
    {dx_log_writer insane
-      {sprintf "Executed dx_postfx_setter - time: %.4fms"
+      {sprintf "Executed dx_noise_setter - time: %.4fms"
          {time
-            {if {exists game}
-               {if $world
-                  {set $dx_this_var $world}
-                  DX_POST_PROC_HANDLER
+            {if {! $dx_noise}
+               {$world iterate PostProc $p {$p set noise_intensity $dx_noise}}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_emulatefps_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_emulatefps_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_emulatefps_setter - time: %.4fms"
+         {time
+            {if {!= $emulatefps 30}
+               {$world iterate PostProc $p {$p set emulate_fps $emulatefps}}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_motion_blur_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_motion_blur_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_motion_blur_setter - time: %.4fms"
+         {time
+            {if {! $dx_motion_blur}
+               {$world iterate PostProc $p {$p set motion_blur_velocity $dx_motion_blur}}
+               {$world iterate PostProc $p {$p set motion_blur_blend $dx_motion_blur}}
+               {$world iterate PostProc $p {$p set motion_blur_weight $dx_motion_blur}}
+               {$world iterate PostProc $p {$p set motion_blur_exposure $dx_motion_blur}}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_camera_shake_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_camera_shake_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_camera_shake_setter - time: %.4fms"
+         {time
+            {unless $dx_camera_shake
+               ;{$char iterate CharHair $hair {$hair reset 35}}
+               {$world iterate WorldDir $wd
+         ;         {do
+         ;            {set $dx_cursysms {system_ms}}
+         ;            {set $dxdbg_objs {array ({sprint "List of BandCamShots in " {$wd name} " on " {ui current_screen} " at " $dx_cursysms "ms since boot"})}}
+         ;            {$wd iterate BandCamShot $p {push_back $dxdbg_objs {sprintf "%s : %s" {$p name} {$p class_name}}}}
+         ;            {write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" {sprintf "%010d" $dx_cursysms} "-BandCamShots-" {$wd name} "-" {ui current_screen} ".dta"} $dxdbg_objs}
+         ;         }
+                  {$wd iterate BandCamShot $bcs
+                     {do
+                        ($dx_num_keyframes {$bcs size (keyframes)})
+         ;               {dx_log_writer insane {sprint "Number of keyframes in " {$wd name} "/" {$bcs name} " on " {ui current_screen}": " $dx_num_keyframes}}
+                        {foreach_int $i 0 $dx_num_keyframes
+                           {$bcs set (keyframes $i shake_noisefreq) 0}
+                           {$bcs set (keyframes $i shake_noiseamp) 0}
+                           {$bcs set (keyframes $i shake_maxangle x) 0}
+                           {$bcs set (keyframes $i shake_maxangle y) 0}
+                        }
+                     }
+                  }
                }
             }
-            {set $dx_this_var $this}
-            DX_POST_PROC_HANDLER
-            {if $post_proc_needs_reset
-               {set $post_proc_needs_reset FALSE}
-               {rnd reset_postproc}
+         }
+      }
+   }
+}
+{func
+   dx_camera_blur_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_camera_blur_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_camera_blur_setter - time: %.4fms"
+         {time
+            {unless $dx_camera_blur
+               {$world iterate WorldDir $wd
+                  {$wd iterate BandCamShot $bcs
+                     {do
+                        ($dx_num_keyframes {$bcs size (keyframes)})
+                        {foreach_int $i 0 $dx_num_keyframes
+                           {$bcs set (keyframes $i blur_depth) 0}
+                           {$bcs set (keyframes $i max_blur) 0}
+                           {$bcs set (keyframes $i focus_blur_multiplier) 0}
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_force_lod_setter
+   ($world)
+   {dx_log_writer insane {sprint "func: dx_force_lod_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_force_lod_setter - time: %.4fms"
+         {time
+            {if $dx_force_lod
+               {$world iterate WorldDir $wd
+                  {$wd iterate BandCamShot $bcs
+                     {do
+                        ($dx_num_targets {$bcs size (targets)})
+                        {foreach_int $i 0 $dx_num_targets
+                           {$bcs set (targets $i force_lod) kLOD0}
+                        }
+                     }
+                  }
+               }
             }
          }
       }
