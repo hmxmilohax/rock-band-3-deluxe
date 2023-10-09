@@ -8,7 +8,6 @@
    (held_buttons
       (kAction_PageUp 0.25)
       (kAction_PageDown 0.25)
-      (kAction_ShellOption 0.25)
       (kAction_Confirm 1.5)
       (kAction_Cancel 1.5))
    (joypad
@@ -26,18 +25,6 @@
    (trainer_from_main_menu kControllerNone)
    (song_data_mounted
       {$this refresh_top})
-   (get_option_button kAction_Option)
-   (get_button_for_review
-      #ifdef HX_WII
-      {if_else
-         {==
-            {$user get_controller_type}
-            kControllerVocals}
-         kAction_Right
-         kAction_Option}
-      #else
-      kAction_Option
-      #endif)
    (enter
       {dx_presence_manager}
       {set $dx_trainer_real_guitar FALSE}
@@ -94,10 +81,7 @@
       {$this refresh_setlist}
       {$this
          refresh_sort
-         [waiting_for_sort]}
-      #ifdef HX_WII
-      {rnd set_in_game TRUE}
-      #endif)
+         [waiting_for_sort]})
    (TRANSITION_COMPLETE_MSG
       {if
          [resume_setlist_edit]
@@ -131,10 +115,7 @@
       {rock_central remove_sink $this server_status_changed}
       {platform_mgr remove_sink $this signin_changed}
       {platform_mgr remove_sink $this profile_swapped}
-      {platform_mgr remove_sink $this storage_changed}
-      #ifdef HX_WII
-      {rnd set_in_game FALSE}
-      #endif)
+      {platform_mgr remove_sink $this storage_changed})
    (BUTTON_DOWN_MSG
       {if_else
          {ui in_transition}
@@ -231,15 +212,10 @@
                         {delete_content_confirm_screen
                            set
                            content
-                           #ifdef HX_WII
-                           {{music_library get_highlighted_node}
-                              id}
-                           #else
                            {song_mgr
                               content_name
                               {{music_library get_highlighted_node}
-                                 id}}
-                           #endif}
+                                 id}}}
                         {ui push_screen delete_content_confirm_screen}}
                      {do
                         {push_basic_confirm_dialog_small delete_song_no_online}}})
@@ -444,51 +420,8 @@
                      {leaderboard_instruments.lst scroll 1 $user})
                   ({details_bottom.grp showing}
                      {instruments.lst scroll 1 $user})}})
-         (#ifdef HX_WII
-         {==
-               $action
-               {$this get_option_button}}
-         #else
-         {== $action kAction_Option}
-         #endif
+         ({== $action kAction_Option}
             {$this hide_details})
-         #ifdef HX_WII
-         ({'||'
-               {== $action kAction_Left}
-               {== $action kAction_Right}}
-            {do
-               ($node
-                  {music_library get_highlighted_node})
-               ($type
-                  {$node get_node_type})
-               ($new_score
-                  {if_else
-                     {== $action kAction_Left}
-                     {mod
-                        {-
-                           {header_review.rvw get score}
-                           1}
-                        6}
-                     {mod
-                        {'+'
-                           {header_review.rvw get score}
-                           1}
-                        6}})
-               {if
-                  {&&
-                     {!
-                        [waiting_for_sort]}
-                     {song_review.grp showing}}
-                  {{profile_mgr get_primary_profile}
-                     set_song_review
-                     {$node id}
-                     $new_score}
-                  {$node update_review}
-                  {header_review.rvw set_values $new_score TRUE}
-                  {set
-                     [reviews_dirty]
-                     TRUE}}})
-         #endif
          ({== $action kAction_Cancel}
             {with
                song_select_details
@@ -584,9 +517,6 @@
                         {song_select_panel lb_in_progress}
                         kDataUnhandled})
                   #ifdef HX_PS3
-                  (kAction_Confirm TRUE)
-                  #endif
-                  #ifdef HX_WII
                   (kAction_Confirm TRUE)
                   #endif
                   kDataUnhandled}})
@@ -707,13 +637,7 @@
                      {play_instr_sfx $user button_select}
                      {music_library select_highlighted_node $user}}}})
          ({&&
-         #ifdef HX_WII
-         {==
-               $action
-               {$this get_option_button}}
-         #else
-         {== $action kAction_Option}
-         #endif
+               {== $action kAction_Option}
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -729,17 +653,7 @@
                         {== $type kNodeSetlist}}}
                   {$this show_details $user}}})
          ({&&
-               #ifdef HX_WII
-               {'||'
-                  {'||'
-                     {==
-                        $action
-                        {$this get_option_button}}
-                     {== $action kAction_Right}}
-                  {== $action kAction_Left}}
-               #else
                {== $action kAction_ShellOption}
-               #endif
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -748,26 +662,11 @@
                ($type
                   {$node get_node_type})
                ($new_score
-                  #ifdef HX_WII
-                  {if_else
-                     {== $action kAction_Left}
-                     {mod
-                        {-
-                           {header_review.rvw get score}
-                           1}
-                        6}
-                     {mod
-                        {'+'
-                           {header_review.rvw get score}
-                           1}
-                        6}}
-                  #else
                   {mod
                      {'+'
                         {header_review.rvw get score}
                         1}
-                     6}
-                  #endif)
+                     6})
                {if
                   {&&
                      {!
@@ -783,9 +682,7 @@
                      [reviews_dirty]
                      TRUE}}})
          ({&&
-               {==
-                  $action
-                  kAction_PageDown}
+               {== $action kAction_PageDown}
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -793,19 +690,15 @@
                {song.lst set_scroll_user $user}
                {music_library skip_to_next_shortcut}})
          ({&&
-               {==
-                  $action
-                  kAction_Right}
+               {== $action kAction_Right}
                {!
                   {song.lst is_scrolling}}}
             {unless
                [waiting_for_sort]
                {song.lst set_scroll_user $user}
-               {song.lst scroll 10}})
+               {song.lst scroll 10}}) ; dx scroll the list down by 10 slots when pressing right dpad
          ({&&
-               {==
-                  $action
-                  kAction_PageUp}
+               {== $action kAction_PageUp}
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -813,15 +706,13 @@
                {song.lst set_scroll_user $user}
                {music_library skip_to_prev_shortcut}})
          ({&&
-               {==
-                  $action
-                  kAction_Left}
+               {== $action kAction_Left}
                {!
                   {song.lst is_scrolling}}}
             {unless
                [waiting_for_sort]
                {song.lst set_scroll_user $user}
-               {song.lst scroll -10}})
+               {song.lst scroll -10}}) ; dx scroll the list up by 10 slots when pressing left dpad
          ({'||'
                {== $action kAction_Up}
                {== $action kAction_Down}}
@@ -907,20 +798,8 @@
                      {music_library get_back_screen}
                      $user}}})
          ({'||'
-               #ifdef HX_WII
-               {==
-                  $action
-                  kAction_Left}
-               #else
                {== $action kAction_PageUp}
-               #endif
-               #ifdef HX_WII
-               {==
-                  $action
-                  kAction_Right}
-               #else
-               {== $action kAction_PageDown}
-               #endif}
+               {== $action kAction_PageDown}}
             {unless
                {'||'
                   {ui in_transition}
@@ -1082,7 +961,8 @@
                         {gamemode in_mode trainer}}
                      {if_else
                         {&&
-                           #ifndef HX_WII {! {$item is_ugc}} #endif
+                           {!
+                              {$item is_ugc}}
                            {'||'
                               {&&
                                  {==
@@ -1953,15 +1833,10 @@
                   set
                   num_vocal_parts
                   {if_else
-                     #ifdef HX_WII
-                     {$item has_vocal_parts}
-                     {$item vocal_parts}
-                     #else
                      {$item has_data vocal_parts}
                      {$item
                         get_data
                         (vocal_parts)}
-                     #endif
                      0}}
                {live_diffs.grp set_showing TRUE})
             {live_diffs.grp set_showing FALSE}}
@@ -2039,21 +1914,9 @@
       {if
          [details_mode]
          {$this hide_details}}
-      #ifdef HX_WII
-      {if
-         {&&
-            {!=
-               {ui transition_screen}
-               deleting_content_screen}
-            {!=
-               {ui current_screen}
-               deleting_content_screen}}
-         {content_mgr start_refresh}}
-      #else
       {if
          {content_mgr refresh_done}
-         {content_mgr start_refresh}}
-      #endif)
+         {content_mgr start_refresh}})
    (show_setlist_save_dialog
       {ui push_screen setlist_save_screen})
    (show_missing_setlist_songs_dialog
@@ -2101,18 +1964,14 @@
             song_select_details
             {view_gamer_card.ihp set_showing FALSE}
             {performance.lst set showing FALSE}
-            #ifdef HX_WII
-            {lb_status.lbl set text_token lb_error_live}
-            #else
             {if_else
                {platform_mgr is_connected}
                {lb_status.lbl set text_token lb_error}
-               {lb_status.lbl set text_token lb_error_live}}
-            #endif}})}
+               {lb_status.lbl set text_token lb_error_live}}}})}
 {new
    BandScreen
    song_select_screen
-   (panels meta #ifdef HX_WII sv4_panel #else DX_SV4_PANEL #endif song_select_panel song_select_shortcut_panel song_select_filter_panel)
+   (panels meta postsong_sfx_panel DX_SV4_PANEL song_select_panel song_select_shortcut_panel song_select_filter_panel)
    (focus song_select_panel)
    (enter
       {sv4_panel set_showing TRUE})
