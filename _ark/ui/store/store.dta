@@ -1,0 +1,689 @@
+{new
+   BandStorePanel
+   store_panel
+   (file
+      "store.milo")
+   (saved_offer_sym '')
+   (load
+      {$this reset_browser}
+      {set
+         [saved_offer_sym]
+         ''})
+   (finish_load
+      {$this clear_help})
+   (enter
+      {net_sync set_ui_state kNetUI_MusicStore}
+      {wait.grp set_showing FALSE}
+      #ifdef HX_PS3
+      {ps_logo.mesh set_showing TRUE}
+      #else
+      {ps_logo.mesh set_showing FALSE}
+      #endif
+      {gamertag.lbl
+         set_profile_name
+         {input_mgr get_user}})
+   (enum_start
+      {wait.grp set_showing TRUE})
+   (enum_finished
+      {wait.grp set_showing FALSE}
+      {if_else
+         {==
+            {ui current_screen}
+            setlist_to_store_screen_two}
+         {ui goto_screen store_browser_screen}
+         {cond
+            ({>=
+                  {$this num_extra_offers}
+                  1}
+               {if_else
+                  {{$this first_extra_offer}
+                     is_completely_unavailable}
+                  {push_basic_confirm_dialog store_unavailable}
+                  {do
+                     {store_info_panel clear_data}
+                     {store_info_panel
+                        set
+                        cur_offer
+                        {$this first_extra_offer}}
+                     {store_info_panel refresh_panel}
+                     {store_details_panel
+                        refresh
+                        {$this first_extra_offer}}}})
+            ({&&
+                  {==
+                     {$this num_offers}
+                     1}
+                  {!
+                     {{$this lone_offer}
+                        is_completely_unavailable}}}
+               {store_info_panel
+                  set
+                  cur_offer
+                  {$this lone_offer}}
+               {ui goto_screen store_info_screen})
+            ({>=
+                  {$this num_offers}
+                  1}
+               {if_else
+                  {store_browser_panel is_up}
+                  {do
+                     {store_browser_panel refresh_list}
+                     {if
+                        {store_panel should_start_browser_at_bottom}
+                        {store_browser_panel highlight_bottom}}}
+                  {ui goto_screen store_browser_screen}})
+            {if
+               {&&
+                  {store_menu_panel is_up}
+                  {store_menu_panel get_menu_waiting}}
+               {store_menu_panel reset_last_menu}}}})
+   (update_crumb_text
+      {crumb.lbl set_store_crumb_text})
+   (preview_download_complete_msg
+      {if
+         {store_details_panel is_up}
+         {do
+            ($offer
+               {store_info_panel get cur_offer})
+            {if
+               $offer
+               {store_details_panel refresh $offer}}}})
+   (clear_help
+      {select.ihp set_showing FALSE}
+      {next_heading.ihp set_showing FALSE})
+   (set_select_help
+      {select.ihp set_showing TRUE}
+      {next_heading.ihp set_showing FALSE})
+   (set_all_help
+      {select.ihp set_showing TRUE}
+      {next_heading.ihp set_showing TRUE})}
+{new
+   StoreMainPanel
+   store_banner_panel
+   (file
+      "../store/store_main.milo")
+   (display_rate 4.0)
+   (crossfade_duration 1.0)}
+{new
+   StoreMenuPanel
+   store_menu_panel
+   (file
+      "store_menu.milo")
+   (menu_list
+      "filter.lst")
+   (enter
+      {store_panel update_crumb_text}
+      {$this update_loading_status})
+   (exit
+      {filter.lst conceal})
+   (TRANSITION_COMPLETE_MSG
+      {$this update_loading_status}
+      {if
+         {&&
+            {!
+               {filter.lst is_animating}}
+            {!
+               {store_panel request_in_progress}}}
+         {filter.lst reveal}})
+   (new_provider
+      {store_panel update_crumb_text}
+      {$this update_loading_status})
+   (update_loading_status
+      {loading.grp
+         set_showing
+         {store_panel request_in_progress}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {store_panel user_can_do_input}
+         {if_else
+            {== $action kAction_Cancel}
+            {do
+               ($ret
+                  {$this back})
+               {$this update_loading_status}
+               $ret}
+            kDataUnhandled}
+         TRUE})
+   (SELECT_MSG
+      {do
+         ($provider
+            {$this get_menu_provider})
+         ($ix
+            {$component selected_pos})
+         {$provider set_highlight_ix $ix}
+         {store_panel
+            set_source
+            {symbol
+               {sprintf
+                  "menu_%s"
+                  {$provider get_string $ix}}}
+            TRUE}
+         {store_panel
+            request
+            {$provider get_string $ix}
+            TRUE}
+         {$this set_menu_waiting}
+         {$this update_loading_status}})}
+{new
+   BandScreen
+   store_menu_screen
+   (panels meta sv2_panel store_banner_panel store_menu_panel store_panel connection_status_panel)
+   (focus store_menu_panel)
+   (back main_hub_screen)
+   (enter
+      {store_browser_screen set back_screen store_menu_screen}
+      {store_info_screen set back_screen store_menu_screen}
+      {store_panel set_select_help}
+      {store_preview_mgr clear_current_preview})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({!
+               {store_panel user_can_do_input}}
+            TRUE)
+         ({== $action kAction_Option}
+            {do
+               ($path
+                  {store_banner_panel marquee_path})
+               {if
+                  $path
+                  {store_panel set_source marquee FALSE}
+                  {store_panel request $path TRUE}
+                  {{store_menu_panel find filter.lst}
+                     conceal}
+                  {store_menu_panel update_loading_status}}})
+         kDataUnhandled})}
+{new
+   HeldButtonPanel
+   store_browser_panel
+   (file
+      "store_browser.milo")
+   (focus song.lst)
+   (joypad
+      (hold_ms 500)
+      (repeat_ms 80))
+   (held_buttons
+      (kAction_PageDown 0.25)
+      (kAction_PageUp 0.25))
+   (saved_selected_pos -1)
+   (saved_first_showing -1)
+   (enter
+      {store_panel set_source_to_backup}
+      {store_panel update_crumb_text}
+      {$this refresh_list}
+      {if
+         {!=
+            [saved_selected_pos]
+            -1}
+         {song.lst
+            set_selected
+            [saved_selected_pos]
+            [saved_first_showing]}}
+      {store_panel
+         set
+         saved_offer
+         {song.lst selected_sym}}
+      {$this refresh}
+      {if_else
+         {{store_panel offer_provider}
+            has_shortcuts}
+         {store_panel set_all_help}
+         {store_panel set_select_help}})
+   (refresh_list
+      {do
+         ($provider
+            {store_panel offer_provider})
+         ($sort_name
+            {store_panel sort_name})
+         {if_else
+            {==
+               $sort_name
+               ""}
+            {$provider build_list_no_grouping}
+            {$provider
+               build_list
+               {find $syscfg store groupings $sort_name}}}
+         {song.lst set_provider $provider}
+         {song.lst set_selected 0}}
+      {store_panel update_crumb_text})
+   (highlight_bottom
+      {if
+         {>
+            {song.lst num_data}
+            0}
+         {song.lst
+            set_selected
+            {-
+               {song.lst num_data}
+               1}}})
+   (TRANSITION_COMPLETE_MSG
+      {$this reset})
+   (exit
+      {{store_panel offer_provider}
+         clear_list})
+   (reset
+      {set
+         [saved_selected_pos]
+         -1}
+      {set
+         [saved_first_showing]
+         -1})
+   (on_button_held
+      ($user $raw_button $action $pad_num)
+      {if
+         {&&
+            {store_panel user_can_do_input}
+            {{store_panel offer_provider}
+               has_shortcuts}}
+         {store_shortcut_panel shortcut_enter $user}})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({'||'
+               {!
+                  {store_panel user_can_do_input}}
+               {song.lst is_scrolling}}
+            TRUE)
+         ({== $action kAction_Cancel}
+            {store_preview_mgr clear_current_preview}
+            kDataUnhandled)
+         ({== $action kAction_PageDown}
+            {if
+               {{store_panel offer_provider}
+                  has_shortcuts}
+               {song.lst
+                  set_selected
+                  {{store_panel offer_provider}
+                     pos_to_next_group_pos
+                     {song.lst selected_pos}}}
+               {store_panel
+                  set
+                  saved_offer
+                  {song.lst selected_sym}}
+               {$this refresh}})
+         ({== $action kAction_PageUp}
+            {if
+               {{store_panel offer_provider}
+                  has_shortcuts}
+               {song.lst
+                  set_selected
+                  {{store_panel offer_provider}
+                     pos_to_prev_group_pos
+                     {song.lst selected_pos}}}
+               {store_panel
+                  set
+                  saved_offer
+                  {song.lst selected_sym}}
+               {$this refresh}})
+         kDataUnhandled})
+   (SCROLL_MSG
+      {if
+         {== $component song.lst}
+         {store_panel
+            set
+            saved_offer
+            {song.lst selected_sym}}
+         {$this refresh}})
+   (refresh
+      {if_else
+         {$this selected_song}
+         {do
+            {store_details_panel set_showing TRUE}
+            {store_details_panel
+               refresh
+               {$this selected_song}}
+            {if_else
+               {&&
+                  {{$this selected_song}
+                     has_data
+                     preview_audio}
+                  {is_allowed_to_preview_offer
+                     {$this selected_song}}}
+               {store_preview_mgr
+                  set_current_preview_file
+                  {sprintf
+                     "%s%s"
+                     {store_panel get_request_prefix}
+                     {{$this selected_song}
+                        get_data
+                        (preview_audio)}}}
+               {store_preview_mgr clear_current_preview}}}
+         {store_details_panel set_showing FALSE}})
+   (SELECT_MSG
+      {if_else
+         {{store_panel offer_provider}
+            is_chunk
+            {song.lst selected_pos}}
+         {if_else
+            {==
+               {song.lst selected_pos}
+               0}
+            {store_panel request_prev_chunk}
+            {store_panel request_next_chunk}}
+         {unless
+            {{$this selected_song}
+               is_completely_unavailable}
+            {store_info_panel set reset TRUE}
+            {store_panel
+               set
+               saved_offer
+               {song.lst selected_sym}}
+            {set
+               [saved_selected_pos]
+               {song.lst selected_pos}}
+            {set
+               [saved_first_showing]
+               {song.lst first_showing}}
+            {store_info_panel
+               set
+               cur_offer
+               {$this selected_song}}
+            {ui goto_screen store_info_screen}}})
+   (selected_song
+      {{store_panel offer_provider}
+         find_offer
+         {song.lst selected_sym}})
+   (enum_finished
+      {if
+         {store_panel is_up}
+         {song.lst refresh}})}
+{new
+   HeldButtonPanel
+   store_details_panel
+   (file
+      "store_details.milo")
+   (cur_preview_art
+      "")
+   (joypad
+      (hold_ms 500)
+      (repeat_ms 80))
+   (finish_load
+      {set
+         [cur_preview_art]
+         ""})
+   (exit
+      {store_panel cancel_art})
+   (art_loaded
+      {album.mat
+         set
+         diffuse_tex
+         {store_panel album_tex}})
+   (refresh
+      ($offer)
+      {artist.lbl set_offer_artist $offer}
+      {album.lbl set_offer_album $offer}
+      {if_else
+         {$offer has_data genre}
+         {genre.lbl
+            set
+            text_token
+            {$offer
+               get_data
+               (genre)}}
+         {genre.lbl
+            set
+            text_token
+            ""}}
+      {if_else
+         {&&
+            {$offer has_data year_released}
+            {!=
+               {$offer offer_type}
+               pack}}
+         {year.lbl
+            set_int
+            {$offer
+               get_data
+               (year_released)}}
+         {year.lbl
+            set
+            text_token
+            ""}}
+      {if_else
+         {&&
+            {==
+               {$offer offer_type}
+               song}
+            {!
+               {$offer is_completely_unavailable}}}
+         {do
+            {diffs.grp set_showing TRUE}
+            {foreach
+               $part
+               (guitar drum vocals bass real_guitar real_bass keys real_keys)
+               {do
+                  ($rank
+                     {$offer
+                        get_data
+                        (rank $part)})
+                  ($tier
+                     {song_mgr rank_tier $rank $part})
+                  ($idd
+                     {sprintf
+                        "%s.idd"
+                        $part})
+                  {$idd set difficulty $tier}
+                  {$idd
+                     set
+                     has_part
+                     {!= $rank 0}}}}
+            {real_drum.idd
+               set
+               difficulty
+               {drum.idd get difficulty}}
+            {real_drum.idd
+               set
+               has_part
+               {drum.idd get has_part}}
+            {do
+               ($num_vocal_parts 1)
+               {if
+                  {$offer has_data vocal_parts}
+                  {set
+                     $num_vocal_parts
+                     {$offer
+                        get_data
+                        (vocal_parts)}}}
+               {if_else
+                  {> $num_vocal_parts 1}
+                  {harmony.idd set has_part TRUE}
+                  {harmony.idd set has_part FALSE}}
+               {harmony.idd set num_vocal_parts $num_vocal_parts}
+               {harmony.idd
+                  set
+                  difficulty
+                  {vocals.idd get difficulty}}}}
+         {diffs.grp set_showing FALSE}}
+      {downloading.grp
+         set_showing
+         {if_else
+            {&&
+               {$offer has_data preview_audio}
+               {is_allowed_to_preview_offer $offer}}
+            {store_preview_mgr
+               is_downloading_file
+               {sprintf
+                  "%s%s"
+                  {store_panel get_request_prefix}
+                  {$offer
+                     get_data
+                     (preview_audio)}}}
+            FALSE}}
+      {if_else
+         {&&
+            {$offer has_data preview_art}
+            {is_allowed_to_preview_offer $offer}}
+         {unless
+            {==
+               [cur_preview_art]
+               {$offer
+                  get_data
+                  (preview_art)}}
+            {set
+               [cur_preview_art]
+               {$offer
+                  get_data
+                  (preview_art)}}
+            {album.mat set diffuse_tex default_album.tex}
+            {store_panel
+               load_art
+               [cur_preview_art]
+               $this}}
+         {do
+            {set
+               [cur_preview_art]
+               ''}
+            {album.mat set diffuse_tex default_album.tex}}})}
+{new
+   HeldButtonPanel
+   store_shortcut_panel
+   (file
+      "store_shortcut.milo")
+   (focus group.lst)
+   (enter
+      {shortcut.grp set_showing FALSE})
+   (shortcut_selected '')
+   (shortcut_enter
+      ($user)
+      {store_browser_screen set_focus_panel $this}
+      {{store_browser_panel find song.lst}
+         set_state
+         kComponentNormal}
+      {start.trg trigger}
+      {shortcut.grp set_showing TRUE}
+      {do
+         ($offer_provider
+            {store_panel offer_provider})
+         ($list
+            {store_browser_panel find song.lst})
+         {store_panel
+            set_shortcut_data
+            {$offer_provider get_shortcut_array}}
+         {store_panel apply_shortcut_provider group.lst}
+         {group.lst
+            set_selected
+            {$offer_provider
+               pos_to_shortcut
+               {$list selected_pos}}}}
+      {set
+         [shortcut_selected]
+         {group.lst selected_pos}}
+      {overshell
+         add_sink
+         $this
+         (overshell_allowing_input_changed_msg)})
+   (shortcut_exit
+      {store_browser_screen set_focus_panel store_browser_panel}
+      {{store_browser_panel find song.lst}
+         set_state
+         kComponentFocused}
+      {recoil.trg trigger}
+      {overshell remove_sink $this})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {do
+            {play_instr_sfx $user button_back}
+            {$this shortcut_exit}}
+         kDataUnhandled})
+   (BUTTON_UP_MSG
+      {if_else
+         {'||'
+            {== $action kAction_PageDown}
+            {== $action kAction_PageUp}}
+         {$this on_select}
+         kDataUnhandled})
+   (overshell_allowing_input_changed_msg
+      ($user)
+      {if
+         {&&
+            {input_mgr has_user}
+            {==
+               {input_mgr get_user}
+               $user}}
+         {$this shortcut_exit}})
+   (SELECT_MSG
+      {$this on_select})
+   (on_select
+      {$this shortcut_exit}
+      {unless
+         {==
+            [shortcut_selected]
+            {group.lst selected_pos}}
+         {do
+            ($offer_provider
+               {store_panel offer_provider})
+            ($list
+               {store_browser_panel find song.lst})
+            {$list
+               set_selected
+               {$offer_provider
+                  shortcut_to_pos
+                  {group.lst selected_sym}}}
+            {$list refresh}
+            {store_browser_panel refresh}}})}
+{new
+   BandScreen
+   store_browser_screen
+   (panels
+      meta
+      postsong_sfx_panel
+      sv2_panel
+      store_browser_panel
+      (store_banner_panel
+         (active FALSE)
+         (always_load FALSE))
+      (store_menu_panel
+         (active FALSE)
+         (always_load FALSE))
+      store_panel
+      store_details_panel
+      store_shortcut_panel
+      connection_status_panel)
+   (focus store_browser_panel)
+   (back
+      {store_browser_screen get back_screen})
+   (back_screen store_menu_screen)
+   (enter
+      {$this set_focus_panel store_browser_panel}
+      {store_details_panel
+         set_showing
+         {int
+            {store_browser_panel selected_song}}}
+      {store_info_screen set back_screen store_browser_screen})}
+{new
+   SetlistToStorePanel
+   setlist_to_store_panel
+   (file
+      "../meta_loading.milo")
+   (enter
+      {waiting.lbl set_showing FALSE})}
+{new
+   BandScreen
+   setlist_to_store_screen
+   (panels meta setlist_to_store_panel)
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen setlist_to_store_screen_two})}
+{new
+   BandScreen
+   setlist_to_store_screen_two
+   (panels meta setlist_to_store_panel store_panel)
+   (focus setlist_to_store_panel)
+   (TRANSITION_COMPLETE_MSG
+      {store_browser_screen set back_screen store_to_setlist_screen}
+      {setlist_to_store_panel load_song_metadata})}
+{new
+   BandScreen
+   setlist_to_store_screen_timeout
+   (panels meta dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok store_error_store_server})
+   (SELECT_MSG
+      {music_library start_in_setlist_browser}
+      {ui goto_screen song_select_screen})}
+{new
+   BandScreen
+   store_to_setlist_screen
+   (panels meta setlist_to_store_panel)
+   (TRANSITION_COMPLETE_MSG
+      {music_library start_in_setlist_browser}
+      {ui goto_screen song_select_screen})}

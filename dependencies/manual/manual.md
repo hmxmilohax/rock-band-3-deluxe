@@ -255,7 +255,7 @@
 	![Countdown.](images/countdown.gif "Countdown")
 
 * End Feedback:
-	* *Toggles a display at the end of a song that shows any missed notes and overstrums.*
+	* *Toggles a display at the end of a song that shows any missed notes or overstrums.*
 	
 	![Countdown.](images/endfb.png "Countdown")
 
@@ -354,6 +354,13 @@ Adjust the angle of the highways for the game.
 |  |  |
 |---|---|
 | ![Film Grain Off](images/grainoff.png "Film Grain Off.") | ![Film Grain On](images/grainon.png "Film Grain On.") 
+
+* HD Character Models:
+	* *Toggles whether characters always use their high quality versions, instead of only during cutscenes and backgrounds*
+
+|  |  |
+|---|---|
+| ![HD Characters Off](images/hdcharoff.png "HD Characters Off.") | ![HD Characters On](images/hdcharon.png "HD Characters On.") 
 
 * RELOAD BACKGROUND:
 	* *Randomly picks another background for the menu.*

@@ -35,10 +35,10 @@
 {func
    dx_log_writer
    ($loglevel $dx_log_writer)
-   #ifndef HX_WII
    {if {|| $dx_logging_essential $dx_logging_default $dx_logging_info $dx_logging_insane $dx_logging_beatmatch $dx_logging_countdown}
       {do
          {dx_print_gamemode}
+         #ifndef RB3E
          {if_else {file_exists DX_LOG_FILE_PATH}
             {set $dx_log_reader {array $dx_log_reader}}
             {set $dx_log_reader ("start of log")}
@@ -58,6 +58,7 @@
             {set $dx_log_counter 0}
             {set $dx_log_reader ({sprint "Log reset. Number of songs completed this session: " $dx_num_songs_this_session})}
          }
+         #endif
          {if
             {||
                 {&& {== $loglevel essential} $dx_logging_essential}
@@ -69,17 +70,17 @@
             }
             #ifdef RB3E
             {print_debug $dx_log_writer}
-            #endif
+            #else
             {push_back $dx_log_reader $dx_log_writer}
             {write_file DX_LOG_FILE_PATH
                {array
                   $dx_log_reader
                }
             }
+            #endif
          }
       }
    }
-   #endif
 }
 {func
    dx_discordrp_writer
@@ -88,11 +89,9 @@
    {dx_log_writer info
       {sprintf "Executed dx_discordrp_writer - time: %.4fms"
          {time
-            #ifndef HX_WII
             {do
                {write_file DX_RICH_PRESENCE_FILE_PATH {array ($dx_discordrp_writer)}}
             }
-            #endif
          }
       }
    }
@@ -129,9 +128,47 @@
 {func
    dx_ms_to_time_str
    ($ms $colon)
-   {if_else $colon
-      {sprintf "%d:%02d" {int {mod {/ {/ $ms 1000.0} 60} 60}} {int {mod {/ $ms 1000.0} 60}}}
-      {sprintf "%dm %ds" {int {mod {/ {/ $ms 1000.0} 60} 60}} {int {mod {/ $ms 1000.0} 60}}}
+   {cond
+      ({< $ms 3600000} ;if less than one hour, only display minutes and seconds
+         {if_else $colon
+            {sprintf "%d:%02d"
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}
+            }
+            {sprintf "%dm %ds"
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}
+            }
+         }
+      )
+      ({< $ms 86400000} ;if less than one day, only display hours, minutes, and seconds
+         {if_else $colon
+            {sprintf "%d:%02d:%02d"
+               {int {mod {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}
+            }
+            {sprintf "%dh %dm %ds"
+               {int {mod {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}}
+         }
+      )
+      ({>= $ms 86400000} ;if equal to or more than one day, display days hours, minutes, and seconds
+         {if_else $colon
+            {sprintf "%d:%02d:%02d:%02d"
+               {int {/ {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}
+            }
+            {sprintf "%dd %dh %dm %ds"
+               {int {/ {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ {/ $ms 1000.0} 60} 60} 24}}
+               {int {mod {/ {/ $ms 1000.0} 60} 60}}
+               {int {mod {/ $ms 1000.0} 60}}}
+         }
+      )
    }
 }
 
@@ -231,18 +268,14 @@
                   ($focus_panel {get_track_panel})
                   {set $objArray {array ({sprintf "List of objects" })}}
                   {{{get_track_panel} loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
-                  #ifndef HX_WII
                   {write_file DX_OBJECTS_FILE_PATH $objArray}
-                  #endif
                }
                {ui foreach_screen $screen
                   {do
                      ($focus_panel {$screen focus_panel})
                      {set $objArray {array ({sprintf "List of objects" })}}
                      {{$focus_panel loaded_dir} iterate Object $p {push_back $objArray {sprintf "%s : %s" {$p name} {$p class_name}}}}
-                     #ifndef HX_WII
                      {write_file DX_OBJECTS_FILE_PATH $objArray}
-                     #endif
                   }
                }
             }
