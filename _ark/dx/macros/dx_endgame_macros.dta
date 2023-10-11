@@ -43,10 +43,38 @@
             }
          }
       }
-      {noteshit_details.lbl set_token_fmt ;hard set the score percentage ourselves.
-         {sprint
-            {int {'*' 100 {{$user player} notes_hit_fraction}}}
-            "%"
+      {if_else
+         {&&
+            {modifier_mgr is_modifier_active mod_brutalmode} ; if we are in brutal mode
+            {||
+               {== {$user get_track_icon} "G"} ; brutal mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "d"}
+               {== {$user get_track_icon} "D"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in brutal mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for brutal mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% - "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+         {noteshit_details.lbl set_token_fmt ;hard set the score percentage ourselves.
+            {sprint
+               {int {'*' 100 {{$user player} notes_hit_fraction}}}
+               "%"
+            }
          }
       }
    }
@@ -89,19 +117,29 @@
                   }
                }
             }
-            {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
+            {if_else {&& {|| {== {$user get_track_icon} "G"} {== {$user get_track_icon} "B"} {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_brutalmode}} ;check if drum or pro drum has auto kick
                {do
-                  {dx_log_writer info {sprint "Auto Kick detected for user: " {$user get_track_icon}}}
+                  ;{dx_log_writer info {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
                   {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
                      {sprint
-                        {localize {$user get_difficulty_sym}}
-                        " ("
-                        {localize mod_auto_kick}
-                        ")"
+                        {localize mod_brutalmode}
                      }
                   }
                }
-               {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+               {if_else {&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}} ;check if drum or pro drum has auto kick
+                  {do
+                     {dx_log_writer info {sprint "Auto Kick detected for user: " {$user get_track_icon}}}
+                     {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+                        {sprint
+                           {localize {$user get_difficulty_sym}}
+                           " ("
+                           {localize mod_auto_kick}
+                           ")"
+                        }
+                     }
+                  }
+                  {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+               }
             }
          }
       }
