@@ -8,7 +8,7 @@
 
 # Welcome to the *Rock Band 3 Deluxe* repository!
 
-### Below are instructions for building the game yourself. [Please visit our website if you're looking for downloads](https://rb3dx.neocities.org/).
+### Below are instructions for building the game yourself.<br/>[Please visit our website if you're looking for downloads](https://rb3dx.neocities.org/).
 
 <br/> <br/>
 
