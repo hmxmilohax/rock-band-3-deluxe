@@ -53,17 +53,22 @@
       }
    )
 )
+#define DX_MENUBG_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options os_main_menu}
+      {push_back $options os_song_select}
+      {push_back $options os_load_song}
+      {push_back $options {if_else $dx_black_menu os_nobg_on os_nobg_off}}
+      {push_back $options {if_else $dx_skip_delay os_nodelay_on os_nodelay_off}}
+      {dx_state_setup dxState_MenuBG FALSE}
+   }
+)
 (dxState_MenuBG
    (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_main_menu}
-         {push_back $options os_song_select}
-         {push_back $options os_load_song}
-         {push_back $options os_nobg}
-         {dx_state_setup dxState_MenuBG FALSE}
-      }
+      DX_MENUBG_DATA
       {overshell_view_chooser}
    )
    (SELECT_MSG
@@ -77,7 +82,7 @@
          (os_load_song
             {$this show_state dxState_SongLoadBG}
          )
-         (os_nobg
+         ((os_nobg_on os_nobg_off)
             {set $dx_black_menu {! $dx_black_menu}}
             {unless {$this in_game} {ui goto_screen meta_loading_main_screen}}
             {if_else $dx_black_menu
@@ -98,7 +103,27 @@
                   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 6 {quote ({== {meta_performer get_venue_class} small_club} ("tv3_a" "tv3_b" "tv3_c"))}}
                }
             }
+            {if_else $dx_black_menu
+               {set $dx_tracked_changed os_nobg_on}
+               {set $dx_tracked_changed os_nobg_off}
+            }
+            {dx_state_pos_tracker}
+            DX_MENUBG_DATA
+            {set $previous_state dxState_MenuBG}
          )
+         ((os_nodelay_on os_nodelay_off)
+            {set $dx_skip_delay {! $dx_skip_delay}}
+            {if_else $dx_skip_delay
+               {set $dx_tracked_changed os_nodelay_on}
+               {set $dx_tracked_changed os_nodelay_off}
+            }
+            {dx_state_pos_tracker}
+            DX_MENUBG_DATA
+            {set $previous_state dxState_MenuBG}
+         )
+         {set $in_state FALSE}
+         DX_MENUBG_DATA
+         {set $previous_state dxState_MenuBG}
       }
    )
    (exit 
