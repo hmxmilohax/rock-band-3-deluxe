@@ -432,21 +432,35 @@
       {$this show_state dxState_ScreenElements}
    )
 )
+#define DX_SCREEN_ELEMENTS_INGAME_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options os_mtv}
+      {push_back $options
+         {switch $dx_crowd_meter_state
+            (dx_on os_vis_on)
+            (dx_off os_vis_off)
+            (dx_disabled os_vis_disabled)
+         }
+      }
+      {push_back $options os_score}
+      {push_back $options os_solo_box_pos}
+      {dx_state_setup dxState_ScreenElements_InGame TRUE}
+   }
+)
 (dxState_ScreenElements_InGame
    (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_mtv}
-         {if_else {modifier_mgr is_modifier_active mod_no_fail_band}
-            {push_back $options no_fail_enabled}
-            {push_back $options os_crowdmeter}
-         }            
-         {push_back $options os_score}
-         {push_back $options os_solo_box_pos}
-         {dx_state_setup dxState_ScreenElements_InGame FALSE}
-      }
+      DX_SCREEN_ELEMENTS_INGAME_DATA
       {overshell_view_chooser}
+   )
+   (enter
+      {set $state_hold FALSE}
+      {set $previous_state dxState_ScreenElements_InGame}
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
    )
    (SELECT_MSG
       {switch {$component selected_sym}
@@ -461,9 +475,33 @@
             {set $dx_set_ui_pos_tracked_ui solo_box}
             {$this show_state dxState_AxisPositionSetup}
          )
+         ((os_vis_off os_vis_on os_vis_disabled)
+            {set $dx_crowd_meter_state
+               {switch $dx_crowd_meter_state
+                  (dx_on dx_off)
+                  (dx_off dx_disabled)
+                  (dx_disabled dx_on)
+               }
+            }
+            {set $dx_tracked_changed
+               {switch $dx_crowd_meter_state
+                  (dx_on os_vis_on)
+                  (dx_off os_vis_off)
+                  (dx_disabled os_vis_disabled)
+               }
+            }
+            {dx_toggle_fail_feedback}
+            {dx_state_pos_tracker}
+            DX_SCREEN_ELEMENTS_INGAME_DATA
+            {set $previous_state dxState_CrowdMeterElements}
+         )
       }
+      {set $in_state FALSE}
+      DX_SCREEN_ELEMENTS_INGAME_DATA
+      {set $previous_state dxState_CrowdMeterElements}
    )
-   (exit 
+   (exit
+      DX_OS_CLOSE_MSG
       {dx_state_pos_tracker}
    )
    (on_cancel
@@ -665,83 +703,84 @@
    )
 )
 
-#define DX_CROWD_METER_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {if_else {modifier_mgr is_modifier_active mod_no_fail_band}
-         {push_back no_fail_enabled}
-         {if_else $dx_crowd_meter_visibility
-            {push_back $options os_vis_on}
-            {push_back $options os_vis_off}
-         }
-      }
-      ;os_crowd_meter_pos ;doesnt work
-      ;{push_back $options os_eltex} ;depreciated
-      {dx_state_setup dxState_CrowdMeterElements FALSE}
-   }
-)
-(dxState_CrowdMeterElements
-   (view
-      DX_CROWD_METER_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (enter
-      {set $state_hold FALSE}
-      {set $previous_state dxState_CrowdMeterElements}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_vis_off
-            {set $dx_crowd_meter_visibility {! $dx_crowd_meter_visibility}}
-            {set $dx_tracked_changed os_vis_on}
-            {dx_toggle_fail_feedback}
-            {dx_state_pos_tracker}
-            DX_CROWD_METER_ELEMENTS_DATA
-            {set $previous_state dxState_CrowdMeterElements}
-         )
-         (os_vis_on
-            {set $dx_crowd_meter_visibility {! $dx_crowd_meter_visibility}}
-            {set $dx_tracked_changed os_vis_off}
-            {dx_toggle_fail_feedback}
-            {dx_state_pos_tracker}
-            DX_CROWD_METER_ELEMENTS_DATA
-            {set $previous_state dxState_CrowdMeterElements}
-         )
-         ;(os_eltex
-         ;   {set $dx_tracked_texture_loader crowd_meter_frame}
-         ;   {set $dx_tracked_texture_category crowd_meter}
-         ;   {set $dx_choose_char_scale_x 0.1}
-         ;   {set $dx_choose_char_scale_y 0.5}
-         ;   {set $state_hold dxState_CrowdMeterElements}
-         ;   {$this show_state dxState_DTATextureLoader})
-         (os_crowd_meter_pos
-            {set $dx_set_ui_pos_tracked_ui crowd_meter}
-            {$this show_state dxState_AxisPositionSetup}
-         )
-      }
-      {set $in_state FALSE}
-      DX_CROWD_METER_ELEMENTS_DATA
-      {set $previous_state dxState_CrowdMeterElements}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_ScreenElements_InGame}
-   )
-)
+;#define DX_CROWD_METER_ELEMENTS_DATA
+;(
+;   {do
+;      ($options
+;         {array 0})
+;         {push_back $options
+;            {switch $dx_crowd_meter_state
+;               (dx_on os_vis_on)
+;               (dx_off os_vis_off)
+;               (dx_disabled os_vis_disabled)
+;            }
+;         }
+;      ;os_crowd_meter_pos ;doesnt work
+;      ;{push_back $options os_eltex} ;depreciated
+;      {dx_state_setup dxState_CrowdMeterElements TRUE}
+;   }
+;)
+;(dxState_CrowdMeterElements
+;   (view
+;      DX_CROWD_METER_ELEMENTS_DATA
+;      {overshell_view_chooser}
+;   )
+;   (enter
+;      {set $state_hold FALSE}
+;      {set $previous_state dxState_CrowdMeterElements}
+;      DX_MENU_SCROLL_DESC
+;   )
+;   (SELECT_MSG
+;      {switch {$component selected_sym}
+;         ((os_vis_off os_vis_on os_vis_disabled)
+;            {set $dx_crowd_meter_state
+;               {switch $dx_crowd_meter_state
+;                  (dx_on dx_off)
+;                  (dx_off dx_disabled)
+;                  (dx_disabled dx_on)
+;               }
+;            }
+;            {set $dx_tracked_changed
+;               {switch $dx_crowd_meter_state
+;                  (dx_on os_vis_on)
+;                  (dx_off os_vis_off)
+;                  (dx_disabled os_vis_disabled)
+;               }
+;            }
+;            {dx_toggle_fail_feedback}
+;            {dx_state_pos_tracker}
+;            DX_CROWD_METER_ELEMENTS_DATA
+;            {set $previous_state dxState_CrowdMeterElements}
+;         )
+;         ;(os_eltex
+;         ;   {set $dx_tracked_texture_loader crowd_meter_frame}
+;         ;   {set $dx_tracked_texture_category crowd_meter}
+;         ;   {set $dx_choose_char_scale_x 0.1}
+;         ;   {set $dx_choose_char_scale_y 0.5}
+;         ;   {set $state_hold dxState_CrowdMeterElements}
+;         ;   {$this show_state dxState_DTATextureLoader})
+;         (os_crowd_meter_pos
+;            {set $dx_set_ui_pos_tracked_ui crowd_meter}
+;            {$this show_state dxState_AxisPositionSetup}
+;         )
+;      }
+;      {set $in_state FALSE}
+;      DX_CROWD_METER_ELEMENTS_DATA
+;      {set $previous_state dxState_CrowdMeterElements}
+;   )
+;   (exit 
+;      {dx_state_pos_tracker}
+;   )
+;   (on_cancel
+;      {$this show_state dxState_ScreenElements_InGame}
+;   )
+;)
 
 #define DX_SCORE_ELEMENTS_DATA
 (
    {do
       ($options
          {array 0})
-      {if_else $dx_score_meter_visibility
-         {push_back $options os_vis_on}
-         {push_back $options os_vis_off}
-      }
       {push_back $options os_scoreboard_pos}
       {push_back $options os_star_display_pos}
       ;{push_back $options os_eltexs} ;depreciated
@@ -755,38 +794,6 @@
    )
    (SELECT_MSG
       {switch {$component selected_sym}
-         (os_vis_off
-            {set $dx_score_meter_visibility {! $dx_score_meter_visibility}}
-            {set $dx_tracked_changed os_vis_on}
-            {if
-               {exists beatmatch}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {{coop_track_panel find scoreboard} set_showing $dx_score_meter_visibility}
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_SCORE_ELEMENTS_DATA
-            {set $previous_state dxState_ScoreElements}
-         )
-         (os_vis_on
-            {set $dx_score_meter_visibility {! $dx_score_meter_visibility}}
-            {set $dx_tracked_changed os_vis_off}
-            {if
-               {exists beatmatch}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {{coop_track_panel find scoreboard} set_showing $dx_score_meter_visibility}
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_SCORE_ELEMENTS_DATA
-            {set $previous_state dxState_ScoreElements}
-         )
          ;(os_eltexs
          ;   {$this show_state dxState_ScoreTextures})
          (os_scoreboard_pos
