@@ -142,7 +142,7 @@ def convert_pngs(platform):
                 ninja.build(str(xbox_output), "sfreq", str(f))
                 output_files.append(str(xbox_output))
             case "yarg":
-                target_filename = Path("gen", f.stem + ".bmp_xbox")
+                target_filename = Path("gen", f.stem + ".png_xbox")
                 xbox_directory = Path("obj", platform, "ark").joinpath(
                     *f.parent.parts[1:]
                 )
