@@ -7,8 +7,7 @@
       {sprintf "Executed dx_overshell_msg - time: %.4fms"
          {time
             {if {! {session is_in_game}}
-               {{overshell_player_message find show.trg} trigger}
-               {overshell_player_message set_showing TRUE}
+               {$this show_message}
                {set $dx_no_message_sound TRUE} ;prevents message sound from playing in menus
                {$this setup_message_text $message FALSE}
             }
@@ -99,6 +98,7 @@
    ;   {sprintf "Executed dx_state_setup - time: %.4fms"
    ;      {time
             {unless $in_state ;the view code trick runs several times, so we need to make sure to only run the function once in the view
+               DX_OS_CLOSE_MSG
                {set $in_state TRUE} ;gate it off REMEMBER, turn this to false when running this code in a reset handle
                {set $dx_menu_message FALSE}
                {overshell_list_creation}
@@ -114,12 +114,12 @@
                {foreach $entry $dx_state_tracker
                   {if {== {elem $entry 0} {basename $current_overshell_state}}
                      {$current_list set_selected {elem {find $entry {sprint $current_overshell_state}} 1}}
-                     {if $message
+                     {if {! {== $message FALSE}}
                         {set $dx_menu_message {sprint {elem {find $entry {sprint $current_overshell_state}} 1} "_desc"}}
                      }
                   }
                }
-               {if $message
+               {if {! {== $message FALSE}}
                   {unless $dx_menu_message
                      {set $dx_menu_message {sprint {elem $options_list_data 0} "_desc"}}
                   }
@@ -132,6 +132,9 @@
                }
                {$current_list restart_highlight_matanim}
                {$current_list refresh}
+               {if {== $message FALSE}
+                  DX_OS_CLOSE_MSG
+               }
             }
    ;      }
    ;   }
@@ -227,6 +230,7 @@
             {set $dx_state_tracker {array $dx_state_tracker}} ;re read the array so the vars enumerate and the array becomes static
             {$current_list set circular FALSE}
             {set $in_state FALSE}
+            DX_OS_CLOSE_MSG
             ;{dx_log_writer insane {array $dx_state_tracker}}
    ;      }
    ;   }
@@ -263,6 +267,9 @@
    ;{dx_log_writer insane
    ;   {sprintf "Executed overshell_view_chooser - time: %.4fms"
    ;      {time
+            {unless $in_state
+               DX_OS_CLOSE_MSG
+            }
             {switch $current_slots
                (1 options_end_game)
                (2 options_end_game)
