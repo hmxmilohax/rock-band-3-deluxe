@@ -16,7 +16,9 @@
    (audition_cam_toggle
       {audition_cycle_free_camera})
    (reset
-      DX_GAME_RESET_HANDLER
+      {unless {gamemode in_mode trainer}
+         {dx_game_var_reset}
+      }
       {active_events_parser
          add_sink
          $this
@@ -50,7 +52,6 @@
          {{gamemode get game_panel}
             setup}})
    (intro_start
-      ;DX_GAME_RESET_HANDLER
       {{gamemode get game_screen}
          set_showing
          TRUE}
@@ -64,7 +65,6 @@
                ($this intro_end)})}
       kDataUnhandled)
    (intro_skip
-      ;DX_GAME_RESET_HANDLER
       {{gamemode get game_screen}
          set_showing
          TRUE}
@@ -92,14 +92,17 @@
                   $ex}}}}
       kDataUnhandled)
    (game_over
-      #ifndef HX_WII
       {stagekit_reset}
-      #endif
-      DX_GAME_RESET_HANDLER
-      {set $dx_mtvup FALSE}
-      {{{{gamemode get track_panel} find mtv_overlay} find fade.anim} set_frame 0} ; dx - hide the mtv overlay on lose in case it's visible
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
+      {unless {gamemode in_mode trainer}
+         {dx_game_var_reset}
+         {set $dx_mtvup FALSE}
+         {{{{gamemode get track_panel} find mtv_overlay} find fade.anim} set_frame 0} ; dx - hide the mtv overlay on lose in case it's visible
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
+         }
+         {if $dx_customizer
+            {game_restart}
+         }
       }
       {beatmatch
          foreach_active_player
@@ -117,56 +120,40 @@
    (game_won_common
       {beatmatch set_realtime TRUE}
       {beatmatch set_paused TRUE FALSE}
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
+      {unless {gamemode in_mode trainer}
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
+         }
       }
       {{get_track_panel}
          play_seq
          track_end.cue})
    (game_won
       {$this game_won_common}
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
-      }
-      {if $dx_time_remaining
-         {if $dx_moved_up
-            {set $dx_moved_up FALSE}
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+      {unless {gamemode in_mode trainer}
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
          }
-         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-         ;{{{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh} set_showing TRUE} ;ensure that it is visible at a base level
-         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+         {dx_reset_time_remaining_position}
       }
       kDataUnhandled)
    (game_won_finale
       {$this game_won_common}
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
-      }
-      {if $dx_time_remaining
-         {if $dx_moved_up
-            {set $dx_moved_up FALSE}
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+      {unless {gamemode in_mode trainer}
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
          }
-         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-         ;{{{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh} set_showing TRUE} ;ensure that it is visible at a base level
-         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+         {dx_reset_time_remaining_position}
       }
       kDataUnhandled)
    (game_lost
-      DX_GAME_RESET_HANDLER
-      {beatmatch set_realtime TRUE}
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
-      }
-      {if $dx_time_remaining
-         {if $dx_moved_up
-            {set $dx_moved_up FALSE}
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+      {unless {gamemode in_mode trainer}
+         {dx_game_var_reset}
+         {beatmatch set_realtime TRUE}
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
          }
-         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-         ;{{{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh} set_showing TRUE} ;ensure that it is visible at a base level
-         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+         {dx_reset_time_remaining_position}
       }
       {beatmatch
          foreach_active_player
@@ -190,7 +177,6 @@
       {handle
          ($this game_outro)})
    (game_outro
-      DX_GAME_RESET_HANDLER
       {if
          {&&
             {==
@@ -203,17 +189,12 @@
          foreach_active_player
          $p
          {$p disable_controller}}
-      {beatmatch foreach_active_player $player
-         HIDE_SOLO_BOX
-      }
-      {if $dx_time_remaining
-         {if $dx_moved_up
-            {set $dx_moved_up FALSE}
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
+      {unless {gamemode in_mode trainer}
+         {dx_game_var_reset}
+         {beatmatch foreach_active_player $player
+            {dx_hide_solo_box}
          }
-         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-         ;{{{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh} set_showing TRUE} ;ensure that it is visible at a base level
-         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+         {dx_reset_time_remaining_position}
       }
       {ui
          sync_screen
@@ -246,6 +227,9 @@
    (file
       "../world/world.milo")
    (unload_async TRUE)
+   (enter
+      {world_panel set_showing {! {== $dx_venue none}}}
+   )
    (unload
       {if
          $bandwardrobe
@@ -254,54 +238,59 @@
 #define GAME_SCREEN_HANDLERS
 ((disable_screen_saver TRUE)
    PAUSE_ON_MIC_DISCONNECT
-   (enter DX_PRESENCE_MANGER
-      {set $dx_game_enter_count
-         {+ $dx_game_enter_count 1}
-      }
-      {set $dx_log_counter
-         {+ $dx_log_counter 1}
-      }
-      {dx_log_writer FALSE {sprint "Game has been entered. Game enter count: " $dx_game_enter_count} " - Gamemode: " $dx_gamemode " - Local: " {session_mgr is_local}}
-      DX_AUTOPLAYER_HANDLER
-      DX_GAME_RESET_HANDLER
-      ;DX_MTV_RESET_HANDLER
-      {dx_log_writer FALSE {sprint "Current User Info - Song Speed: " $speedmod " - Trackspeed: " $trackspeed " - Venue FPS: " $emulatefps " - Venue: " $venue " - Venue Forced: " $force}}
-      {dx_log_writer FALSE {sprint "Current User Textures - Emissive: " $dx_overdrive_guitar " - Highway: " $dx_highway_guitar " - Spotlight: " $dx_streak_guitar  " - Keyboard: " $dx_keyboard " - Smasher: " $dx_smasher " - Gem: " $dx_gem " - Sustain: " $dx_sustain " - Crowd Meter Tex: " $dx_crowd_meter}}
-      {dx_log_writer TRUE {sprint "Current User Textures cont. - OD Bar: " $dx_overdrive_bar  " - Multiplier Ring: " $dx_multiplier_ring " - Track Rails: " $dx_rails " - Score Tex: " $dx_score " - Flames: " $dx_flames " - Vox Arrow: " $dx_vocal_arrow " - Vox Highway: " $dx_vocal_highway " - DX Multi Angle: " $dx_multiangle}}
-      {game set_kick_autoplay {modifier_mgr is_modifier_active mod_auto_kick}} ; dx - auto kick
-      {gamemode set allow_drum_fills {! {modifier_mgr is_modifier_active mod_static_fills}}} ; dx - static fills
-      {$this set_showing TRUE}
-      {set
-         [delayed_mic_check]
-         FALSE}
-      {rnd set_in_game TRUE}
-      {platform_mgr
-         add_sink
-         $this
-         (ui_changed)}
-      {platform_mgr
-         add_sink
-         $this
-         (microphones_changed)}
-      {if
-         {game get multi_event}
-         {coop_track_panel set_paused FALSE}
-         {{world_panel loaded_dir}
-            enter}
-         {game set multi_event FALSE}}
-      {user_mgr foreach_local_user $user}
-      {profile_mgr update_all_mic_levels}
-      {overshell set_active_status kOvershellInSong}
-      {net_sync set_ui_state kNetUI_InGame}
-      {handle
-         ($this my_enter)})
+   (enter
+      {unless $dx_skip_game_setup
+         {unless {gamemode in_mode trainer}
+            {dx_presence_manager}
+            {set $dx_game_enter_count
+               {+ $dx_game_enter_count 1}
+            }
+            {set $dx_log_counter
+               {+ $dx_log_counter 1}
+            }
+            {dx_trainer_checker}
+            {dx_log_writer default {sprint "Game has been entered. Game enter count: " $dx_game_enter_count} " - Gamemode: " $dx_gamemode " - Local: " {session_mgr is_local}}
+            {dx_set_auto_play}
+            {dx_game_var_reset}
+            {dx_log_writer default {sprint "Current User Info - Song Speed: " $speedmod " - Trackspeed: " $trackspeed " - Venue FPS: " $emulatefps " - Venue: " $dx_venue " - Venue Forced: " $force}}
+            {dx_log_writer default {sprint "Current User Textures - Emissive: " $dx_overdrive_guitar " - Highway: " $dx_highway_guitar " - Spotlight: " $dx_streak_guitar  " - Keyboard: " $dx_keyboard " - Smasher: " $dx_smasher " - Gem: " $dx_gem " - Sustain: " $dx_sustain " - Crowd Meter Tex: " $dx_crowd_meter}}
+            {dx_log_writer default {sprint "Current User Textures cont. - OD Bar: " $dx_overdrive_bar  " - Multiplier Ring: " $dx_multiplier_ring " - Track Rails: " $dx_rails " - Score Tex: " $dx_score " - Flames: " $dx_flames " - Vox Arrow: " $dx_vocal_arrow " - Vox Highway: " $dx_vocal_highway " - DX Multi Angle: " $dx_multiangle}}
+            {game set_kick_autoplay {modifier_mgr is_modifier_active mod_auto_kick}} ; dx - auto kick
+            {gamemode set allow_drum_fills {! {modifier_mgr is_modifier_active mod_static_fills}}} ; dx - static fills
+         }
+         {$this set_showing TRUE}
+         {set
+            [delayed_mic_check]
+            FALSE}
+         {rnd set_in_game TRUE}
+         {platform_mgr
+            add_sink
+            $this
+            (ui_changed)}
+         {platform_mgr
+            add_sink
+            $this
+            (microphones_changed)}
+         {if
+            {game get multi_event}
+            {coop_track_panel set_paused FALSE}
+            {{world_panel loaded_dir}
+               enter}
+            {game set multi_event FALSE}}
+         {user_mgr foreach_local_user $user}
+         {profile_mgr update_all_mic_levels}
+         {overshell set_active_status kOvershellInSong}
+         {net_sync set_ui_state kNetUI_InGame}
+         {handle
+            ($this my_enter)}})
    (exit
-      {set $dx_already_restarted FALSE} ; dx - track resets for no BRE modifier
-      {set $dx_mtvup FALSE} ;we have to make sure and turn off mtv overlay when it is unloaded or it can crash in places where we call it (overshell)
-      DX_LEADER_SPEED_SETTER
-      DX_CURRENT_SONG_CLEAR
-      DX_JSON_CLEAR
-      DX_MTV_RESET_HANDLER
+      {unless {gamemode in_mode trainer}
+         {set $dx_already_restarted FALSE} ; dx - track resets for no BRE modifier
+         {set $dx_mtvup FALSE} ;we have to make sure and turn off mtv overlay when it is unloaded or it can crash in places where we call it (overshell)
+         {dx_send_leader_song_speed}
+         DX_CURRENT_SONG_CLEAR
+         DX_JSON_CLEAR
+      }
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -329,25 +318,18 @@
       {set
          [chosen_vignette]
          ''}
-      {if
-         {meta_performer is_set_complete}
-         {meta_performer upload_debug_stats}
-         {set
-            [chosen_vignette]
-            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
-         #ifndef _SHIP
+      {unless $dx_no_song_transition
          {if
-            {ui get_vignettes_showing}
-            {print
-               "Loading outro vignette: "
+            {meta_performer is_set_complete}
+            {meta_performer upload_debug_stats}
+            {set
                [chosen_vignette]
-               "\n"}
+               {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
             {[chosen_vignette]
-               load}}
-         #else
-         {[chosen_vignette]
-            load}
-         #endif})
+               load}
+         }
+      }
+   )
    (unload
       {if
          {!=
@@ -357,8 +339,6 @@
             unload}})}
 #define GAME_SCREEN_PANELS
 (game world_panel coop_track_panel sync_audio_net_panel)
-#define GAME_SCREEN_PANELS_NO_TRACK
-(world_panel game sync_audio_net_panel)
 {new
    BandScreen
    game_screen
@@ -403,7 +383,7 @@
    restart_sync_audio_net_screen
    (panels)
    (enter
-      DX_LEADER_SPEED_SETTER
+      {dx_send_leader_song_speed}
       {overshell set_active_status kOvershellInactive}
       {{gamemode get game_screen}
          set_showing
@@ -423,7 +403,7 @@
 {new
    BandScreen
    restart_game_screen
-   (panels #ifdef HX_WII GAME_SCREEN_PANELS_NO_TRACK #else GAME_SCREEN_PANELS #endif sync_audio_net_screen_panel)
+   (panels GAME_SCREEN_PANELS sync_audio_net_screen_panel)
    (load_panels
       {overshell set_active_status kOvershellInactive}
       {$this set_showing FALSE})
@@ -571,15 +551,6 @@
       {print
          "\n\nVOCAL SCORE SONG DONE!\n"}
       {exit})}
-#ifdef HX_WII
-{new
-   UIPanel
-   mydta_start_in_game_panel
-   (load
-      {content_mgr start_refresh})
-   (is_loaded
-      {content_mgr refresh_done})}
-#else
 {new
    UIPanel
    mydta_start_in_game_panel
@@ -612,16 +583,15 @@
                   done}
                {{ui current_screen}
                   ready_for_game}})})}
-#endif
 {new
    BandScreen
    mydta_start_in_game_screen
    (panels mydta_start_in_game_panel)
-   (#ifdef HX_WII TRANSITION_COMPLETE_MSG #else ready_for_game #endif
+   (ready_for_game
       {ui goto_screen preloading_screen})}
 {new
    BandScreen
    mydta_start_practice_in_game_screen
    (panels mydta_start_in_game_panel)
-   (#ifdef HX_WII TRANSITION_COMPLETE_MSG #else ready_for_game #endif
+   (ready_for_game
       {ui goto_screen practice_game_screen})}

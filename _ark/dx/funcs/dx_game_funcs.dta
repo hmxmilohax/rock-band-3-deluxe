@@ -1,0 +1,250 @@
+#define DX_CALLBACK_HANDLES
+(
+   (hit miss pass check_fc check_missed num_gems_hit num_gems_combo num_gems_miss num_gems_pass)
+)
+{func
+   dx_add_player_sinks
+   {dx_log_writer info {sprint "func: dx_add_player_sinks"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_add_player_sinks - time: %.4fms"
+         {time
+            {dx_active_player_var_reset}
+            {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+               {unless {== {$player instrument} vocals}
+                  {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}
+               }
+               {$player add_sink fc_callback DX_CALLBACK_HANDLES}
+               {switch {$player instrument}
+                  (bass
+                     {set $bassplayeractive true}
+                     {$player add_sink fc_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_guitar
+                     {set $real_guitarplayeractive true}
+                     {$player add_sink fc_real_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_bass
+                     {set $real_bassplayeractive true}
+                     {$player add_sink fc_real_bass_callback DX_CALLBACK_HANDLES}
+                  )
+                  (keys
+                     {set $keysplayeractive true}
+                     {$player add_sink fc_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_keys
+                     {set $real_keysplayeractive true}
+                     {$player add_sink fc_real_keys_callback DX_CALLBACK_HANDLES}
+                  )
+                  (guitar
+                     {set $guitarplayeractive true}
+                     {$player add_sink fc_guitar_callback DX_CALLBACK_HANDLES}
+                  )
+                  (drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (real_drum
+                     {set $drumplayeractive true}
+                     {$player add_sink fc_real_drum_callback DX_CALLBACK_HANDLES}
+                  )
+                  (vocals
+                     {set $vocalsplayeractive true}
+                     {set $dx_active_vocals TRUE}
+                  )
+               }
+               {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)}
+
+            }
+         }
+      }
+   }
+}
+{func
+   dx_set_song_speed
+   {dx_log_writer info {sprint "func: dx_set_song_speed"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_set_song_speed - time: %.4fms"
+         {time
+            {if {exists gamemode}
+               {dx_log_writer beatmatch {sprint "Setting up song speeds. Song Speed: " $speedmod}} ;runs in beatmatcher, do not enable under penalty of stutter
+               {unless
+                  {|| ;check for a variety of game modes where song speed is not allowed to be adjusted
+                     {gamemode in_mode pro_song_lessons_keyboard}
+                     {gamemode in_mode pro_song_lessons_real_guitar}
+                     {gamemode in_mode pro_song_lessons_real_bass}
+                     {gamemode in_mode drum_freestyle}
+                     {gamemode in_mode trainer}
+                     {gamemode in_mode trainer_drums}
+                     {gamemode in_mode trainer_pro_drums}
+                     {gamemode in_mode trainer_real_guitar}
+                     {gamemode in_mode trainer_pro_keyboard}
+                     #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+                     {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  }
+                  {if {is_leader_local}
+                     {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}
+                  }
+                  {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
+               }
+               {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  {practice_panel update_speed {gamecfg get practice_speed}}
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_send_leader_song_speed
+   {dx_log_writer info {sprint "func: dx_send_leader_song_speed"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_send_leader_song_speed - time: %.4fms"
+         {time
+            {if {is_leader_local} ; dx - sync speeds only if currently the lobby leader
+               {dx_log_writer beatmatch {sprint "Sending Leader Speed to peers, Leaderspeed: " $leaderspeed ""}}
+               DX_DISCONNECT
+               {set $speedmod $leaderspeed}
+               ;{set $speedmod_top $leaderspeed}
+               {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed}) kNetReliable}}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_trainer_checker
+   {dx_log_writer info {sprint "func: dx_trainer_checker"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_trainer_checker - time: %.4fms"
+         {time
+            {if {gamemode in_mode trainer}
+               {beatmatch foreach_active_player $player
+                  {switch {{$player get_user} get_slot_num}
+                     ((0 1 2 3)
+                        {switch {$player instrument}
+                           (real_bass
+                              {if {== $dx_trainer_real_bass FALSE}
+                                 {set $dx_skip_game_setup TRUE}
+                                 {dx_passive_messenger_symbol "No Trainer for Pro-Bass found in song."}
+                                 {meta_performer skip_song}
+                                 {ui goto_screen meta_loading_continue_screen}
+                              }
+                           )
+                           (real_keys
+                              {if {== $dx_trainer_real_keys FALSE}
+                                 {set $dx_skip_game_setup TRUE}
+                                 {dx_passive_messenger_symbol "No Trainer for Pro-Keys found in song."}
+                                 {meta_performer skip_song}
+                                 {ui goto_screen meta_loading_continue_screen}
+                              }
+                           )
+                           (real_guitar
+                              {if {== $dx_trainer_real_guitar FALSE}
+                                 {set $dx_skip_game_setup TRUE}
+                                 {dx_passive_messenger_symbol "No Trainer for Pro-Guitar found in song."}
+                                 {meta_performer skip_song}
+                                 {ui goto_screen meta_loading_continue_screen}
+                              }
+                           )
+                           (real_drum
+                              {if {== $dx_trainer_real_drum FALSE}
+                                 {set $dx_skip_game_setup TRUE}
+                                 {dx_passive_messenger_symbol "No Trainer for Pro-Drums found in song."}
+                                 {meta_performer skip_song}
+                                 {ui goto_screen meta_loading_continue_screen}
+                              }
+                           )
+                           (fail kDataUnhandled)
+                        }
+                     )
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_venue_setter
+   {dx_log_writer info {sprint "func: dx_venue_setter"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_venue_setter - time: %.4fms"
+         {time
+            {if {session_mgr is_leader_local}
+               {if_else $dx_customizer
+                  {do
+                     {gamecfg set_venue none}
+                     {meta_performer set_venue none}
+                  }
+                  {if_else {== $force TRUE}
+                     {switch $dx_venue
+                        (small_venues {do {gamecfg set_venue {random_elem (SMALL_VENUES)}} {meta_performer set_venue {random_elem (SMALL_VENUES)}}})
+                        (big_venues {do {gamecfg set_venue {random_elem (BIG_VENUES)}} {meta_performer set_venue {random_elem (BIG_VENUES)}}})
+                        (arena_venues {do {gamecfg set_venue {random_elem (ARENA_VENUES)}} {meta_performer set_venue {random_elem (ARENA_VENUES)}}})
+                        (festival_venues {do {gamecfg set_venue {random_elem (FESTIVAL_VENUES)}} {meta_performer set_venue {random_elem (FESTIVAL_VENUES)}}})
+                        (venues_video {do {gamecfg set_venue {random_elem (VENUES_VIDEO)}} {meta_performer set_venue {random_elem (VENUES_VIDEO)}}})
+                        (random
+                           {if_else $dx_enable_mv_venues
+                               {do
+                                  {meta_performer select_random_venue}
+                               }
+                               {do
+                                  {gamecfg set_venue {random_elem (VENUES)}}
+                                  {meta_performer set_venue {random_elem (VENUES)}}
+                               }
+                           }
+                        )
+                        (none
+                           {if_else {&& {! {session_mgr is_local}} {is_leader_local}}
+                              {do
+                                 {gamecfg set_venue {random_elem (VENUES)}}
+                                 {meta_performer set_venue {random_elem (VENUES)}}
+                              }
+                              {if {&& {session_mgr is_local} {is_leader_local}}
+                                 {gamecfg set_venue none}
+                                 {meta_performer set_venue none}
+                              }
+                           }
+                        )
+                        {do {gamecfg set_venue $dx_venue} {meta_performer set_venue $dx_venue}}
+                     }
+                     {if_else $dx_enable_mv_venues
+                        {do
+                           {meta_performer select_random_venue}
+                        }
+                        {do
+                           {gamecfg set_venue {random_elem (VENUES)}}
+                           {meta_performer set_venue {random_elem (VENUES)}}
+                        }
+                     }
+                  }
+               }
+               ;{dx_log_writer default {sprint "Venue set to " $dx_venue " - Forced: " $force}}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_toggle_fail_feedback
+   {do
+      {if
+         {exists beatmatch}
+         {if
+            {&&
+               {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
+            }
+            {foreach_int $i 0 {beatmatch num_active_players} 
+               {
+                  {beatmatch active_player $i} set_crowd_rating_active
+                     {||
+                        {== $dx_crowd_meter_state dx_on}
+                        {== $dx_crowd_meter_state dx_off}
+                     }
+               }
+            }
+         {{coop_track_panel find crowd_meter} set_showing {== $dx_crowd_meter_state dx_on}}
+         }
+      }
+   }
+}

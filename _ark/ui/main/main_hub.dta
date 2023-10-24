@@ -71,11 +71,26 @@
       {$this get_dlcmotd})
    (is_loaded
       {saveload_mgr is_initial_load_done})
-   (enter DX_PRESENCE_MANGER
-      DX_MAIN_SV_PANEL_HANDLER
+   (enter
+      {dx_presence_manager}
+      {dx_sv_menu_logo_set sv3_panel}
       {set $dx_random_number {random_int 0 4096}}
       {if {== $dx_random_number 2112}
          {dx_passive_messenger you_lost}
+      }
+      {do
+         ($year $month $day $hour $minute $second)
+         {get_date_time $year $month $day $hour $minute $second}
+         {if
+            {&&
+               {! $dx_msg_birth}
+               ;{> $year 2023}
+               {== $month 10}
+               {== $day 25}
+            }
+            {set $dx_msg_birth TRUE}
+            {dx_passive_messenger_symbol "Happy Birthday Shiloh!"}
+         }
       }
       #ifndef STORE_ENABLED
       {$this disable mb_musicstore.btn}
@@ -111,7 +126,9 @@
       {input_mgr check_trigger_auto_vocals_confirm}
       {overshell set_allow_real_guitar_flow TRUE}
       {overshell update_all}
+      #ifdef HX_XBOX
       {content_mgr start_refresh}
+      #endif
       {if {|| {! $screensaver} {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
          DX_MAIN_BUTTON_DISABLER
       }
@@ -207,7 +224,10 @@
                               {closet_mgr set_user $user}
                               {closet_mgr set_return_screen main_hub_screen}
                               {net_sync disable}
-                              {ui goto_screen charactercreator_screen}}
+                              {ui goto_screen charactercreator_screen}
+                              #ifdef HX_WII
+                              {overshell set_active_status kOvershellInactive}
+                              #endif}
                            {ui push_screen create_character_maxed_screen}}}
                      {ui push_screen create_character_notonline_screen}}}})
          (mb_musicstore.btn
@@ -779,10 +799,10 @@
 {new
    BandScreen
    main_hub_screen
-   (panels meta DX_SV_PANEL main_hub_panel accomplishments_status_panel)
+   (panels meta sv3_panel main_hub_panel accomplishments_status_panel)
    (enter
-      {accomplishments_status_panel set_showing $screensaver} ; dx - hide ui elements if in screensaver
-      {main_hub_panel set_showing $screensaver}
+      {accomplishments_status_panel set_showing $overshell_showing} ; dx - hide ui elements if in screensaver
+      {main_hub_panel set_showing $overshell_showing}
    )
    (focus main_hub_panel)}
 {new

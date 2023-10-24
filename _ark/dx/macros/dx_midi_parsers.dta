@@ -1,5 +1,57 @@
 {new
    MidiParser
+   check_trainer_pro_guitar
+   (track_name 'PART REAL_GUITAR')
+   (text
+      {if
+         {'||'
+               {has_substr $mp.val _pg}
+               {has_substr $mp.val pg_}}
+         {set $dx_trainer_real_guitar TRUE}
+      }
+   )
+}
+{new
+   MidiParser
+   check_trainer_pro_bass
+   (track_name 'PART REAL_BASS')
+   (text
+      {if
+         {'||'
+               {has_substr $mp.val _pb}
+               {has_substr $mp.val pb_}}
+         {set $dx_trainer_real_bass TRUE}
+      }
+   )
+}
+{new
+   MidiParser
+   check_trainer_pro_keys
+   (track_name 'PART REAL_KEYS_X')
+   (text
+      {if
+         {'||'
+               {has_substr $mp.val _pk}
+               {has_substr $mp.val pk_}}
+         {set $dx_trainer_real_keys TRUE}
+      }
+   )
+}
+{new
+   MidiParser
+   check_trainer_pro_drums
+   (track_name 'PART DRUMS')
+   (text
+      {if
+         {has_any_substr
+               $mp.val
+               (_drm drm_ challenge)}
+         {set $dx_trainer_real_drum TRUE}
+      }
+   )
+}
+{new
+   MidiParser
    guitar_timer
    (track_name 'PART GUITAR')
    (inverted FALSE)
@@ -14,10 +66,13 @@
    (gem
       {unless $first_guitar_gem_tracked
          {set $first_guitar_gem_tracked TRUE}
+         {set $tracked_break_num_guitar 0}
          {set $first_guitar_gem_beat {int $mp.start}}
-         {push_back $guitar_note_tracker ("delay_0" 0 $first_guitar_gem_beat)}
-         {set $guitar_note_tracker {array $guitar_note_tracker}}
-         {set $tracked_break_num_guitar 1}
+         {if {> $first_guitar_gem_beat 10}
+            {push_back $guitar_note_tracker ("delay_0" 0 $first_guitar_gem_beat)}
+            {set $guitar_note_tracker {array $guitar_note_tracker}}
+            {set $tracked_break_num_guitar 1}
+         }
       }
       {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
          {set $guitar_tracked_start {int $mp.start}}
@@ -25,7 +80,7 @@
          {push_back $guitar_note_tracker ({sprint "delay_" $tracked_break_num_guitar} $guitar_tracked_prev_end $guitar_tracked_start)}
          {set $guitar_note_tracker {array $guitar_note_tracker}}
          {set $tracked_break_num_guitar {+ $tracked_break_num_guitar 1}}
-         ;{dx_log_writer TRUE $guitar_note_tracker}
+         {dx_log_writer countdown {sprint "Guitar Tracker array: " $guitar_note_tracker}}
       }
       {set $dx_final_note_guitar {int $mp.start}}
       {if {> $dx_final_note_guitar $dx_final_note} {set $dx_final_note $dx_final_note_guitar}}
@@ -47,10 +102,13 @@
    (gem
       {unless $first_drum_gem_tracked
          {set $first_drum_gem_tracked TRUE}
+         {set $tracked_break_num_drum 0}
          {set $first_drum_gem_beat {int $mp.start}}
-         {push_back $drum_note_tracker ("delay_0" 0 $first_drum_gem_beat)}
-         {set $drum_note_tracker {array $drum_note_tracker}}
-         {set $tracked_break_num_drum 1}
+         {if {> $first_drum_gem_beat 10}
+            {push_back $drum_note_tracker ("delay_0" 0 $first_drum_gem_beat)}
+            {set $drum_note_tracker {array $drum_note_tracker}}
+            {set $tracked_break_num_drum 1}
+         }
       }
       {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
          {set $drum_tracked_start {int $mp.start}}
@@ -58,7 +116,7 @@
          {push_back $drum_note_tracker ({sprint "delay_" $tracked_break_num_drum} $drum_tracked_prev_end $drum_tracked_start)}
          {set $drum_note_tracker {array $drum_note_tracker}}
          {set $tracked_break_num_drum {+ $tracked_break_num_drum 1}}
-         ;{dx_log_writer TRUE $drum_note_tracker}
+         {dx_log_writer countdown {sprint "Drum Tracker array: " $drum_note_tracker}}
       }
       {set $dx_final_note_drum {int $mp.start}}
       {if {> $dx_final_note_drum $dx_final_note} {set $dx_final_note $dx_final_note_drum}}
@@ -80,10 +138,13 @@
    (gem
       {unless $first_bass_gem_tracked
          {set $first_bass_gem_tracked TRUE}
+         {set $tracked_break_num_bass 0}
          {set $first_bass_gem_beat {int $mp.start}}
-         {push_back $bass_note_tracker ("delay_0" 0 $first_bass_gem_beat)}
-         {set $bass_note_tracker {array $bass_note_tracker}}
-         {set $tracked_break_num_bass 1}
+         {if {> $first_bass_gem_beat 10}
+            {push_back $bass_note_tracker ("delay_0" 0 $first_bass_gem_beat)}
+            {set $bass_note_tracker {array $bass_note_tracker}}
+            {set $tracked_break_num_bass 1}
+         }
       }
       {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
          {set $bass_tracked_start {int $mp.start}}
@@ -91,7 +152,7 @@
          {push_back $bass_note_tracker ({sprint "delay_" $tracked_break_num_bass} $bass_tracked_prev_end $bass_tracked_start)}
          {set $bass_note_tracker {array $bass_note_tracker}}
          {set $tracked_break_num_bass {+ $tracked_break_num_bass 1}}
-         ;{dx_log_writer TRUE $bass_note_tracker}
+         {dx_log_writer countdown {sprint "Bass Tracker array: " $bass_note_tracker}}
       }
       {set $dx_final_note_bass {int $mp.start}}
       {if {> $dx_final_note_bass $dx_final_note} {set $dx_final_note $dx_final_note_bass}}
@@ -114,10 +175,13 @@
       {$this rt_compute_space}
       {unless $first_keys_gem_tracked
          {set $first_keys_gem_tracked TRUE}
+         {set $tracked_break_num_keys 0}
          {set $first_keys_gem_beat {int $mp.start}}
-         {push_back $keys_note_tracker ("delay_0" 0 $first_keys_gem_beat)}
-         {set $keys_note_tracker {array $keys_note_tracker}}
-         {set $tracked_break_num_keys 1}
+         {if {> $first_keys_gem_beat 10}
+            {push_back $keys_note_tracker ("delay_0" 0 $first_keys_gem_beat)}
+            {set $keys_note_tracker {array $keys_note_tracker}}
+            {set $tracked_break_num_keys 1}
+         }
       }
       {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
          {set $keys_tracked_start {int $mp.start}}
@@ -125,7 +189,7 @@
          {push_back $keys_note_tracker ({sprint "delay_" $tracked_break_num_keys} $keys_tracked_prev_end $keys_tracked_start)}
          {set $keys_note_tracker {array $keys_note_tracker}}
          {set $tracked_break_num_keys {+ $tracked_break_num_keys 1}}
-         ;{dx_log_writer TRUE $keys_note_tracker}
+         {dx_log_writer countdown {sprint "Keys Tracker array: " $keys_note_tracker}}
       }
       {set $dx_final_note_keys {int $mp.start}}
       {if {> $dx_final_note_keys $dx_final_note} {set $dx_final_note $dx_final_note_keys}}
@@ -152,10 +216,13 @@
       {$this rt_compute_space}
       {unless $first_vocals_gem_tracked
          {set $first_vocals_gem_tracked TRUE}
+         {set $tracked_break_num_vocals 0}
          {set $first_vocals_gem_beat {int $mp.start}}
-         {push_back $vocals_note_tracker ("delay_0" 0 $first_vocals_gem_beat)}
-         {set $vocals_note_tracker {array $vocals_note_tracker}}
-         {set $tracked_break_num_vocals 1}
+         {if {> $first_vocals_gem_beat 10}
+            {push_back $vocals_note_tracker ("delay_0" 0 $first_vocals_gem_beat)}
+            {set $vocals_note_tracker {array $vocals_note_tracker}}
+            {set $tracked_break_num_vocals 1}
+         }
       }
       {if {&& {>= $mp.prev_start 16} {< $mp.prev_start 10000}}
          {set $vocals_tracked_start {int $mp.start}}
@@ -163,7 +230,7 @@
          {push_back $vocals_note_tracker ({sprint "delay_" $tracked_break_num_vocals} $vocals_tracked_prev_end $vocals_tracked_start)}
          {set $vocals_note_tracker {array $vocals_note_tracker}}
          {set $tracked_break_num_vocals {+ $tracked_break_num_vocals 1}}
-         ;{dx_log_writer TRUE $vocals_note_tracker}
+         {dx_log_writer countdown {sprint "Vocal Tracker array: " $vocals_note_tracker}}
       }
       {set $dx_final_note_vocals {int $mp.start}}
       {if {> $dx_final_note_vocals $dx_final_note} {set $dx_final_note $dx_final_note_vocals}}

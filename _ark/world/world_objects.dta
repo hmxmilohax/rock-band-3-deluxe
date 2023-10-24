@@ -761,21 +761,6 @@
       (song
          #ifdef HX_PC
          #else
-         #ifdef HX_WII
-         (change_subdir
-            ($file)
-            {if_else
-               {has_substr
-                  $file
-                  "dlc/"}
-               {cond
-                  ({has_substr
-                        $file
-                        "/world/shared/director.milo"}
-                     "world/shared/director.milo")
-                  "stream_cache"}
-               kDataUnhandled})
-         #else
          (change_subdir
             ($file)
             {if_else
@@ -789,7 +774,6 @@
                      "world/shared/director.milo")
                   "stream_cache"}
                kDataUnhandled})
-         #endif
          #endif)))
 (RndDir
    (types
@@ -1565,7 +1549,6 @@
                   "save and preview lipsync PropAnim changes")))
          VIGNETTE_ON_MILO_LOADED
          (enter
-            {dx_postfx_setter}
             {if
                {exists game}
                {set $world_simulate TRUE}}
@@ -1582,7 +1565,16 @@
                   {set $in_vignette_outro FALSE}
                   {if
                      {== $this $world}
-                     {$this kick_scene}}}
+                     {$this kick_scene}}
+                  {unless {session is_in_game}
+                     ;remove post fx when entering a shot not in game
+                     {dx_noise_setter $this}
+                     {dx_emulatefps_setter $this}
+                     {dx_motion_blur_setter $this}
+                     {dx_camera_shake_setter $this}
+                     {dx_camera_blur_setter $this}
+                     {dx_force_lod_setter $this}
+                  }}
                {do
                   {if
                      [scene0]
@@ -1590,7 +1582,7 @@
                         set
                         showing
                         FALSE}}}}
-            {if {|| {&& {game is_up} {== $venue none}} {modifier_mgr is_modifier_active mod_blackmenu}} ; dx - hide background vignettes for menu speedups or for black venue
+            {if {|| $dx_customizer $dx_black_menu} ; dx - hide background vignettes for menu speedups or for black venue ;{&& {game is_up} {== $dx_venue none}}
                {if [scene0]
                   {[scene0] set showing FALSE}
                }
@@ -2070,7 +2062,15 @@
                   {notify
                      {path_name $this}
                      " scene could not find camshot!\n"}}}
-                     {dx_postfx_setter})
+                  {unless {session is_in_game}
+                     ;remove post fx when entering a shot not in game
+                     {dx_noise_setter $this}
+                     {dx_emulatefps_setter $this}
+                     {dx_motion_blur_setter $this}
+                     {dx_camera_shake_setter $this}
+                     {dx_camera_blur_setter $this}
+                     {dx_force_lod_setter $this}
+                  })
          (enter
             {unless
                {$this is_proxy}
@@ -2086,10 +2086,19 @@
                      {handle
                         ($this vignette_start)}
                      {handle_type
-                        ($this force_camera $this)}}
+                        ($this force_camera $this)}
+                     {unless {session is_in_game}
+                        ;remove post fx when entering a shot not in game
+                        {dx_noise_setter $this}
+                        {dx_emulatefps_setter $this}
+                        {dx_motion_blur_setter $this}
+                        {dx_camera_shake_setter $this}
+                        {dx_camera_blur_setter $this}
+                        {dx_force_lod_setter $this}
+                     }
+                  }
                   {handle
-                     ($this vignette_end)}}}
-                     {dx_postfx_setter})
+                     ($this vignette_end)}}})
          (exit)
          (add_shot_target
             ($shot $char $grp)
@@ -3734,7 +3743,6 @@
                {$banddirector shot_over $this}
                {if
                   {exists game}
-                  {dx_postfx_setter}
                   {switch
                      [category]
                      ((LOSE WIN WIN_QUICK WIN_FINALE)
@@ -3745,7 +3753,16 @@
                      ((OUTRO_MULTI OUTRO)
                         {$banddirector
                            set_dircut
-                           [category]})}}})
+                           [category]})}}}
+            {unless {session is_in_game}
+               ;remove post fx when entering a shot not in game
+               {dx_noise_setter $this}
+               {dx_emulatefps_setter $this}
+               {dx_motion_blur_setter $this}
+               {dx_camera_shake_setter $this}
+               {dx_camera_blur_setter $this}
+               {dx_force_lod_setter $this}
+            })
          (stop_shot
             {if
                $banddirector
@@ -4234,12 +4251,18 @@
          (enter
             {if
                $world
+               ;when entering in to the game world, remove posties
+               {dx_noise_setter $world}
+               {dx_emulatefps_setter $world}
+               {dx_motion_blur_setter $world}
+               {dx_camera_shake_setter $world}
+               {dx_camera_blur_setter $world}
+               {dx_force_lod_setter $world}
                {$world
                   add_sink
                   $this
                   (excitement game_won game_won_finale game_lost game_over game_outro playing_final_cam)
                   kSinkModeType}}
-            {dx_postfx_setter}
             {set $crowd.game_excitement kExcitementOkay}
             {set $crowd.authored_excitement kExcitementIdle}
             {set $crowd.authored_action ''}
@@ -4314,35 +4337,10 @@
                   {== $cat LOSE}
                   kExcitementLost
                   kExcitementWon}}
-            #ifdef HX_WII
-            {if_else
-               {== $cat WIN_PRE_FINALE}
-               {do
-                  {if_else
-                     {$this set_dircut WIN_FINALE}
-                     {set $has_finale 1}
-                     {set $has_finale 0}}
-                  {if_else
-                     {$this set_dircut WIN_PRE_FINALE}
-                     {set $has_pre_finale 1}
-                     {set $has_pre_finale 0}}
-                  {if
-                     {&&
-                        {! $has_finale}
-                        {! $has_pre_finale}}
-                     {handle
-                        (game game_outro)}}}
-               {if
-                  {!
-                     {$this set_dircut $cat}}
-                  {handle
-                     (game game_outro)}}}
-            #else
             {unless
                {$this set_dircut $cat}
                {handle
-                  (game game_outro)}}
-            #endif)
+                  (game game_outro)}})
          (append_shot
             ($first_cam $cat $notify)
             {do
@@ -4524,8 +4522,8 @@
                   set_intro_real_time
                   {if_else
                      $shot
-					 {if_else {&& {modifier_mgr is_modifier_active mod_nointro} {session_mgr is_local}} ; dx - skip intro
-					    0
+                {if_else {&& {! $dx_venue_intro} {session_mgr is_local}} ; dx - skip intro
+                   0
                         {-
                            {$shot total_duration_seconds}}
                      }
