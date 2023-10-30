@@ -11,17 +11,15 @@ def main():
     #print(root_dir)
     # sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/locale_dx_keep.dta
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],text=True).strip("\n")
-    print(f"Commit: {commit}\n")
-    print("Injecting devbuild into locale...\n")
-
+    print("Resetting devbuild in locale...\n")
     for locale in root_dir.joinpath("_ark/dx/locale").glob("dx_version.dta"):
         #print(locale)
         with open(locale, "r", encoding="ISO-8859=1") as f:
             the_locale = [line for line in f.readlines()]
 
         for i in range(len(the_locale)):
-            if "Release" in the_locale[i]:
-                the_locale[i] = the_locale[i].replace("Release", f"{commit}")
+            if f"{commit}" in the_locale[i]:
+                the_locale[i] = the_locale[i].replace(f"{commit}", "Release")
 
         with open(locale, "w", encoding="ISO-8859=1") as ff:
             ff.writelines(the_locale)
