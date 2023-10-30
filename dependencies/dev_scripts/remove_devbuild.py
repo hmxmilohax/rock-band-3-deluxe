@@ -19,7 +19,7 @@ def main():
 
         for i in range(len(the_locale)):
             if f"{commit}" in the_locale[i]:
-                the_locale[i] = the_locale[i].replace(f"{commit}", "Release")
+                the_locale[i] = the_locale[i].replace(f"{commit}", "devbuild")
 
         with open(locale, "w", encoding="ISO-8859=1") as ff:
             ff.writelines(the_locale)

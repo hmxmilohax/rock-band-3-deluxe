@@ -20,8 +20,8 @@ def main():
             the_locale = [line for line in f.readlines()]
 
         for i in range(len(the_locale)):
-            if "Release" in the_locale[i]:
-                the_locale[i] = the_locale[i].replace("Release", f"{commit}")
+            if "devbuild" in the_locale[i]:
+                the_locale[i] = the_locale[i].replace("devbuild", f"{commit}")
 
         with open(locale, "w", encoding="ISO-8859=1") as ff:
             ff.writelines(the_locale)
