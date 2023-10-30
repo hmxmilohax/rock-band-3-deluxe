@@ -39,7 +39,7 @@
 {func
    dx_custom_texture_setter
    ($category $path $sourcetex $customtex)
-   {dx_log_writer insane {sprint "func: dx_custom_texture_setter - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode " - " $category ", " $path ", " $sourcetex ", " $customtex}}
+   {dx_log_writer insane {sprint "func: dx_custom_texture_setter" " - " $category ", " $path ", " $sourcetex ", " $customtex}}
    {dx_log_writer insane
       {sprintf "Executed dx_custom_texture_setter - time: %.4fms"
          {time
@@ -83,7 +83,7 @@
 }
 {func
    dx_track_bre_reset
-   {dx_log_writer info {sprint "func: dx_track_bre_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info {sprint "func: dx_track_bre_reset"}}
    {dx_log_writer info
       {sprintf "Executed dx_track_bre_reset - time: %.4fms"
          {time
@@ -103,22 +103,30 @@
 }
 {func
    dx_track_streak_reset
-   {dx_log_writer info {sprint "func: dx_track_streak_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info {sprint "func: dx_track_streak_reset"}}
    {dx_log_writer info
       {sprintf "Executed dx_track_streak_reset - time: %.4fms"
          {time
             {if
-               {&& {exists gamemode}
-                  {||
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode training}}
-                  }
+               {&&
+                  {exists gamemode}
+                  {! {gamemode in_mode practice}}
+                  {! {gamemode in_mode trainer}}
                }
-               {{coop_track_panel find crowd_meter} set_showing $dx_crowd_meter_visibility}
+               {dx_toggle_fail_feedback}
                {{coop_track_panel find scoreboard} set_showing $dx_score_meter_visibility}
-               {unless {campaign has_current_goal}
+               {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_type kBandTrackerDisplayType_Text}
+               {if {gamemode in_mode campaign}
+                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_style kBandTrackerDisplayStyle_Campaign}
+               }
+               {if {gamemode in_mode tour}
+                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_style kBandTrackerDisplayStyle_Tour}
+               }
+               {if {&& {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
+                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_challenge_type kTrackerChallengeType_Streak}
                   {if
                      {||
-                        $dx_time_remaining
+                        {|| {== $dx_time_remaining down} {== $dx_time_remaining up}}
                         {&& {== $dx_streak_counter single} {== $dx_num_active_instruments 1}}
                         {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
                      }
@@ -152,23 +160,54 @@
                      }
                   }
                   {dx_mtv_time_remaining_handler} ;this will set up a script to run itself every half a second
-                  {if $dx_moved_up
-                     {set $dx_moved_up FALSE}
-                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {- {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
-                  }
-                  {unless $dx_moved_up
-                     {set $dx_moved_up TRUE}
-                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2} 4.55}}
-                  }
                }
+               {dx_reset_time_remaining_position}
             }
          }
       }
    }
 }
 {func
+   dx_reset_time_remaining_position
+   {unless $dx_fetched_time_remaining_pos ;gate this block to run once
+      {set $dx_fetched_time_remaining_pos TRUE}
+      {set $dx_stored_time_remaining_pos {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2}} ;store the base position
+   }
+   {if {|| {== $dx_time_remaining down} {== $dx_time_remaining up}}
+      {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
+      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
+      {cond
+         ({&& {! $dx_time_remaining_on_top} {|| {== $dx_streak_counter single} {== $dx_streak_counter multi}}} ;if vocals are active, move the label to the bottom again because it looks bad on top
+            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
+         )
+         ({&& {|| {== $dx_streak_counter single} {== $dx_streak_counter multi}} $dx_active_vocals} ;if vocals are active, move the label to the bottom again because it looks bad on top
+            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
+         )
+         ({&& {! $dx_time_remaining_on_top} {== $dx_streak_counter off}} ;if vocals are active, move the label to the bottom but slightly up to account for missing streak
+            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 1.4}}
+         )
+         ({&& {== $dx_streak_counter off} $dx_active_vocals} ;if vocals are active, move the label to the bottom but slightly up to account for missing streak
+            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 1.4}}
+         )
+         ({&& $dx_time_remaining_on_top {! $dx_active_vocals}} ;if we need to move the label to the top
+            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 4.66}} ;move it up
+         )
+      }
+   }
+   {if {== $dx_streak_counter off}
+      {do
+         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
+         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
+      }
+   }
+   {if {|| {gamemode in_mode tour} {gamemode in_mode campaign}}
+      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
+      {set $dx_current_time_remaining_pos {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2}}
+   }
+}
+{func
    dx_track_fc_reset
-   {dx_log_writer info {sprint "func: dx_track_fc_reset - Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_log_writer info {sprint "func: dx_track_fc_reset"}}
    {dx_log_writer info
       {sprintf "Executed dx_track_fc_reset - time: %.4fms"
          {time
@@ -260,6 +299,364 @@
                         }
                      )
                   }
+               }
+            }
+         }
+      }
+   }
+}
+#define DX_NOTE_STREAK_REMOVER
+(
+   {switch $instrument ;switch based off the currently loaded instrument
+      (bass
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (real_guitar
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (real_bass
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (keys
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (real_keys
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (guitar
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (drum
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+      (real_drum
+         {switch {{$player get_user} get_slot_num}
+            (0
+               {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (1
+               {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (2
+               {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_end.trig} trigger}
+            )
+            (3
+               {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_end.trig} trigger}
+            )
+         }
+      )
+   }
+)
+{func
+   dx_note_streak_popup
+   ($instrument)
+   {if $dx_note_streak_popups
+      {do
+         ($dx_bpm $dx_streak_timer)
+         {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
+         {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
+         {cond
+            ({< $dx_bpm 100} {set $dx_streak_timer 3})
+            ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
+            ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
+            ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
+            ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
+            ({> $dx_bpm 340} {set $dx_streak_timer 18})
+         }
+         {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+            {if {== {$player instrument} $instrument}
+               {switch $instrument ;switch based off the currently loaded instrument
+                  (bass
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_bass " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_bass " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_bass " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_bass " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (real_guitar
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_guitar " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_guitar " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_guitar " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_guitar " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (real_bass
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_bass " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_bass " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_bass " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_bass " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (keys
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_keys " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_keys " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_keys " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_keys " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (real_keys
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_keys " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_keys " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_keys " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_keys " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (guitar
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_guitar " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_guitar " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_guitar " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_guitar " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (drum
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_drum " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_drum " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_drum " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_drum " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
+                  (real_drum
+                     {switch {{$player get_user} get_slot_num}
+                        (0
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_drum " Note Streak!"}}
+                        )
+                        (1
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_drum " Note Streak!"}}
+                        )
+                        (2
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_drum " Note Streak!"}}
+                        )
+                        (3
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find super_streak_start.trig} trigger}
+                           {{{{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback} find bass_super_streak.lbl} set_token_fmt {sprint $num_gems_combo_real_drum " Note Streak!"}}
+                        )
+                     }
+                     {script_task
+                        kTaskBeats
+                        (delay $dx_streak_timer)
+                        (script DX_NOTE_STREAK_REMOVER)
+                     }
+                  )
                }
             }
          }
