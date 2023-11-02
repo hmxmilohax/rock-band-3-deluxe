@@ -663,6 +663,7 @@
       }
    }
 }
+; this function will re-apply the local player's texture setting if it was previously changed by a remote player 
 (func
    dx_resync_local_textures
    ($instrument)
@@ -763,6 +764,7 @@
                {set $dx_vocal_overdrive_needs_reset TRUE}
             }
          )
+         ; checks every instrument texture if playing offline or if modifier was disabled
          (all
             {dx_log_writer info {sprint "dx_resync_local_textures: resetting every texture to local setting"}}
             {unless {== $dx_highway_guitar $dx_local_highway_guitar}
@@ -855,7 +857,9 @@
             {switch {$user get_track_type}
                ((kTrackGuitar kTrackRealGuitar)
                   {if_else {$user is_local}
+                     ; if the local player is on guitar, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackGuitar}
+                     ; otherwise apply a new guitar texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_highway_guitar $dx_highway_guitar}
                            {set $dx_highway_guitar $dx_remote_highway_guitar}
@@ -874,7 +878,9 @@
                )
                ((kTrackBass kTrackRealBass)
                   {if_else {$user is_local}
+                     ; if the local player is on bass, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackBass}
+                     ; otherwise apply a new bass texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_highway_bass $dx_highway_bass}
                            {set $dx_highway_bass $dx_remote_highway_bass}
@@ -893,7 +899,9 @@
                )
                (kTrackDrum
                   {if_else {$user is_local}
+                     ; if the local player is on drums, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackDrum}
+                     ; otherwise apply a new drum texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_highway_drum $dx_highway_drum}
                            {set $dx_highway_drum $dx_remote_highway_drum}
@@ -912,7 +920,9 @@
                )
                (kTrackKeys
                   {if_else {$user is_local}
+                     ; if the local player is on keys, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackKeys}
+                     ; otherwise apply a new keys texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_highway_keys $dx_highway_keys}
                            {set $dx_highway_keys $dx_remote_highway_keys}
@@ -931,7 +941,9 @@
                )
                (kTrackRealKeys
                   {if_else {$user is_local}
+                     ; if the local player is on pro keys, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackRealKeys}
+                     ; otherwise apply a new pro keys texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_keyboard $dx_keyboard}
                            {set $dx_keyboard $dx_remote_keyboard}
@@ -950,7 +962,9 @@
                )
                (kTrackVocals
                   {if_else {$user is_local}
+                     ; if the local player is on vocals, run function to (re)apply their own theme if needed
                      {dx_resync_local_textures kTrackRealKeys}
+                     ; otherwise apply a new vocals texture if one was received from a remote player
                      {do
                         {unless {== $dx_remote_vocal_arrow $dx_vocal_arrow}
                            {set $dx_vocal_arrow $dx_remote_vocal_arrow}
@@ -977,17 +991,18 @@
       {dx_resync_local_textures all}
    }
 )
+; function to tell remote players what texture(s) the local player has
 (func
    dx_sync_remote_textures
    ($instrument)
    {do
       {dx_log_writer info {sprint "dx_sync_remote_textures"}}
       {if_else {session_mgr is_local}
-         {dx_resync_local_textures all}
+         {dx_resync_local_textures all} ; automatically use local user's own theme if playing offline
          {if_else {modifier_mgr is_modifier_active mod_remote_texture_sync}
             {do
                {dx_log_writer info {sprint "dx_sync_remote_textures: PREPPING TO SEND TEXTURES"}}
-               {dx_resync_local_textures $instrument}
+               {dx_resync_local_textures $instrument} ; makes sure the local user is using their own theme on their instrument
                {switch $instrument
                   ((kTrackGuitar kTrackRealGuitar)
                      {do
@@ -1100,7 +1115,7 @@
                   )
                }
             }
-            {dx_resync_local_textures all}
+            {dx_resync_local_textures all} ; automatically use local user's own theme if modifier is off
          }
       }
    }
