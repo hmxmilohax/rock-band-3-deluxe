@@ -2,125 +2,300 @@
    (view online_options)
    (on_cancel
       {options.lst set_selected 1}
-      {$this show_state dxState_DeluxeSettings})
+      {$this show_state dxState_DeluxeSettings}
+   )
    (enter
-   {set $dx_slider TRUE}
-   {set $dx_slider_id dx_speedmenu}
-   {online_options.lst set_selected $speedmenuval}
-   {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
-   {bg_music.sld set_num_steps 41} ;number of steps for note speed slider
-   {crowd.sld set_num_steps 31} ;number of steps for song speed slider
-   {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
-   {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
-   {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
-   {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg (or not, thanks rb3)
-   {speed_msg.lbl set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg (or not, thanks rb3)
-   {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg (or not, thanks rb3)
-   {online_options.lst set_data 
-   (
-      os_venuefps
-      os_trkspd
-      os_sngspd
-      os_faster
-   )})
-  (update_view
+      {set $dx_slider TRUE}
+      {set $dx_slider_id dx_speedmenu}
+      {online_options.lst set_selected $speedmenuval}
+      {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
+      {bg_music.sld set_num_steps 41} ;number of steps for note speed slider
+      {crowd.sld set_num_steps 31} ;number of steps for song speed slider
+      {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
+      {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+      {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
+      {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg (or not, thanks rb3)
+      {speed_msg.lbl set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg (or not, thanks rb3)
+      {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg (or not, thanks rb3)
+      {online_options.lst set_data 
+         (
+            os_venuefps
+            os_trkspd
+            os_sngspd
+            os_faster
+         )
+      }
+   )
+   (update_view
       {handle
          ($this
             update_slider
             instruments.sld
-            "")}
+            ""
+         )
+      }
       {handle
          ($this
             update_slider
             bg_music.sld
-            "")}
+            ""
+         )
+      }
       {handle
          ($this
             update_slider
             crowd.sld
-            "")}
+            ""
+         )
+      }
       {handle
          ($this
             update_slider
             sfx.sld
-            "")}
+            ""
+         )
+      }
       {handle
          ($this
             update_slider
             voice_chat.sld
-            "")})
-   (SELECT_MSG
-   {set $speedmenuval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_venuefps
-      {set $fpsslider TRUE}
-      {instruments.sld store}
-      {instruments.sld set_showing TRUE}
-      {$this set_focus instruments.sld})
-   (os_trkspd
-    {set $trackspeedslider TRUE}
-    {bg_music.sld store}
-    {bg_music.sld set_showing TRUE}
-    {$this set_focus bg_music.sld})
-   (os_sngspd
-      {if_else {$this in_game}
-      {$this show_state dxState_SpeedDenyMsg}
-      {do
-      {set $songspeedslider TRUE}
-      {crowd.sld store}
-      {crowd.sld set_showing TRUE}
-      {$this set_focus crowd.sld}
+            ""
+         )
       }
-      })
-   (os_faster
-      {$this show_state dxState_FasterMode})
-   })
-(BUTTON_DOWN_MSG
+   )
+   (SELECT_MSG
+      {set $speedmenuval {$component selected_sym}}
+      {switch
+         {$component selected_sym}
+         (os_venuefps
+            {set $fpsslider TRUE}
+            {instruments.sld store}
+            {instruments.sld set_showing TRUE}
+            {$this set_focus instruments.sld}
+         )
+         (os_trkspd
+            {$this show_state kState_TrackSpeedInstSelect}
+         )
+         (os_sngspd
+            {if_else {$this in_game}
+               {$this show_state dxState_SpeedDenyMsg}
+               {do
+                  {set $songspeedslider TRUE}
+                  {crowd.sld store}
+                  {crowd.sld set_showing TRUE}
+                  {$this set_focus crowd.sld}
+               }
+            }
+         )
+         (os_faster
+            {$this show_state dxState_FasterMode}
+         )
+      }
+   )
+   (BUTTON_DOWN_MSG
+         {if_else
+            {find_elem
+               ("instruments.sld"
+                  "bg_music.sld"
+                  "crowd.sld")
+               {$this focus_name}}
+            {switch
+               $action
+               ((kAction_Confirm kAction_Cancel)
+                  {{$this
+                        find
+                        {$this focus_name}}
+                     confirm}
+                  {{$this
+                        find
+                        {$this focus_name}}
+                     set_showing
+                     FALSE}
+                  {if_else $fpsslider
+                     {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
+                  {if_else $songspeedslider
+                     {do {$this show_state kState_SongSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                  {if_else $trackspeedslider
+                     {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+                     {$this set_focus options_audio.lst}}}})
+               kDataUnhandled}
+            kDataUnhandled}
+   )
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user}
+   )
+   (SCROLL_MSG
+      {$this on_slider_change $component $user}
+   )
+   (exit
+      {set $dx_slider FALSE}
+   )
+   (on_cancel
+      {$this show_game_options}
+   )
+)
+
+(kState_TrackSpeedInstSelect
+   (view options_audio)
+   (enter
+      {set $dx_slider TRUE}
+      {set $dx_slider_id dx_speedmenu}
+      {options_audio.lst set_data
+         (
+            all_instruments
+            {sprintf {localize os_trkspd_guitar} {int {+ 0.5 {* $trackspeed_guitar 100}}}}
+            {sprintf {localize os_trkspd_bass} {int {+ 0.5 {* $trackspeed_bass 100}}}}
+            {sprintf {localize os_trkspd_drum} {int {+ 0.5 {* $trackspeed_drum 100}}}}
+            {sprintf {localize os_trkspd_keys} {int {+ 0.5 {* $trackspeed_keys 100}}}}
+            {sprintf {localize os_trkspd_real_keys} {int {+ 0.5 {* $trackspeed_real_keys 100}}}}
+            {sprintf {localize os_trkspd_real_guitar} {int {+ 0.5 {* $trackspeed_real_guitar 100}}}}
+            {sprintf {localize os_trkspd_real_bass} {int {+ 0.5 {* $trackspeed_real_bass 100}}}}
+         )
+      }
+   )
+   (update_view
+      {handle
+         ($this
+            update_slider
+            bg_music.sld
+            ""
+         )
+      }
+   )
+   (SELECT_MSG
+      {switch
+         {options_audio.lst selected_data}
+         (0
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_guitar 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst all}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (1
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_guitar 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst guitar}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (2
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_bass 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst bass}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (3
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_drum 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst drum}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (4
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_keys 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst keys}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (5
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_real_keys 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst real_keys}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (6
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_real_guitar 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst real_guitar}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+         (7
+            {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed_real_bass 1} 0.5} 0.05}}}} ;set note speed slider based on current value
+            {set $dx_trkspd_inst real_bass}
+            {set $trackspeedslider TRUE}
+            {bg_music.sld store}
+            {bg_music.sld set_showing TRUE}
+            {$this set_focus bg_music.sld}
+         )
+      }
+   )
+   (BUTTON_DOWN_MSG
       {if_else
          {find_elem
-            ("instruments.sld"
-               "bg_music.sld"
-               "crowd.sld")
-            {$this focus_name}}
+            ("bg_music.sld")
+            {$this focus_name}
+         }
          {switch
             $action
             ((kAction_Confirm kAction_Cancel)
-               {{$this
-                     find
-                     {$this focus_name}}
-                  confirm}
-               {{$this
-                     find
-                     {$this focus_name}}
-                  set_showing
-                  FALSE}
-               {if_else $fpsslider
-                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
-               {if_else $songspeedslider
-                  {do {$this show_state kState_SongSpeedSliderMsg} {$this set_focus confirm_action.lst}}
+               {{$this find {$this focus_name}} confirm}
+               {{$this find {$this focus_name}} set_showing FALSE}
                {if_else $trackspeedslider
                   {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
-                  {$this set_focus options_audio.lst}}}})
-            kDataUnhandled}
-         kDataUnhandled})
+                  {$this set_focus options_audio.lst}
+               }
+            )
+            kDataUnhandled
+         }
+         kDataUnhandled
+      }
+   )
    (SCROLL_SELECT_MSG
-      {$this on_slider_change $component $user})
+      {$this on_slider_change $component $user}
+   )
    (SCROLL_MSG
-      {$this on_slider_change $component $user})
- (exit
-  {set $dx_slider FALSE})
- (on_cancel
-  {$this show_game_options}))
+      {$this on_slider_change $component $user}
+   )
+   (on_cancel
+      {$this show_state dxState_SpeedMenu}
+   )
+)
 
 (kState_TrackSpeedSliderMsg
    (view confirm_action)
    (enter
       {handle
-         ($this set_confirm_message {sprintf {localize os_tspeed} {int {+ 0.5 {* $trackspeed 100}}}})})
+         ($this set_confirm_message 
+            {sprintf 
+               {localize os_tspeed} 
+               {int 
+                  {+ 0.5 
+                     {*
+                        {switch $dx_trkspd_inst
+                           (all $trackspeed_guitar)                        
+                           (guitar $trackspeed_guitar)
+                           (bass $trackspeed_bass)
+                           (drum $trackspeed_drum)
+                           (keys $trackspeed_keys)
+                           (real_keys $trackspeed_real_keys)
+                           (real_guitar $trackspeed_real_guitar)
+                           (real_bass $trackspeed_real_bass)
+                        }
+                        100
+                     }
+                  }
+               }
+            }
+         )
+      }
+   )
    (SELECT_MSG
       {set $trackspeedslider FALSE}
-      {$this show_state dxState_SpeedMenu}))
+      {$this show_state kState_TrackSpeedInstSelect}
+   )
+)
 
 (kState_SongSpeedSliderMsg
    (view confirm_action)
