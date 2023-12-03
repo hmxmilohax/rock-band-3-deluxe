@@ -418,3 +418,44 @@
    {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
    {choose_character.tex set_bitmap "dx/custom_textures/_additional_textures/choose_character.png"}
 }
+{func
+   dx_quick_chat
+   ($message)
+   {set $user_name " "} {set $track_icon "G"} ; set default values if user_name or track icon cannot be obtained
+   {set $user_name {$user get_user_name}}
+   {if {== {ui current_screen} game_screen} {set $track_icon {$user get_track_icon}}}
+   {if_else {== {ui current_screen} game_screen}
+      {do ;if in-game, use Road Challange's tracker display to show a chat message
+         {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+         {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+         {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+         {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+         {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon $message}}}
+         {session send_msg_to_all
+            {'`' 
+               (
+                  {do
+                     {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+                     {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+                     {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+                     {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+                     {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' $message}}}}
+                  }
+               )
+               kNetReliable
+            }
+         }
+      }
+      {do ;if not in-game, use passive_messages_panel instead to show a chat message
+         {passive_messages_panel queue_message {symbol {sprintf "%s: %s" $user_name $message}}}
+         {session send_msg_to_all
+            {'`' 
+               (
+                  {passive_messages_panel queue_message {symbol {sprintf "%s: %s" {',' $user_name} {',' $message}}}}
+               )
+               kNetReliable
+            }
+         }
+      }
+   }
+}      

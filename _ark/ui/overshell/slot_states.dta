@@ -361,13 +361,19 @@
             (overshell_return
                {$this leave_options})
             (overshell_online_options
+               {set $dx_is_in_chat FALSE}
                {$this show_online_options})
             (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
+               {set $dx_is_in_chat FALSE}
                {$this show_online_options})
             (overshell_register_online
                {$this attempt_register_online})
             (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
-            	{$this show_online_options})
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (overshell_dx_quick_chat ; dx - show quick chat instead of online options
+               {set $dx_is_in_chat quick}
+               {$this show_online_options})
             (overshell_game_options
                {$this show_game_options})
             (overshell_leave
@@ -395,6 +401,12 @@
    (SCROLL_MSG
       {$this on_slider_change $component $user})
    (BUTTON_DOWN_MSG
+      {if {== $action kAction_Right} ; dx - shows every quick chat option when pressing Right Dpad
+         {if {== {options.lst selected_sym} overshell_dx_quick_chat}
+            {set $dx_is_in_chat all}
+            {$this show_online_options}
+         }
+      }
       {cond
          ({==
                {$this focus_name}
@@ -516,7 +528,9 @@
       {$this show_options}))
 (kState_OnlineOptions
    (enter
-      {online_options.lst set circular 0})
+      {online_options.lst set circular {if_else $dx_is_in_chat 1 0}}
+      DX_SET_QUICK_CHAT_OPTIONS ; dx - set the list of online options on either quick chat or the vanilla online options
+   )
    (view online_options)
    (update_view
       {do
@@ -551,30 +565,55 @@
    (requires_online_session TRUE)
    (SELECT_MSG
       {switch
-         {$component selected_sym}
-         (overshell_invite
-            #ifdef HX_XBOX
-            {platform_mgr show_user_friends $user}
-            #else
-            {$this show_invite_friends}
-            #endif)
-         (overshell_kick
-            {$this show_kick_users})
-         (overshell_mute
-            {$this show_mute_users})
-         (overshell_gamercard
-            {$this show_gamercard_users})
-         (overshell_disconnect
-            {$this attempt_disconnect})
-         (overshell_invite_xbox_party
-            {platform_mgr invite_user_party $user})
-         (overshell_check_invites
-            {join_invite_panel set_joining_user $user}
-            {platform_mgr check_mailbox})})
+         $dx_is_in_chat
+         (all ; dx - sends a chat message that is currently hovered over from the "all" list
+            {dx_quick_chat {online_options.lst selected_sym}}
+         )
+         (quick ; dx - sends a chat message from the preset quick chat list
+            {switch
+               {online_options.lst selected_data}
+               (0 {dx_quick_chat $dx_chat_preset_0})
+               (1 {dx_quick_chat $dx_chat_preset_1})
+               (2 {dx_quick_chat $dx_chat_preset_2})
+               (3 {dx_quick_chat $dx_chat_preset_3})
+               (4 {dx_quick_chat $dx_chat_preset_4})
+               (5 {dx_quick_chat $dx_chat_preset_5})
+               (6 {dx_quick_chat $dx_chat_preset_6})
+               (7 {dx_quick_chat $dx_chat_preset_7})
+            }
+         )
+         (FALSE ; dx - use vanilla behavior if not in chat mode
+            {switch
+               {$component selected_sym}
+               (overshell_invite
+                  #ifdef HX_XBOX
+                  {platform_mgr show_user_friends $user}
+                  #else
+                  {$this show_invite_friends}
+                  #endif)
+               (overshell_kick
+                  {$this show_kick_users})
+               (overshell_mute
+                  {$this show_mute_users})
+               (overshell_gamercard
+                  {$this show_gamercard_users})
+               (overshell_disconnect
+                  {$this attempt_disconnect})
+               (overshell_invite_xbox_party
+                  {platform_mgr invite_user_party $user})
+               (overshell_check_invites
+                  {join_invite_panel set_joining_user $user}
+                  {platform_mgr check_mailbox})}
+         )
+      }
+   )
    (on_cancel
       {if_else
          {$this in_game}
-         {$this show_game_options}
+         {if_else $dx_is_in_chat ; dx - returns to root level options menu if this state was entered via quick chat
+            {$this show_options}
+            {$this show_game_options}
+         }
          {$this show_options}}))
 (kState_DisconnectConfirm
    (view confirm_action)
@@ -747,11 +786,14 @@
          (overshell_register_online
             {$this attempt_register_online})
          (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
+            {set $dx_is_in_chat FALSE}
             {$this show_online_options})
          (overshell_online_options
+            {set $dx_is_in_chat FALSE}
             {$this show_online_options})
          (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
-               {$this show_online_options})
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
          (overshell_drum_options
             {$this show_options_drum})
          (overshell_vocal_options
