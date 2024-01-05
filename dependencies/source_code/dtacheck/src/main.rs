@@ -4,7 +4,7 @@ use std::{
 };
 
 use clap::Parser as ClapParser;
-use codespan_reporting::diagnostic::Diagnostic;
+use codespan_reporting::{diagnostic::Diagnostic, term::Chars};
 use codespan_reporting::term;
 use codespan_reporting::{
     files::SimpleFiles,
@@ -31,7 +31,7 @@ fn funcs_from_conf(path: &Path) -> Function {
         let tokens = line.split_whitespace().collect::<Vec<_>>();
         let len = tokens.len();
         if len < 3 {
-            panic!("could not parse config file")
+            continue;
         }
 
         let max_args = tokens[len - 1].parse::<usize>().unwrap();
@@ -56,7 +56,10 @@ fn main() {
     let (ast, diagnostics) = parser::parse(&tokens);
 
     let writer = StandardStream::stderr(ColorChoice::Auto);
-    let config = codespan_reporting::term::Config::default();
+    let config = codespan_reporting::term::Config {
+        chars: Chars::ascii(),
+        ..Default::default()
+    };
 
     for diag in diagnostics {
         let _ = term::emit(
