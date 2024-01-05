@@ -31,6 +31,7 @@ def configure_tools(platform="ps3"):
             ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
             ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
             ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
+            ninja.variable("dtacheck", "dependencies\\windows\\dtacheck.exe")
         case "darwin":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp $in $out")
@@ -40,6 +41,8 @@ def configure_tools(platform="ps3"):
             ninja.variable("superfreq", "dependencies/macos/superfreq")
             ninja.variable("arkhelper", "dependencies/macos/arkhelper")
             ninja.variable("dtab", "dependencies/macos/dtab")
+            # dtacheck needs to be compiled for mac
+            ninja.variable("dtacheck", "true")
         case "linux":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp --reflink=auto $in $out")
@@ -47,6 +50,7 @@ def configure_tools(platform="ps3"):
             ninja.variable("superfreq", "dependencies/linux/superfreq")
             ninja.variable("arkhelper", "dependencies/linux/arkhelper")
             ninja.variable("dtab", "dependencies/linux/dtab")
+            ninja.variable("dtacheck", "dependencies/linux/dtacheck")
 
     match platform:
         case "ps3":
@@ -65,6 +69,7 @@ def configure_tools(platform="ps3"):
             )
 
     ninja.rule("sfreq", "$superfreq png2tex $in $out --miloVersion 26 --platform x360")
+    ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns")
     ninja.rule("dtab_serialize", "$dtab -b $in $out")
     ninja.rule("dtab_encrypt", "$dtab -e $in $out")
 
@@ -109,6 +114,20 @@ def run_dtab():
         ninja.build(str(serialize_output), "dtab_serialize", str(f))
         ninja.build(str(encryption_output), "dtab_encrypt", str(serialize_output))
         output_files.append(str(encryption_output))
+
+    return output_files
+
+def run_dtacheck():
+    files = list(Path("_ark").rglob("*.dta"))
+    output_files = []
+    for f in files:
+        target_filename = Path("gen", f.stem + ".dtb.stamp")
+
+        obj_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
+
+        stamp = obj_directory.joinpath(target_filename)
+        ninja.build(str(stamp), "dtacheck", str(f))
+        output_files.append(str(stamp))
 
     return output_files
 
@@ -275,6 +294,7 @@ match platform:
         # generate and copy files into the ark
         arkfiles = copy_rawfiles(platform)
         arkfiles += run_dtab()
+        arkfiles += run_dtacheck()
         arkfiles += convert_pngs(platform)
 
         # build ark
