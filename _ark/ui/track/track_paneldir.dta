@@ -101,6 +101,18 @@
          (track_2_cam_rect_frame 0.0)
          (track_3_shift_frame 0.0)
          (track_3_cam_rect_frame 0.0)
+         (pitch -44.0)
+         (fade_start 330)
+         (fade_length 100)
+         (fov 15)
+         (y_pos -229)
+         (z_pos 47)
+         (own_perspective FALSE)
+         (cam_offset 0.1)
+         (cam_offset_ps3 0.1)
+         (x_offset 24)
+         (side_angle 0)
+         (track_speed 52)
          (objects
             ())
          (visibles
@@ -176,6 +188,93 @@
             {set
                $cam_rect_frame
                {'+' $cam_rect_frame $aspect_frame_offset}}
+            ;track length lifted from rb2dx
+            {if $thisisafakevarremoveme
+            {set $tracklength 1.0}
+            {foreach_int
+               $idx
+               0
+               {{$this dir}
+                  gem_tracks_size}
+               {set
+                  $obj
+                  {{$this dir}
+                     get_gem_track
+                     $idx}}
+               {$obj
+                  set_pitch
+                  [pitch]}
+               {$obj
+                  set_fov
+                  [fov]}
+               {$obj
+                  set_cam_pos
+                  0
+                  [y_pos]
+                  [z_pos]}
+               {do
+                  ($fade_start
+                     {dist
+                        0
+                        [y_pos]
+                        [z_pos]
+                        0
+                        {* [fade_start] $tracklength}
+                        0})
+                  ($fade_end
+                     {dist
+                        0
+                        [y_pos]
+                        [z_pos]
+                        0
+                        {'+'
+                           {* [fade_start] $tracklength}
+                           [fade_length]}
+                        0})
+                  {$obj
+                     set_fade
+                     $fade_start
+                     {- $fade_end $fade_start}}}
+               {if_else
+                  [own_perspective]
+                  {do
+                     {$obj set_track_offset 0}
+                     {$obj set_side_angle 0}
+                     #ifdef HX_PS3
+                     {$obj
+                        set_screen_rect_x
+                        [cam_offset_ps3]}
+                     #else
+                     {$obj
+                        set_screen_rect_x
+                        [cam_offset]}
+                     #endif}
+                  {do
+                     {$obj
+                        set_track_offset
+                        [x_offset]}
+                     {$obj
+                        set_side_angle
+                        [side_angle]}
+                     {$obj set_screen_rect_x 0}}}
+               {$obj
+                  set
+                  top_y
+                  {'+'
+                     {'+'
+                        {* [fade_start] $tracklength}
+                        [fade_length]}
+                     5}}
+               {if
+                  {&&
+                     {exists gamemode}
+                     {!
+                        {gamemode in_mode drum_trainer}}}
+                  {$obj
+                     set
+                     y_per_second
+                     [track_speed]}}}
+            }
             ($size_frame $shift_frame $cam_rect_frame))
          (update
             ($animate)
