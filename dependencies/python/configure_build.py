@@ -105,32 +105,20 @@ def run_dtab():
     output_files = []
     for f in files:
         target_filename = Path("gen", f.stem + ".dtb")
+        stamp_filename = Path("gen", f.stem + ".dtb.stamp")
 
         output_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
         serialize_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
 
         serialize_output = serialize_directory.joinpath(target_filename)
         encryption_output = output_directory.joinpath(target_filename)
-        ninja.build(str(serialize_output), "dtab_serialize", str(f))
+        stamp = serialize_directory.joinpath(stamp_filename)
+        ninja.build(str(stamp), "dtacheck", str(f))
+        ninja.build(str(serialize_output), "dtab_serialize", str(f), implicit=str(stamp))
         ninja.build(str(encryption_output), "dtab_encrypt", str(serialize_output))
         output_files.append(str(encryption_output))
 
     return output_files
-
-def run_dtacheck():
-    files = list(Path("_ark").rglob("*.dta"))
-    output_files = []
-    for f in files:
-        target_filename = Path("gen", f.stem + ".dtb.stamp")
-
-        obj_directory = Path("obj", platform, "raw").joinpath(*f.parent.parts[1:])
-
-        stamp = obj_directory.joinpath(target_filename)
-        ninja.build(str(stamp), "dtacheck", str(f))
-        output_files.append(str(stamp))
-
-    return output_files
-
 
 def convert_pngs(platform):
     files = list(Path("_ark").rglob("*.png"))
@@ -294,7 +282,6 @@ match platform:
         # generate and copy files into the ark
         arkfiles = copy_rawfiles(platform)
         arkfiles += run_dtab()
-        arkfiles += run_dtacheck()
         arkfiles += convert_pngs(platform)
 
         # build ark
