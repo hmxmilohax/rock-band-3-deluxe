@@ -1,3 +1,4 @@
+#include ../dx/game/dx_game_handles.dta
 #include track_panel.dta
 #include pause_mics_helper.dta
 #define LOSE_MUSIC_SLOW_SEC
@@ -15,10 +16,9 @@
       (0 15 30 45 60))
    (audition_cam_toggle
       {audition_cycle_free_camera})
+   DX_GAME_PANEL_HANDLES
    (reset
-      {unless {gamemode in_mode trainer}
-         {dx_game_var_reset}
-      }
+      {$this dx_on_game_reset}
       {active_events_parser
          add_sink
          $this
@@ -93,17 +93,7 @@
       kDataUnhandled)
    (game_over
       {stagekit_reset}
-      {unless {gamemode in_mode trainer}
-         {dx_game_var_reset}
-         {set $dx_mtvup FALSE}
-         {{{{gamemode get track_panel} find mtv_overlay} find fade.anim} set_frame 0} ; dx - hide the mtv overlay on lose in case it's visible
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-         {if $dx_customizer
-            {game_restart}
-         }
-      }
+      {$this dx_on_game_over}
       {beatmatch
          foreach_active_player
          $p
@@ -120,41 +110,20 @@
    (game_won_common
       {beatmatch set_realtime TRUE}
       {beatmatch set_paused TRUE FALSE}
-      {unless {gamemode in_mode trainer}
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-      }
       {{get_track_panel}
          play_seq
          track_end.cue})
    (game_won
       {$this game_won_common}
-      {unless {gamemode in_mode trainer}
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-         {dx_reset_time_remaining_position}
-      }
+      {$this dx_on_game_won}
       kDataUnhandled)
    (game_won_finale
       {$this game_won_common}
-      {unless {gamemode in_mode trainer}
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-         {dx_reset_time_remaining_position}
-      }
+      {$this dx_on_game_won}
       kDataUnhandled)
    (game_lost
-      {unless {gamemode in_mode trainer}
-         {dx_game_var_reset}
-         {beatmatch set_realtime TRUE}
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-         {dx_reset_time_remaining_position}
-      }
+      {$this dx_on_game_over}
+      {beatmatch set_realtime TRUE}
       {beatmatch
          foreach_active_player
          $p
@@ -189,13 +158,7 @@
          foreach_active_player
          $p
          {$p disable_controller}}
-      {unless {gamemode in_mode trainer}
-         {dx_game_var_reset}
-         {beatmatch foreach_active_player $player
-            {dx_hide_solo_box}
-         }
-         {dx_reset_time_remaining_position}
-      }
+      {$this dx_on_game_over}
       {ui
          sync_screen
          {if_else
@@ -240,24 +203,7 @@
    PAUSE_ON_MIC_DISCONNECT
    (enter
       {unless $dx_skip_game_setup
-         {dx_trainer_checker}
-         {dx_set_auto_play}
-         {dx_game_var_reset}
-         {unless {gamemode in_mode trainer}
-            {dx_presence_manager}
-            {set $dx_game_enter_count
-               {+ $dx_game_enter_count 1}
-            }
-            {set $dx_log_counter
-               {+ $dx_log_counter 1}
-            }
-            {dx_log_writer default {sprint "Game has been entered. Game enter count: " $dx_game_enter_count " - Gamemode: " $dx_gamemode " - Local: " {session_mgr is_local}}}
-            {dx_log_writer default {sprint "Current User Info - Song Speed: " $speedmod " - Trackspeed: " $trackspeed " - Venue FPS: " $emulatefps " - Venue: " $dx_venue " - Venue Forced: " $force}}
-            {dx_log_writer default {sprint "Current User Textures - Emissive: " $dx_overdrive_guitar " - Highway: " $dx_highway_guitar " - Spotlight: " $dx_streak_guitar  " - Keyboard: " $dx_keyboard " - Smasher: " $dx_smasher " - Gem: " $dx_gem " - Sustain: " $dx_sustain " - Crowd Meter Tex: " $dx_crowd_meter}}
-            {dx_log_writer default {sprint "Current User Textures cont. - OD Bar: " $dx_overdrive_bar  " - Multiplier Ring: " $dx_multiplier_ring " - Track Rails: " $dx_rails " - Score Tex: " $dx_score " - Flames: " $dx_flames " - Vox Arrow: " $dx_vocal_arrow " - Vox Highway: " $dx_vocal_highway " - DX Multi Angle: " $dx_multiangle}}
-            {game set_kick_autoplay {modifier_mgr is_modifier_active mod_auto_kick}} ; dx - auto kick
-            {gamemode set allow_drum_fills {! {modifier_mgr is_modifier_active mod_static_fills}}} ; dx - static fills
-         }
+         {$this dx_on_game_enter}
          {$this set_showing TRUE}
          {set
             [delayed_mic_check]
@@ -284,13 +230,7 @@
          {handle
             ($this my_enter)}})
    (exit
-      {unless {gamemode in_mode trainer}
-         {set $dx_already_restarted FALSE} ; dx - track resets for no BRE modifier
-         {set $dx_mtvup FALSE} ;we have to make sure and turn off mtv overlay when it is unloaded or it can crash in places where we call it (overshell)
-         {dx_send_leader_song_speed}
-         DX_CURRENT_SONG_CLEAR
-         DX_JSON_CLEAR
-      }
+      {$this dx_on_game_exit}
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -325,11 +265,19 @@
             {set
                [chosen_vignette]
                {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
             {[chosen_vignette]
-               load}
-         }
-      }
-   )
+               load}}
+         #else
+         {[chosen_vignette]
+            load}
+         #endif}})
    (unload
       {if
          {!=
