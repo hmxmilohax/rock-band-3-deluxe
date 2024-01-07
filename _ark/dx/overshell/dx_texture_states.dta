@@ -41,6 +41,11 @@
          (os_angle
            {$this show_state dxState_AngleMenu}
          )
+         ;in each of the cases of these selected options, we must define parameters before we lead to the next state
+         ;all images use the same state
+         ;$dx_tracked_texture_loader - the name of the folder that contains the texture "dx/custom_textures/highways/*.png"
+         ;$dx_tracked_texture_category - if this image path above exists in a sub-folder. ex. "gems_default" lives in "gems" folder
+         ;$dx_choose_char_scale_x (y) - the scale used to set up the choose character preview image mesh for this set of images 
          (os_fretboard
             {set $dx_tracked_texture_loader highways}
             {set $dx_tracked_texture_category FALSE}
@@ -182,6 +187,7 @@
    )
    (exit 
       {dx_state_pos_tracker}
+      ;tell overshell to reset the choose character bitmap to the vanilla image when leaving this state
       {set $dx_track_to_reset_choose_character_texture TRUE}
    )
    (on_cancel
@@ -193,46 +199,70 @@
    {do
       ($options
          {array 0})
+      ;we dont actually use this but might be a good idea later to pull from a pool somehow
       {set $dx_available_textures
          (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flames_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar)
       }
+      ;we track if this texture is in a subfolder or not via a category
       {if_else $dx_tracked_texture_category
+         ;iterate through every found image inside of the ark using file_list
          {foreach $entry
             #ifdef HX_PS3
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_ps3"}} {if {!= $entry ""} {push_back $options $entry}}
-            #else
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_xbox"}} {if {!= $entry ""} {push_back $options $entry}}
+            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
+            #else ;HX_XBOX
+            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
             #endif
+            ;we have to check if the file name is not empty in order to produce a proper list, as it does return one empty entry
+            ;then populate our list array with everything we found
+            {if {!= $entry ""} {push_back $options $entry}}
          }
+         ;iterate through every found image using file_list but without a category
          {foreach $entry
             #ifdef HX_PS3
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_ps3"}} {if {!= $entry ""} {push_back $options $entry}}
-            #else
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_xbox"}} {if {!= $entry ""} {push_back $options $entry}}
+            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
+            #else ;HX_XBOX
+            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
             #endif
+            ;then populate our list array with everything we found
+            {if {!= $entry ""} {push_back $options $entry}}
          }
       }
+      ;first reset our external texture list array to be repopulated
       ($dx_current_texture_list_array
          {array 0})
       {if_else $dx_tracked_texture_category
+         ;iterate through every found image outside of the ark using file_list, including the category path
+         ;file_list doesnt seem to work on xbox outside of the ark though which is cringe
+         ;i don't recall right now if there is a reason this is setting an array when above inside the ark, we iterate
+         ;todo - look more into this
          {set $dx_current_texture_list_array
             #ifdef HX_PS3
             {file_list {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
-            #else
+            #else ;HX_XBOX
             {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
             #endif
          }
+         ;this block populates the array without the category part of the ath
          {set $dx_current_texture_list_array
             #ifdef HX_PS3
             {file_list {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
-            #else
+            #else ;HX_XBOX
             {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
             #endif
          }
       }
+      ;first check to see if we found any textures
       {if {> {size $dx_current_texture_list_array} 0}
-         {foreach $entry $dx_current_texture_list_array {if {!= $entry ""} {push_back $options $entry}}}
+         ;if we did iterate through them
+         {foreach $entry $dx_current_texture_list_array
+            ;make sure it isnt a null entry
+            {if {!= $entry ""}
+               ;and add them to our list for display
+               {push_back $options $entry}
+            }
+         }
       }
+      ;if no textures were found inside or outside of the ark, that's a bug and likely the paths used in the variables are incorrect
       {if {== {size $options} 0} ;if nothing was found at all
          {set $options (cant find textures 'this is a bug')} ;fill the list so it doesnt crash
       }
@@ -241,38 +271,52 @@
 )
 #define SCROLL_TEXTURE_SETTER
 (
+   ;Action when a scroll action is performed on the list
+   ;Here is where we update the texture preview displayed on screen
+   ;store the current highlighted list name
    {set $dx_list_scroll_texture {$component selected_sym}}
+   ;these are stored as symbols usually, so we need to strip them whenever we use the fed texture name
    {search_replace $dx_list_scroll_texture "'" "" $dx_list_scroll_texture}
+   ;Overshell Texture we manipulate. with the image
    {choose_character.tex set_bitmap
+      ;we track if this texture is in a subfolder or not via a category
       {if_else $dx_tracked_texture_category
          {if_else
+         ;first check if this texture exists outside of the ark in it's designated location
+         ;this includes the category in the path
          {file_exists
             #ifdef HX_PS3
             {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/" $dx_list_scroll_texture ".png_ps3"}
-            #else
+            #else ;HX_XBOX
             {sprint "GAME:/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/" $dx_list_scroll_texture ".png_xbox"}
             #endif
          }
+            ;Use that externally found texture for the bitmap if we did indeed find it
             #ifdef HX_PS3
             {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"}
-            #else
+            #else ;HX_XBOX
             {sprint "GAME:/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"}
             #endif
+            ;otherwise, use the texture inside the ark for the bitmap and just assume it exists
             {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"} ;texture inside of the ark if external texture does not exist
          }
          {if_else
+         ;if we currently are not tracking a texture with a category defined
+         ;check again if this file exists on disk, which does not include the category in it's path
          {file_exists
             #ifdef HX_PS3
             {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_loader "/gen/" $dx_list_scroll_texture ".png_ps3"}
-            #else
+            #else ;HX_XBOX
             {sprint "GAME:/custom_textures/" $dx_tracked_texture_loader "/gen/" $dx_list_scroll_texture ".png_xbox"}
             #endif
          }
+            ;Use that externally found texture for the bitmap if we did indeed find it
             #ifdef HX_PS3
             {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/custom_textures/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"}
-            #else
+            #else ;HX_XBOX
             {sprint "GAME:/custom_textures/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"}
             #endif
+            ;otherwise, use the texture inside the ark for the bitmap and just assume it exists
             {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/" $dx_list_scroll_texture ".png"} ;texture inside of the ark if external texture does not exist
          }
       }
@@ -285,17 +329,24 @@
    )
    (enter
       {do
+         ;repopulate the list via checking for textures on entry, as we could be entering from any number of categories
          {set $in_state FALSE}
          DX_TEXTURE_LOADER_HANDLER
+         ;snap to the first entry in the list
          {$current_list set_selected 0}
+         ;setup our preview texture object
          {game_options.grp add_object choose_character.mesh}
+         ;store the default pos and scale before manipulating it, to restore it later
          {store_choose_char_size_pos}
+         ;scale and position it based on parameters inherited from the previous OS state
          {choose_character.mesh set_local_pos_index 2 175}
          {choose_character.mesh set_local_scale_index 0 $dx_choose_char_scale_x} ;X
          {choose_character.mesh set_local_scale_index 2 $dx_choose_char_scale_y} ;Y
          {choose_character.mat set diffuse_tex choose_character.tex}
+         ;attempt to preview the first texture in the list
          SCROLL_TEXTURE_SETTER
       }
+      ;if we specifically enter for overdrive textures, we need to apply the user's stored color
       {if {== $dx_tracked_texture_loader overdrive}
          {choose_character.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}}
          {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
@@ -306,95 +357,91 @@
       ;{$this update}
    )
    (SELECT_MSG
+      ;you must remember to add the corresponding "needs_reset" variable when selecting the user's texture.
+      ;this will ensure the texture properly is applied the next track load or in customizer
       {switch $dx_tracked_texture_loader
+         ;these first ones have sub folders so we don't $dx_refresh_beatmatch on them
          (overdrive
             {set $dx_tracked_emissive {$component selected_sym}})
-         (scoreboard_frame
-            {set $dx_score_box_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_score_box {$component selected_sym}})
-         (beat_lines
-            {set $dx_beat_lines_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_beatlines {$component selected_sym}})
-         (score_star_frame
-            {set $dx_stars_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_stars {$component selected_sym}})
-         (font
-            {set $dx_font_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_font {$component selected_sym}})
-         (solo_box
-            {set $dx_solo_box_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_solo_box {$component selected_sym}})
-         (bre_shield
-            {set $dx_bre_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_bre {$component selected_sym}})
-         (strikeline_guitar
-            {set $dx_smasher_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_smasher {$component selected_sym}})
-         (flames_spark
-            {set $dx_flames_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_flames {$component selected_sym}})
-         (rails_track
-            {set $dx_rails_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_rails {$component selected_sym}})
-         (gem_mash_green_emmisive
-            {set $dx_lanes_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_lanes {$component selected_sym}})
-         (od_bar_background
-            {set $dx_overdrive_bar_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
-            {set $dx_overdrive_bar {$component selected_sym}})
          (highways
             {set $dx_tracked_highway {$component selected_sym}})
          (streaks
             {set $dx_tracked_spotlight {$component selected_sym}})
+         (scoreboard_frame
+            {set $dx_score_box_needs_reset TRUE}
+            {set $dx_score_box {$component selected_sym}})
+         (beat_lines
+            {set $dx_beat_lines_needs_reset TRUE}
+            {set $dx_beatlines {$component selected_sym}})
+         (score_star_frame
+            {set $dx_stars_needs_reset TRUE}
+            {set $dx_stars {$component selected_sym}})
+         (font
+            {set $dx_font_needs_reset TRUE}
+            {set $dx_font {$component selected_sym}})
+         (solo_box
+            {set $dx_solo_box_needs_reset TRUE}
+            {set $dx_solo_box {$component selected_sym}})
+         (bre_shield
+            {set $dx_bre_needs_reset TRUE}
+            {set $dx_bre {$component selected_sym}})
+         (strikeline_guitar
+            {set $dx_smasher_needs_reset TRUE}
+            {set $dx_smasher {$component selected_sym}})
+         (flames_spark
+            {set $dx_flames_needs_reset TRUE}
+            {set $dx_flames {$component selected_sym}})
+         (rails_track
+            {set $dx_rails_needs_reset TRUE}
+            {set $dx_rails {$component selected_sym}})
+         (gem_mash_green_emmisive
+            {set $dx_lanes_needs_reset TRUE}
+            {set $dx_lanes {$component selected_sym}})
+         (od_bar_background
+            {set $dx_overdrive_bar_needs_reset TRUE}
+            {set $dx_overdrive_bar {$component selected_sym}})
          (multiplier_ring_plate_fc
             {set $dx_multiplier_ring_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_multiplier_ring {$component selected_sym}})
          (crowd_meter_frame
             {set $dx_crowd_meter_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_crowd_meter {$component selected_sym}})
          (gems_default
             {set $dx_gem_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_gem {$component selected_sym}})
          (keyboard_lanes
             {set $dx_keyboard_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_keyboard {$component selected_sym}}
             {set $dx_local_keyboard {$component selected_sym}})
          (vocal_highway_bg
             {set $dx_vocal_highway_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_vocal_highway {$component selected_sym}}
             {set $dx_local_vocal_highway {$component selected_sym}})
          (vocal_arrow
             {set $dx_vocal_arrow_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_vocal_arrow {$component selected_sym}}
             {set $dx_local_vocal_arrow {$component selected_sym}})
          (vocal_note_tube
             {set $dx_vocal_notes_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_vocal_notes {$component selected_sym}}
             {set $dx_local_vocal_notes {$component selected_sym}})
          (vocal_overdrive_now_bar
             {set $dx_vocal_overdrive_needs_reset TRUE}
-            {set $dx_refresh_beatmatch TRUE}
             {set $dx_vocal_overdrive {$component selected_sym}}
             {set $dx_local_vocal_overdrive {$component selected_sym}})
       }
+      ;$dx_refresh_beatmatch when set to true, will pause beatmatcher before applying the texture.
+      ;otherwise, in-game customizer audio will desync and become hellish
+      ;any above selected options with sub-menus should be included here to not pause the beatmatcher by mistake
+      {if
+         {&&
+            {! {== $dx_tracked_texture_loader overdrive}}
+            {! {== $dx_tracked_texture_loader streaks}}
+            {! {== $dx_tracked_texture_loader highways}}
+         }
+         {set $dx_refresh_beatmatch TRUE}
+      }
+      ;these textures are set per instrument, so do we inter that submenu or go back to the regular texture selector menu
       {if_else
          {||
             {== $dx_tracked_texture_loader overdrive}
@@ -402,17 +449,12 @@
             {== $dx_tracked_texture_loader highways}
          }
          {$this show_state dxState_InstrumentTextureChooser}
-         {if_else {== $state_hold dxState_ScoreTextures}
-            {$this show_state dxState_ScoreTextures}
-            {if_else {== $state_hold dxState_CrowdMeterElements}
-               {$this show_state dxState_CrowdMeterElements}
-               {$this show_state dxState_TextureMenu}
-            }
-         }
+         {$this show_state dxState_TextureMenu}
       }
    )
    (exit 
       {dx_state_pos_tracker}
+      ;when we are done in this screen we must restore the mesh to it's original state
       {restore_choose_char_size_pos}
       {game_options.grp remove_object choose_character.mesh}
    )
@@ -421,7 +463,7 @@
    )
 )
 
-
+;glorious variable mess
 (dxState_InstrumentTextureChooser
    (view
       {do
@@ -433,14 +475,15 @@
          {push_back $options drums}
          {push_back $options keys}
          {if
-            {||
+            ;{||
                {== $dx_tracked_texture_loader streaks}
-               ;{== $dx_tracked_texture_loader overdrive} ;doesn't seem to actually work?
-            }
+               ;{== $dx_tracked_texture_loader overdrive} ;the texture for pro_keys here doesn't seem to actually work?
+            ;}
             {push_back $options pro_keys}
          }
          ;{push_back $options pro_guitar}
          ;{push_back $options pro_bass}
+         ;state hold fixes some edge cases by explicitly storing the correct previous state on a new state setup
          {set $state_hold $previous_state}
          {dx_state_setup dxState_InstrumentTextureChooser FALSE}
       }
@@ -448,6 +491,11 @@
    )
    (SELECT_MSG
       {switch {$component selected_sym}
+         ;all_instruments is just a copy paste of the singular ones all lumped together
+         ;essentially we check which texture category we are currently changing via $dx_tracked_texture_loader
+         ;we turn on the needs reset vars for them so they update
+         ;and set whatever instrument to the tracked x category variable stored that we selected from the list
+         ;this state depends on these variables already being setup from texture menu if additional ones are added
          (all_instruments
             {switch $dx_tracked_texture_loader
                 (overdrive
@@ -508,6 +556,7 @@
             }
          )
       }
+      ;pause the beatmatcher and set the texture if in in-game customizer
       {set $dx_refresh_beatmatch TRUE}
       {$this show_state dxState_TextureMenu}
    )
@@ -548,6 +597,7 @@
             {set $dx_sustain empty}
          )
       }
+      ;pause the beatmatcher and set the texture if in in-game customizer
       {set $dx_refresh_beatmatch TRUE}
    )
    (exit 
