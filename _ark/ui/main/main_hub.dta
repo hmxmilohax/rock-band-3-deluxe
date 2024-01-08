@@ -1,3 +1,4 @@
+#include ../../dx/ui/main/dx_main_handles.dta
 {new
    MainHubPanel
    main_hub_panel
@@ -71,32 +72,8 @@
       {$this get_dlcmotd})
    (is_loaded
       {saveload_mgr is_initial_load_done})
+   DX_MAIN_HANDLES
    (enter
-      DX_SET_SERVER_LOCALE ; dx - change button and label text when connected to ashcentral
-      {dx_presence_manager}
-      {dx_sv_menu_logo_set sv3_panel}
-      {set $dx_random_number {random_int 0 4096}}
-      {if {== $dx_random_number 2112}
-         {dx_passive_messenger you_lost}
-      }
-      {do
-         ($year $month $day $hour $minute $second)
-         {get_date_time $year $month $day $hour $minute $second}
-         {if
-            {&&
-               {! $dx_msg_birth}
-               ;{> $year 2023}
-               {== $month 10}
-               {== $day 25}
-            }
-            {set $dx_msg_birth TRUE}
-            {dx_passive_messenger_symbol "Happy Birthday Shiloh!"}
-         }
-      }
-      #ifndef STORE_ENABLED
-      {$this disable mb_musicstore.btn}
-      {mb_musicstore.btn set_showing FALSE}
-      #endif
       {if
          [first_user]
          {profile_mgr
@@ -127,12 +104,7 @@
       {input_mgr check_trigger_auto_vocals_confirm}
       {overshell set_allow_real_guitar_flow TRUE}
       {overshell update_all}
-      #ifdef HX_XBOX
-      {content_mgr start_refresh}
-      #endif
-      {if {|| {! $screensaver} {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
-         DX_MAIN_BUTTON_DISABLER
-      }
+      {$this dx_main_on_enter}
       {campaign clear_current_goal})
    (exit
       {platform_mgr remove_sink $this})
@@ -166,28 +138,7 @@
                {$user is_char_customizable}
                {do
                   {critical_user_listener set_critical_user $user}
-                  {switch {{$player get_user} get_slot_num}
-                     (0
-                        {main_hub_panel unlock_gamestop_award 0}
-                        {main_hub_panel unlock_x79_award 0}
-                        {main_hub_panel unlock_d2010_award 0}
-                     )
-                     (1
-                        {main_hub_panel unlock_gamestop_award 1}
-                        {main_hub_panel unlock_x79_award 1}
-                        {main_hub_panel unlock_d2010_award 1}
-                     )
-                     (2
-                        {main_hub_panel unlock_gamestop_award 2}
-                        {main_hub_panel unlock_x79_award 2}
-                        {main_hub_panel unlock_d2010_award 2}
-                     )
-                     (3
-                        {main_hub_panel unlock_gamestop_award 3}
-                        {main_hub_panel unlock_x79_award 3}
-                        {main_hub_panel unlock_d2010_award 3}
-                     )
-                  }
+                  {$this dx_unlock_pre_orders}
                   {closet_mgr set_user $user}
                   {ui goto_screen customize_clothing_enter_screen}}
                {do
@@ -225,10 +176,7 @@
                               {closet_mgr set_user $user}
                               {closet_mgr set_return_screen main_hub_screen}
                               {net_sync disable}
-                              {ui goto_screen charactercreator_screen}
-                              #ifdef HX_WII
-                              {overshell set_active_status kOvershellInactive}
-                              #endif}
+                              {ui goto_screen charactercreator_screen}}
                            {ui push_screen create_character_maxed_screen}}}
                      {ui push_screen create_character_notonline_screen}}}})
          (mb_musicstore.btn
@@ -550,7 +498,8 @@
             {$this cycle_next_message})
          ({== $action kAction_ViewModify}
             {profile_mgr set_primary_profile_by_user $user}
-             DX_BOOT_FILE_CHECKER)
+             {$this dx_check_dx}
+             {$this dx_check_xeniawrites})
          kDataUnhandled})
    (refresh_message_provider
       {message_area.lst
@@ -728,7 +677,8 @@
                   add_award
                   award_gamestop
                   campaign_award_reason_preorder}
-             DX_BOOT_FILE_CHECKER}}})
+             {$this dx_check_dx}
+             {$this dx_check_xeniawrites}}}})
    (unlock_x79_award
       ($pad_num)
       {if
@@ -745,7 +695,8 @@
                   add_award
                   award_bonus_x79
                   campaign_award_reason_preorder}
-             DX_BOOT_FILE_CHECKER}}})
+             {$this dx_check_dx}
+             {$this dx_check_xeniawrites}}}})
    (unlock_d2010_award
       ($pad_num)
       {if
@@ -762,7 +713,8 @@
                   add_award
                   award_bonus_d2010
                   campaign_award_reason_preorder}
-             DX_BOOT_FILE_CHECKER}}})
+             {$this dx_check_dx}
+             {$this dx_check_xeniawrites}}}})
    (check_rewards_and_hints
       {if
          {session_mgr is_local}
@@ -774,9 +726,9 @@
                {meta_performer are_credits_pending}}
             {ui goto_screen meta_loading_main_screen}
             {show_hint hint_rb3_welcome_screen}}})
-   DX_BOOT_FILE_HANDLERS
    (TRANSITION_COMPLETE_MSG
-      DX_BOOT_FILE_CHECKER
+      {$this dx_check_dx}
+      {$this dx_check_xeniawrites}
       DX_AUTOSAVE)
    (update_finding_help
       {finding_continue.ihp
