@@ -1,0 +1,148 @@
+{func
+   dx_current_section_fetcher
+   ;runs in beatmatcher, do not add log
+   {dx_log_writer beatmatch {sprint "func: dx_current_section_fetcher"}}
+   {dx_log_writer beatmatch
+      {sprintf "Executed dx_current_section_fetcher - time: %.4fms"
+         {time
+            {if {&& $dx_mtvup $dx_section_mtv_line}
+               {set $dx_current_section {localize {beatmatch get_section_at_ms {{beatmatch main_performer} progress_ms}}}}
+               {{{gamemode get track_panel} find mtv_overlay} mtv_formatter}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_set_song_speed
+   {dx_log_writer info {sprint "func: dx_set_song_speed"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_set_song_speed - time: %.4fms"
+         {time
+            {if {exists gamemode}
+               {dx_log_writer beatmatch {sprint "Setting up song speeds. Song Speed: " $speedmod}} ;runs in beatmatcher, do not enable under penalty of stutter
+               {unless
+                  {|| ;check for a variety of game modes where song speed is not allowed to be adjusted
+                     {gamemode in_mode pro_song_lessons_keyboard}
+                     {gamemode in_mode pro_song_lessons_real_guitar}
+                     {gamemode in_mode pro_song_lessons_real_bass}
+                     {gamemode in_mode drum_freestyle}
+                     {gamemode in_mode trainer}
+                     {gamemode in_mode trainer_drums}
+                     {gamemode in_mode trainer_pro_drums}
+                     {gamemode in_mode trainer_real_guitar}
+                     {gamemode in_mode trainer_pro_keyboard}
+                     #ifdef HX_XBOX {gamemode in_mode audition} #endif ;audition is xbox only, ps3 will crash if you check for it
+                     {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  }
+                  {if {is_leader_local}
+                     {session send_msg_to_all {` (beatmatch set_music_speed {, $speedmod}) kNetReliable}}
+                  }
+                  {beatmatch set_music_speed $speedmod} ;apply the current selected speed in game
+               }
+               {if {&& {gamemode in_mode practice} {> {gamecfg get practice_speed} 0}}
+                  {practice_panel update_speed {gamecfg get practice_speed}}
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_mtv_time_remaining_handler ;using length_ms from song_mgr and dx_ms_to_time_str func
+   ;{dx_log_writer beatmatch {sprint "func: dx_mtv_time_remaining_handler"}}
+   ;{dx_log_writer beatmatch
+   ;   {sprintf "Executed dx_mtv_time_remaining_handler - time: %.4fms"
+   ;      {time
+            {if $dx_mtvup
+               {switch $dx_time_remaining
+                  (off 
+                     {do
+                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing FALSE} ;hide timer and do nothing else
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.1336) ;in approximately 8 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (down
+                     {do
+                        ($curr_ms $total_ms $timer_ms $total_str $timer_str)
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}} ;grab current song length in ms
+                        {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
+                        {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing TRUE} ;show timer
+                        {switch $dx_disp_total_time ;check whether total time should be displayed
+                           (TRUE
+                              {if_else $dx_time_remain_dbg
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%.0f / %.0f" $timer_ms $total_ms}} ;include debug line
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%s / %s" $timer_str $total_str}} ;don't include debug line
+                              }
+                           )
+                           (FALSE
+                              {if_else $dx_time_remain_dbg
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%i" $timer_ms}} ;include debug line
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%s" $timer_str}} ;don't include debug line
+                              }
+                           )
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (up
+                     {do
+                        ($curr_ms $total_ms $total_str $timer_str)
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}} ;grab current song length in ms
+                        ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
+                        {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing TRUE} ;show timer
+                        {switch $dx_disp_total_time ;check whether total time should be displayed
+                           (TRUE
+                              {if_else $dx_time_remain_dbg
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%s / %s" $timer_str $total_str}} ;don't include debug line
+                              }
+                           )
+                           (FALSE
+                              {if_else $dx_time_remain_dbg
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
+                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%s" $timer_str}} ;don't include debug line
+                              }
+                           )
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  {do
+                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing FALSE} ;hide timer and do nothing else
+                     {script_task
+                        kTaskUISeconds
+                        (delay 0.1336) ;in approximately 8 frames, call this function again
+                        (script {dx_mtv_time_remaining_handler})
+                     }
+                  }
+
+               }
+                  ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+            }
+   ;      }
+   ;   }
+   ;}
+}
