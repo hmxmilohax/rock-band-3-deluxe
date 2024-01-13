@@ -1,61 +1,84 @@
 #define DX_ENDGAME_HANDLES
 (
    (dx_swap_venue_mid_setlist
-      {if 
-         {&&
-            {||
-               {! {gamemode in_mode practice}}
-               {! {gamemode in_mode trainer}}
-            }
-            {session_mgr is_leader_local} ;set venue only if host of the lobby
-            $dx_venue_swap
-         }
-         {dx_venue_setter}
-      }
+      kDataUnhandled
+      ;this is really fucking bad on memory when done in endgame
+      ;{dx_log_writer info {sprint "func: dx_swap_venue_mid_setlist"}}
+      ;{dx_log_writer info
+      ;   {sprintf "Executed dx_swap_venue_mid_setlist - time: %.4fms"
+      ;      {time
+      ;         {if 
+      ;            {&&
+      ;               {||
+      ;                  {! {gamemode in_mode practice}}
+      ;                  {! {gamemode in_mode trainer}}
+      ;               }
+      ;               {session_mgr is_leader_local} ;set venue only if host of the lobby
+      ;               $dx_venue_swap
+      ;            }
+      ;            {dx_venue_setter}
+      ;         }
+      ;      }
+      ;   }
+      ;}
    )
    (dx_swap_char_mid_setlist
-      {if
-         {&&
-            {||
-               {! {gamemode in_mode practice}}
-               {! {gamemode in_mode trainer}}
+      {dx_log_writer info {sprint "func: dx_swap_char_mid_setlist"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_swap_char_mid_setlist - time: %.4fms"
+            {time
+               {if
+                  {&&
+                     {||
+                        {! {gamemode in_mode practice}}
+                        {! {gamemode in_mode trainer}}
+                     }
+                     {session_mgr is_leader_local} ;set venue only if host of the lobby
+                     $dx_character_swap
+                  }
+                  {prefab_mgr assign_prefabs_to_slots}
+                  {char_sync update_char_cache}
+               }
             }
-            {session_mgr is_leader_local} ;set venue only if host of the lobby
-            $dx_character_swap
          }
-         {prefab_mgr assign_prefabs_to_slots}
-         {char_sync update_char_cache}
       }
    )
    (dx_auto_endgame
-      {if {|| {modifier_mgr is_modifier_active mod_fakejuke} {modifier_mgr is_modifier_active mod_auto_play}}
-         {if $dx_auto_endgame
-            {script_task kTaskSeconds
-               (delay 7)
-               (script ;this script is 1 for 1 pulled from the endgame SELECT_MSG handle for pressing green. im just adding a delay to do it automatically
-                  {if {is_leader_local}
-                     {play_instr_sfx $user button_select}
-                     {help.ihp set_config ()}
-                     {if_else {meta_performer is_set_complete}
-                        {cond
-                           ({gamemode in_mode audition}
-                              {ui_event_mgr trigger_event quit_early})
-                           ({gamemode in_mode tour}
-                              {{tour performer}
-                                 complete_quest}
-                              {ui sync_screen tour_challenge_results_screen 0})
-                           ({&&
-                                 {gamemode in_mode campaign}
-                                 {campaign has_current_goal}}
-                              {ui sync_screen complete_screen 0})
-                           ({meta_performer has_battle}
-                              {ui sync_screen complete_screen 0})
-                           {ui sync_screen meta_loading_continue_screen 0}
-                        }
-                        {ui sync_screen preload_nextsong_screen 0}
+      {dx_log_writer info {sprint "func: dx_auto_endgame"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_auto_endgame - time: %.4fms"
+            {time
+               {if {|| {modifier_mgr is_modifier_active mod_fakejuke} {modifier_mgr is_modifier_active mod_auto_play}}
+                  {if $dx_auto_endgame
+                     {script_task kTaskSeconds
+                        (delay 7)
+                        (script ;this script is 1 for 1 pulled from the endgame SELECT_MSG handle for pressing green. im just adding a delay to do it automatically
+                           {if {is_leader_local}
+                              {play_instr_sfx $user button_select}
+                              {help.ihp set_config ()}
+                              {if_else {meta_performer is_set_complete}
+                                 {cond
+                                    ({gamemode in_mode audition}
+                                       {ui_event_mgr trigger_event quit_early})
+                                    ({gamemode in_mode tour}
+                                       {{tour performer}
+                                          complete_quest}
+                                       {ui sync_screen tour_challenge_results_screen 0})
+                                    ({&&
+                                          {gamemode in_mode campaign}
+                                          {campaign has_current_goal}}
+                                       {ui sync_screen complete_screen 0})
+                                    ({meta_performer has_battle}
+                                       {ui sync_screen complete_screen 0})
+                                    {ui sync_screen meta_loading_continue_screen 0}
+                                 }
+                                 {ui sync_screen preload_nextsong_screen 0}
+                              }
+                           }
+                        )
                      }
                   }
-               )
+               }
             }
          }
       }
@@ -67,70 +90,109 @@
       {$this dx_swap_char_mid_setlist}
       {dx_countdown_var_reset}
    )
+   (dx_endgame_exit
+      {if
+         {exists fc_clip}
+         {delete fc_clip}}
+      {if
+         {exists nice_clip}
+         {delete nice_clip}}
+      {if
+         {exists jurgen_clip}
+         {delete jurgen_clip}}
+   )
    (dx_song_label_setter
-      ; dx - add song speed percent if above 100% to the song name by fetching the name directly
-      {dx_log_writer default {sprint "Endgame Reached. Number of songs completed this session: " $dx_num_songs_this_session " - Gamemode: " $dx_gamemode}}
-      {if_else {!= $speedmod 1}
-         {song.lbl set_token_fmt
-            {sprint
-               {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
-               " ("
-               {int {'+' 0.5 {'*' $speedmod 100}}}
-               "%)"
+      {dx_log_writer info {sprint "func: dx_song_label_setter"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_song_label_setter - time: %.4fms"
+            {time
+               ; dx - add song speed percent if above 100% to the song name by fetching the name directly
+               ;{dx_log_writer default {sprint "Endgame Reached. Number of songs completed this session: " $dx_num_songs_this_session " - Gamemode: " $dx_gamemode}}
+               {if_else {!= $speedmod 1}
+                  {song.lbl set_token_fmt
+                     {sprint
+                        {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
+                        " ("
+                        {int {'+' 0.5 {'*' $speedmod 100}}}
+                        "%)"
+                     }
+                  }
+                  {song.lbl
+                     set_song_name
+                     {meta_performer get_completed_song}
+                  }
+               }
             }
-         }
-         {song.lbl
-            set_song_name
-            {meta_performer get_completed_song}
          }
       }
    )
    (fc_clip
-      {unless {== $dx_fullcombo_sound dx_none}
-         {dx_log_writer default {sprint "Playing FC Sound. Congrats"}}
-         {unless {exists fc_clip}
-            {new MoggClip fc_clip}
-         }
-         {if {exists fc_clip}
-            {fc_clip set file {sprint "sfx/streams/fc/" $dx_fullcombo_sound ".mogg"}}
-            {fc_clip set loop FALSE}
-            {fc_clip set volume -8}
-            {fc_clip play}
+      {dx_log_writer info {sprint "func: fc_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed fc_clip - time: %.4fms"
+            {time
+               {unless {== $dx_fullcombo_sound dx_none}
+                  ;{dx_log_writer default {sprint "Playing FC Sound. Congrats"}}
+                  {unless {exists fc_clip}
+                     {new MoggClip fc_clip}
+                  }
+                  {if {exists fc_clip}
+                     {fc_clip set file {sprint "sfx/streams/fc/" $dx_fullcombo_sound ".mogg"}}
+                     {fc_clip set loop FALSE}
+                     {fc_clip set volume -8}
+                     {fc_clip play}
+                  }
+               }
+            }
          }
       }
    )
    (nice_clip
-      {dx_log_writer default {sprint "Playing Nice Sound. Nice"}}
-      {unless {exists nice_clip}
-         {new MoggClip nice_clip}
-      }
-      {if $dx_nice_sound
-         {if {exists nice_clip}
-            {nice_clip set file "sfx/streams/fc/nice_clip.mogg"}
-            {nice_clip set loop FALSE}
-            {nice_clip set volume -0}
-            {nice_clip play}
+      {dx_log_writer info {sprint "func: nice_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed nice_clip - time: %.4fms"
+            {time
+               ;{dx_log_writer default {sprint "Playing Nice Sound. Nice"}}
+               {unless {exists nice_clip}
+                  {new MoggClip nice_clip}
+               }
+               {if $dx_nice_sound
+                  {if {exists nice_clip}
+                     {nice_clip set file "sfx/streams/fc/nice_clip.mogg"}
+                     {nice_clip set loop FALSE}
+                     {nice_clip set volume -0}
+                     {nice_clip play}
+                  }
+               }
+            }
          }
       }
    )
    (jurgen_clip
-      {dx_log_writer default {sprint "Playing Jurgen Sound. Skill Issue"}}
-      {unless {exists jurgen_clip}
-         {new MoggClip jurgen_clip}
-      }
-      {set $jurgennumber {random_int 0 4}}
-      {if {<= $jurgennumber 1}
-         {set $jurgennumber 1}
-      }
-      {if {>= $jurgennumber 3}
-         {set $jurgennumber 3}
-      }
-      {if $dx_jurgen_sound
-         {if {exists jurgen_clip}
-            {jurgen_clip set file {sprint "sfx/streams/fc/jurgen_clip" $jurgennumber ".mogg"}}
-            {jurgen_clip set loop FALSE}
-            {jurgen_clip set volume -8}
-            {jurgen_clip play}
+      {dx_log_writer info {sprint "func: jurgen_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed jurgen_clip - time: %.4fms"
+            {time
+               ;{dx_log_writer default {sprint "Playing Jurgen Sound. Skill Issue"}}
+               {unless {exists jurgen_clip}
+                  {new MoggClip jurgen_clip}
+               }
+               {set $jurgennumber {random_int 0 4}}
+               {if {<= $jurgennumber 1}
+                  {set $jurgennumber 1}
+               }
+               {if {>= $jurgennumber 3}
+                  {set $jurgennumber 3}
+               }
+               {if $dx_jurgen_sound
+                  {if {exists jurgen_clip}
+                     {jurgen_clip set file {sprint "sfx/streams/fc/jurgen_clip" $jurgennumber ".mogg"}}
+                     {jurgen_clip set loop FALSE}
+                     {jurgen_clip set volume -8}
+                     {jurgen_clip play}
+                  }
+               }
+            }
          }
       }
    )
