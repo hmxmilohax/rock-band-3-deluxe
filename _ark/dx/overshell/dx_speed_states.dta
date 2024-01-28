@@ -1,139 +1,118 @@
-(dxState_SpeedMenu
-   (view online_options)
-   (on_cancel
-      {options.lst set_selected 1}
-      {$this show_state dxState_DeluxeSettings}
+#define DX_PRINT_SONG_SPEED
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_song_speed} {int {+ 0.5 {* $speedmod 100}}}}}
+)
+#define DX_SET_SPEEDS_DATA
+(
+   {$current_list set_data
+      (
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_track_speeds}
+         DX_PRINT_SONG_SPEED
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk os_acceleration_mode}
+      )
+   }
+)
+(dxState_SetSpeeds
+   (view
+      options_extras
    )
    (enter
-      {set $dx_slider TRUE}
-      {set $dx_slider_id dx_speedmenu}
-      {online_options.lst set_selected $speedmenuval}
-      {instruments.sld set_num_steps 60} ;number of steps for venue fps slider
-      {bg_music.sld set_num_steps 41} ;number of steps for note speed slider
-      {crowd.sld set_num_steps 31} ;number of steps for song speed slider
-      {instruments.sld set_current {int {- $emulatefps 1}}} ;set FPS slider based on current value
-      {bg_music.sld set_current {int {+ 0.5 {/ {+ {- $trackspeed 1} 0.5} 0.05}}}} ;set note speed slider based on current value
-      {crowd.sld set_current {int {+ 0.5 {/ {- $speedmod 1} 0.05}}}} ;set song speed slider based on current value
-      {trackspeed_msg set_token_fmt {sprintf {localize trackspeed_msg} {int {+ 0.5 {* $trackspeed 100}}}}} ;set note speed msg (or not, thanks rb3)
-      {speed_msg.lbl set_token_fmt {sprintf {localize speed_msg} {int {+ 0.5 {* $speedmod 100}}}}} ;set song speed msg (or not, thanks rb3)
-      {fps_msg set_token_fmt {sprintf {localize fps_msg} {int $emulatefps}}} ;set venue fps msg (or not, thanks rb3)
-      {online_options.lst set_data 
-         (
-            os_venuefps
-            os_trkspd
-            os_sngspd
-            os_faster
-         )
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {set $current_list options_extras.lst}
+      {if_else {$this in_game}
+         {$current_list set_type overshell_menu_ingame}
+         {$current_list set_type overshell_menu}
       }
+      {$current_list restart_highlight_matanim}
+      {$current_list refresh}
+      DX_SET_SPEEDS_DATA
    )
-   (update_view
-      {handle
-         ($this
-            update_slider
-            instruments.sld
-            ""
-         )
-      }
-      {handle
-         ($this
-            update_slider
-            bg_music.sld
-            ""
-         )
-      }
-      {handle
-         ($this
-            update_slider
-            crowd.sld
-            ""
-         )
-      }
-      {handle
-         ($this
-            update_slider
-            sfx.sld
-            ""
-         )
-      }
-      {handle
-         ($this
-            update_slider
-            voice_chat.sld
-            ""
-         )
-      }
-   )
+   ;(SCROLL_MSG
+   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   ;)
    (SELECT_MSG
-      {set $speedmenuval {$component selected_sym}}
-      {switch
-         {$component selected_sym}
-         (os_venuefps
-            {set $fpsslider TRUE}
-            {instruments.sld store}
-            {instruments.sld set_showing TRUE}
-            {$this set_focus instruments.sld}
-         )
-         (os_trkspd
-            {$this show_state dxState_TrackSpeed}
-         )
-         (os_sngspd
-            {if_else {$this in_game}
-               {$this show_state dxState_SpeedDenyMsg}
-               {do
-                  {set $songspeedslider TRUE}
-                  {crowd.sld store}
-                  {crowd.sld set_showing TRUE}
-                  {$this set_focus crowd.sld}
-               }
-            }
-         )
-         (os_faster
-            {$this show_state dxState_FasterMode}
-         )
+      {switch {$component selected_sym}
+         (os_track_speeds
+            {$this show_state dxState_TrackSpeeds})
+         (os_acceleration_mode
+            {$this show_state dxState_AccelerationMode})
       }
    )
    (BUTTON_DOWN_MSG
-         {if_else
-            {find_elem
-               ("instruments.sld"
-                  "bg_music.sld"
-                  "crowd.sld")
-               {$this focus_name}}
-            {switch
-               $action
-               ((kAction_Confirm kAction_Cancel)
-                  {{$this
-                        find
-                        {$this focus_name}}
-                     confirm}
-                  {{$this
-                        find
-                        {$this focus_name}}
-                     set_showing
-                     FALSE}
-                  {if_else $fpsslider
-                     {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
-                  {if_else $songspeedslider
-                     {do {$this show_state kState_SongSpeedSliderMsg} {$this set_focus confirm_action.lst}}
-                  {if_else $trackspeedslider
-                     {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
-                     {$this set_focus options_audio.lst}}}})
-               kDataUnhandled}
-            kDataUnhandled}
-   )
-   (SCROLL_SELECT_MSG
-      {$this on_slider_change $component $user}
-   )
-   (SCROLL_MSG
-      {$this on_slider_change $component $user}
-   )
-   (exit
-      {set $dx_slider FALSE}
+      {if_else
+         $dx_list_item_selected
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {set $dx_list_item_selected FALSE}
+               DX_SET_SPEEDS_DATA
+            )
+            ((kAction_Down kAction_Up)
+               {switch {$current_list selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Down {> $speedmod 1})
+                           (kAction_Up {< $speedmod 2.45})
+                        }
+                        {set $speedmod
+                           {switch $action
+                              (kAction_Down {- $speedmod 0.05})
+                              (kAction_Up {+ $speedmod 0.05})
+                           }
+                        }
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  kDataUnhandled
+               }
+               DX_SET_SPEEDS_DATA
+            )
+            kDataUnhandled
+         }
+         {switch
+            $action
+            (kAction_Confirm
+               {switch {$current_list selected_data}
+                  (1
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                     DX_SET_SPEEDS_DATA
+                  )
+                  kDataUnhandled
+               }
+            )
+            ((kAction_Left kAction_Right)
+               {switch {$current_list selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Left {> $speedmod 1})
+                           (kAction_Right {< $speedmod 2.45})
+                        }
+                        {set $speedmod
+                           {switch $action
+                              (kAction_Left {- $speedmod 0.05})
+                              (kAction_Right {+ $speedmod 0.05})
+                           }
+                        }
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  kDataUnhandled
+               }
+               DX_SET_SPEEDS_DATA
+            )
+            kDataUnhandled
+         }
+      }
    )
    (on_cancel
-      {$this show_game_options}
+      {$this show_state dxState_DeluxeSettings}
    )
 )
+
 #define DX_PRINT_TRACK_SPEED_GUITAR
 (
    {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_guitar} {int {+ 0.5 {* $trackspeed_guitar 100}}}}}
@@ -162,10 +141,6 @@
 (
    {if_else {&& $dx_list_item_selected {!= $dx_list_pos 7} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_keys} {int {+ 0.5 {* $trackspeed_real_keys 100}}}}}
 )
-#define DX_BLNK
-(
-   {push_back $options os_blnk}
-)
 #define DX_TRACK_SPEED_DATA
 (
    {$current_list set_data
@@ -181,7 +156,7 @@
       )
    }
 )
-(dxState_TrackSpeed
+(dxState_TrackSpeeds
    (view
       options_audio
    )
@@ -510,202 +485,129 @@
          }
       }
    )
-   (exit 
-      ;{dx_state_pos_tracker}
-      ;DX_OS_CLOSE_MSG
-   )
    (on_cancel
-      {$this show_state dxState_SpeedMenu}
+      {$this show_state dxState_SetSpeeds}
    )
 )
 
-(kState_TrackSpeedSliderMsg
-   (view confirm_action)
+#define DX_PRINT_MAX_SPEED
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_max_speed} {int {+ 0.5 {* $speedmod_cap 100}}}}}
+)
+#define DX_ACCELERATION_MODE_DATA
+(
+   {$current_list set_data
+      (
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk {if_else {modifier_mgr is_modifier_active mod_fastermode} os_fastermode_on os_fastermode_off}}
+         DX_PRINT_MAX_SPEED
+      )
+   }
+)
+(dxState_AccelerationMode
+   (view
+      options_end_game
+   )
    (enter
-      {handle
-         ($this set_confirm_message 
-            {sprintf 
-               {localize os_tspeed} 
-               {int 
-                  {+ 0.5 
-                     {*
-                        {switch $dx_trkspd_inst
-                           (all $trackspeed_guitar)                        
-                           (guitar $trackspeed_guitar)
-                           (bass $trackspeed_bass)
-                           (drum $trackspeed_drum)
-                           (keys $trackspeed_keys)
-                           (real_keys $trackspeed_real_keys)
-                           (real_guitar $trackspeed_real_guitar)
-                           (real_bass $trackspeed_real_bass)
-                        }
-                        100
-                     }
-                  }
-               }
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {set $current_list options_end_game.lst}
+      {if_else {$this in_game}
+         {$current_list set_type overshell_menu_ingame}
+         {$current_list set_type overshell_menu}
+      }
+      {$current_list restart_highlight_matanim}
+      {$current_list refresh}
+      DX_ACCELERATION_MODE_DATA
+   )
+   ;(SCROLL_MSG
+   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   ;)
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_fastermode_off
+            {unless {modifier_mgr is_modifier_active mod_fastermode}
+               {modifier_mgr toggle_modifier_enabled mod_fastermode}
             }
+            DX_ACCELERATION_MODE_DATA
+         )
+         (os_fastermode_on
+            {if {modifier_mgr is_modifier_active mod_fastermode}
+               {modifier_mgr toggle_modifier_enabled mod_fastermode}
+            }
+            DX_ACCELERATION_MODE_DATA
          )
       }
    )
-   (SELECT_MSG
-      {set $trackspeedslider FALSE}
-      {$this show_state kState_TrackSpeedInstSelect}
-   )
-)
-
-(kState_SongSpeedSliderMsg
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message {sprintf {localize os_speed} {int {+ 0.5 {* $speedmod 100}}}})})
-   (SELECT_MSG
-      {set $songspeedslider FALSE}
-      {$this show_state dxState_SpeedMenu}))
-
-(kState_VenueFPSSliderMsg
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message {sprintf {localize os_fps} {int $emulatefps}})})
-   (SELECT_MSG
-      {set $fpsslider FALSE}
-      {$this show_state dxState_SpeedMenu}))
-
-(dxState_SpeedDenyMsg
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message os_speed_deny)})
-   (SELECT_MSG
-      {$this show_state dxState_SpeedMenu}))
-
-;acceleration
-
-#define FASTER_DATA
-(
-   {if_else {modifier_mgr is_modifier_active mod_fastermode} os_disable os_enable}
-   os_sngspdcap
-)
-(dxState_FasterMode
-   (view options_extras)
-   (on_cancel
-      {$this show_state dxState_SpeedMenu})
-   (lst_reset
-      {options_extras.lst set_data (FASTER_DATA)}
-      {if $fastermenuval
-         {options_extras.lst set_selected $fastermenuval}
-      }
-   )
-   (enter
-   {$this lst_reset}
-   {set $dx_slider TRUE}
-   {set $dx_slider_id dx_fastermode}
-   {options_extras.lst set_selected $fastermenuval}
-   {bg_music.sld set_num_steps 31} ;number of steps for song speed slider
-   {bg_music.sld set_current {int {+ 0.5 {/ {- $speedmod_cap 1} 0.05}}}} ;set song speed slider based on current value
-   {speed_msg.lbl set_token_fmt {sprintf {localize speedcap_msg} {int {+ 0.5 {* $speedmod_cap 100}}}}} ;set song speed msg (or not, thanks rb3)
-   {options_extras.lst set_data 
-   (
-      FASTER_DATA
-   )})
-  (update_view
-      {handle
-         ($this
-            update_slider
-            instruments.sld
-            "")}
-      {handle
-         ($this
-            update_slider
-            bg_music.sld
-            "")}
-      {handle
-         ($this
-            update_slider
-            crowd.sld
-            "")}
-      {handle
-         ($this
-            update_slider
-            sfx.sld
-            "")}
-      {handle
-         ($this
-            update_slider
-            voice_chat.sld
-            "")})
-   (SELECT_MSG
-   {set $fastermenuval {$component selected_sym}}
-  {switch
-   {$component selected_sym}
-   (os_sngspdcap
-      {set $songspeedcapslider TRUE}
-      {bg_music.sld store}
-      {bg_music.sld set_showing TRUE}
-      {$this set_focus bg_music.sld})
-   (os_enable
-      {unless {modifier_mgr is_modifier_active mod_fastermode}
-         {modifier_mgr toggle_modifier_enabled mod_fastermode}
-         {options_extras.lst set_data (FASTER_DATA)}
-      {if $fastermenuval
-         {options_extras.lst set_selected $fastermenuval}
-      }
-      }
-   )
-   (os_disable
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {modifier_mgr toggle_modifier_enabled mod_fastermode}
-      }
-      {options_extras.lst set_data (FASTER_DATA)}
-      {if $fastermenuval
-         {options_extras.lst set_selected $fastermenuval}
-      }
-      )
-   }
-   {$this lst_reset}
-   )
    (BUTTON_DOWN_MSG
       {if_else
-         {find_elem
-            ("instruments.sld"
-               "bg_music.sld"
-               "crowd.sld")
-            {$this focus_name}}
+         $dx_list_item_selected
          {switch
             $action
             ((kAction_Confirm kAction_Cancel)
-               {{$this
-                     find
-                     {$this focus_name}}
-                  confirm}
-               {{$this
-                     find
-                     {$this focus_name}}
-                  set_showing
-                  FALSE}
-               {if_else $fpsslider
-                  {do {$this show_state kState_VenueFPSSliderMsg} {$this set_focus confirm_action.lst}}
-               {if_else $songspeedcapslider
-                  {do {$this show_state kState_SongSpeedCapSliderMsg} {$this set_focus confirm_action.lst}}
-               {if_else $trackspeedslider
-                  {do {$this show_state kState_TrackSpeedSliderMsg} {$this set_focus confirm_action.lst}}
-                  {$this set_focus options_audio.lst}}}})
-            kDataUnhandled}
-         kDataUnhandled})
-   (SCROLL_SELECT_MSG
-      {$this on_slider_change $component $user})
-   (SCROLL_MSG
-      {$this on_slider_change $component $user})
- (exit
-  {set $dx_slider FALSE})
- (on_cancel
-  {$this show_game_options}))
-
-(kState_SongSpeedCapSliderMsg
-   (view confirm_action)
-   (enter
-      {handle
-         ($this set_confirm_message {sprintf {localize os_speedcap} {int {+ 0.5 {* $speedmod_cap 100}}}})})
-   (SELECT_MSG
-      {set $songspeedcapslider FALSE}
-      {$this show_state dxState_FasterMode}))
+               {set $dx_list_item_selected FALSE}
+               DX_ACCELERATION_MODE_DATA
+            )
+            ((kAction_Down kAction_Up)
+               {switch {$current_list selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Down {> $speedmod_cap 1.05})
+                           (kAction_Up {< $speedmod_cap 2.45})
+                        }
+                        {set $speedmod_cap
+                           {switch $action
+                              (kAction_Down {- $speedmod_cap 0.05})
+                              (kAction_Up {+ $speedmod_cap 0.05})
+                           }
+                        }
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  kDataUnhandled
+               }
+               DX_ACCELERATION_MODE_DATA
+            )
+            kDataUnhandled
+         }
+         {switch
+            $action
+            (kAction_Confirm
+               {switch {$current_list selected_data}
+                  (1
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                     DX_ACCELERATION_MODE_DATA
+                  )
+                  kDataUnhandled
+               }
+            )
+            ((kAction_Left kAction_Right)
+               {switch {$current_list selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Left {> $speedmod_cap 1.05})
+                           (kAction_Right {< $speedmod_cap 2.45})
+                        }
+                        {set $speedmod_cap
+                           {switch $action
+                              (kAction_Left {- $speedmod_cap 0.05})
+                              (kAction_Right {+ $speedmod_cap 0.05})
+                           }
+                        }
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  kDataUnhandled
+               }
+               DX_ACCELERATION_MODE_DATA
+            )
+            kDataUnhandled
+         }
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_SetSpeeds}
+   )
+)
