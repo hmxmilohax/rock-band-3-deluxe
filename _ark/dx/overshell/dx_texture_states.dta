@@ -3,6 +3,10 @@
       {do
          ($options
             {array 0})
+         {if_else $dx_customizer
+            {push_back $options leave_customizer}
+            {push_back $options realtime_customize}
+         }
          {push_back $options os_fretboard}
          {push_back $options os_spotlight}
          {push_back $options os_emissive}
@@ -33,8 +37,56 @@
       }
       {overshell_view_chooser}
    )
+   (enter
+      {if $dx_customizer
+         {$this iterate Mesh $m {$m set_showing FALSE}}
+         {choose_character.mesh set_showing TRUE}
+         {unless $dx_moved_once
+            {if_else
+               {&&
+                  {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
+                  {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
+               }
+               {$this iterate UIList $l
+                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}} ;move vocal type menu straight down
+               }
+               {$this iterate UIList $l
+                  {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
+                  {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+               }
+            }
+            {set $dx_moved_once TRUE}
+         }
+      }
+   )
    (SELECT_MSG
       {switch {$component selected_sym}
+         (realtime_customize
+            {$this show_state kState_CustomizerWarn}
+         )
+         (leave_customizer
+            {do
+               {session disconnect}
+               {session_mgr disconnect}
+               {$this iterate Mesh $m {$m set_showing TRUE}}
+               {if_else
+                  {&&
+                     {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
+                     {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
+                  }
+                  {$this iterate UIList $l
+                     {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+                  }
+                  {$this iterate UIList $l
+                     {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+                     {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+                  }
+               }
+               {overshell update_all}
+               {set $dx_customizer FALSE}
+               {ui goto_screen meta_loading_main_screen}
+            }
+         )
          (os_setcol
             {$this show_state dxState_ColorSelector}
          )
@@ -191,8 +243,11 @@
       {set $dx_track_to_reset_choose_character_texture TRUE}
    )
    (on_cancel
-      {$this show_state dxState_TrackThemeLoader}
-    )
+      {if_else $dx_customizer
+         kDataUnhandled
+         {$this show_state dxState_TrackThemeLoader}
+      }
+   )
 )
 #define DX_TEXTURE_LOADER_HANDLER
 (
