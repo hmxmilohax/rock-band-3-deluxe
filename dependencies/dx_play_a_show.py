@@ -172,9 +172,9 @@ def refresh_options(data, song_title_index, artist_index, year_index, genre_inde
     song_title, _ = get_random_song(data, song_title_index, artist_index)
     random_song_name = {get_random_song(data, song_title_index, artist_index)}
     genre = get_random_genre(data, genre_index)
-    song_title_raw, artist2, short_name2 = eval_random_song(data, song_title_index, artist_index, short_name_index)
+    song_title_direct, artist_direct, short_name_direct = eval_random_song(data, song_title_index, artist_index, short_name_index)
     print(" ")
-    return year, artist, song_title, genre, song_title_raw, artist2, short_name2
+    return year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct
 
 def main():
     csv_file_path, output_file_path, config_file_path = get_csv_and_config_file_paths()
@@ -182,13 +182,13 @@ def main():
 
     if data:
         data, song_title_index, artist_index, year_index, genre_index, short_name_index = data
-        year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+        year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
         while True:
             print("Welcome to Rock Band 3 Deluxe Play A Show!")
             print("Choose an option:")
             print(f"1. A random song from {year}")
             print(f"2. A random song by {artist}")
-            print(f"3. '{song_title_raw}' by '{artist2}'")
+            print(f"3. '{song_title_direct}' by '{artist_direct}'")
             print(f"4. A random {genre} song")
             print("5. Refresh options")
             print("6. Manual fuzzy search")
@@ -199,30 +199,30 @@ def main():
 
             if choice == '1':
                 fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, f'year:{year}')
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '2':
                 song_title, _ = get_random_song_from_artist(data, artist, song_title_index, artist_index)
                 if song_title:
                     short_name = [song[short_name_index] for song in data if song[song_title_index] == song_title][0]
                     print(f"Random song from {artist}: '{song_title}'")
                     append_short_name_to_output(output_file_path, short_name)
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '3':
-                append_short_name_to_output(output_file_path, short_name2)
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                append_short_name_to_output(output_file_path, short_name_direct)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '4':
                 fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, f'genre:{genre}')
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '5':
                 print("Options refreshed.")
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '6':
                 search_string = input("Enter a Song Title or Artist to search for: ")
                 fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, search_string)
                 print(" ")
             elif choice == '7':
                 clear_playlist(output_file_path)
-                year, artist, song_title, genre, song_title_raw, artist2, short_name2 = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
             elif choice == '0':
                 print("Exiting Play A Show. Goodbye!")
                 break
