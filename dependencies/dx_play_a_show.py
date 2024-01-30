@@ -11,10 +11,10 @@ def get_csv_and_config_file_paths():
     if not os.path.exists(config_file_path):
         print("Configuration file not found. Creating a new one.")
         config.add_section("Paths")
-        csv_file_path = input("Enter the path for the CSV file (e.g., A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/jnacks_setlist.csv): ")
+        csv_file_path = input("Enter the path for the CSV file (e.g., 'A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/jnacks_setlist.csv'): ")
         config.set("Paths", "csv_file_path", csv_file_path)
 
-        output_file_path = input("Enter the path for the output file (e.g., A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/dx_playlist.dta): ")
+        output_file_path = input("Enter the path for the output file (e.g., 'A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/dx_playlist.dta'): ")
         config.set("Paths", "output_file_path", output_file_path)
 
         with open(config_file_path, "w") as config_file:
@@ -27,6 +27,9 @@ def get_csv_and_config_file_paths():
     return csv_file_path, output_file_path, config_file_path
 
 def read_csv(csv_file_path):
+    # Remove double quotes from the file path if present
+    csv_file_path = csv_file_path.strip('\"')
+
     with open(csv_file_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter='\t', quotechar='"', escapechar='\\')
         header = next(reader)  # Read the header row
@@ -151,6 +154,9 @@ def fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, 
             print("Invalid input. Please enter 'y', 'n', 'genre:GenreName', 'year:Year', 'csv', or a number (1-5).")
 
 def append_short_name_to_output(output_file, short_name):
+    # Remove double quotes from the file path if present
+    output_file = output_file.strip('\"')
+
     # Open the dx_playlist.dta file and read the existing content
     with open(output_file, 'r') as output:
         existing_content = output.read().strip()
@@ -160,6 +166,7 @@ def append_short_name_to_output(output_file, short_name):
 
     # Add the new short name to the list
     existing_short_names.append(short_name)
+    
     # Write back to the dx_playlist.dta file
     with open(output_file, 'w') as output:
         output.write(f"({' '.join(existing_short_names)})")
