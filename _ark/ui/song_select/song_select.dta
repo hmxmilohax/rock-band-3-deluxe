@@ -26,15 +26,7 @@
    (song_data_mounted
       {$this refresh_top})
    (enter
-      {dx_presence_manager}
-      ;{dx_sv_menu_logo_set sv4_panel}
-      {set $dx_trainer_real_guitar FALSE}
-      {set $dx_trainer_real_bass FALSE}
-      {set $dx_trainer_real_keys FALSE}
-      {set $dx_trainer_real_drum FALSE}
-      {set $dx_skip_game_setup FALSE}
-      {unless $dx_song_select_noise {synth stop_all_sfx TRUE}} ; dx - removes the annoying noises in song select
-      {dx_send_leader_song_speed}
+      {$this iterate UIList $l {$l set scroll_time 0}}
       {net_sync set_ui_state kNetUI_MusicLibrary}
       {set
          [should_go_to_art_maker]
@@ -83,24 +75,10 @@
       {$this
          refresh_sort
          [waiting_for_sort]}
-      {if $dx_confirm_song_count
-         {set $high_song_count 4000}
-         {unless $rb3e_checked_song_count
-            {set $rb3e_checked_song_count TRUE}
-            {if {> {{song_select_panel find song.lst} num_data} $high_song_count}
-               {dx_modal_messenger_symbol 'High song counts, especially with multiple players, have been known to cause instability issues after prolonged play-time. It is recommended to:\nStick to music video venues\nTurn off song transition cutscenes\nAvoid very long, 10 min+ songs\nOr lower your song count\nYou have been warned.'}
-            }
-         }
-      }
-      {unless $gocentral_sanity_checked
-         {if {&& {! {session_mgr is_local}} {< {{song_select_panel find song.lst} num_data} 130}}
-            {set $gocentral_sanity_checked TRUE}
-            {dx_modal_messenger_symbol 'If you show up to custom online lobbies in 2023 without dlc I hope you find jesus'}
-         }
-      }
-   )
+      {dx_song_select_enter})
    (TRANSITION_COMPLETE_MSG
       {dx_restore_online_transitions}
+      {dx_song_select_endurance}
       {if
          [resume_setlist_edit]
          {ui push_screen edit_setlist_screen}
@@ -113,16 +91,7 @@
          {ui goto_screen patch_select_practice_space_screen}
          {set
             [should_go_to_art_maker]
-            FALSE}}
-      {if {|| $dx_customizer $dx_auto_endurance}
-         {script_task kTaskSeconds
-            (delay {if_else $dx_auto_endurance 1.5 0})
-            (script
-               {gamemode set_mode qp_coop}
-               {music_library select_highlighted_node {input_mgr get_user}}
-            )
-         }
-      })
+            FALSE}})
    (exit
       {set
          [details_mode]
@@ -395,11 +364,7 @@
                         $setlist}
                      DX_AUTOSAVE
                      {$component set text_token share_setlist}})
-               kDataUnhandled
-            }
-         }
-      }
-   )
+               kDataUnhandled}}})
    (refresh_leaderboard
       ($user)
       {do
@@ -708,14 +673,8 @@
                [waiting_for_sort]
                {song.lst set_scroll_user $user}
                {music_library skip_to_next_shortcut}})
-         ({&&
-               {== $action kAction_Right}
-               {!
-                  {song.lst is_scrolling}}}
-            {unless
-               [waiting_for_sort]
-               {song.lst set_scroll_user $user}
-               {song.lst scroll 10}}) ; dx scroll the list down by 10 slots when pressing right dpad
+         DX_SONG_LIST_LEFT_ACTION
+         DX_SONG_LIST_RIGHT_ACTION
          ({&&
                {== $action kAction_PageUp}
                {!
@@ -724,14 +683,6 @@
                [waiting_for_sort]
                {song.lst set_scroll_user $user}
                {music_library skip_to_prev_shortcut}})
-         ({&&
-               {== $action kAction_Left}
-               {!
-                  {song.lst is_scrolling}}}
-            {unless
-               [waiting_for_sort]
-               {song.lst set_scroll_user $user}
-               {song.lst scroll -10}}) ; dx scroll the list up by 10 slots when pressing left dpad
          ({'||'
                {== $action kAction_Up}
                {== $action kAction_Down}}

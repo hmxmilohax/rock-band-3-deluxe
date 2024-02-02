@@ -253,20 +253,40 @@
                            {!
                               {meta_performer are_credits_pending}}}
                         {if $gotcha
-                           {if_else
-                              $online_enabled
-                              {push_back $options overshell_online_options}
-                              {push_back $options overshell_register_online}}
+                           {if_else $online_enabled
+                              {switch $dx_connected_server
+                                 (none {push_back $options overshell_online_options})
+                                 (ashcentral {push_back $options ash_overshell_online_options})
+                                 (live {push_back $options live_overshell_online_options})
+                                 (liveless {push_back $options liveless_overshell_online_options})
+                              }
+                              {switch $dx_connected_server
+                                 (none {push_back $options overshell_register_online})
+                                 (ashcentral {push_back $options ash_overshell_register_online})
+                                 (live {push_back $options live_overshell_register_online})
+                                 (liveless {push_back $options liveless_overshell_register_online})
+                              }
+                           }
                         }
                         {if {modifier_mgr is_modifier_active mod_auto_play}
                            {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
                         }
                      }
                      #else
-                     {if_else
-                        $online_enabled
-                        {push_back $options overshell_online_options}
-                        {push_back $options overshell_register_online}}
+                     {if_else $online_enabled
+                        {switch $dx_connected_server
+                           (none {push_back $options overshell_online_options})
+                           (ashcentral {push_back $options ash_overshell_online_options})
+                           (live {push_back $options live_overshell_online_options})
+                           (liveless {push_back $options liveless_overshell_online_options})
+                        }
+                        {switch $dx_connected_server
+                           (none {push_back $options overshell_register_online})
+                           (ashcentral {push_back $options ash_overshell_register_online})
+                           (live {push_back $options live_overshell_register_online})
+                           (liveless {push_back $options liveless_overshell_register_online})
+                        }
+                     }
                      #endif
                      #ifdef HX_WII
                      {if
@@ -285,12 +305,29 @@
                #else
                {if $gotcha
                   {if_else $online_enabled
-                     {push_back $options overshell_online_options}
-                     {push_back $options overshell_register_online}
+                     {switch $dx_connected_server
+                        (none {push_back $options overshell_online_options})
+                        (ashcentral {push_back $options ash_overshell_online_options})
+                        (live {push_back $options live_overshell_online_options})
+                        (liveless {push_back $options liveless_overshell_online_options})
+                     }
+                     {switch $dx_connected_server
+                        (none {push_back $options overshell_register_online})
+                        (ashcentral {push_back $options ash_overshell_register_online})
+                        (live {push_back $options live_overshell_register_online})
+                        (liveless {push_back $options liveless_overshell_register_online})
+                     }
                   }
                }
                {if {modifier_mgr is_modifier_active mod_auto_play}
                   {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
+               }
+               {set $dx_users 0}
+               {user_mgr foreach_user $user
+                  {set $dx_users {+ $dx_users 1}}
+               }
+               {if {&& {! {session_mgr is_local}} {> $dx_users 1}}
+                  {push_back $options overshell_dx_quick_chat} ; dx - show quick chat menu when online
                }
                {push_back $options overshell_change_character}
                {push_back $options overshell_game_options}
@@ -329,7 +366,12 @@
                      {push_back $options milo_lefty_static}}}
                {if
                   {&& $online_options $online_enabled}
-                  {push_back $options overshell_online_options}}
+                     {switch $dx_connected_server
+                        (none {push_back $options overshell_online_options})
+                        (ashcentral {push_back $options ash_overshell_online_options})
+                        (live {push_back $options live_overshell_online_options})
+                        (liveless {push_back $options liveless_overshell_online_options})
+                     }}
                {if 
                   {modifier_mgr is_modifier_active mod_auto_vocals}
                   {push_back $options overshell_vocal_options}
@@ -346,7 +388,7 @@
                #endif
                #endif
                {if {! $online_enabled}
-                  {push_back $options overshell_rb3esettings} ; dx - only show the delux settings icon if not online. it crashes online players
+                  {push_back $options overshell_rb3esettings} ; dx - only show the deluxe settings icon if not online. it crashes online players
                }
                {game_options.lst set_data $options}})
          #ifdef HX_WII
@@ -551,10 +593,22 @@
                $allowed
                {do
                   {options.lst enable_data overshell_online_options}
-                  {options.lst enable_data overshell_register_online}}
+                  {options.lst enable_data overshell_register_online}
+               	{options.lst enable_data ash_overshell_online_options}
+               	{options.lst enable_data ash_overshell_register_online}
+                  {options.lst enable_data live_overshell_online_options}
+                  {options.lst enable_data live_overshell_register_online}
+                  {options.lst enable_data liveless_overshell_online_options}
+                  {options.lst enable_data liveless_overshell_register_online}}
                {do
-                  {options.lst disable_data overshell_online_options}
-                  {options.lst disable_data overshell_register_online}}})
+               	{options.lst disable_data overshell_online_options}
+                  {options.lst disable_data overshell_register_online}
+                  {options.lst disable_data ash_overshell_online_options}
+               	{options.lst disable_data ash_overshell_register_online}
+                  {options.lst disable_data live_overshell_online_options}
+                  {options.lst disable_data live_overshell_register_online}
+                  {options.lst disable_data liveless_overshell_online_options}
+                  {options.lst disable_data liveless_overshell_register_online}}})
          (update_restart_allowed
             ($can_restart)
             {if_else
@@ -697,6 +751,13 @@
                {if
                   $restart
                   {push_back $options overshell_restart}}
+               {set $dx_users 0}
+               {user_mgr foreach_user $user
+                  {set $dx_users {+ $dx_users 1}}
+               }
+               {if {&& {! {session_mgr is_local}} {> $dx_users 1}}
+                  {push_back $options overshell_dx_quick_chat} ; dx - show quick chat menu when online
+               }
                {if_else
                   $metronome
                   {do
@@ -851,12 +912,13 @@
                {&&
                   {! $waiting}
                   {! $success}}}
-            {if
-               $success
-               {linking_code_success.lbl
-                  set_token_fmt
-                  linking_code_success
-                  {$profile get_name}}
+            {if $success
+               {switch $dx_connected_server ; dx - changes the message when linking account based on the connected server
+                  (none {linking_code_success.lbl set_token_fmt linking_code_success {$profile get_name}})
+                  (ashcentral {linking_code_success.lbl set_token_fmt ash_linking_code_success {$profile get_name}})
+                  (live {linking_code_success.lbl set_token_fmt linking_code_success {$profile get_name}})
+                  (liveless {linking_code_success.lbl set_token_fmt linking_code_success {$profile get_name}})
+               }
                {linking_code.lbl set_linking_code $code}})
          (set_options_signed_in
             ($val)

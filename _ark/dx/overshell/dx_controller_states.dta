@@ -9,36 +9,19 @@
             {== $dx_joypad_type_keys kControllerKeys}
             {== $dx_joypad_type_vocals kControllerVocals}
          }
-         {do
             {push_back $options os_instrumentswap}
-            {set $dx_menu_message os_instrumentswap_desc}}
-         {do
             {push_back $options os_instreset} ;shows controller reset menu if at least one instrument faking is active
-            {set $dx_menu_message os_instreset_desc}
-         }
       }
       {push_back $options os_pad_mapping}
-      {push_back $options
-         {switch $dx_mic_deploy_sens 
-            (0.9 os_dx_mic_od_1)
-            (0.7 os_dx_mic_od_2)
-            (0.5 os_dx_mic_od_3)
-            (0.3 os_dx_mic_od_4)
-            (0.1 os_dx_mic_od_5)
-         }
-      }
-      {dx_state_setup dxState_ControllerMenu dx_controllermenu_desc}
+      {options_extras.lst set_data $options}
    }
 )
 
 (dxState_ControllerMenu
-   (view
-      DX_SET_CONTROLLER_MENU
-      {overshell_view_chooser}
-   )
+   (view options_extras)
    (enter
-      DX_OS_OPEN_MSG
-      DX_MENU_DESC
+      DX_SET_CONTROLLER_MENU
+      {dx_overshell_msg {sprint {options_extras.lst selected_sym} "_desc"}}
    )
    (SCROLL_MSG
       DX_MENU_SCROLL_DESC
@@ -57,48 +40,24 @@
             }
          )
          (os_instreset
+            {unless $dx_prompt_save
+               {dx_settings_dta_writer}}
             DX_OS_CLOSE_MSG
             DX_RESET_INST_TYPES
-            ;{$this show_state dxState_DeluxeSettings} ;force closes the menu if a different player resets the controllers
+            ;{$this show_state dxState_Advanced} ;force closes the menu if a different player resets the controllers
             {overshell update_all}
          )
          (os_pad_mapping
             {$this show_state dxState_PadMappingSwap}
          )
-         ((os_dx_mic_od_1 os_dx_mic_od_2 os_dx_mic_od_3 os_dx_mic_od_4 os_dx_mic_od_5)
-            {set $dx_mic_deploy_sens
-               {switch $dx_mic_deploy_sens
-                  (0.9 0.7)
-                  (0.7 0.5)
-                  (0.5 0.3)
-                  (0.3 0.1)
-                  (0.1 0.9)
-               }
-            }
-            {set $dx_tracked_changed
-               {switch $dx_mic_deploy_sens
-                  (0.9 os_dx_mic_od_1)
-                  (0.7 os_dx_mic_od_2)
-                  (0.5 os_dx_mic_od_3)
-                  (0.3 os_dx_mic_od_4)
-                  (0.1 os_dx_mic_od_5)
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_SET_CONTROLLER_MENU
-            {set $previous_state dxState_ControllerMenu}
-         )
       }
-      {set $in_state FALSE}
       DX_SET_CONTROLLER_MENU
-      {set $previous_state dxState_ControllerMenu}
    )
    (exit 
       DX_OS_CLOSE_MSG
-      {dx_state_pos_tracker}
    )
    (on_cancel
-      {$this show_state dxState_DeluxeSettings}
+      {$this show_state dxState_Advanced}
    )
 )
 
@@ -149,21 +108,17 @@
 )
 
 (dxState_InstrumentSwapGuitar
-   (view
+   (view options)
+   (enter
       {do
          ($options
             {array 0})
          {push_back $options keys}
          {push_back $options drums}
          {push_back $options vocals}
-         {dx_state_setup dxState_InstrumentSwapGuitar FALSE}
+         {options.lst set_data $options}
       }
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      {set $dx_menu_message os_instrumentswap_menu_guitar_desc}
-      DX_MENU_DESC
+      {dx_overshell_msg os_instrumentswap_menu_guitar_desc}
    )
    (SELECT_MSG
       DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
@@ -176,13 +131,14 @@
             {set $dx_joypad_type_guitar kControllerVocals}
          )
       }
+      {unless $dx_prompt_save
+         {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_GUITAR
       {dx_log_writer info {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
       DX_OS_CLOSE_MSG
    )
    (exit 
       DX_OS_CLOSE_MSG
-      {dx_state_pos_tracker}
    )
    (on_cancel
       {$this show_state dxState_ControllerMenu}
@@ -190,21 +146,17 @@
 )
 
 (dxState_InstrumentSwapKeys
-   (view
+   (view options)
+   (enter
       {do
          ($options
             {array 0})
          {push_back $options guitar}
          {push_back $options drums}
          {push_back $options vocals}
-         {dx_state_setup dxState_InstrumentSwapKeys FALSE}
+         {options.lst set_data $options}
       }
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      {set $dx_menu_message os_instrumentswap_menu_guitar_desc}
-      DX_MENU_DESC
+      {dx_overshell_msg os_instrumentswap_menu_keys_desc}
    )
    (SELECT_MSG
       DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
@@ -217,13 +169,14 @@
             {set $dx_joypad_type_keys kControllerVocals}
          )
       }
+      {unless $dx_prompt_save
+         {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_KEYS
       {dx_log_writer info {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
       DX_OS_CLOSE_MSG
    )
    (exit 
       DX_OS_CLOSE_MSG
-      {dx_state_pos_tracker}
    )
    (on_cancel
       {$this show_state dxState_ControllerMenu}
@@ -231,21 +184,17 @@
 )
 
 (dxState_InstrumentSwapVocals
-   (view
+   (view options)
+   (enter
       {do
          ($options
             {array 0})
          {push_back $options guitar}
          {push_back $options keys}
          {push_back $options drums}
-         {dx_state_setup dxState_InstrumentSwapVocals FALSE}
+         {options.lst set_data $options}
       }
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      {set $dx_menu_message os_instrumentswap_menu_guitar_desc}
-      DX_MENU_DESC
+      {dx_overshell_msg os_instrumentswap_menu_vocals_desc}
    )
    (SELECT_MSG
       DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
@@ -258,13 +207,14 @@
             {set $dx_joypad_type_vocals kControllerKeys}
          )
       }
+      {unless $dx_prompt_save
+         {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_VOCALS
       {dx_log_writer info {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
       DX_OS_CLOSE_MSG
    )
    (exit 
       DX_OS_CLOSE_MSG
-      {dx_state_pos_tracker}
    )
    (on_cancel
       {$this show_state dxState_ControllerMenu}

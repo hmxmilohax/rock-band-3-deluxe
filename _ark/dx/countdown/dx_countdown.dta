@@ -1,0 +1,217 @@
+#define DX_COUNTDOWN_TRACKER
+(
+   {if
+      #ifdef RB3DX
+      {&&
+         {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
+      }
+      #else
+      $dx_countdown_enabled
+      #endif
+      {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+         #ifdef RB3DX
+         {set $dx_current_checked_slot {{$player get_user} get_slot_num}}
+         #else
+         {switch {$player instrument}
+            (guitar
+               {switch {$player track}
+                  (track0 {set $dx_current_checked_slot 0})
+                  (track1 {set $dx_current_checked_slot 1})
+                  (track2 {set $dx_current_checked_slot 2})
+                  kDataUnhandled
+               }
+               
+            )
+            (bass
+               {switch {$player track}
+                  (track0 {set $dx_current_checked_slot 0})
+                  (track1 {set $dx_current_checked_slot 1})
+                  (track2 {set $dx_current_checked_slot 2})
+                  kDataUnhandled
+               }
+            )
+            (drum
+               {switch {$player track}
+                  (track0 {set $dx_current_checked_slot 0})
+                  (track1 {set $dx_current_checked_slot 1})
+                  (track2 {set $dx_current_checked_slot 2})
+                  kDataUnhandled
+               }
+            )
+            kDataUnhandled
+         }
+         #endif
+         {set $dx_current_checked_instrument {$player instrument}}
+         #ifdef RB3DX
+         {if {== $dx_current_checked_instrument vocals}
+            {if $dx_countdown_enabled
+               {unless $delay_tracked_vocals
+                  {foreach $entry $vocals_note_tracker
+                     {if {== {elem $entry 0} {sprint "delay_" $current_tracked_beat_vocals}}
+                        {set $tracked_beat_no_notes_start_vocals {elem {find $entry {sprint "delay_" $current_tracked_beat_vocals}} 1}}
+                        {set $tracked_beat_no_notes_end_vocals {elem {find $entry {sprint "delay_" $current_tracked_beat_vocals}} 2}}
+                        {set $delay_tracked_vocals TRUE}
+                     }
+                  }
+               }
+               {if $delay_tracked_vocals
+                  {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_vocals}
+                     {dx_check_beat {- $tracked_beat_no_notes_end_vocals {dx_get_current_beat}}}
+                  }
+               }
+            }
+         }
+         #endif
+         {if {&& $dx_countdown_enabled {! {== $dx_current_checked_instrument vocals}}}
+            {switch $dx_current_checked_slot
+               (0 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_0}})
+               (1 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_1}})
+               (2 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_2}})
+               (3 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_3}})
+               kDataUnhandled
+            }
+            {unless
+               {switch $dx_current_checked_slot
+                  (0 $delay_tracked_0)
+                  (1 $delay_tracked_1)
+                  (2 $delay_tracked_2)
+                  (3 $delay_tracked_3)
+                  kDataUnhandled
+               }
+               {switch $dx_current_checked_instrument
+                  ((guitar real_guitar)
+                     {dx_log_writer countdown {sprint $dx_current_checked_instrument $dx_current_search_tracker " found, " $dx_current_checked_instrument " Start: " $tracked_beat_no_notes_start_guitar ", " $dx_current_checked_instrument " End: " $tracked_beat_no_notes_end_guitar ", Current Beat: " {dx_get_current_beat}}}
+                  )
+                  ((bass real_bass)
+                     {dx_log_writer countdown {sprint $dx_current_checked_instrument $dx_current_search_tracker " found, " $dx_current_checked_instrument " Start: " $tracked_beat_no_notes_start_bass ", " $dx_current_checked_instrument " End: " $tracked_beat_no_notes_end_bass ", Current Beat: " {dx_get_current_beat}}}
+                  )
+                  ((keys real_keys)
+                     {dx_log_writer countdown {sprint $dx_current_checked_instrument $dx_current_search_tracker " found, " $dx_current_checked_instrument " Start: " $tracked_beat_no_notes_start_keys ", " $dx_current_checked_instrument " End: " $tracked_beat_no_notes_end_keys ", Current Beat: " {dx_get_current_beat}}}
+                  )
+                  ((drum real_drum)
+                     {dx_log_writer countdown {sprint $dx_current_checked_instrument $dx_current_search_tracker " found, " $dx_current_checked_instrument " Start: " $tracked_beat_no_notes_start_drum ", " $dx_current_checked_instrument " End: " $tracked_beat_no_notes_end_drum ", Current Beat: " {dx_get_current_beat}}}
+                  )
+                  kDataUnhandled
+               }
+               {foreach $entry
+                  {switch $dx_current_checked_instrument
+                     ((guitar real_guitar) $guitar_note_tracker)
+                     ((bass real_bass) $bass_note_tracker)
+                     ((keys real_keys) $keys_note_tracker)
+                     ((drum real_drum) $drum_note_tracker)
+                     kDataUnhandled
+                  }
+                  {if {== {elem $entry 0}
+                        {switch $dx_current_checked_slot
+                           (0 {sprint "delay_" $current_tracked_beat_0})
+                           (1 {sprint "delay_" $current_tracked_beat_1})
+                           (2 {sprint "delay_" $current_tracked_beat_2})
+                           (3 {sprint "delay_" $current_tracked_beat_3})
+                           kDataUnhandled
+                        }
+                     }
+                     {switch $dx_current_checked_instrument
+                        ((guitar real_guitar)
+                           {set $tracked_beat_no_notes_start_guitar {elem {find $entry $dx_current_search_tracker} 1}}
+                           {set $tracked_beat_no_notes_end_guitar {elem {find $entry $dx_current_search_tracker} 2}}
+                        )
+                        ((bass real_bass)
+                           {set $tracked_beat_no_notes_start_bass {elem {find $entry $dx_current_search_tracker} 1}}
+                           {set $tracked_beat_no_notes_end_bass {elem {find $entry $dx_current_search_tracker} 2}}
+                        )
+                        ((keys real_keys)
+                           {set $tracked_beat_no_notes_start_keys {elem {find $entry $dx_current_search_tracker} 1}}
+                           {set $tracked_beat_no_notes_end_keys {elem {find $entry $dx_current_search_tracker} 2}}
+                        )
+                        ((drum real_drum)
+                           {set $tracked_beat_no_notes_start_drum {elem {find $entry $dx_current_search_tracker} 1}}
+                           {set $tracked_beat_no_notes_end_drum {elem {find $entry $dx_current_search_tracker} 2}}
+                        )
+                        kDataUnhandled
+                     }
+                     {switch $dx_current_checked_slot
+                        (0 {set $delay_tracked_0 TRUE})
+                        (1 {set $delay_tracked_1 TRUE})
+                        (2 {set $delay_tracked_2 TRUE})
+                        (3 {set $delay_tracked_3 TRUE})
+                        kDataUnhandled
+                     }
+                  }
+               }
+            }
+            {if
+               {switch $dx_current_checked_slot
+                  (0 $delay_tracked_0)
+                  (1 $delay_tracked_1)
+                  (2 $delay_tracked_2)
+                  (3 $delay_tracked_3)
+                  kDataUnhandled
+               }
+               {switch $dx_current_checked_instrument
+                  ((guitar real_guitar)
+                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_guitar}
+                        {unless $dx_log_stopper
+                           {set $dx_log_stopper TRUE}
+                           {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_guitar ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_guitar}}
+                        }
+                        {dx_check_beat {- $tracked_beat_no_notes_end_guitar {dx_get_current_beat}}}
+                     }
+                  )
+                  ((bass real_bass)
+                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_bass}
+                        {unless $dx_log_stopper
+                           {set $dx_log_stopper TRUE}
+                           {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_bass ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_bass}}
+                        }
+                        {dx_check_beat {- $tracked_beat_no_notes_end_bass {dx_get_current_beat}}}
+                     }
+                  )
+                  ((keys real_keys)
+                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_keys}
+                        {unless $dx_log_stopper
+                           {set $dx_log_stopper TRUE}
+                           {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_keys ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_keys}}
+                        }
+                        {dx_check_beat {- $tracked_beat_no_notes_end_keys {dx_get_current_beat}}}
+                     }
+                  )
+                  ((drum real_drum)
+                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_drum}
+                        {unless $dx_log_stopper
+                           {set $dx_log_stopper TRUE}
+                           {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_drum ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_drum}}
+                        }
+                        {dx_check_beat {- $tracked_beat_no_notes_end_drum {dx_get_current_beat}}}
+                     }
+                  )
+                  kDataUnhandled
+               }
+            }
+         }
+         #ifdef RB3DX
+         {if $dx_end_song_feedback
+            {switch $dx_current_checked_instrument
+               ((guitar real_guitar)
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_guitar 1}} {dx_show_solo_box} {dx_final_note_report}}
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_guitar 7}} {dx_final_percent_report}}
+               )
+               ((bass real_bass)
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_bass 1}} {dx_show_solo_box} {dx_final_note_report}}
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_bass 7}} {dx_final_percent_report}}
+               )
+               ((keys real_keys)
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_keys 1}} {dx_show_solo_box} {dx_final_note_report}}
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_keys 7}} {dx_final_percent_report}}
+               )
+               ((drum real_drum)
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_drum 1}} {dx_show_solo_box} {dx_final_note_report}}
+                  {if {== {dx_get_current_beat} {+ $dx_final_note_drum 7}} {dx_final_percent_report}}
+               )
+               kDataUnhandled
+            }
+         }
+         #endif
+      }
+      {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat}}}
+   }
+)

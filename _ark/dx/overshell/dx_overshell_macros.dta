@@ -42,7 +42,24 @@
       {if $dx_slider {switch $dx_slider_id
          (dx_speedmenu 
             {set $emulatefps {+ 1 {instruments.sld current}}}
-            {set $trackspeed {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+            {switch $dx_trkspd_inst
+               (all
+                  {set $trackspeed_guitar {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_bass {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_drum {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_keys {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_real_keys {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_real_guitar {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+                  {set $trackspeed_real_bass {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}}
+               )
+               (guitar {set $trackspeed_guitar {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (bass {set $trackspeed_bass {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (drum {set $trackspeed_drum {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (keys {set $trackspeed_keys {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (real_keys {set $trackspeed_real_keys {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (real_guitar {set $trackspeed_real_guitar {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+               (real_bass {set $trackspeed_real_bass {- {+ 1 {* {bg_music.sld current} 0.05}} 0.5}})
+            }
             {set $speedmod {+ 1 {* {crowd.sld current} 0.05}}}
             {set $leaderspeed $speedmod}
             {set $leaderspeed $speedmod}
@@ -331,6 +348,7 @@
          }
          {if {modifier_mgr is_modifier_active mod_auto_play}
             {do
+               {set $dx_multiplier_ring_needs_reset TRUE}
                {modifier_mgr toggle_modifier_enabled $modifier}
                {if {modifier_mgr is_modifier_active mod_fakejuke}
                   {modifier_mgr toggle_modifier_enabled mod_fakejuke}
@@ -362,6 +380,7 @@
          {do
             {modifier_mgr toggle_modifier_enabled $modifier}
             {set $dx_rails_needs_reset TRUE}
+            {set $dx_multiplier_ring_needs_reset TRUE}
             {if {== $dx_rails none}
                {set $dx_rails "rock band 3"}
             }
@@ -379,6 +398,7 @@
          {modifier_mgr is_modifier_active mod_calibration}
          {do
             {modifier_mgr toggle_modifier_enabled $modifier}
+            {set $dx_multiplier_ring_needs_reset TRUE}
             {overshell update_all}
             {ui goto_screen meta_loading_main_screen}
          }
@@ -392,6 +412,7 @@
       {if
          {modifier_mgr is_modifier_active mod_precision}
          {do
+            {set $dx_multiplier_ring_needs_reset TRUE}
             {set $dx_rails_needs_reset TRUE}
             {if {== $dx_rails none}
                {set $dx_rails "rock band 3"}
@@ -407,6 +428,72 @@
    ;TODO: Enable/Disable $dx_no_venue_intro when activating perfection 
    {overshell update_all}
    )
+)
+
+#define DX_SET_QUICK_CHAT_OPTIONS
+(
+   {do
+      ($options
+         {array 0})
+      {switch
+         $dx_is_in_chat
+         (all ;populates menu with every quick chat phrase
+            {do
+               {set $dx_quick_chat_phrases (DX_QUICK_CHAT_PHRASES)}
+               {foreach $entry $dx_quick_chat_phrases {push_back $options $entry}}
+            }
+         )
+         (quick ;only shows the 8 quick chat presets
+            {do
+               {push_back $options {sprintf "1: %s" $dx_chat_preset_0}}
+               {push_back $options {sprintf "2: %s" $dx_chat_preset_1}}
+               {push_back $options {sprintf "3: %s" $dx_chat_preset_2}}
+               {push_back $options {sprintf "4: %s" $dx_chat_preset_3}}
+               {push_back $options {sprintf "5: %s" $dx_chat_preset_4}}
+               {push_back $options {sprintf "6: %s" $dx_chat_preset_5}}
+               {push_back $options {sprintf "7: %s" $dx_chat_preset_6}}
+               {push_back $options {sprintf "8: %s" $dx_chat_preset_7}}
+            }
+         )
+         (FALSE ;restores vanilla online options when not in chat menu
+            #ifdef HX_WII
+            {do
+               {if
+                  {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}}
+               {if
+                  {==
+                     {ui current_screen}
+                     main_hub_screen}
+                  {if_else
+                     {!
+                        {profile_mgr get_using_wii_friends}}
+                     {if
+                        {session_mgr is_local}
+                        {push_back $options overshell_import_wii_friends}}
+                     {push_back $options overshell_invite}}}
+            }
+            #else
+            {push_back $options overshell_invite}
+            #endif
+            #ifdef HX_XBOX
+            {push_back $options overshell_invite_xbox_party}
+            #endif
+            #ifdef HX_PS3
+            {push_back $options overshell_check_invites}
+            {push_back $options overshell_kick}
+            #endif
+            #ifdef HX_XBOX
+            {push_back $options overshell_gamercard}
+            #endif
+            #ifdef HX_PS3
+            {push_back $options overshell_mute}
+            #endif
+            {push_back $options overshell_disconnect}
+         )
+      }
+      {online_options.lst set_data $options}
+   }
 )
 
 ;part selection, adds non-standard selections on a certain instrument if faking is active
@@ -521,7 +608,36 @@
    }
 )
 #define DX_PART_SELECT_AUTOPLAY
-({choose_part.lst set_data (overshell_vocal_solo overshell_vocal_harmony overshell_guitar overshell_bass overshell_drums overshell_drums_pro overshell_keys overshell_real_keys overshell_real_guitar overshell_real_bass overshell_real_guitar_22 overshell_real_bass_22)})
+(
+   {do
+      ($options
+         {array 0})
+      {unless 
+         {&& 
+            {== {ui current_screen} game_screen}
+            {||
+               {== {{$this get_user} get_controller_type} kControllerGuitar}
+               {== {{$this get_user} get_controller_type} kControllerDrum}
+               {== {{$this get_user} get_controller_type} kControllerKeys}
+               {== {{$this get_user} get_controller_type} kControllerRealGuitar}
+            }
+         }
+         {do
+            {push_back $options overshell_vocal_solo} {push_back $options overshell_vocal_harmony}
+         }
+      }
+      {unless {&& {== {ui current_screen} game_screen} {== {{$this get_user} get_controller_type} kControllerVocals}}
+         {do
+            {push_back $options overshell_guitar} {push_back $options overshell_bass}
+            {push_back $options overshell_drums} {push_back $options overshell_drums_pro}
+            {push_back $options overshell_keys} {push_back $options overshell_real_keys}
+            {push_back $options overshell_real_guitar} {push_back $options overshell_real_bass}
+            {push_back $options overshell_real_guitar_22} {push_back $options overshell_real_bass_22}
+         }
+      }
+      {choose_part.lst set_data $options}
+   }
+)
 #define DX_PART_SELECT_HANDLERS
 (
    {if_else {modifier_mgr is_modifier_active mod_auto_play}

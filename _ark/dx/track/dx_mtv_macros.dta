@@ -1,14 +1,29 @@
 ;welcome to jnacks hell
-#define DX_MTV_SETUP_TEXT
+;inside the ark
+#define SONGPATH_DISC
 (
-   {{{gamemode get track_panel} find mtv_overlay} setup_text} ;refresh the mtv overlay
+   {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
+)
+;a dlc dta
+#define SONGPATH_DLC
+(
+   {song_mgr song_file_path {meta_performer song} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
+)
+;on disc update
+#define SONGPATH_UPDATE
+(
+   {song_mgr song_file_path {meta_performer song} "/../../../gen/missing_song_data_updates.dtb"} ;if we loaded a dlc song that has an on disc update
+)
+#define SONGPATH_RAW_DTB
+(
+   {sprint "dx/song_dta_collection/gen/" {meta_performer song} ".dtb"}
 )
 #define DX_MTV_BPM_HANDLER
 (
    {if {&& $dx_bpm_report $dx_mtvup}
       {set $dx_tmp {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}
       {set $dx_bpm_counter {* {* 60 {/ 1 {- {beat_to_seconds {+ $dx_tmp 1}} {beat_to_seconds $dx_tmp}}}} $speedmod}}
-      DX_MTV_SETUP_TEXT
+      {dx_mtv_setup_text}
    }
 )
 #define DX_MTV_SET_POS_HANDLER
@@ -45,7 +60,7 @@
                      {set $songdtareader {read_file SONGPATH_RAW_DTB}} ; read the raw dtb
                   }
                   {do
-                     {set $dx_path_failed} ;failure (shouldnt happen)
+                     {set $dx_path_failed TRUE} ;failure (shouldnt happen)
                      {dx_log_writer default {sprint "Found DTA update path, but couldn't find raw dtb"}}
                   }
                }
@@ -54,59 +69,11 @@
             {dx_log_writer info {sprint "Found DTA path: " $theactualpath}}
          }
          {do
-            {set $dx_path_failed}
+            {set $dx_path_failed TRUE}
             {dx_log_writer default {sprint "Unmapped DTA path: " {song_mgr song_file_path {meta_performer song} "/"}}}
          }
       }
    }
-)
-#define DX_ARRAY_READER
-(
-   {if {find_exists $songdtareader name}
-      {set $namevar {elem {find $songdtareader name} 1}}
-   }
-   {if {find_exists $songdtareader artist}
-      {set $artistvar {elem {find $songdtareader artist} 1}}
-   }
-   {if {find_exists $songdtareader year_released}
-      {set $yearvar {elem {find $songdtareader year_released} 1}}
-   }
-   {if {find_exists $songdtareader album_name}
-      {set $albumvar {elem {find $songdtareader album_name} 1}}
-   }
-   {if {find_exists $songdtareader game_origin}
-      {set $sourcevar {elem {find $songdtareader game_origin} 1}}
-   }
-   {if {== $sourcevar rb1_dlc}
-      {set $sourcevar dlc}
-   }
-   {if {find_exists $songdtareader genre}
-      {set $genrevar {elem {find $songdtareader genre} 1}}
-   }
-   {if {find_exists $songdtareader sub_genre}
-      {set $subgenrevar {elem {find $songdtareader sub_genre} 1}}
-   }
-   {if {find_exists $songdtareader master}
-      {set $mastervar {elem {find $songdtareader master} 1}}
-   }
-   {if {find_exists $songdtareader author}
-      {set $authorvar {elem {find $songdtareader author} 1}}
-   }
-   {if {find_exists $songdtareader strings_author}
-      {set $stringsauthorvar {elem {find $songdtareader strings_author} 1}}
-   }
-   {if {find_exists $songdtareader keys_author}
-      {set $keysauthorvar {elem {find $songdtareader keys_author} 1}}
-   }
-   {dx_rank_var_finder guitar 139 176 221 267 333 409}
-   {dx_rank_var_finder drum 124 151 178 242 345 448}
-   {dx_rank_var_finder bass 135 181 228 293 364 436}
-   {dx_rank_var_finder vocals 132 175 218 279 353 427}
-   {dx_rank_var_finder band 163 215 243 267 292 345}
-   {dx_rank_var_finder keys 153 211 269 327 385 443}
-   {dx_rank_var_finder real_keys 153 211 269 327 385 443}
-   {dx_rank_var_finder real_guitar 150 205 264 323 382 442}
-   {dx_rank_var_finder real_bass 150 208 267 325 384 442}
 )
 #define MTV_DTA_READER
 (
@@ -115,7 +82,7 @@
          {find $songdtareader {meta_performer song}}
       }
    }
-   DX_ARRAY_READER
+   {dx_mtv_array_reader}
    {set $songdtareader FALSE}
    {if {find_exists $syscfg missing_song_data {meta_performer song}}
       {set $songdtareader
@@ -123,7 +90,7 @@
       }
    }
    {if $songdtareader
-      DX_ARRAY_READER
+      {dx_mtv_array_reader}
    }
 )
 #define DX_MTV_FORMATTER_HANDLER
@@ -277,12 +244,12 @@
       #endif
       ;TODO this is lousy
       {if_else $yearvar
-         {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar ", " $yearvar " - Album: " $albumvar " - Genre: " $genrevar " - Source: " {localize $sourcevar} " - Authored By: " $authorvar} " - Gamemode: " $dx_gamemode}
+         {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar ", " $yearvar " - Album: " $albumvar " - Genre: " $genrevar " - Source: " {localize $sourcevar} " - Authored By: " $authorvar " - Gamemode: " $dx_gamemode}}
          {if_else $authorvar
-            {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar " - Authored By: " $authorvar} " - Gamemode: " $dx_gamemode}
+            {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar " - Authored By: " $authorvar " - Gamemode: " $dx_gamemode}}
             {if_else $artistvar
-               {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar} " - Gamemode: " $dx_gamemode}
-               {dx_log_writer default {sprint "Song Loaded: " $song_title} " - Gamemode: " $dx_gamemode}
+               {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar " - Gamemode: " $dx_gamemode}}
+               {dx_log_writer default {sprint "Song Loaded: " $song_title " - Gamemode: " $dx_gamemode}}
             }
          }
       }
@@ -328,23 +295,25 @@
       }
       {set $author_finder_disabled TRUE}
    }
-   {if
-      {||
-         $dx_path_failed
-         $author_finder_disabled
-      }
-      {unless $dx_author_finder_failed
-         {set $dx_author_finder_failed TRUE}
-         {dx_log_writer default {sprint "Author Finder Failed - Song Loaded: " $song_title}}
-      }
+   {if {! {gamemode in_mode trainer}}
       {if
-         {exists song.lbl}
-         {song.lbl set fixed_length 1000}
-         {$this mtv_song_title_writer}
-      }
-      {if
-         {exists artist.lbl}
-         {artist.lbl set_artist_name_from_shortname $short_name}
+         {||
+            $dx_path_failed
+            $author_finder_disabled
+         }
+         {unless $dx_author_finder_failed
+            {set $dx_author_finder_failed TRUE}
+            {dx_log_writer default {sprint "Author Finder Failed - Song Loaded: " $song_title}}
+         }
+         {if
+            {exists song.lbl}
+            {song.lbl set fixed_length 1000}
+            {$this mtv_song_title_writer}
+         }
+         {if
+            {exists artist.lbl}
+            {artist.lbl set_artist_name_from_shortname $short_name}
+         }
       }
    }
 )

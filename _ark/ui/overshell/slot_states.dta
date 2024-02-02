@@ -207,7 +207,7 @@
          options})
    (enter
       {if $dx_customizer
-         {$this show_state dxState_AppearanceMenu}
+         {$this show_state dxState_TextureMenu}
       }
    )
    (update_view
@@ -361,9 +361,31 @@
             (overshell_return
                {$this leave_options})
             (overshell_online_options
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (live_overshell_online_options ; dx - allow entering the online options state when live is connected
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (liveless_overshell_online_options ; dx - allow entering the online options state when liveless is connected
+               {set $dx_is_in_chat FALSE}
                {$this show_online_options})
             (overshell_register_online
                {$this attempt_register_online})
+            (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (live_overshell_register_online ; dx - allow entering the online options state when live is connected
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (liveless_overshell_register_online ; dx - allow entering the online options state when liveless is connected
+               {set $dx_is_in_chat FALSE}
+               {$this show_online_options})
+            (overshell_dx_quick_chat ; dx - show quick chat instead of online options
+               {set $dx_is_in_chat quick}
+               {$this show_online_options})
             (overshell_game_options
                {$this show_game_options})
             (overshell_leave
@@ -391,6 +413,12 @@
    (SCROLL_MSG
       {$this on_slider_change $component $user})
    (BUTTON_DOWN_MSG
+      {if {== $action kAction_Right} ; dx - shows every quick chat option when pressing Right Dpad
+         {if {== {options.lst selected_sym} overshell_dx_quick_chat}
+            {set $dx_is_in_chat all}
+            {$this show_online_options}
+         }
+      }
       {cond
          ({==
                {$this focus_name}
@@ -512,7 +540,9 @@
       {$this show_options}))
 (kState_OnlineOptions
    (enter
-      {online_options.lst set circular 0})
+      {online_options.lst set circular {if_else $dx_is_in_chat 1 0}}
+      DX_SET_QUICK_CHAT_OPTIONS ; dx - set the list of online options on either quick chat or the vanilla online options
+   )
    (view online_options)
    (update_view
       {do
@@ -547,30 +577,55 @@
    (requires_online_session TRUE)
    (SELECT_MSG
       {switch
-         {$component selected_sym}
-         (overshell_invite
-            #ifdef HX_XBOX
-            {platform_mgr show_user_friends $user}
-            #else
-            {$this show_invite_friends}
-            #endif)
-         (overshell_kick
-            {$this show_kick_users})
-         (overshell_mute
-            {$this show_mute_users})
-         (overshell_gamercard
-            {$this show_gamercard_users})
-         (overshell_disconnect
-            {$this attempt_disconnect})
-         (overshell_invite_xbox_party
-            {platform_mgr invite_user_party $user})
-         (overshell_check_invites
-            {join_invite_panel set_joining_user $user}
-            {platform_mgr check_mailbox})})
+         $dx_is_in_chat
+         (all ; dx - sends a chat message that is currently hovered over from the "all" list
+            {dx_quick_chat {online_options.lst selected_sym}}
+         )
+         (quick ; dx - sends a chat message from the preset quick chat list
+            {switch
+               {online_options.lst selected_data}
+               (0 {dx_quick_chat $dx_chat_preset_0})
+               (1 {dx_quick_chat $dx_chat_preset_1})
+               (2 {dx_quick_chat $dx_chat_preset_2})
+               (3 {dx_quick_chat $dx_chat_preset_3})
+               (4 {dx_quick_chat $dx_chat_preset_4})
+               (5 {dx_quick_chat $dx_chat_preset_5})
+               (6 {dx_quick_chat $dx_chat_preset_6})
+               (7 {dx_quick_chat $dx_chat_preset_7})
+            }
+         )
+         (FALSE ; dx - use vanilla behavior if not in chat mode
+            {switch
+               {$component selected_sym}
+               (overshell_invite
+                  #ifdef HX_XBOX
+                  {platform_mgr show_user_friends $user}
+                  #else
+                  {$this show_invite_friends}
+                  #endif)
+               (overshell_kick
+                  {$this show_kick_users})
+               (overshell_mute
+                  {$this show_mute_users})
+               (overshell_gamercard
+                  {$this show_gamercard_users})
+               (overshell_disconnect
+                  {$this attempt_disconnect})
+               (overshell_invite_xbox_party
+                  {platform_mgr invite_user_party $user})
+               (overshell_check_invites
+                  {join_invite_panel set_joining_user $user}
+                  {platform_mgr check_mailbox})}
+         )
+      }
+   )
    (on_cancel
       {if_else
          {$this in_game}
-         {$this show_game_options}
+         {if_else $dx_is_in_chat ; dx - returns to root level options menu if this state was entered via quick chat
+            {$this show_options}
+            {$this show_game_options}
+         }
          {$this show_options}}))
 (kState_DisconnectConfirm
    (view confirm_action)
@@ -742,7 +797,26 @@
                      update_lefty_flip}}})
          (overshell_register_online
             {$this attempt_register_online})
+         (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
+         (live_overshell_register_online ; dx - allow entering the online options state when live is connected
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
+         (liveless_overshell_register_online ; dx - allow entering the online options state when liveless is connected
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
          (overshell_online_options
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
+         (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
+         (live_overshell_online_options ; dx - allow entering the online options state when live is connected
+            {set $dx_is_in_chat FALSE}
+            {$this show_online_options})
+         (liveless_overshell_online_options ; dx - allow entering the online options state when liveless is connected
+            {set $dx_is_in_chat FALSE}
             {$this show_online_options})
          (overshell_drum_options
             {$this show_options_drum})
@@ -757,6 +831,7 @@
          (overshell_modifiers
             {$this show_modifiers})})
    (on_cancel
+      DX_OS_CLOSE_MSG
       {$this show_options}
       {options.lst set_selected 3}))
 (kState_ToggleNoFailDenial
@@ -860,7 +935,7 @@
    (view #ifdef HX_WII options #else options_audio #endif)
    (on_cancel
       {unless $dx_dont_save_mod
-         DX_MODIFIER_DTA_WRITER
+         {dx_modifier_dta_writer}
       }
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnErrorAV}
@@ -975,7 +1050,7 @@
 (kState_OptionsVocal
    (view options_vocal)
    (on_cancel
-      DX_VALUES_DTA_WRITER
+      {dx_values_dta_writer}
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnError}
          {$this show_game_options}
@@ -1105,7 +1180,17 @@
 (kState_OptionsExtras
    (view options_extras)
    (enter
-      {options_extras.lst set_data (overshell_credits overshell_linking_code #ifdef HX_XBOX overshell_audition #endif)}
+      {options_extras.lst set_data 
+         (
+            overshell_credits
+            overshell_linking_code
+            #ifdef HX_XBOX overshell_audition #endif
+            {if_else {modifier_mgr is_modifier_active mod_auto_play}
+               os_cycle_camera
+               os_screensaver
+            }
+         )
+      }
       {if {session_mgr is_local}
          {set $dx_choose_char_scale_x 0.4}
          {set $dx_choose_char_scale_y 0.4}
@@ -1159,13 +1244,29 @@
                {$this leave_options}}
             #else
             {$this leave_options}
-            #endif)})
+            #endif)
+         (os_cycle_camera
+            {cycle_free_camera})
+         (os_screensaver
+            {set $dx_screensaver {! $dx_screensaver}}
+            {set $overshell_showing {! $overshell_showing}}
+            {overshell set_showing $overshell_showing}
+            {unless {$this in_game} {ui goto_screen meta_loading_main_screen}}
+            ;{set $previous_state kState_OptionsExtras}
+         )
+      }
+   )
    (exit
       {restore_choose_char_size_pos}
       {game_options.grp remove_object choose_character.mesh}
    )
    (on_cancel
-      {$this show_game_options}))
+      {if_else $dx_screensaver
+         kDataUnhandled
+         {$this show_game_options}
+      }
+   )
+)
 (kState_AuditionNoHardDriveConfirm
    (view confirm_action)
    (enter
@@ -1344,7 +1445,7 @@
             {overshell update_all}}})
    (on_cancel
       {unless $dx_dont_save_mod
-         DX_MODIFIER_DTA_WRITER
+         {dx_modifier_dta_writer}
       }
       {if_else $dx_settings_error
          {$this show_state dxState_SaveWarnError}
@@ -1806,10 +1907,12 @@
          (3 {if_else $default_diff3 {choose_diff.lst set_selected $default_diff3} {choose_diff.lst set_selected 3}})
          {fail {if_else $default_diff0 {choose_diff.lst set_selected $default_slot0} {choose_diff.lst set_selected 3}}}
       }
+      ; dx - sends what texture(s) the current user is using to remote players
+      {if {{$this get_user} is_local} {dx_sync_remote_textures {{$this get_user} get_track_type}}}
    )
    (exit
       {if {! {modifier_mgr is_modifier_active mod_auto_play}} ;only write default instruments if autoplay is off
-         DX_VALUES_DTA_WRITER
+         {dx_values_dta_writer}
       }
    )
    (SELECT_MSG
@@ -1823,6 +1926,8 @@
             (3 {set $default_diff3 {$component selected_sym}})
             {fail {set $default_diff0 {$component selected_sym}}}
          }
+         ;also write these to dx_values.dta
+         {dx_values_dta_writer}
          {switch
             {choose_diff.lst selected_sym}
             (overshell_easy

@@ -1,0 +1,902 @@
+#define PLAYER_FEEDBACK_00
+({{get_track_panel} find player_feedback_01})
+#define PLAYER_FEEDBACK_01
+({{get_track_panel} find player_feedback_02})
+#define PLAYER_FEEDBACK_02
+({{get_track_panel} find player_feedback_03})
+#ifdef RB3DX
+#define SOLO_PERCENT_LABEL
+(solo_percent.lbl)
+#else
+#define SOLO_PERCENT_LABEL
+(solo_percent.txt)
+#endif
+#ifdef RB3DX
+#define SCORE_LABEL
+(score.lbl)
+#else
+#define SCORE_LABEL
+(score.txt)
+#endif
+#define SOLO_PERCENT_GUITAR_INT
+({int {/ {- $tracked_beat_no_notes_end_guitar {dx_get_current_beat}} 4}})
+#define SOLO_PERCENT_BASS_INT
+({int {/ {- $tracked_beat_no_notes_end_bass {dx_get_current_beat}} 4}})
+#define SOLO_PERCENT_DRUM_INT
+({int {/ {- $tracked_beat_no_notes_end_drum {dx_get_current_beat}} 4}})
+#define SOLO_PERCENT_VOX_INT
+({int {/ {- $tracked_beat_no_notes_end_vocals {dx_get_current_beat}} 4}})
+#define SOLO_PERCENT_KEYS_INT
+({int {/ {- $tracked_beat_no_notes_end_keys {dx_get_current_beat}} 4}})
+#ifdef RB3DX
+#define PLAYER_FEEDBACK_00
+({{find_obj {{get_track_panel} loaded_dir} track_0} find player_feedback})
+#else
+#define PLAYER_FEEDBACK_00
+({{get_track_panel} find player_feedback_01})
+#endif
+#ifdef RB3DX
+#define PLAYER_FEEDBACK_01
+({{find_obj {{get_track_panel} loaded_dir} track_1} find player_feedback})
+#else
+#define PLAYER_FEEDBACK_01
+({{get_track_panel} find player_feedback_02})
+#endif
+#ifdef RB3DX
+#define PLAYER_FEEDBACK_02
+({{find_obj {{get_track_panel} loaded_dir} track_2} find player_feedback})
+#else
+#define PLAYER_FEEDBACK_02
+({{get_track_panel} find player_feedback_03})
+#endif
+#ifdef RB3DX
+#define PLAYER_FEEDBACK_03
+({{find_obj {{get_track_panel} loaded_dir} track_3} find player_feedback})
+#endif
+#ifdef RB3DX
+#define PLAYER_FEEDBACK_VOX
+({{find_obj {{get_track_panel} loaded_dir} vocals} find player_feedback})
+#else
+#define PLAYER_FEEDBACK_VOX
+({{{get_track_panel} find vocals} get player_feedback})
+#endif
+{func
+   dx_countdown_var_reset
+   {dx_log_writer info {sprint "func: dx_countdown_var_reset"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_countdown_var_reset - time: %.4fms"
+         {time
+            {set $current_beat FALSE} {set $startingbpm FALSE}
+            {set $dx_bpm_counter_for_countdown FALSE} {set $solo_box_up_0 FALSE} {set $solo_box_up_1 FALSE} {set $solo_box_up_2 FALSE} {set $solo_box_up_3 FALSE} {set $solo_box_up_vocals FALSE}
+            {set $delay_tracked_0 FALSE} {set $delay_tracked_1 FALSE} {set $delay_tracked_2 FALSE} {set $delay_tracked_3 FALSE} {set $delay_tracked_vocals FALSE}
+            {set $current_tracked_beat_0 FALSE} {set $current_tracked_beat_1 FALSE} {set $current_tracked_beat_2 FALSE} {set $current_tracked_beat_3 FALSE} {set $current_tracked_beat_vocals FALSE}
+            {set $tracked_beat_no_notes_start_guitar FALSE} {set $tracked_beat_no_notes_end_guitar FALSE} {set $first_guitar_gem_tracked FALSE}
+            {set $tracked_beat_no_notes_start_bass FALSE} {set $tracked_beat_no_notes_end_bass FALSE} {set $first_bass_gem_tracked FALSE}
+            {set $tracked_beat_no_notes_start_drum FALSE} {set $tracked_beat_no_notes_end_drum FALSE} {set $first_drum_gem_tracked FALSE}
+            {set $tracked_beat_no_notes_start_keys FALSE} {set $tracked_beat_no_notes_end_keys FALSE} {set $first_keys_gem_tracked FALSE}
+            {set $tracked_beat_no_notes_start_vocals FALSE} {set $tracked_beat_no_notes_end_vocals FALSE} {set $first_vocals_gem_tracked FALSE}
+         }
+      }
+   }
+}
+{func
+   dx_midi_parser_var_reset
+   {dx_log_writer info {sprint "func: dx_midi_parser_var_reset"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_midi_parser_var_reset - time: %.4fms"
+         {time
+            {resize $guitar_note_tracker 0} ;resize the array
+            {push_back $guitar_note_tracker (none none)} ;push_back a new state into the array
+
+            {resize $drum_note_tracker 0} ;resize the array
+            {push_back $drum_note_tracker (none none)} ;push_back a new state into the array
+
+            {resize $bass_note_tracker 0} ;resize the array
+            {push_back $bass_note_tracker (none none)} ;push_back a new state into the array
+
+            {resize $keys_note_tracker 0} ;resize the array
+            {push_back $keys_note_tracker (none none)} ;push_back a new state into the array
+
+            {resize $vocals_note_tracker 0} ;resize the array
+            {push_back $vocals_note_tracker (none none)} ;push_back a new state into the array
+            {set $dx_final_note 0}
+         }
+      }
+   }
+}
+{func
+   dx_get_current_beat
+   {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}
+}
+{func
+   dx_show_solo_box
+   {dx_log_writer countdown {sprint "func: dx_show_solo_box"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_show_solo_box - time: %.4fms"
+         {time
+            #ifdef RB3DX
+            {if {== $dx_current_checked_instrument vocals}
+               {PLAYER_FEEDBACK_VOX start_solo}
+               {{PLAYER_FEEDBACK_VOX find solo_start.trig} trigger}
+               {set $solo_box_up_vocals TRUE}
+            }
+            #endif
+            {if {!= $dx_current_checked_instrument vocals}
+               {switch $dx_current_checked_slot
+                  (0
+                     {PLAYER_FEEDBACK_00 start_solo}
+                     ;{{PLAYER_FEEDBACK_00 find solo_start.trig} trigger}
+                     {set $solo_box_up_0 TRUE}
+                  )
+                  (1
+                     {PLAYER_FEEDBACK_01 start_solo}
+                     ;{{PLAYER_FEEDBACK_01 find solo_start.trig} trigger}
+                     {set $solo_box_up_1 TRUE}
+                  )
+                  (2
+                     {PLAYER_FEEDBACK_02 start_solo}
+                     ;{{PLAYER_FEEDBACK_02 find solo_start.trig} trigger}
+                     {set $solo_box_up_2 TRUE}
+                  )
+                  (3
+                     {PLAYER_FEEDBACK_03 start_solo}
+                     {{PLAYER_FEEDBACK_03 find solo_start.trig} trigger}
+                     {set $solo_box_up_3 TRUE}
+                  )
+                  kDataUnhandled
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_restore_solo_box
+   {dx_log_writer countdown {sprint "func: dx_restore_solo_box"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_restore_solo_box - time: %.4fms"
+         {time
+            #ifdef RB3DX
+            {if {== $dx_current_checked_instrument vocals}
+               {PLAYER_FEEDBACK_VOX set_showing TRUE}
+               {set $solo_box_up_vocals FALSE}
+               {set $delay_tracked_vocals FALSE}
+               {set $current_tracked_beat_vocals {+ $current_tracked_beat_vocals 1}}
+            }
+            #endif
+            {if {!= $dx_current_checked_instrument vocals}
+               {switch $dx_current_checked_slot
+                  (0
+                     {PLAYER_FEEDBACK_00 set_showing TRUE}
+                     {set $solo_box_up_0 FALSE}
+                     {set $delay_tracked_0 FALSE}
+                     {set $current_tracked_beat_0 {+ $current_tracked_beat_0 1}}
+                  )
+                  (1
+                     {PLAYER_FEEDBACK_01 set_showing TRUE}
+                     {set $solo_box_up_1 FALSE}
+                     {set $delay_tracked_1 FALSE}
+                     {set $current_tracked_beat_1 {+ $current_tracked_beat_1 1}}
+                  )
+                  (2
+                     {PLAYER_FEEDBACK_02 set_showing TRUE}
+                     {set $solo_box_up_2 FALSE}
+                     {set $delay_tracked_2 FALSE}
+                     {set $current_tracked_beat_2 {+ $current_tracked_beat_2 1}}
+                  )
+                  (3
+                     {PLAYER_FEEDBACK_03 set_showing TRUE}
+                     {set $solo_box_up_3 FALSE}
+                     {set $delay_tracked_3 FALSE}
+                     {set $current_tracked_beat_3 {+ $current_tracked_beat_3 1}}
+                  )
+                  kDataUnhandled
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_clean_solo_box
+   {dx_log_writer countdown {sprint "func: dx_clean_solo_box"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_clean_solo_box - time: %.4fms"
+         {time
+            #ifdef RB3DX
+            {if {== $dx_current_checked_instrument vocals}
+               {PLAYER_FEEDBACK_VOX set_showing FALSE}
+               {{PLAYER_FEEDBACK_VOX find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
+            }
+            #endif
+            {if {!= $dx_current_checked_instrument vocals}
+               {switch $dx_current_checked_slot
+                  (0
+                     {PLAYER_FEEDBACK_00 set_showing FALSE}
+                     {{PLAYER_FEEDBACK_00 find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
+                  )
+                  (1
+                     {PLAYER_FEEDBACK_01 set_showing FALSE}
+                     {{PLAYER_FEEDBACK_01 find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
+                  )
+                  (2
+                     {PLAYER_FEEDBACK_02 set_showing FALSE}
+                     {{PLAYER_FEEDBACK_02 find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
+                  )
+                  (3
+                     {PLAYER_FEEDBACK_03 set_showing FALSE}
+                     {{PLAYER_FEEDBACK_03 find points.lbl} set_token_fmt dx_points}
+                  )
+                  kDataUnhandled
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_hide_solo_box ;not used anymore
+   {dx_log_writer countdown {sprint "func: dx_hide_solo_box"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_hide_solo_box - time: %.4fms"
+         {time
+            #ifdef RB3DX
+            {if {== $dx_current_checked_instrument vocals}
+               {PLAYER_FEEDBACK_VOX set_showing TRUE}
+               {PLAYER_FEEDBACK_VOX end_solo}
+               {{PLAYER_FEEDBACK_VOX find solo_end.trig} trigger}
+               {{PLAYER_FEEDBACK_VOX find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int 2} #else set_text "2" #endif}
+               {{PLAYER_FEEDBACK_VOX find solo_rating.lbl} #ifdef RB3DX set_token_fmt get_ready #else set_localized {localize get_ready} #endif}
+               {{PLAYER_FEEDBACK_VOX find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+               {{PLAYER_FEEDBACK_VOX find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+            }
+            #endif
+            {if {!= $dx_current_checked_instrument vocals}
+               {switch $dx_current_checked_slot
+                  (0
+                     {PLAYER_FEEDBACK_00 set_showing TRUE}
+                     {PLAYER_FEEDBACK_00 end_solo}
+                     {{PLAYER_FEEDBACK_00 find solo_end.trig} trigger}
+                     {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int 2} #else set_text "2" #endif}
+                     {{PLAYER_FEEDBACK_00 find solo_rating.lbl} #ifdef RB3DX set_token_fmt get_ready #else set_localized {localize get_ready} #endif}
+                     {{PLAYER_FEEDBACK_00 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                     {{PLAYER_FEEDBACK_00 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  )
+                  (1
+                     {PLAYER_FEEDBACK_01 set_showing TRUE}
+                     {PLAYER_FEEDBACK_01 end_solo}
+                     {{PLAYER_FEEDBACK_01 find solo_end.trig} trigger}
+                     {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int 2} #else set_text "2" #endif}
+                     {{PLAYER_FEEDBACK_01 find solo_rating.lbl} #ifdef RB3DX set_token_fmt get_ready #else set_localized {localize get_ready} #endif}
+                     {{PLAYER_FEEDBACK_01 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                     {{PLAYER_FEEDBACK_01 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  )
+                  (2
+                     {PLAYER_FEEDBACK_02 set_showing TRUE}
+                     {PLAYER_FEEDBACK_02 end_solo}
+                     {{PLAYER_FEEDBACK_02 find solo_end.trig} trigger}
+                     {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int 2} #else set_text "2" #endif}
+                     {{PLAYER_FEEDBACK_02 find solo_rating.lbl} #ifdef RB3DX set_token_fmt get_ready #else set_localized {localize get_ready} #endif}
+                     {{PLAYER_FEEDBACK_02 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                     {{PLAYER_FEEDBACK_02 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  )
+                  (3
+                     {PLAYER_FEEDBACK_03 set_showing TRUE}
+                     {PLAYER_FEEDBACK_03 end_solo}
+                     {{PLAYER_FEEDBACK_03 find solo_end.trig} trigger}
+                     {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int 2} #else set_text "2" #endif}
+                     {{PLAYER_FEEDBACK_03 find solo_rating.lbl} #ifdef RB3DX set_token_fmt get_ready #else set_localized {localize get_ready} #endif}
+                     {{PLAYER_FEEDBACK_03 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                     {{PLAYER_FEEDBACK_03 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  )
+                  kDataUnhandled
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_final_percent_report
+   {dx_log_writer countdown {sprint "func: dx_final_percent_report"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_final_percent_report - time: %.4fms"
+         {time
+            {switch $dx_current_checked_slot
+               (0
+                  {PLAYER_FEEDBACK_00 set_showing FALSE}
+                  {PLAYER_FEEDBACK_00 end_solo}
+                  {{PLAYER_FEEDBACK_00 find solo_end.trig} trigger}
+                  {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_00 find solo_rating.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {{PLAYER_FEEDBACK_00 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_00 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {set $solo_box_up_0 FALSE}
+               )
+               (1
+                  {PLAYER_FEEDBACK_01 set_showing FALSE}
+                  {PLAYER_FEEDBACK_01 end_solo}
+                  {{PLAYER_FEEDBACK_01 find solo_end.trig} trigger}
+                  {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_01 find solo_rating.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {{PLAYER_FEEDBACK_01 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_01 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {set $solo_box_up_1 FALSE}
+               )
+               (2
+                  {PLAYER_FEEDBACK_02 set_showing FALSE}
+                  {PLAYER_FEEDBACK_02 end_solo}
+                  {{PLAYER_FEEDBACK_02 find solo_end.trig} trigger}
+                  {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_02 find solo_rating.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {{PLAYER_FEEDBACK_02 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_02 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {set $solo_box_up_2 FALSE}
+               )
+               (3
+                  {PLAYER_FEEDBACK_03 set_showing FALSE}
+                  {PLAYER_FEEDBACK_03 end_solo}
+                  {{PLAYER_FEEDBACK_03 find solo_end.trig} trigger}
+                  {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_03 find solo_rating.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {{PLAYER_FEEDBACK_03 find SCORE_LABEL} #ifdef RB3DX set_token_fmt os_blnk #else set_text " " #endif}
+                  {{PLAYER_FEEDBACK_03 find points.lbl} #ifdef RB3DX set_token_fmt os_blnk #else set_localized {localize os_blnk} #endif}
+                  {set $solo_box_up_3 FALSE}
+               )
+               kDataUnhandled
+            }
+         }
+      }
+   }
+}
+{func
+   dx_final_note_report
+   {dx_log_writer countdown {sprint "func: dx_final_note_report"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_final_note_report - time: %.4fms"
+         {time
+            {switch $dx_current_checked_slot
+               (0
+                  {switch $dx_current_checked_instrument
+                     (guitar
+                        {if_else {== {+ $num_gems_pass_guitar $num_gems_miss_guitar} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_guitar 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_guitar}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_guitar}}}}
+                           }
+                        }
+                        {set $guitar_finalnote TRUE}
+                     )
+                     (real_guitar
+                        {if_else {== {+ $num_gems_pass_real_guitar $num_gems_miss_real_guitar} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_guitar 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_guitar}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_guitar}}}}
+                           }
+                        }
+                        {set $real_guitar_finalnote TRUE}
+                     )
+                     (bass
+                        {if_else {== {+ $num_gems_pass_bass $num_gems_miss_bass} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_bass 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_bass}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_bass}}}}
+                           }
+                        }
+                        {set $bass_finalnote TRUE}
+                     )
+                     (real_bass
+                        {if_else {== {+ $num_gems_pass_real_bass $num_gems_miss_real_bass} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_bass 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_bass}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_bass}}}}
+                           }
+                        }
+                        {set $real_bass_finalnote TRUE}
+                     )
+                     (keys
+                        {if_else {== {+ $num_gems_pass_keys $num_gems_miss_keys} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_keys 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_keys}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_keys}}}}
+                           }
+                        }
+                        {set $keys_finalnote TRUE}
+                     )
+                     (real_keys
+                        {if_else {== {+ $num_gems_pass_real_keys $num_gems_miss_real_keys} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_keys 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_keys}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_keys}}}}
+                           }
+                        }
+                        {set $real_keys_final_note TRUE}
+                     )
+                     (drum
+                        {if_else {== {+ $num_gems_pass_drum $num_gems_miss_drum} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_drum 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_drum}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_drum}}}}
+                           }
+                        }
+                        {set $drum_finalnote TRUE}
+                     )
+                     (real_drum
+                        {if_else {== {+ $num_gems_pass_real_drum $num_gems_miss_real_drum} 0}
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_drum 0}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_drum}}}
+                              {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_drum}}}}
+                           }
+                        }
+                        {set $real_drum_finalnote TRUE}
+                     )
+                     kDataUnhandled
+                  }
+               )
+               (1
+                  {switch $dx_current_checked_instrument
+                     (guitar
+                        {if_else {== {+ $num_gems_pass_guitar $num_gems_miss_guitar} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_guitar 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_guitar}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_guitar}}}}
+                           }
+                        }
+                        {set $guitar_finalnote TRUE}
+                     )
+                     (real_guitar
+                        {if_else {== {+ $num_gems_pass_real_guitar $num_gems_miss_real_guitar} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_guitar 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_guitar}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_guitar}}}}
+                           }
+                        }
+                        {set $real_guitar_finalnote TRUE}
+                     )
+                     (bass
+                        {if_else {== {+ $num_gems_pass_bass $num_gems_miss_bass} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_bass 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_bass}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_bass}}}}
+                           }
+                        }
+                        {set $bass_finalnote TRUE}
+                     )
+                     (real_bass
+                        {if_else {== {+ $num_gems_pass_real_bass $num_gems_miss_real_bass} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_bass 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_bass}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_bass}}}}
+                           }
+                        }
+                        {set $real_bass_finalnote TRUE}
+                     )
+                     (keys
+                        {if_else {== {+ $num_gems_pass_keys $num_gems_miss_keys} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_keys 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_keys}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_keys}}}}
+                           }
+                        }
+                        {set $keys_finalnote TRUE}
+                     )
+                     (real_keys
+                        {if_else {== {+ $num_gems_pass_real_keys $num_gems_miss_real_keys} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_keys 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_keys}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_keys}}}}
+                           }
+                        }
+                        {set $real_keys_finalnote TRUE}
+                     )
+                     (drum
+                        {if_else {== {+ $num_gems_pass_drum $num_gems_miss_drum} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_drum 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_drum}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_drum}}}}
+                           }
+                        }
+                        {set $drum_finalnote TRUE}
+                     )
+                     (real_drum
+                        {if_else {== {+ $num_gems_pass_real_drum $num_gems_miss_real_drum} 0}
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_drum 0}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_drum}}}
+                              {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_drum}}}}
+                           }
+                        }
+                        {set $real_drum_finalnote TRUE}
+                     )
+                     kDataUnhandled
+                  }
+               )
+               (2
+                  {switch $dx_current_checked_instrument
+                     (guitar
+                        {if_else {== {+ $num_gems_pass_guitar $num_gems_miss_guitar} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_guitar 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_guitar}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_guitar}}}}
+                           }
+                        }
+                        {set $guitar_finalnote TRUE}
+                     )
+                     (real_guitar
+                        {if_else {== {+ $num_gems_pass_real_guitar $num_gems_miss_real_guitar} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_guitar 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_guitar}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_guitar}}}}
+                           }
+                        }
+                        {set $real_guitar_finalnote TRUE}
+                     )
+                     (bass
+                        {if_else {== {+ $num_gems_pass_bass $num_gems_miss_bass} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_bass 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_bass}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_bass}}}}
+                           }
+                        }
+                        {set $bass_finalnote TRUE}
+                     )
+                     (real_bass
+                        {if_else {== {+ $num_gems_pass_real_bass $num_gems_miss_real_bass} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_bass 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_bass}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_bass}}}}
+                           }
+                        }
+                        {set $real_bass_finalnote TRUE}
+                     )
+                     (keys
+                        {if_else {== {+ $num_gems_pass_keys $num_gems_miss_keys} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_keys 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_keys}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_keys}}}}
+                           }
+                        }
+                        {set $keys_finalnote TRUE}
+                     )
+                     (real_keys
+                        {if_else {== {+ $num_gems_pass_real_keys $num_gems_miss_real_keys} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_keys 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_keys}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_keys}}}}
+                           }
+                        }
+                        {set $real_keys_finalnote TRUE}
+                     )
+                     (drum
+                        {if_else {== {+ $num_gems_pass_drum $num_gems_miss_drum} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_drum 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_drum}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_drum}}}}
+                           }
+                        }
+                        {set $drum_finalnote TRUE}
+                     )
+                     (real_drum
+                        {if_else {== {+ $num_gems_pass_real_drum $num_gems_miss_real_drum} 0}
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_drum 0}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_drum}}}
+                              {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_drum}}}}
+                           }
+                        }
+                        {set $real_drum_finalnote TRUE}
+                     )
+                     kDataUnhandled
+                  }
+               )
+               (3
+                  {switch $dx_current_checked_instrument
+                     (guitar
+                        {if_else {== {+ $num_gems_pass_guitar $num_gems_miss_guitar} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_guitar 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_guitar}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_guitar}}}}
+                           }
+                        }
+                        {set $guitar_finalnote TRUE}
+                     )
+                     (real_guitar
+                        {if_else {== {+ $num_gems_pass_real_guitar $num_gems_miss_real_guitar} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_guitar 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_guitar}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_guitar}}}}
+                           }
+                        }
+                        {set $real_guitar_finalnote TRUE}
+                     )
+                     (bass
+                        {if_else {== {+ $num_gems_pass_bass $num_gems_miss_bass} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_bass 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_bass}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_bass}}}}
+                           }
+                        }
+                        {set $bass_finalnote TRUE}
+                     )
+                     (real_bass
+                        {if_else {== {+ $num_gems_pass_real_bass $num_gems_miss_real_bass} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_bass 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_bass}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_bass}}}}
+                           }
+                        }
+                        {set $real_bass_finalnote TRUE}
+                     )
+                     (keys
+                        {if_else {== {+ $num_gems_pass_keys $num_gems_miss_keys} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_keys 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_keys}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_keys}}}}
+                           }
+                        }
+                        {set $keys_finalnote TRUE}
+                     )
+                     (real_keys
+                        {if_else {== {+ $num_gems_pass_real_keys $num_gems_miss_real_keys} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_keys 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_keys}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_keys}}}}
+                           }
+                        }
+                        {set $real_keys_finalnote TRUE}
+                     )
+                     (drum
+                        {if_else {== {+ $num_gems_pass_drum $num_gems_miss_drum} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_drum 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_drum}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_drum}}}}
+                           }
+                        }
+                        {set $drum_finalnote TRUE}
+                     )
+                     (real_drum
+                        {if_else {== {+ $num_gems_pass_real_drum $num_gems_miss_real_drum} 0}
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt full_combo_short}
+                           {if_else {== $num_gems_pass_real_drum 0}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt overstrums {localize_separated_int {int $num_gems_miss_real_drum}}}
+                              {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int {int {- 0 $num_gems_pass_real_drum}}}}
+                           }
+                        }
+                        {set $real_drum_finalnote TRUE}
+                     )
+                     kDataUnhandled
+                  }
+               )
+            }
+         }
+      }
+   }
+}
+{func
+   dx_solo_set_label
+   {dx_log_writer countdown {sprint "func: dx_solo_set_label"}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_solo_set_label - time: %.4fms"
+         {time
+            #ifdef RB3DX
+            {if {== $dx_current_checked_instrument vocals}
+               {{PLAYER_FEEDBACK_VOX find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_VOX_INT} #else set_text {sprintf "%d" SOLO_PERCENT_VOX_INT} #endif}
+            }
+            #endif
+            {if {!= $dx_current_checked_instrument vocals}
+               {switch $dx_current_checked_slot
+                  (0
+                     {switch $dx_current_checked_instrument
+                        ((guitar real_guitar)
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_GUITAR_INT} #else set_text {sprintf "%d" SOLO_PERCENT_GUITAR_INT} #endif}
+                        )
+                        ((bass real_bass)
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_BASS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_BASS_INT} #endif}
+                        )
+                        ((keys real_keys)
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_KEYS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_KEYS_INT} #endif}
+                        )
+                        ((drum real_drum)
+                           {{PLAYER_FEEDBACK_00 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_DRUM_INT} #else set_text {sprintf "%d" SOLO_PERCENT_DRUM_INT} #endif}
+                        )
+                        kDataUnhandled
+                     }
+                  )
+                  (1
+                     {switch $dx_current_checked_instrument
+                        ((guitar real_guitar)
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_GUITAR_INT} #else set_text {sprintf "%d" SOLO_PERCENT_GUITAR_INT} #endif}
+                        )
+                        ((bass real_bass)
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_BASS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_BASS_INT} #endif}
+                        )
+                        ((keys real_keys)
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_KEYS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_KEYS_INT} #endif}
+                        )
+                        ((drum real_drum)
+                           {{PLAYER_FEEDBACK_01 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_DRUM_INT} #else set_text {sprintf "%d" SOLO_PERCENT_DRUM_INT} #endif}
+                        )
+                        kDataUnhandled
+                     }
+                  )
+                  (2
+                     {switch $dx_current_checked_instrument
+                        ((guitar real_guitar)
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_GUITAR_INT} #else set_text {sprintf "%d" SOLO_PERCENT_GUITAR_INT} #endif}
+                        )
+                        ((bass real_bass)
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_BASS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_BASS_INT} #endif}
+                        )
+                        ((keys real_keys)
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_KEYS_INT} #else set_text {sprintf "%d" SOLO_PERCENT_KEYS_INT} #endif}
+                        )
+                        ((drum real_drum)
+                           {{PLAYER_FEEDBACK_02 find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_DRUM_INT} #else set_text {sprintf "%d" SOLO_PERCENT_DRUM_INT} #endif}
+                        )
+                        kDataUnhandled
+                     }
+                  )
+                  (3
+                     {switch $dx_current_checked_instrument
+                        ((guitar real_guitar)
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_GUITAR_INT}}
+                        )
+                        ((bass real_bass)
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_BASS_INT}}
+                        )
+                        ((keys real_keys)
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_KEYS_INT}}
+                        )
+                        ((drum real_drum)
+                           {{PLAYER_FEEDBACK_03 find SOLO_PERCENT_LABEL} set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_DRUM_INT}}
+                        )
+                        kDataUnhandled
+                     }
+                  )
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_check_beat
+   ($input)
+   {dx_log_writer countdown {sprint "func: dx_check_beat" " - Args: " $input}}
+   {dx_log_writer countdown
+      {sprintf "Executed dx_check_beat - time: %.4fms"
+         {time
+            {switch $input
+               (1.0
+                  {set $dx_log_stopper FALSE}
+                  {dx_log_writer countdown {sprint "restoring defaults for score box" {dx_get_current_beat}}}
+                  #ifdef RB3DX
+                  {if {== $dx_current_checked_instrument vocals}
+                     {if $solo_box_up_vocals {dx_restore_solo_box}}
+                  }
+                  #endif
+                  {if {!= $dx_current_checked_instrument vocals}
+                     {switch $dx_current_checked_slot
+                        (0
+                           {if $solo_box_up_0 {dx_restore_solo_box}}
+                        )
+                        (1
+                           {if $solo_box_up_1 {dx_restore_solo_box}}
+                        )
+                        (2
+                           {if $solo_box_up_2 {dx_restore_solo_box}}
+                        )
+                        (3
+                           {if $solo_box_up_3 {dx_restore_solo_box}}
+                        )
+                        kDataUnhandled
+                     }
+                  }
+               )
+               ;(5.0
+               ;   {set $dx_log_stopper FALSE}
+               ;   {dx_log_writer countdown {sprint "cleaning up score box" {dx_get_current_beat}}}
+               ;   {if {== $dx_current_checked_instrument vocals}
+               ;      {if $solo_box_up_vocals {dx_clean_solo_box}}
+               ;   }
+               ;   {switch $dx_current_checked_slot
+               ;      (0
+               ;        {if $solo_box_up_0 {dx_clean_solo_box}}
+               ;      )
+               ;      (1
+               ;         {if $solo_box_up_1 {dx_clean_solo_box}}
+               ;      )
+               ;      (2
+               ;         {if $solo_box_up_2 {dx_clean_solo_box}}
+               ;      )
+               ;      (3
+               ;         {if $solo_box_up_3 {dx_clean_solo_box}}
+               ;      )
+               ;   }
+               ;)
+               (8.0
+                  {set $dx_log_stopper FALSE}
+                  {dx_log_writer countdown {sprint "Countdown successfully complete. Current beat: " {dx_get_current_beat}}}
+                  #ifdef RB3DX
+                  {if {== $dx_current_checked_instrument vocals}
+                     {if $solo_box_up_vocals {dx_hide_solo_box}}
+                  }
+                  #endif
+                  {if {!= $dx_current_checked_instrument vocals}
+                     {switch $dx_current_checked_slot
+                        (0
+                           {if $solo_box_up_0 {dx_hide_solo_box}}
+                        )
+                        (1
+                           {if $solo_box_up_1 {dx_hide_solo_box}}
+                        )
+                        (2
+                           {if $solo_box_up_2 {dx_hide_solo_box}}
+                        )
+                        (3
+                           {if $solo_box_up_3 {dx_hide_solo_box}}
+                        )
+                        kDataUnhandled
+                     }
+                  }
+               )
+               ((104.0 204.0 304.0 404.0 504.0 604.0 704.0 804.0 904.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((108.0 208.0 308.0 408.0 508.0 608.0 708.0 808.0 908.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((12.0 112.0 212.0 312.0 412.0 512.0 612.0 712.0 812.0 912.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((16.0 116.0 216.0 316.0 416.0 516.0 616.0 716.0 816.0 916.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((20.0 120.0 220.0 320.0 420.0 520.0 620.0 720.0 820.0 920.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((24.0 124.0 224.0 324.0 424.0 524.0 624.0 724.0 824.0 924.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((28.0 128.0 228.0 328.0 428.0 528.0 628.0 728.0 828.0 928.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((32.0 132.0 232.0 332.0 432.0 532.0 632.0 732.0 832.0 932.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((36.0 136.0 236.0 336.0 436.0 536.0 636.0 736.0 836.0 936.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((40.0 140.0 240.0 340.0 440.0 540.0 640.0 740.0 840.0 940.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((44.0 144.0 244.0 344.0 444.0 544.0 644.0 744.0 844.0 944.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((48.0 148.0 248.0 348.0 448.0 548.0 648.0 748.0 848.0 948.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((52.0 152.0 252.0 352.0 452.0 552.0 652.0 752.0 852.0 952.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((56.0 156.0 256.0 356.0 456.0 556.0 656.0 756.0 856.0 956.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((60.0 160.0 260.0 360.0 460.0 560.0 660.0 760.0 860.0 960.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((64.0 164.0 264.0 364.0 464.0 564.0 664.0 764.0 864.0 964.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((68.0 168.0 268.0 368.0 468.0 568.0 668.0 768.0 868.0 968.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((72.0 172.0 272.0 372.0 472.0 572.0 672.0 772.0 872.0 972.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((76.0 176.0 276.0 376.0 476.0 576.0 676.0 776.0 876.0 976.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((80.0 180.0 280.0 380.0 480.0 580.0 680.0 780.0 880.0 980.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((84.0 184.0 284.0 384.0 484.0 584.0 684.0 784.0 884.0 984.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((88.0 188.0 288.0 388.0 488.0 588.0 688.0 788.0 888.0 988.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((92.0 192.0 292.0 392.0 492.0 592.0 692.0 792.0 892.0 992.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((96.0 196.0 296.0 396.0 496.0 596.0 696.0 796.0 896.0 996.0) {dx_show_solo_box} {dx_solo_set_label})
+               ((100.0 200.0 300.0 400.0 500.0 600.0 700.0 800.0 900.0 1000.0) {dx_show_solo_box} {dx_solo_set_label})
+               kDataUnhandled
+            }
+         }
+      }
+   }
+}
