@@ -147,7 +147,7 @@ def parse_dta(dta_path: Path, rpcs3_path: Path) -> dict:
     print(dta_path)
     parsed = parse(clean_dta(dta_path))
     parsed_dta_dict = dict_from_parsed(parsed)
-    pprint.pprint(parsed_dta_dict, sort_dicts=False)
+    #pprint.pprint(parsed_dta_dict, sort_dicts=False)
     return parsed_dta_dict
 
 def read_json(json_file_path):
@@ -299,7 +299,20 @@ def get_rpcs3_path():
 
 def parse_and_export_to_json():
     rpcs3_path = get_rpcs3_path()
+    # Assuming rpcs3_path is a pathlib.Path object
     output_file_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "dx_playlist.dta"
+
+    # Convert the Path object to a string
+    output_file_path_str = str(output_file_path)
+
+    # Check if the directory exists
+    if not os.path.exists(output_file_path.parent):
+        print(f"Error: Directory {output_file_path.parent} does not exist.")
+        sys.exit()
+    # Check if the file exists
+    if not os.path.isfile(output_file_path_str):
+        print(f"Error: File {output_file_path_str} does not exist.")
+        sys.exit()
 
     dta_files = list(rpcs3_path.rglob("songs.dta"))
 
