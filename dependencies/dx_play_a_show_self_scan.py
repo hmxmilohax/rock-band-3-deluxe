@@ -144,11 +144,26 @@ def dict_from_parsed(parsed: list):
 
 # the main parse function - supply a path to a dta, and it will return a big song dictionary
 def parse_dta(dta_path: Path, rpcs3_path: Path) -> dict:
-    print(dta_path)
+    #print(dta_path)
     parsed = parse(clean_dta(dta_path))
     parsed_dta_dict = dict_from_parsed(parsed)
     #pprint.pprint(parsed_dta_dict, sort_dicts=False)
     return parsed_dta_dict
+
+def parse_updates_dta(updates_dta_path: Path, existing_data: dict) -> dict:
+    print(f"Attempting to load RB3DX Metadata from: {updates_dta_path}")
+    print(f"Make sure you have ran the game first to generate this file")
+    try:
+        updates_parsed = parse(clean_dta(updates_dta_path))
+        updates_dict = dict_from_parsed(updates_parsed)
+        for shortname, updates in updates_dict.items():
+            if shortname in existing_data:
+                existing_data[shortname].update(updates)
+                #print(f"Applying Updated Metadata for: {shortname}")
+        return existing_data
+    except Exception as e:
+        print(f"Error parsing updates.dta: {e}")
+        return existing_data
 
 def read_json(json_file_path):
     try:
@@ -299,43 +314,58 @@ def get_rpcs3_path():
 
 def parse_and_export_to_json():
     rpcs3_path = get_rpcs3_path()
+
     # Assuming rpcs3_path is a pathlib.Path object
     output_file_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "dx_playlist.dta"
-
-    # Convert the Path object to a string
-    output_file_path_str = str(output_file_path)
-
+    output_json_path = Path.cwd() / "dx_songs.json"
+    output_json_path_str = str(output_json_path)
+    
     # Check if the directory exists
     if not os.path.exists(output_file_path.parent):
         print(f"Error: Directory {output_file_path.parent} does not exist.")
         sys.exit()
+
     # Check if the file exists
+    output_file_path_str = str(output_file_path)
     if not os.path.isfile(output_file_path_str):
         print(f"Error: File {output_file_path_str} does not exist.")
         sys.exit()
 
-    dta_files = list(rpcs3_path.rglob("songs.dta"))
+    # Define the folders to search
+    target_folders = [rpcs3_path / "dev_hdd0" / "game" / "BLUS30050",
+                      rpcs3_path / "dev_hdd0" / "game" / "BLUS30463"]
+
+    print("Finding and reading songs.dta files in specified RPCS3 folders.")
+    print("This may take some time.")
+
+    # Filter the dta_files list based on the target folders
+    dta_files = [dta_file for folder in target_folders
+                 for dta_file in folder.rglob("songs.dta")]
 
     if not dta_files:
-        print("No 'songs.dta' files found in the specified RPCS3 folder.")
+        print("No 'songs.dta' files found in the specified RPCS3 folders.")
         exit()
 
     all_parsed_dicts = {}
 
     for dta_file in dta_files:
-        parsed_dict = parse_dta(dta_file, rpcs3_path)  # Pass rpcs3_path to parse_dta
+        parsed_dict = parse_dta(dta_file, rpcs3_path)
         all_parsed_dicts.update(parsed_dict)
 
+    # Parse and apply updates from songs_updates.dta
+    updates_dta_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "songs_updates.dta"
+    all_parsed_dicts = parse_updates_dta(updates_dta_path, all_parsed_dicts)
 
     # Export the output JSON to the working directory
-    output_json_path = rpcs3_path / "output.json"
-    data = read_json(output_json_path)
-
-    with open(output_json_path, 'w') as json_file:
+    with open(output_json_path_str, 'w') as json_file:
         json.dump(all_parsed_dicts, json_file, indent=2)
 
-    print(f"\nJSON file 'output.json' created in the RPCS3 folder.")
+    # Check if the JSON file already exists
+    if not output_json_path.is_file():
+        with open(output_json_path, 'w') as json_file:
+            json.dump(all_parsed_dicts, json_file, indent=2)
 
+    # Read the JSON file
     data = read_json(output_json_path)
 
     if data:
@@ -346,6 +376,7 @@ def parse_and_export_to_json():
         short_name_index = "shortname"
 
         year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
+
         while True:
             print("Welcome to Rock Band 3 Deluxe Play A Show!")
             print("Choose an option:")
