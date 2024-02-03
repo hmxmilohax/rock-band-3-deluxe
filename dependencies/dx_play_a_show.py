@@ -1,195 +1,400 @@
-import csv
 import random
-from fuzzywuzzy import process
+#from fuzzywuzzy import process
 import os
 import configparser
+import json
+from pathlib import Path
+import sys
+#import pprint
+import json
 
-def get_csv_and_config_file_paths():
-    config = configparser.ConfigParser()
-    config_file_path = "config.ini"
+# removes any comments from a RB dta, and then returns a nice, tokenized list to parse
+def clean_dta(dta_path: Path) -> list:
+    with open(dta_path, encoding="latin1") as f:
+        lines = [line.lstrip() for line in f]
+    reduced_lines = [x.split(";", 1)[0] for x in lines]
+    dta_as_str = ''.join(reduced_lines)
+    dta_as_list = dta_as_str.replace("(", " ( ").replace(")", " ) ").split()
+    return dta_as_list
 
-    if not os.path.exists(config_file_path):
-        print("Configuration file not found. Creating a new one.")
-        config.add_section("Paths")
-        csv_file_path = input("Enter the path for the CSV file (e.g., 'A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/jnacks_setlist.csv'): ")
-        config.set("Paths", "csv_file_path", csv_file_path)
+# parse, read_from_tokens, and atom have all been originally written by Peter Norvig
+# parse and atom have been tweaked for the purposes of parsing RB dtas
+# explanations of his functions can be found here: http://norvig.com/lispy.html
+def parse(program: list):
+    "Read a Scheme expression from a string."
+    program.insert(0, "(")
+    program.append(")")
+    return read_from_tokens(program)
 
-        output_file_path = input("Enter the path for the output file (e.g., 'A:/games/RPCS3/dev_hdd0/game/BLUS30463/USRDIR/dx_playlist.dta'): ")
-        config.set("Paths", "output_file_path", output_file_path)
-
-        with open(config_file_path, "w") as config_file:
-            config.write(config_file)
+def read_from_tokens(tokens: list):
+    "Read an expression from a sequence of tokens."
+    if len(tokens) == 0:
+        raise SyntaxError('unexpected EOF')
+    token = tokens.pop(0)
+    if token == '(':
+        L = []
+        while tokens[0] != ')':
+            L.append(read_from_tokens(tokens))
+        tokens.pop(0)  # pop off ')'
+        return L
+    elif token == ')':
+        raise SyntaxError('unexpected )')
     else:
-        config.read(config_file_path)
-        csv_file_path = config.get("Paths", "csv_file_path")
-        output_file_path = config.get("Paths", "output_file_path")
+        return atom(token)
 
-    return csv_file_path, output_file_path, config_file_path
+def atom(token: str):
+    "Numbers become numbers; every other token is a symbol."
+    try:
+        return int(token)
+    except ValueError:
+        try:
+            return float(token)
+        except ValueError:
+            return (str(token)).strip("'").strip('"')
 
-def read_csv(csv_file_path):
-    # Remove double quotes from the file path if present
-    csv_file_path = csv_file_path.strip('\"')
+# clean up name entry in case there are parentheses in the song title (i.e. (Don't Fear) The Reaper)
+def dict_from_name(parsed_name) -> str:
+    new_song_name_list = []
+    for s in range(len(parsed_name)):
+        if s > 0:
+            if type(parsed_name[s]) == list:
+                new_song_name_list.append("(" + " ".join(str(x) for x in parsed_name[s]) + ")")
+            elif parsed_name[s] != "":
+                new_song_name_list.append(str(parsed_name[s]))
+    return " ".join(new_song_name_list)
 
-    with open(csv_file_path, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file, delimiter='\t', quotechar='"', escapechar='\\')
-        header = next(reader)  # Read the header row
+# parse song part difficulties and return a dict
+def dict_from_rank(parsed_rank: list):
+    rank_dict = {}
+    for rank in parsed_rank:
+        if type(rank) == list:
+            rank_dict[rank[0]] = rank[1]
+    return rank_dict
 
-        # Find the index of the 'Song Title', 'Artist', 'Year', 'Genre', and 'Short Name' columns
-        song_title_index = next((i for i, col in enumerate(header) if "Song Title" in col), None)
-        artist_index = next((i for i, col in enumerate(header) if "Artist" in col), None)
-        year_index = next((i for i, col in enumerate(header) if "Year" in col), None)
-        genre_index = next((i for i, col in enumerate(header) if "Genre" in col), None)
-        short_name_index = next((i for i, col in enumerate(header) if "Short Name" in col), None)
+# parse song info (pans, vols, etc) and return a dict
+def dict_from_song(parsed_song: list):
+    song_info_dict = {}
+    try:
+        for info in parsed_song:
+            if type(info) == list:
+                if "drum_" in info[0]:
+                    song_info_dict[info[0]] = {}
+                    song_info_dict[info[0]][info[1][0]] = info[1][1]
+                elif info[0] == "name":
+                    song_info_dict[info[0]] = dict_from_name(info[1])
+                # elif info[0] == "song":
+                #    song_info_dict[info[0]] = dict_from_song(info[1])
+                elif info[0] == "rank":
+                    song_info_dict[info[0]] = dict_from_rank(info[1])
+                elif info[0] in ["crowd_channels"]:
+                    song_info_dict[info[0]] = info[1:]
+                elif info[0] not in ["tracks", "pans", "vols", "preview", "anim_tempo", "bank",
+                                     "song_scroll_speed", "midi_file", "drum_freestyle", "drum_solo",
+                                     "solo", "version", "format", "album_art", "tuning_offset_cents",
+                                     "ugc", "context", "downloaded", "base_points", "cores", "seqs", "hopo_threshold", "song"]:
+                    song_info_dict[info[0]] = info[1]
+    except Exception as e:
+        print(f"Error processing song info: {e}")
+    return song_info_dict
 
-        if song_title_index is None or artist_index is None:
-            print("Error: 'Song Title' or 'Artist' column not found.")
-            return None
+# convert the list of lists that parse returns into a big song dictionary
+def dict_from_parsed(parsed: list):
+    keys_to_ignore = ["song", "master", "context", "bank", "anim_tempo", "preview", 
+                      "decade", "unlockable", "song_location", "downloaded", "exported",
+                      "album_art", "version", "format", "song_id", "tuning_offset_cents",
+                      "game_origin", "encoding", "song_tonality", "real_guitar_tuning", "real_bass_tuning",
+                      "album_track_number", "song_scroll_speed", "guide_pitch_volume", "ugc"]
 
-        # Read all data from the CSV file and store it in memory
-        data = list(reader)
+    big_songs_dict = {}
+    for song in parsed:
+        song_dict = {}
+        shortname = None  # Initialize shortname variable
+        skip_entry = False  # Flag to skip processing
 
-    return data, song_title_index, artist_index, year_index, genre_index, short_name_index
+        for a in range(len(song)):
+            if skip_entry:
+                skip_entry = False
+                continue
 
-def get_random_year(data, year_index):
-    years = set(row[year_index] for row in data)
-    return random.choice(list(years))
+            if a == 0:  # the shortname
+                shortname = song[0]
+                song_dict["shortname"] = shortname  # Include shortname in the entry
+            elif song[a][0] == "name":
+                song_dict["name"] = dict_from_name(song[a])
+            elif song[a][0] == "rank":
+                song_dict["rank"] = dict_from_rank(song[a])
+            elif song[a][0] in keys_to_ignore:
+                skip_entry = True
+            else:
+                val = []
+                for b in range(len(song[a])):
+                    if b == 0:
+                        key = song[a][b]
+                    else:
+                        val.append(song[a][b])
+                if all(isinstance(item, str) for item in val):
+                    song_dict[key] = (" ".join(x for x in val)).strip('"')
+                else:
+                    song_dict[key] = val if len(val) > 1 else val[0]
 
-def get_random_artist(data, artist_index):
-    artists = set(row[artist_index] for row in data)
-    return random.choice(list(artists))
+        if shortname is not None:  # Check if shortname is not empty
+            big_songs_dict[shortname] = song_dict
 
-def get_random_genre(data, genre_index):
-    genres = set(row[genre_index] for row in data)
-    return random.choice(list(genres))
+    return big_songs_dict
 
-def get_random_song(data, song_title_index, artist_index):
-    song = random.choice(data)
-    return song[song_title_index], song[artist_index]
+# the main parse function - supply a path to a dta, and it will return a big song dictionary
+def parse_dta(dta_path: Path, rpcs3_path: Path) -> dict:
+    #print(dta_path)
+    parsed = parse(clean_dta(dta_path))
+    parsed_dta_dict = dict_from_parsed(parsed)
+    #pprint.pprint(parsed_dta_dict, sort_dicts=False)
+    return parsed_dta_dict
 
-def eval_random_song(data, song_title_index, artist_index, short_name_index):
-    song = random.choice(data)
-    return song[song_title_index], song[artist_index], song[short_name_index]
+def parse_updates_dta(updates_dta_path: Path, existing_data: dict) -> dict:
+    #print(f"Attempting to load RB3DX Metadata from: {updates_dta_path}")
+    try:
+        updates_parsed = parse(clean_dta(updates_dta_path))
+        updates_dict = dict_from_parsed(updates_parsed)
+        for shortname, updates in updates_dict.items():
+            if shortname in existing_data:
+                existing_data[shortname].update(updates)
+                #print(f"Applying Updated Metadata for: {shortname}")
+        return existing_data
+    except Exception as e:
+        print(f"Error parsing updates.dta: {e}")
+        return existing_data
+
+def read_json(json_file_path):
+    try:
+        with open(json_file_path, 'r') as file:
+            data = json.load(file)
+        return data
+    except FileNotFoundError:
+        print(f"Error: JSON file '{json_file_path}' not found. Please make sure the file exists.")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON file '{json_file_path}': {e}")
+        return None
+
+def get_random_artist(data):
+    artists = {song["artist"] for song in data.values() if "artist" in song and isinstance(song["artist"], str)}
+    return random.choice(list(artists)) if artists else None
+
+def get_random_year(data):
+    years = {song.get("year", song.get("year_released")) for song in data.values() if "year" in song or "year_released" in song}
+    #print("All years:", years)  # Add this line to print all years
+    return random.choice(list(years)) if years else None
+
+def get_random_genre(data):
+    genres = {song["genre"] for song in data.values() if "genre" in song}
+    return random.choice(list(genres)) if genres else None
+
+def get_random_song(data):
+    song = random.choice(list(data.values()))
+    return song["name"], song["artist"]
+
+def eval_random_song(data):
+    song = random.choice(list(data.values()))
+    return song["name"], song["artist"], song["shortname"]
 
 def clear_playlist(output_file):
     with open(output_file, 'w') as output:
         output.write("")
     print(f"Playlist cleared in {output_file}")
 
-def get_random_song_from_artist(data, artist, song_title_index, artist_index):
-    # Filter songs by the specified artist
-    artist_songs = [song for song in data if song[artist_index] == artist]
+def get_random_song_from_artist(data, artist):
+    artist_songs = [song for song in data.values() if "artist" in song and isinstance(song["artist"], str) and song["artist"] == artist]
 
     if not artist_songs:
         print(f"No songs found for the artist '{artist}'.")
         return None
 
-    # Choose a random song from the filtered list
     song = random.choice(artist_songs)
-    return song[song_title_index], song[artist_index]
+    return song["name"], song["artist"]
 
+def fuzzy_search(data, config_file, target_title, rpcs3_path):
+    output_file_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "dx_playlist.dta"
 
-def fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file, target_title):
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
-    output_file_path = config.get("Paths", "output_file_path")
-
-    # Check if it's a genre search
     if target_title.startswith('genre:'):
         genre_to_search = target_title[len('genre:'):].strip()
-        genre_matches = [(row[song_title_index], row[artist_index], row[short_name_index]) for row in data if genre_to_search.lower() in row[genre_index].lower()]
+        genre_matches = [
+            (song["name"], song["artist"], song["shortname"])
+            for song in data.values()
+            if "genre" in song and genre_to_search.lower() == song["genre"].lower()
+        ]
 
         if genre_matches:
-            # Randomly select a matching song title, artist, and short name
             random_song_title, random_artist, random_short_name = random.choice(genre_matches)
             print(f"Random song matching genre '{genre_to_search}': '{random_song_title}' by '{random_artist}'")
-
-            append_short_name_to_output(output_file_path, random_short_name)
+            append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print(f"No songs found in the genre '{genre_to_search}'.")
-    # Check if it's a year search
     elif target_title.startswith('year:'):
         year_to_search = target_title[len('year:'):].strip()
-        year_matches = [(row[song_title_index], row[artist_index], row[short_name_index]) for row in data if year_to_search == row[year_index]]
+        year_matches = [
+            (song["name"], song["artist"], song["shortname"]) 
+            for song in data.values() 
+            if ("year_released" in song and str(year_to_search) == str(song["year_released"])) or ("year" in song and year_to_search == song["year"])
+        ]
 
         if year_matches:
-            # Randomly select a matching song title, artist, and short name
             random_song_title, random_artist, random_short_name = random.choice(year_matches)
             print(f"Random song from the year '{year_to_search}': '{random_song_title}' by '{random_artist}'")
-
-            append_short_name_to_output(output_file_path, random_short_name)
+            append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print(f"No songs found in the year '{year_to_search}'.")
     elif target_title == 'csv':
-        # Choose a random song from the CSV file
-        song_title, artist = get_random_song(data, song_title_index, artist_index)
-        print(f"Random song title from the CSV file: '{song_title}' by '{artist}'")
-    else:
-        # Perform fuzzy search on the 'Song Title' and 'Artist' columns
-        matches = [(row[song_title_index], row[artist_index], row[short_name_index], score) for row in data for _, score in [process.extractOne(target_title, [row[song_title_index], row[artist_index]])]]
+        song_title, artist = get_random_song(data)
+        print(f"Random song title from the JSON file: '{song_title}' by '{artist}'")
+    elif target_title.startswith('artist:'):
+        artist_to_search = target_title[len('artist:'):].strip()
+        artist_matches = [
+            (song.get("name", ""), song.get("artist", ""), song.get("shortname", ""))
+            for song in data.values()
+            if "artist" in song and isinstance(song["artist"], str) and artist_to_search.lower() == song["artist"].lower()
+        ]
 
-        # Get the top 5 matches
-        top_matches = sorted(matches, key=lambda x: x[3], reverse=True)[:5]
-
-        # Print the top 5 matches
-        for i, (match_title, match_artist, _, score) in enumerate(top_matches, start=1):
-            print(f"{i}. '{match_title}' by '{match_artist}' (Score: {score})")
-
-        # Ask the user for confirmation
-        confirmation = input("Enter the number (1-5), 'n' to abort: ")
-
-        if confirmation.lower() == 'y':
-            # Extract the best match and its index
-            best_match, best_artist, best_short_name, _ = max(top_matches, key=lambda x: x[3])
-
-            append_short_name_to_output(output_file_path, best_short_name)
-        elif confirmation.lower() == 'n':
-            print("Operation aborted.")
-        elif confirmation.isdigit() and 1 <= int(confirmation) <= 5:
-            # Extract the selected match and its index
-            selected_match, _, selected_short_name, _ = top_matches[int(confirmation) - 1]
-
-            append_short_name_to_output(output_file_path, selected_short_name)
+        if artist_matches:
+            random_song_title, random_artist, random_short_name = random.choice(artist_matches)
+            print(f"Random song by artist '{artist_to_search}': '{random_song_title}' by '{random_artist}'")
+            append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
-            print("Invalid input. Please enter 'y', 'n', 'genre:GenreName', 'year:Year', 'csv', or a number (1-5).")
+            print(f"No songs found for the artist '{artist_to_search}'.")
+    #elif target_title.startswith('title:'):
+    #    title_to_search = target_title[len('title:'):].strip()
+    #    title_matches = process.extract(
+    #        title_to_search, 
+    #        [(song.get("name", ""), song.get("artist", ""), song.get("shortname", ""))
+    #         for song in data.values()],
+    #        limit=1
+    #    )
 
-def append_short_name_to_output(output_file, short_name):
-    # Remove double quotes from the file path if present
-    output_file = output_file.strip('\"')
+    #    if title_matches and title_matches[0][1] >= 80:  # Adjust the threshold as needed
+    #        random_song_title, random_artist, random_short_name = title_matches[0][0]
+    #        print(f"Random song with title '{title_to_search}': '{random_song_title}' by '{random_artist}'")
+    #        append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
+    #    else:
+    #        print(f"No songs found with a similar title to '{title_to_search}'.")
 
-    # Open the dx_playlist.dta file and read the existing content
+def append_short_name_to_output(output_file, short_name, rpcs3_path):
+    output_file = str(output_file).strip('\"')  # Convert to string before stripping
+
     with open(output_file, 'r') as output:
         existing_content = output.read().strip()
 
-    # Extract short names from existing content
     existing_short_names = [s.strip('()') for s in existing_content.split()]
 
-    # Add the new short name to the list
     existing_short_names.append(short_name)
-    
-    # Write back to the dx_playlist.dta file
+
     with open(output_file, 'w') as output:
         output.write(f"({' '.join(existing_short_names)})")
 
     print(f"Short Name '({short_name})' appended to {output_file}")
 
-def refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index):
-    year = get_random_year(data, year_index)
-    artist = get_random_artist(data, artist_index)
-    song_title, _ = get_random_song(data, song_title_index, artist_index)
-    random_song_name = {get_random_song(data, song_title_index, artist_index)}
-    genre = get_random_genre(data, genre_index)
-    song_title_direct, artist_direct, short_name_direct = eval_random_song(data, song_title_index, artist_index, short_name_index)
+def refresh_options(data):
+    year = get_random_year(data)
+    artist = get_random_artist(data)
+    song_title, _ = get_random_song(data)
+    random_song_name = {get_random_song(data)}
+    genre = get_random_genre(data)
+    song_title_direct, artist_direct, short_name_direct = eval_random_song(data)
     print(" ")
     return year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct
 
-def main():
-    csv_file_path, output_file_path, config_file_path = get_csv_and_config_file_paths()
-    data = read_csv(csv_file_path)
+def get_rpcs3_path():
+    rpcs3_path = input("Enter the path for RPCS3: ")
+    rpcs3_path = Path(rpcs3_path)
+    
+    if not rpcs3_path.is_dir():
+        print("Invalid RPCS3 path provided.")
+        exit()
+
+    return rpcs3_path
+
+def save_rpcs3_path(config_path: Path, rpcs3_path: Path):
+    config = configparser.ConfigParser()
+    config['Paths'] = {'RPCS3Folder': f'"{str(rpcs3_path)}"'}
+    with open(config_path, 'w') as configfile:
+        config.write(configfile)
+
+def load_rpcs3_path(config_path: Path):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    if 'Paths' in config and 'RPCS3Folder' in config['Paths']:
+        return Path(config['Paths']['RPCS3Folder'].strip('"'))
+    else:
+        return None
+
+def parse_and_export_to_json():
+    config_path = Path.cwd() / 'dx_play_a_show_config.ini'
+    rpcs3_path = load_rpcs3_path(config_path)
+
+    if rpcs3_path is None:
+        rpcs3_path = get_rpcs3_path()
+        save_rpcs3_path(config_path, rpcs3_path)
+
+    # Assuming rpcs3_path is a pathlib.Path object
+    output_file_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "dx_playlist.dta"
+    output_json_path = Path.cwd() / "dx_songs.json"
+    output_json_path_str = str(output_json_path)
+
+    # Check if the directory exists
+    if not os.path.exists(output_file_path.parent):
+        print(f"Error: Directory {output_file_path.parent} does not exist.")
+        sys.exit()
+
+    # Check if the file exists
+    output_file_path_str = str(output_file_path)
+    if not os.path.isfile(output_file_path_str):
+        print(f"Error: File {output_file_path_str} does not exist.")
+        sys.exit()
+
+    # Define the folders to search
+    target_folders = [rpcs3_path / "dev_hdd0" / "game" / "BLUS30050",
+                      rpcs3_path / "dev_hdd0" / "game" / "BLUS30463"]
+
+    print("Finding and reading songs.dta files in specified RPCS3 folder. This may take some time.")
+    print("Make sure you have ran Rock Band 3 Deluxe first to generate needed files.")
+
+    # Filter the dta_files list based on the target folders
+    dta_files = [dta_file for folder in target_folders
+                 for dta_file in folder.rglob("songs.dta")]
+
+    if not dta_files:
+        print("No 'songs.dta' files found in the specified RPCS3 folders.")
+        exit()
+
+    all_parsed_dicts = {}
+
+    for dta_file in dta_files:
+        parsed_dict = parse_dta(dta_file, rpcs3_path)
+        all_parsed_dicts.update(parsed_dict)
+
+    # Parse and apply updates from songs_updates.dta
+    updates_dta_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "songs_updates.dta"
+    all_parsed_dicts = parse_updates_dta(updates_dta_path, all_parsed_dicts)
+
+    # Export the output JSON to the working directory
+    with open(output_json_path_str, 'w') as json_file:
+        json.dump(all_parsed_dicts, json_file, indent=2)
+
+    # Check if the JSON file already exists
+    if not output_json_path.is_file():
+        with open(output_json_path, 'w') as json_file:
+            json.dump(all_parsed_dicts, json_file, indent=2)
+
+    # Read the JSON file
+    data = read_json(output_json_path)
 
     if data:
-        data, song_title_index, artist_index, year_index, genre_index, short_name_index = data
-        year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+        song_title_index = "name"
+        artist_index = "artist"
+        year_index = "year"
+        genre_index = "genre"
+        short_name_index = "shortname"
+
+        year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
+
         while True:
             print("Welcome to Rock Band 3 Deluxe Play A Show!")
             print("Choose an option:")
@@ -198,43 +403,40 @@ def main():
             print(f"3. '{song_title_direct}' by '{artist_direct}'")
             print(f"4. A random {genre} song")
             print("5. Refresh options")
-            print("6. Manual fuzzy search")
-            print("7. Clear the playlist")
+            # print("6. Random song by search")
+            print("6. Clear the playlist")
             print("0. Exit")
 
             choice = input("Enter the number of your choice: ")
 
             if choice == '1':
-                fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, f'year:{year}')
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                fuzzy_search(data, output_file_path, f'year:{year}', rpcs3_path)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '2':
-                song_title, _ = get_random_song_from_artist(data, artist, song_title_index, artist_index)
-                if song_title:
-                    short_name = [song[short_name_index] for song in data if song[song_title_index] == song_title][0]
-                    print(f"Random song from {artist}: '{song_title}'")
-                    append_short_name_to_output(output_file_path, short_name)
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                fuzzy_search(data, output_file_path, f'artist:{artist}', rpcs3_path)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '3':
-                append_short_name_to_output(output_file_path, short_name_direct)
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
-                fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, f'genre:{genre}')
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '5':
                 print("Options refreshed.")
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
+            #elif choice == '6':
+            #    search_string = input("Enter a Song Title or Artist to search for: ")
+            #    fuzzy_search(data, output_file_path, f'title:{search_string}', rpcs3_path)
+            #    print(" ")
             elif choice == '6':
-                search_string = input("Enter a Song Title or Artist to search for: ")
-                fuzzy_search(data, song_title_index, artist_index, year_index, genre_index, short_name_index, config_file_path, search_string)
-                print(" ")
-            elif choice == '7':
                 clear_playlist(output_file_path)
-                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data, song_title_index, artist_index, year_index, genre_index, short_name_index)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
                 print("Exiting Play A Show. Goodbye!")
                 break
             else:
                 print("Invalid choice.")
 
+# Call the new function to run both parts
 if __name__ == "__main__":
-    main()
+    parse_and_export_to_json()
