@@ -8,6 +8,12 @@ import sys
 #import pprint
 import json
 
+def clear_screen():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
+
 # removes any comments from a RB dta, and then returns a nice, tokenized list to parse
 def clean_dta(dta_path: Path) -> list:
     with open(dta_path, encoding="latin1") as f:
@@ -202,6 +208,7 @@ def eval_random_song(data):
     return song["name"], song["artist"], song["shortname"]
 
 def clear_playlist(output_file):
+    clear_screen()
     with open(output_file, 'w') as output:
         output.write("")
     print_color_text(f"Playlist cleared in {output_file}", "1;31")  # Red text
@@ -218,7 +225,7 @@ def get_random_song_from_artist(data, artist):
 
 def fuzzy_search(data, config_file, target_title, rpcs3_path):
     output_file_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "dx_playlist.dta"
-
+    clear_screen()
     if target_title.startswith('genre:'):
         genre_to_search = target_title[len('genre:'):].strip()
         genre_matches = [
@@ -280,7 +287,6 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
 def append_short_name_to_output(output_file, short_name, rpcs3_path):
     output_file = str(output_file).strip('\"')  # Convert to string before stripping
-
     with open(output_file, 'r') as output:
         existing_content = output.read().strip()
 
@@ -298,7 +304,6 @@ def refresh_options(data):
     artist = get_random_artist(data)
     song_title, _ = get_random_song(data)
     random_song_name = {get_random_song(data)}
-
     # Extracting unique genres and sub-genres from the data
     genres = {song["genre"] for song in data.values() if "genre" in song}
     subgenres = {song["sub_genre"] for song in data.values() if "sub_genre" in song}
@@ -408,8 +413,6 @@ def parse_and_export_to_json():
     # Read the JSON file
     data = read_json(output_json_path)
 
-    print_color_text(f"Found {len(all_parsed_dicts)} songs in {len(dta_files)} 'songs.dta' files.", "1;32")
-
     if data:
         song_title_index = "name"
         artist_index = "artist"
@@ -418,9 +421,9 @@ def parse_and_export_to_json():
         short_name_index = "shortname"
 
         year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-
+        clear_screen()
         while True:
-            print_color_text("Welcome to Rock Band 3 Deluxe Play A Show!", "1;36")  # Cyan text
+            print_color_text(f"Welcome to Rock Band 3 Deluxe Play A Show! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             print_color_text("Choose an option:", "1;37")  # White text
             print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
             print_color_text(f"2. A random song by {artist}", "1;38;5;196")  # Green text
@@ -442,22 +445,27 @@ def parse_and_export_to_json():
                 fuzzy_search(data, output_file_path, f'artist:{artist}', rpcs3_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '3':
+                clear_screen()
                 append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
                 fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '5':
+                clear_screen()
                 print_color_text("Options refreshed.", "1;34")  # Blue text
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '6':
                 clear_playlist(output_file_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
+                clear_screen()
                 print_color_text("Exiting Play A Show. Goodbye!", "1;31")  # Red text
                 break
             else:
+                clear_screen()
                 print_color_text("Invalid choice.", "1;31")  # Red text
+                print(" ")
 
 # Call the new function to run both parts
 if __name__ == "__main__":
