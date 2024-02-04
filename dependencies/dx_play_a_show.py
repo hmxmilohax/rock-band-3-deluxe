@@ -191,13 +191,236 @@ def get_random_year(data):
     #print("All years:", years)  # Add this line to print all years
     return random.choice(list(years)) if years else None
 
+localized_genre_lookup = {
+    'acapella': 'A Capella',
+    'acidjazz': 'Acid Jazz',
+    'acoustic': 'Acoustic',
+    'alternative': 'Alternative',
+    'alternativerap': 'Alternative Rap',
+    'ambient': 'Ambient',
+    'arena': 'Arena',
+    'black': 'Black Metal',
+    'bluegrass': 'Bluegrass',
+    'blues': 'Blues',
+    'breakbeat': 'Breakbeat',
+    'chicago': 'Chicago',
+    'chiptune': 'Chiptune',
+    'classic': 'Classic',
+    'classical': 'Classical',
+    'classicrock': 'Classic Rock',
+    'college': 'College',
+    'contemporary': 'Contemporary',
+    'contemporaryfolk': 'Contemporary Folk',
+    'core': 'Core',
+    'country': 'Country',
+    'dance': 'Dance',
+    'dancepunk': 'Dance Punk',
+    'darkwave': 'Dark Wave',
+    'death': 'Death Metal',
+    'delta': 'Delta',
+    'disco': 'Disco',
+    'downtempo': 'Downtempo',
+    'drumandbass': 'Drum and Bass',
+    'dub': 'Dub',
+    'electric': 'Electric',
+    'electroclash': 'Electroclash',
+    'electronica': 'Electronica',
+    'emo': 'Emo',
+    'experimental': 'Experimental',
+    'folkrock': 'Folk Rock',
+    'funk': 'Funk',
+    'fusion': 'Fusion',
+    'gangsta': 'Gangsta',
+    'garage': 'Garage',
+    'glam': 'Glam',
+    'goth': 'Goth',
+    'grunge': 'Grunge',
+    'hair': 'Hair',
+    'hardcore': 'Hardcore',
+    'hardcoredance': 'Hardcore Dance',
+    'hardcorerap': 'Hardcore Rap',
+    'hardrock': 'Hard Rock',
+    'hiphop': 'Hip Hop',
+    'honkytonk': 'Honky Tonk',
+    'house': 'House',
+    'indierock': 'Indie Rock',
+    'inspirational': 'Inspirational',
+    'industrial': 'Industrial',
+    'lofi': 'Lo-fi',
+    'mathrock': 'Math Rock',
+    'metal': 'Metal',
+    'motown': 'Motown',
+    'new_wave': 'New Wave',
+    'noise': 'Noise',
+    'novelty': 'Novelty',
+    'numetal': 'Nu-Metal',
+    'oldies': 'Oldies',
+    'oldschoolhiphop': 'Old School Hip Hop',
+    'other': 'Other',
+    'outlaw': 'Outlaw',
+    'pop': 'Pop',
+    'poprock': 'Pop Rock',
+    'postrock': 'Post Rock',
+    'power': 'Power',
+    'prog': 'Prog',
+    'progrock': 'Prog Rock',
+    'psychadelic': 'Psychedelic',
+    'ragtime': 'Ragtime',
+    'rap': 'Rap',
+    'reggae': 'Reggae',
+    'rhythmandblues': 'Rhythm and Blues',
+    'rock': 'Rock',
+    'rockabilly': 'Rockabilly',
+    'rockandroll': 'Rock and Roll',
+    'shoegazing': 'Shoegazing',
+    'ska': 'Ska',
+    'smooth': 'Smooth',
+    'softrock': 'Soft Rock',
+    'soul': 'Soul',
+    'southernrock': 'Southern Rock',
+    'speed': 'Speed',
+    'surf': 'Surf',
+    'synth': 'Synthpop',
+    'techno': 'Techno',
+    'teen': 'Teen',
+    'thrash': 'Thrash',
+    'traditionalfolk': 'Traditional Folk',
+    'trance': 'Trance',
+    'triphop': 'Trip Hop',
+    'undergroundrap': 'Underground Rap',
+    'world': 'World',
+    'ambient': 'Ambient',
+    'punk': 'Punk',
+    'softrock': 'Soft Rock',
+    'jrock': 'J-Rock',
+    'darkwave': 'Dark Wave',
+    'hiphoprap': 'Hip Hop/Rap',
+    'goth': 'Goth',
+    'indierock': 'Indie Rock',
+    'hair': 'Hair',
+    'numetal': 'Nu-Metal',
+    'postrock': 'Post Rock',
+    'smooth': 'Smooth',
+    'honkytonk': 'Honky Tonk',
+    'electric': 'Electric',
+    'acoustic': 'Acoustic',
+    'punk': 'Punk',
+    'alternativerap': 'Alternative Rap',
+    'world': 'World',
+    'rockabilly': 'Rockabilly',
+    'psychadelic': 'Psychedelic',
+    "subgenre_acapella": "A Capella",
+    "subgenre_acidjazz": "Acid Jazz",
+    "subgenre_acoustic": "Acoustic",
+    "subgenre_alternative": "Alternative",
+    "subgenre_alternativerap": "Alternative Rap",
+    "subgenre_ambient": "Ambient",
+    "subgenre_arena": "Arena",
+    "subgenre_black": "Black Metal",
+    "subgenre_bluegrass": "Bluegrass",
+    "subgenre_blues": "Blues",
+    "subgenre_breakbeat": "Breakbeat",
+    "subgenre_chicago": "Chicago",
+    "subgenre_chiptune": "Chiptune",
+    "subgenre_classic": "Classic",
+    "subgenre_classical": "Classical",
+    "subgenre_classicrock": "Classic Rock",
+    "subgenre_college": "College",
+    "subgenre_contemporary": "Contemporary",
+    "subgenre_contemporaryfolk": "Contemporary Folk",
+    "subgenre_core": "Core",
+    "subgenre_country": "Country",
+    "subgenre_dance": "Dance",
+    "subgenre_dancepunk": "Dance Punk",
+    "subgenre_darkwave": "Dark Wave",
+    "subgenre_death": "Death Metal",
+    "subgenre_delta": "Delta",
+    "subgenre_disco": "Disco",
+    "subgenre_downtempo": "Downtempo",
+    "subgenre_drumandbass": "Drum and Bass",
+    "subgenre_dub": "Dub",
+    "subgenre_electric": "Electric",
+    "subgenre_electroclash": "Electroclash",
+    "subgenre_electronica": "Electronica",
+    "subgenre_emo": "Emo",
+    "subgenre_experimental": "Experimental",
+    "subgenre_folkrock": "Folk Rock",
+    "subgenre_funk": "Funk",
+    "subgenre_fusion": "Fusion",
+    "subgenre_gangsta": "Gangsta",
+    "subgenre_garage": "Garage",
+    "subgenre_glam": "Glam",
+    "subgenre_goth": "Goth",
+    "subgenre_grunge": "Grunge",
+    "subgenre_hair": "Hair",
+    "subgenre_hardcore": "Hardcore",
+    "subgenre_hardcoredance": "Hardcore Dance",
+    "subgenre_hardcorerap": "Hardcore Rap",
+    "subgenre_hardrock": "Hard Rock",
+    "subgenre_hiphop": "Hip Hop",
+    "subgenre_honkytonk": "Honky Tonk",
+    "subgenre_house": "House",
+    "subgenre_indierock": "Indie Rock",
+    "subgenre_inspirational": "Inspirational",
+    "subgenre_industrial": "Industrial",
+    "subgenre_lofi": "Lo-fi",
+    "subgenre_mathrock": "Math Rock",
+    "subgenre_metal": "Metal",
+    "subgenre_motown": "Motown",
+    "subgenre_new_wave": "New Wave",
+    "subgenre_noise": "Noise",
+    "subgenre_novelty": "Novelty",
+    "subgenre_numetal": "Nu-Metal",
+    "subgenre_oldies": "Oldies",
+    "subgenre_oldschoolhiphop": "Old School Hip Hop",
+    "subgenre_other": "Other",
+    "subgenre_outlaw": "Outlaw",
+    "subgenre_pop": "Pop",
+    "subgenre_postrock": "Post Rock",
+    "subgenre_power": "Power",
+    "subgenre_prog": "Prog",
+    "subgenre_progrock": "Prog Rock",
+    "subgenre_psychadelic": "Psychedelic",
+    "subgenre_ragtime": "Ragtime",
+    "subgenre_rap": "Rap",
+    "subgenre_reggae": "Reggae",
+    "subgenre_rhythmandblues": "Rhythm and Blues",
+    "subgenre_rbsoulfunk": "R&B/Soul/Funk",
+    "subgenre_rock": "Rock",
+    "subgenre_rockabilly": "Rockabilly",
+    "subgenre_rockandroll": "Rock and Roll",
+    "subgenre_shoegazing": "Shoegazing",
+    "subgenre_ska": "Ska",
+    "subgenre_smooth": "Smooth",
+    "subgenre_softrock": "Soft Rock",
+    "subgenre_soul": "Soul",
+    "subgenre_southernrock": "Southern Rock",
+    "subgenre_speed": "Speed",
+    "subgenre_surf": "Surf",
+    "subgenre_synth": "Synthpop",
+    "subgenre_techno": "Techno",
+    "subgenre_teen": "Teen",
+    "subgenre_thrash": "Thrash",
+    "subgenre_traditionalfolk": "Traditional Folk",
+    "subgenre_trance": "Trance",
+    "subgenre_triphop": "Trip Hop",
+    "subgenre_undergroundrap": "Underground Rap",
+}
+
+
+
 def get_random_genre(data):
     all_genres = {song["genre"] for song in data.values() if "genre" in song}
     all_subgenres = {song["sub_genre"] for song in data.values() if "sub_genre" in song}
 
     combined_genres = all_genres.union(all_subgenres)
+    #print_color_text(f"{combined_genres}", "1;31")  # Red text
+    random_genre_internal = random.choice(list(combined_genres)) if combined_genres else None
     
-    return random.choice(list(combined_genres)) if combined_genres else None
+    # Map the internal genre name to the localized string
+    random_genre_localized = localized_genre_lookup.get(random_genre_internal, random_genre_internal)
+
+    return random_genre_internal, random_genre_localized
 
 def get_random_song(data):
     song = random.choice(list(data.values()))
@@ -422,8 +645,8 @@ def parse_and_export_to_json():
         year_index = "year"
         genre_index = "genre"
         short_name_index = "shortname"
-
         year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
+        genre_internal, genre_display = get_random_genre(data)
         clear_screen()
         while True:
             print_color_text(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ", "1;36")  # Cyan text
@@ -433,9 +656,9 @@ def parse_and_export_to_json():
             print_color_text(f"Welcome to RB3DX Play A Show! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             print_color_text("Choose an option:", "1;37")  # White text
             print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
-            print_color_text(f"2. A random song by {artist}", "1;38;5;196")  # Green text
+            print_color_text(f"2. A random song by '{artist}'", "1;38;5;196")  # Green text
             print_color_text(f"3. '{song_title_direct}' by '{artist_direct}'", "1;38;5;226")  # Yellow text
-            print_color_text(f"4. A random {genre} song", "1;34")  # Blue text
+            print_color_text(f"4. A random {genre_display} song", "1;34")  # Blue text
             print_color_text("5. Refresh options", "1;38;5;208")  # Magenta text
             # print_color_text("6. Random song by search", "1;35")  # Magenta text
             print_color_text("6. Clear the playlist", "1;31")  # Red text
@@ -457,11 +680,13 @@ def parse_and_export_to_json():
                 append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
-                fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
+                fuzzy_search(data, output_file_path, f'genre:{genre_internal}', rpcs3_path)
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '5':
                 clear_screen()
                 print_color_text("Options refreshed.", "1;34")  # Blue text
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '6':
                 clear_playlist(output_file_path)
