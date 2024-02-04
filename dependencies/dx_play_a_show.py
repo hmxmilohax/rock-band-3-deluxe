@@ -186,8 +186,12 @@ def get_random_year(data):
     return random.choice(list(years)) if years else None
 
 def get_random_genre(data):
-    genres = {song["genre"] for song in data.values() if "genre" in song}
-    return random.choice(list(genres)) if genres else None
+    all_genres = {song["genre"] for song in data.values() if "genre" in song}
+    all_subgenres = {song["sub_genre"] for song in data.values() if "sub_genre" in song}
+
+    combined_genres = all_genres.union(all_subgenres)
+    
+    return random.choice(list(combined_genres)) if combined_genres else None
 
 def get_random_song(data):
     song = random.choice(list(data.values()))
@@ -220,7 +224,8 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
         genre_matches = [
             (song["name"], song["artist"], song["shortname"])
             for song in data.values()
-            if "genre" in song and genre_to_search.lower() == song["genre"].lower()
+            if ("genre" in song and genre_to_search.lower() == song["genre"].lower()) or
+               ("sub_genre" in song and genre_to_search.lower() == song["sub_genre"].lower())
         ]
 
         if genre_matches:
@@ -296,6 +301,16 @@ def refresh_options(data):
     artist = get_random_artist(data)
     song_title, _ = get_random_song(data)
     random_song_name = {get_random_song(data)}
+
+    # Extracting unique genres and sub-genres from the data
+    genres = {song["genre"] for song in data.values() if "genre" in song}
+    subgenres = {song["sub_genre"] for song in data.values() if "sub_genre" in song}
+    
+    # Combine genres and subgenres
+    all_genres = genres.union(subgenres)
+
+    #print("Available Genres and Subgenres:", all_genres)
+    
     genre = get_random_genre(data)
     song_title_direct, artist_direct, short_name_direct = eval_random_song(data)
     print(" ")
