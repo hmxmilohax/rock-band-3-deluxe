@@ -426,6 +426,10 @@ def parse_and_export_to_json():
         year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
         clear_screen()
         while True:
+            print_color_text(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ", "1;36")  # Cyan text
+            print_color_text(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖", "1;36")  # Cyan text
+            print_color_text(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ", "1;36")  # Cyan text
+            print_color_text(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘", "1;36")  # Cyan text
             print_color_text(f"Welcome to Rock Band 3 Deluxe Play A Show! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             print_color_text("Choose an option:", "1;37")  # White text
             print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
