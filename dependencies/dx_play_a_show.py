@@ -447,6 +447,7 @@ def parse_and_export_to_json():
             elif choice == '3':
                 clear_screen()
                 append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
+                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
                 fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
@@ -454,9 +455,11 @@ def parse_and_export_to_json():
             elif choice == '5':
                 clear_screen()
                 print_color_text("Options refreshed.", "1;34")  # Blue text
+                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '6':
                 clear_playlist(output_file_path)
+                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
                 clear_screen()
@@ -465,6 +468,7 @@ def parse_and_export_to_json():
             else:
                 clear_screen()
                 print_color_text("Invalid choice.", "1;31")  # Red text
+                print(" ")
                 print(" ")
 
 # Call the new function to run both parts
