@@ -8,12 +8,6 @@ import sys
 #import pprint
 import json
 
-def clear_screen():
-    if os.name == 'nt':
-        os.system('cls')
-    else:
-        os.system('clear')
-
 # removes any comments from a RB dta, and then returns a nice, tokenized list to parse
 def clean_dta(dta_path: Path) -> list:
     with open(dta_path, encoding="latin1") as f:
@@ -182,232 +176,88 @@ def read_json(json_file_path):
         print_color_text(f"Error decoding JSON file '{json_file_path}': {e}", "1;31")  # Red text
         return None
 
-def get_random_artist(data):
-    artists = {song["artist"] for song in data.values() if "artist" in song and isinstance(song["artist"], str)}
-    return random.choice(list(artists)) if artists else None
-
-def get_random_year(data):
-    years = {song.get("year", song.get("year_released")) for song in data.values() if "year" in song or "year_released" in song}
-    #print("All years:", years)  # Add this line to print all years
-    return random.choice(list(years)) if years else None
-
 localized_genre_lookup = {
-    'acapella': 'A Capella',
-    'acidjazz': 'Acid Jazz',
-    'acoustic': 'Acoustic',
-    'alternative': 'Alternative',
-    'alternativerap': 'Alternative Rap',
-    'ambient': 'Ambient',
-    'arena': 'Arena',
-    'black': 'Black Metal',
-    'bluegrass': 'Bluegrass',
-    'blues': 'Blues',
-    'breakbeat': 'Breakbeat',
-    'chicago': 'Chicago',
-    'chiptune': 'Chiptune',
-    'classic': 'Classic',
-    'classical': 'Classical',
-    'classicrock': 'Classic Rock',
-    'college': 'College',
-    'contemporary': 'Contemporary',
-    'contemporaryfolk': 'Contemporary Folk',
-    'core': 'Core',
-    'country': 'Country',
-    'dance': 'Dance',
-    'dancepunk': 'Dance Punk',
-    'darkwave': 'Dark Wave',
-    'death': 'Death Metal',
-    'delta': 'Delta',
-    'disco': 'Disco',
-    'downtempo': 'Downtempo',
-    'drumandbass': 'Drum and Bass',
-    'dub': 'Dub',
-    'electric': 'Electric',
-    'electroclash': 'Electroclash',
-    'electronica': 'Electronica',
-    'emo': 'Emo',
-    'experimental': 'Experimental',
-    'folkrock': 'Folk Rock',
-    'funk': 'Funk',
-    'fusion': 'Fusion',
-    'gangsta': 'Gangsta',
-    'garage': 'Garage',
-    'glam': 'Glam',
-    'goth': 'Goth',
-    'grunge': 'Grunge',
-    'hair': 'Hair',
-    'hardcore': 'Hardcore',
-    'hardcoredance': 'Hardcore Dance',
-    'hardcorerap': 'Hardcore Rap',
-    'hardrock': 'Hard Rock',
-    'hiphop': 'Hip Hop',
-    'honkytonk': 'Honky Tonk',
-    'house': 'House',
-    'indierock': 'Indie Rock',
-    'inspirational': 'Inspirational',
-    'industrial': 'Industrial',
-    'lofi': 'Lo-fi',
-    'mathrock': 'Math Rock',
-    'metal': 'Metal',
-    'motown': 'Motown',
-    'new_wave': 'New Wave',
-    'noise': 'Noise',
-    'novelty': 'Novelty',
-    'numetal': 'Nu-Metal',
-    'oldies': 'Oldies',
-    'oldschoolhiphop': 'Old School Hip Hop',
-    'other': 'Other',
-    'outlaw': 'Outlaw',
-    'pop': 'Pop',
-    'poprock': 'Pop Rock',
-    'postrock': 'Post Rock',
-    'power': 'Power',
-    'prog': 'Prog',
-    'progrock': 'Prog Rock',
-    'psychadelic': 'Psychedelic',
-    'ragtime': 'Ragtime',
-    'rap': 'Rap',
-    'reggae': 'Reggae',
-    'rhythmandblues': 'Rhythm and Blues',
-    'rock': 'Rock',
-    'rockabilly': 'Rockabilly',
-    'rockandroll': 'Rock and Roll',
-    'shoegazing': 'Shoegazing',
-    'ska': 'Ska',
-    'smooth': 'Smooth',
-    'softrock': 'Soft Rock',
-    'soul': 'Soul',
-    'southernrock': 'Southern Rock',
-    'speed': 'Speed',
-    'surf': 'Surf',
-    'synth': 'Synthpop',
-    'techno': 'Techno',
-    'teen': 'Teen',
-    'thrash': 'Thrash',
-    'traditionalfolk': 'Traditional Folk',
-    'trance': 'Trance',
-    'triphop': 'Trip Hop',
-    'undergroundrap': 'Underground Rap',
-    'world': 'World',
-    'ambient': 'Ambient',
-    'punk': 'Punk',
-    'softrock': 'Soft Rock',
-    'jrock': 'J-Rock',
-    'darkwave': 'Dark Wave',
-    'hiphoprap': 'Hip Hop/Rap',
-    'goth': 'Goth',
-    'indierock': 'Indie Rock',
-    'hair': 'Hair',
-    'numetal': 'Nu-Metal',
-    'postrock': 'Post Rock',
-    'smooth': 'Smooth',
-    'honkytonk': 'Honky Tonk',
-    'electric': 'Electric',
-    'acoustic': 'Acoustic',
-    'punk': 'Punk',
-    'alternativerap': 'Alternative Rap',
-    'world': 'World',
-    'rockabilly': 'Rockabilly',
-    'psychadelic': 'Psychedelic',
-    "subgenre_acapella": "A Capella",
-    "subgenre_acidjazz": "Acid Jazz",
-    "subgenre_acoustic": "Acoustic",
-    "subgenre_alternative": "Alternative",
-    "subgenre_alternativerap": "Alternative Rap",
-    "subgenre_ambient": "Ambient",
-    "subgenre_arena": "Arena",
-    "subgenre_black": "Black Metal",
-    "subgenre_bluegrass": "Bluegrass",
-    "subgenre_blues": "Blues",
-    "subgenre_breakbeat": "Breakbeat",
-    "subgenre_chicago": "Chicago",
-    "subgenre_chiptune": "Chiptune",
-    "subgenre_classic": "Classic",
-    "subgenre_classical": "Classical",
-    "subgenre_classicrock": "Classic Rock",
-    "subgenre_college": "College",
-    "subgenre_contemporary": "Contemporary",
-    "subgenre_contemporaryfolk": "Contemporary Folk",
-    "subgenre_core": "Core",
-    "subgenre_country": "Country",
-    "subgenre_dance": "Dance",
-    "subgenre_dancepunk": "Dance Punk",
-    "subgenre_darkwave": "Dark Wave",
-    "subgenre_death": "Death Metal",
-    "subgenre_delta": "Delta",
-    "subgenre_disco": "Disco",
-    "subgenre_downtempo": "Downtempo",
-    "subgenre_drumandbass": "Drum and Bass",
-    "subgenre_dub": "Dub",
-    "subgenre_electric": "Electric",
-    "subgenre_electroclash": "Electroclash",
-    "subgenre_electronica": "Electronica",
-    "subgenre_emo": "Emo",
-    "subgenre_experimental": "Experimental",
-    "subgenre_folkrock": "Folk Rock",
-    "subgenre_funk": "Funk",
-    "subgenre_fusion": "Fusion",
-    "subgenre_gangsta": "Gangsta",
-    "subgenre_garage": "Garage",
-    "subgenre_glam": "Glam",
-    "subgenre_goth": "Goth",
-    "subgenre_grunge": "Grunge",
-    "subgenre_hair": "Hair",
-    "subgenre_hardcore": "Hardcore",
-    "subgenre_hardcoredance": "Hardcore Dance",
-    "subgenre_hardcorerap": "Hardcore Rap",
-    "subgenre_hardrock": "Hard Rock",
-    "subgenre_hiphop": "Hip Hop",
-    "subgenre_honkytonk": "Honky Tonk",
-    "subgenre_house": "House",
-    "subgenre_indierock": "Indie Rock",
-    "subgenre_inspirational": "Inspirational",
-    "subgenre_industrial": "Industrial",
-    "subgenre_lofi": "Lo-fi",
-    "subgenre_mathrock": "Math Rock",
-    "subgenre_metal": "Metal",
-    "subgenre_motown": "Motown",
-    "subgenre_new_wave": "New Wave",
-    "subgenre_noise": "Noise",
-    "subgenre_novelty": "Novelty",
-    "subgenre_numetal": "Nu-Metal",
-    "subgenre_oldies": "Oldies",
-    "subgenre_oldschoolhiphop": "Old School Hip Hop",
-    "subgenre_other": "Other",
-    "subgenre_outlaw": "Outlaw",
-    "subgenre_pop": "Pop",
-    "subgenre_postrock": "Post Rock",
-    "subgenre_power": "Power",
-    "subgenre_prog": "Prog",
-    "subgenre_progrock": "Prog Rock",
-    "subgenre_psychadelic": "Psychedelic",
-    "subgenre_ragtime": "Ragtime",
-    "subgenre_rap": "Rap",
-    "subgenre_reggae": "Reggae",
-    "subgenre_rhythmandblues": "Rhythm and Blues",
-    "subgenre_rbsoulfunk": "R&B/Soul/Funk",
-    "subgenre_rock": "Rock",
-    "subgenre_rockabilly": "Rockabilly",
-    "subgenre_rockandroll": "Rock and Roll",
-    "subgenre_shoegazing": "Shoegazing",
-    "subgenre_ska": "Ska",
-    "subgenre_smooth": "Smooth",
-    "subgenre_softrock": "Soft Rock",
-    "subgenre_soul": "Soul",
-    "subgenre_southernrock": "Southern Rock",
-    "subgenre_speed": "Speed",
-    "subgenre_surf": "Surf",
-    "subgenre_synth": "Synthpop",
-    "subgenre_techno": "Techno",
-    "subgenre_teen": "Teen",
-    "subgenre_thrash": "Thrash",
-    "subgenre_traditionalfolk": "Traditional Folk",
-    "subgenre_trance": "Trance",
-    "subgenre_triphop": "Trip Hop",
-    "subgenre_undergroundrap": "Underground Rap",
+    'acapella': 'A Capella', 'acidjazz': 'Acid Jazz', 'acoustic': 'Acoustic',
+    'alternative': 'Alternative', 'alternativerap': 'Alternative Rap',
+    'ambient': 'Ambient', 'arena': 'Arena', 'black': 'Black Metal',
+    'bluegrass': 'Bluegrass', 'blues': 'Blues', 'breakbeat': 'Breakbeat',
+    'chicago': 'Chicago', 'chiptune': 'Chiptune', 'classic': 'Classic',
+    'classical': 'Classical', 'classicrock': 'Classic Rock',
+    'college': 'College', 'contemporary': 'Contemporary',
+    'contemporaryfolk': 'Contemporary Folk', 'core': 'Core',
+    'country': 'Country', 'dance': 'Dance', 'dancepunk': 'Dance Punk',
+    'darkwave': 'Dark Wave', 'death': 'Death Metal', 'delta': 'Delta',
+    'disco': 'Disco', 'downtempo': 'Downtempo', 'drumandbass': 'Drum and Bass',
+    'dub': 'Dub', 'electric': 'Electric', 'electroclash': 'Electroclash',
+    'electronica': 'Electronica', 'emo': 'Emo', 'experimental': 'Experimental',
+    'folkrock': 'Folk Rock', 'funk': 'Funk', 'fusion': 'Fusion',
+    'gangsta': 'Gangsta', 'garage': 'Garage', 'glam': 'Glam', 'goth': 'Goth',
+    'grunge': 'Grunge', 'hair': 'Hair', 'hardcore': 'Hardcore',
+    'hardcoredance': 'Hardcore Dance', 'hardcorerap': 'Hardcore Rap',
+    'hardrock': 'Hard Rock', 'hiphop': 'Hip Hop', 'honkytonk': 'Honky Tonk',
+    'house': 'House', 'indierock': 'Indie Rock', 'inspirational': 'Inspirational',
+    'industrial': 'Industrial', 'lofi': 'Lo-fi', 'mathrock': 'Math Rock',
+    'metal': 'Metal', 'motown': 'Motown', 'new_wave': 'New Wave',
+    'noise': 'Noise', 'novelty': 'Novelty', 'numetal': 'Nu-Metal',
+    'oldies': 'Oldies', 'oldschoolhiphop': 'Old School Hip Hop', 'other': 'Other',
+    'outlaw': 'Outlaw', 'pop': 'Pop', 'poprock': 'Pop Rock',
+    'postrock': 'Post Rock', 'power': 'Power', 'prog': 'Prog',
+    'progrock': 'Prog Rock', 'psychadelic': 'Psychedelic', 'ragtime': 'Ragtime',
+    'rap': 'Rap', 'reggae': 'Reggae', 'rhythmandblues': 'Rhythm and Blues',
+    'rock': 'Rock', 'rockabilly': 'Rockabilly', 'rockandroll': 'Rock and Roll',
+    'shoegazing': 'Shoegazing', 'ska': 'Ska', 'smooth': 'Smooth',
+    'softrock': 'Soft Rock', 'soul': 'Soul', 'southernrock': 'Southern Rock',
+    'speed': 'Speed', 'surf': 'Surf', 'synth': 'Synthpop', 'techno': 'Techno',
+    'teen': 'Teen', 'thrash': 'Thrash', 'traditionalfolk': 'Traditional Folk',
+    'trance': 'Trance', 'triphop': 'Trip Hop', 'undergroundrap': 'Underground Rap',
+    'subgenre_acapella': 'A Capella', 'subgenre_acidjazz': 'Acid Jazz',
+    'subgenre_acoustic': 'Acoustic', 'subgenre_alternative': 'Alternative',
+    'subgenre_alternativerap': 'Alternative Rap', 'subgenre_ambient': 'Ambient',
+    'subgenre_arena': 'Arena', 'subgenre_black': 'Black Metal',
+    'subgenre_bluegrass': 'Bluegrass', 'subgenre_blues': 'Blues',
+    'subgenre_breakbeat': 'Breakbeat', 'subgenre_chicago': 'Chicago',
+    'subgenre_chiptune': 'Chiptune', 'subgenre_classic': 'Classic',
+    'subgenre_classical': 'Classical', 'subgenre_classicrock': 'Classic Rock',
+    'subgenre_college': 'College', 'subgenre_contemporary': 'Contemporary',
+    'subgenre_contemporaryfolk': 'Contemporary Folk', 'subgenre_core': 'Core',
+    'subgenre_country': 'Country', 'subgenre_dance': 'Dance',
+    'subgenre_dancepunk': 'Dance Punk', 'subgenre_darkwave': 'Dark Wave',
+    'subgenre_death': 'Death Metal', 'subgenre_delta': 'Delta',
+    'subgenre_disco': 'Disco', 'subgenre_downtempo': 'Downtempo',
+    'subgenre_drumandbass': 'Drum and Bass', 'subgenre_dub': 'Dub',
+    'subgenre_electric': 'Electric', 'subgenre_electroclash': 'Electroclash',
+    'subgenre_electronica': 'Electronica', 'subgenre_emo': 'Emo',
+    'subgenre_experimental': 'Experimental', 'subgenre_folkrock': 'Folk Rock',
+    'subgenre_funk': 'Funk', 'subgenre_fusion': 'Fusion',
+    'subgenre_gangsta': 'Gangsta', 'subgenre_garage': 'Garage',
+    'subgenre_glam': 'Glam', 'subgenre_goth': 'Goth', 'subgenre_grunge': 'Grunge',
+    'subgenre_hair': 'Hair', 'subgenre_hardcore': 'Hardcore',
+    'subgenre_hardcoredance': 'Hardcore Dance', 'subgenre_hardcorerap': 'Hardcore Rap',
+    'subgenre_hardrock': 'Hard Rock', 'subgenre_hiphop': 'Hip Hop',
+    'subgenre_honkytonk': 'Honky Tonk', 'subgenre_house': 'House',
+    'subgenre_indierock': 'Indie Rock', 'subgenre_inspirational': 'Inspirational',
+    'subgenre_industrial': 'Industrial', 'subgenre_lofi': 'Lo-fi',
+    'subgenre_mathrock': 'Math Rock', 'subgenre_metal': 'Metal',
+    'subgenre_motown': 'Motown', 'subgenre_new_wave': 'New Wave',
+    'subgenre_noise': 'Noise', 'subgenre_novelty': 'Novelty',
+    'subgenre_numetal': 'Nu-Metal', 'subgenre_oldies': 'Oldies',
+    'subgenre_oldschoolhiphop': 'Old School Hip Hop', 'subgenre_other': 'Other',
+    'subgenre_outlaw': 'Outlaw', 'subgenre_pop': 'Pop',
+    'subgenre_postrock': 'Post Rock', 'subgenre_power': 'Power',
+    'subgenre_prog': 'Prog', 'subgenre_progrock': 'Prog Rock',
+    'subgenre_psychadelic': 'Psychedelic', 'subgenre_ragtime': 'Ragtime',
+    'subgenre_rap': 'Rap', 'subgenre_reggae': 'Reggae',
+    'subgenre_rhythmandblues': 'Rhythm and Blues', 'subgenre_rbsoulfunk': 'R&B/Soul/Funk',
+    'subgenre_rock': 'Rock', 'subgenre_rockabilly': 'Rockabilly',
+    'subgenre_rockandroll': 'Rock and Roll', 'subgenre_shoegazing': 'Shoegazing',
+    'subgenre_ska': 'Ska', 'subgenre_smooth': 'Smooth',
+    'subgenre_softrock': 'Soft Rock', 'subgenre_soul': 'Soul',
+    'subgenre_southernrock': 'Southern Rock', 'subgenre_speed': 'Speed',
+    'subgenre_surf': 'Surf', 'subgenre_synth': 'Synthpop', 'subgenre_techno': 'Techno',
+    'subgenre_teen': 'Teen', 'subgenre_thrash': 'Thrash',
+    'subgenre_traditionalfolk': 'Traditional Folk', 'subgenre_trance': 'Trance',
+    'subgenre_triphop': 'Trip Hop', 'subgenre_undergroundrap': 'Underground Rap',
 }
-
-
 
 def get_random_genre(data):
     all_genres = {song["genre"] for song in data.values() if "genre" in song}
@@ -422,6 +272,15 @@ def get_random_genre(data):
 
     return random_genre_internal, random_genre_localized
 
+def get_random_artist(data):
+    artists = {song["artist"] for song in data.values() if "artist" in song and isinstance(song["artist"], str)}
+    return random.choice(list(artists)) if artists else None
+
+def get_random_year(data):
+    years = {song.get("year", song.get("year_released")) for song in data.values() if "year" in song or "year_released" in song}
+    #print("All years:", years)  # Add this line to print all years
+    return random.choice(list(years)) if years else None
+
 def get_random_song(data):
     song = random.choice(list(data.values()))
     return song["name"], song["artist"]
@@ -429,12 +288,6 @@ def get_random_song(data):
 def eval_random_song(data):
     song = random.choice(list(data.values()))
     return song["name"], song["artist"], song["shortname"]
-
-def clear_playlist(output_file):
-    clear_screen()
-    with open(output_file, 'w') as output:
-        output.write("")
-    print_color_text(f"Playlist cleared in dx_playlist.dta", "1;31")  # Red text
 
 def get_random_song_from_artist(data, artist):
     artist_songs = [song for song in data.values() if "artist" in song and isinstance(song["artist"], str) and song["artist"] == artist]
@@ -495,21 +348,6 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print_color_text(f"No songs found for the artist '{artist_to_search}'.", "1;31")  # Red text
-    #elif target_title.startswith('title:'):
-    #    title_to_search = target_title[len('title:'):].strip()
-    #    title_matches = process.extract(
-    #        title_to_search, 
-    #        [(song.get("name", ""), song.get("artist", ""), song.get("shortname", ""))
-    #         for song in data.values()],
-    #        limit=1
-    #    )
-
-    #    if title_matches and title_matches[0][1] >= 80:  # Adjust the threshold as needed
-    #        random_song_title, random_artist, random_short_name = title_matches[0][0]
-    #        print(f"Random song with title '{title_to_search}': '{random_song_title}' by '{random_artist}'")
-    #        append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
-    #    else:
-    #        print(f"No songs found with a similar title to '{title_to_search}'.")
 
 def append_short_name_to_output(output_file, short_name, rpcs3_path):
     output_file = str(output_file).strip('\"')  # Convert to string before stripping
@@ -567,6 +405,18 @@ def load_rpcs3_path(config_path: Path):
         return Path(config['Paths']['RPCS3Folder'].strip('"'))
     else:
         return None
+
+def clear_playlist(output_file):
+    clear_screen()
+    with open(output_file, 'w') as output:
+        output.write("")
+    print_color_text(f"Playlist cleared in dx_playlist.dta", "1;31")  # Red text
+
+def clear_screen():
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
 
 def print_color_text(*args):
     text = ' '.join(map(str, args[:-1]))
