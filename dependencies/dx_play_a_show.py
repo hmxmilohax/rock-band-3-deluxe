@@ -211,7 +211,7 @@ def clear_playlist(output_file):
     clear_screen()
     with open(output_file, 'w') as output:
         output.write("")
-    print_color_text(f"Playlist cleared in {output_file}", "1;31")  # Red text
+    print_color_text(f"Playlist cleared in dx_playlist.dta", "1;31")  # Red text
 
 def get_random_song_from_artist(data, artist):
     artist_songs = [song for song in data.values() if "artist" in song and isinstance(song["artist"], str) and song["artist"] == artist]
@@ -237,7 +237,8 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if genre_matches:
             random_song_title, random_artist, random_short_name = random.choice(genre_matches)
-            print_color_text(f"Random song matching genre '{genre_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            #print_color_text(f"Random song matching genre '{genre_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            print_color_text(f"'{random_song_title}' by '{random_artist}' added to playlist.", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print(f"No songs found in the genre '{genre_to_search}'.")
@@ -251,7 +252,8 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if year_matches:
             random_song_title, random_artist, random_short_name = random.choice(year_matches)
-            print_color_text(f"Random song from the year '{year_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            #print_color_text(f"Random song from the year '{year_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            print_color_text(f"'{random_song_title}' by '{random_artist}' added to playlist.", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print_color_text(f"No songs found in the year '{year_to_search}'.", "1;31")  # Red text
@@ -265,7 +267,8 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if artist_matches:
             random_song_title, random_artist, random_short_name = random.choice(artist_matches)
-            print_color_text(f"Random song by artist '{artist_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            #print_color_text(f"Random song by artist '{artist_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
+            print_color_text(f"'{random_song_title}' by '{random_artist}' added to playlist.", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print_color_text(f"No songs found for the artist '{artist_to_search}'.", "1;31")  # Red text
@@ -297,7 +300,7 @@ def append_short_name_to_output(output_file, short_name, rpcs3_path):
     with open(output_file, 'w') as output:
         output.write(f"({' '.join(existing_short_names)})")
 
-    print_color_text(f"Short Name '({short_name})' appended to {output_file}", "1;38;5;140")  # Darker Purple text
+    #print_color_text(f"Short Name '({short_name})' appended to dx_playlist.dta", "1;38;5;140")  # Darker Purple text
 
 def refresh_options(data):
     year = get_random_year(data)
@@ -427,7 +430,7 @@ def parse_and_export_to_json():
             print_color_text("Choose an option:", "1;37")  # White text
             print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
             print_color_text(f"2. A random song by {artist}", "1;38;5;196")  # Green text
-            print_color_text(f"3. {' '.join([song_title_direct, 'by', artist_direct])}", "1;38;5;226")  # Yellow text
+            print_color_text(f"3. '{song_title_direct}' by '{artist_direct}'", "1;38;5;226")  # Yellow text
             print_color_text(f"4. A random {genre} song", "1;34")  # Blue text
             print_color_text("5. Refresh options", "1;38;5;208")  # Magenta text
             # print_color_text("6. Random song by search", "1;35")  # Magenta text
@@ -446,8 +449,8 @@ def parse_and_export_to_json():
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '3':
                 clear_screen()
+                print_color_text(f"'{song_title_direct}' by '{artist_direct}' added to playlist.", "1;38;5;77")
                 append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
-                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
                 fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
@@ -455,11 +458,9 @@ def parse_and_export_to_json():
             elif choice == '5':
                 clear_screen()
                 print_color_text("Options refreshed.", "1;34")  # Blue text
-                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '6':
                 clear_playlist(output_file_path)
-                print(" ")
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
                 clear_screen()
@@ -468,7 +469,6 @@ def parse_and_export_to_json():
             else:
                 clear_screen()
                 print_color_text("Invalid choice.", "1;31")  # Red text
-                print(" ")
                 print(" ")
 
 # Call the new function to run both parts
