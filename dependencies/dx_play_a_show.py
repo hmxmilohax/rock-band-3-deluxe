@@ -386,6 +386,8 @@ def parse_and_export_to_json():
     # Read the JSON file
     data = read_json(output_json_path)
 
+    print(f"Found {len(all_parsed_dicts)} songs in {len(dta_files)} songs.dta files.")
+
     if data:
         song_title_index = "name"
         artist_index = "artist"
