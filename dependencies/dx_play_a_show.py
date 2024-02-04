@@ -94,7 +94,7 @@ def dict_from_song(parsed_song: list):
                                      "ugc", "context", "downloaded", "base_points", "cores", "seqs", "hopo_threshold", "song"]:
                     song_info_dict[info[0]] = info[1]
     except Exception as e:
-        print(f"Error processing song info: {e}")
+        print_color_text(f"Error processing song info: {e}", "1;31")  # Red text
     return song_info_dict
 
 # convert the list of lists that parse returns into a big song dictionary
@@ -161,7 +161,7 @@ def parse_updates_dta(updates_dta_path: Path, existing_data: dict) -> dict:
                 #print(f"Applying Updated Metadata for: {shortname}")
         return existing_data
     except Exception as e:
-        print(f"Error parsing updates.dta: {e}")
+        print_color_text(f"Error processing songs_updates.dta: {e}", "1;31")  # Red text
         return existing_data
 
 def read_json(json_file_path):
@@ -170,10 +170,10 @@ def read_json(json_file_path):
             data = json.load(file)
         return data
     except FileNotFoundError:
-        print(f"Error: JSON file '{json_file_path}' not found. Please make sure the file exists.")
+        print_color_text(f"Error: JSON file '{json_file_path}' not found. Please make sure the file exists.", "1;31")  # Red text
         return None
     except json.JSONDecodeError as e:
-        print(f"Error decoding JSON file '{json_file_path}': {e}")
+        print_color_text(f"Error decoding JSON file '{json_file_path}': {e}", "1;31")  # Red text
         return None
 
 def get_random_artist(data):
@@ -204,13 +204,13 @@ def eval_random_song(data):
 def clear_playlist(output_file):
     with open(output_file, 'w') as output:
         output.write("")
-    print(f"Playlist cleared in {output_file}")
+    print_color_text(f"Playlist cleared in {output_file}", "1;31")  # Red text
 
 def get_random_song_from_artist(data, artist):
     artist_songs = [song for song in data.values() if "artist" in song and isinstance(song["artist"], str) and song["artist"] == artist]
 
     if not artist_songs:
-        print(f"No songs found for the artist '{artist}'.")
+        print_color_text(f"No songs found for the artist '{artist}'.", "1;31")  # Red text
         return None
 
     song = random.choice(artist_songs)
@@ -230,7 +230,7 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if genre_matches:
             random_song_title, random_artist, random_short_name = random.choice(genre_matches)
-            print(f"Random song matching genre '{genre_to_search}': '{random_song_title}' by '{random_artist}'")
+            print_color_text(f"Random song matching genre '{genre_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
             print(f"No songs found in the genre '{genre_to_search}'.")
@@ -244,13 +244,10 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if year_matches:
             random_song_title, random_artist, random_short_name = random.choice(year_matches)
-            print(f"Random song from the year '{year_to_search}': '{random_song_title}' by '{random_artist}'")
+            print_color_text(f"Random song from the year '{year_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
-            print(f"No songs found in the year '{year_to_search}'.")
-    elif target_title == 'csv':
-        song_title, artist = get_random_song(data)
-        print(f"Random song title from the JSON file: '{song_title}' by '{artist}'")
+            print_color_text(f"No songs found in the year '{year_to_search}'.", "1;31")  # Red text
     elif target_title.startswith('artist:'):
         artist_to_search = target_title[len('artist:'):].strip()
         artist_matches = [
@@ -261,10 +258,10 @@ def fuzzy_search(data, config_file, target_title, rpcs3_path):
 
         if artist_matches:
             random_song_title, random_artist, random_short_name = random.choice(artist_matches)
-            print(f"Random song by artist '{artist_to_search}': '{random_song_title}' by '{random_artist}'")
+            print_color_text(f"Random song by artist '{artist_to_search}': '{random_song_title}' by '{random_artist}'", "1;38;5;77")  # Light Green text
             append_short_name_to_output(output_file_path, random_short_name, rpcs3_path)
         else:
-            print(f"No songs found for the artist '{artist_to_search}'.")
+            print_color_text(f"No songs found for the artist '{artist_to_search}'.", "1;31")  # Red text
     #elif target_title.startswith('title:'):
     #    title_to_search = target_title[len('title:'):].strip()
     #    title_matches = process.extract(
@@ -294,7 +291,7 @@ def append_short_name_to_output(output_file, short_name, rpcs3_path):
     with open(output_file, 'w') as output:
         output.write(f"({' '.join(existing_short_names)})")
 
-    print(f"Short Name '({short_name})' appended to {output_file}")
+    print_color_text(f"Short Name '({short_name})' appended to {output_file}", "1;38;5;140")  # Darker Purple text
 
 def refresh_options(data):
     year = get_random_year(data)
@@ -317,11 +314,11 @@ def refresh_options(data):
     return year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct
 
 def get_rpcs3_path():
-    rpcs3_path = input("Enter the path for RPCS3: ")
+    rpcs3_path = input("\033[1;33mEnter the path for RPCS3: \033[0m")
     rpcs3_path = Path(rpcs3_path)
     
     if not rpcs3_path.is_dir():
-        print("Invalid RPCS3 path provided.")
+        print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
         exit()
 
     return rpcs3_path
@@ -340,6 +337,15 @@ def load_rpcs3_path(config_path: Path):
     else:
         return None
 
+def print_color_text(*args):
+    text = ' '.join(map(str, args[:-1]))
+    color_code = args[-1]
+    print(f"\033[{color_code}m{text}\033[0m")
+
+def input_colorized(prompt, color_code):
+    print_color_text(prompt, color_code)
+    return input()
+
 def parse_and_export_to_json():
     config_path = Path.cwd() / 'dx_play_a_show_config.ini'
     rpcs3_path = load_rpcs3_path(config_path)
@@ -355,28 +361,29 @@ def parse_and_export_to_json():
 
     # Check if the directory exists
     if not os.path.exists(output_file_path.parent):
-        print(f"Error: Directory {output_file_path.parent} does not exist.")
+        print_color_text(f"Error: Directory {output_file_path.parent} does not exist.", "1;31")  # Red text
         sys.exit()
 
     # Check if the file exists
     output_file_path_str = str(output_file_path)
     if not os.path.isfile(output_file_path_str):
-        print(f"Error: File {output_file_path_str} does not exist.")
+        print_color_text(f"Error: File {output_file_path_str} does not exist.", "1;31")  # Red text
         sys.exit()
 
     # Define the folders to search
     target_folders = [rpcs3_path / "dev_hdd0" / "game" / "BLUS30050",
                       rpcs3_path / "dev_hdd0" / "game" / "BLUS30463"]
 
-    print("Finding and reading songs.dta files in specified RPCS3 folder. This may take some time.")
-    print("Make sure you have ran Rock Band 3 Deluxe first to generate needed files.")
+    print_color_text("Finding and reading 'songs.dta' files in specified RPCS3 folder. This may take some time.", "1;36")  # Cyan text
+    print_color_text("Make sure you have run Rock Band 3 Deluxe first to generate needed files.", "1;38;5;226")  # Magenta text
+
 
     # Filter the dta_files list based on the target folders
     dta_files = [dta_file for folder in target_folders
                  for dta_file in folder.rglob("songs.dta")]
 
     if not dta_files:
-        print("No 'songs.dta' files found in the specified RPCS3 folders.")
+        print_color_text("No 'songs.dta' files found in the specified RPCS3 folders.", "1;31")  # Red text
         exit()
 
     all_parsed_dicts = {}
@@ -401,7 +408,7 @@ def parse_and_export_to_json():
     # Read the JSON file
     data = read_json(output_json_path)
 
-    print(f"Found {len(all_parsed_dicts)} songs in {len(dta_files)} songs.dta files.")
+    print_color_text(f"Found {len(all_parsed_dicts)} songs in {len(dta_files)} 'songs.dta' files.", "1;32")
 
     if data:
         song_title_index = "name"
@@ -413,18 +420,20 @@ def parse_and_export_to_json():
         year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
 
         while True:
-            print("Welcome to Rock Band 3 Deluxe Play A Show!")
-            print("Choose an option:")
-            print(f"1. A random song from {year}")
-            print(f"2. A random song by {artist}")
-            print(f"3. '{song_title_direct}' by '{artist_direct}'")
-            print(f"4. A random {genre} song")
-            print("5. Refresh options")
-            # print("6. Random song by search")
-            print("6. Clear the playlist")
-            print("0. Exit")
+            print_color_text("Welcome to Rock Band 3 Deluxe Play A Show!", "1;36")  # Cyan text
+            print_color_text("Choose an option:", "1;37")  # White text
+            print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
+            print_color_text(f"2. A random song by {artist}", "1;38;5;196")  # Green text
+            print_color_text(f"3. {' '.join([song_title_direct, 'by', artist_direct])}", "1;38;5;226")  # Yellow text
+            print_color_text(f"4. A random {genre} song", "1;34")  # Blue text
+            print_color_text("5. Refresh options", "1;38;5;208")  # Magenta text
+            # print_color_text("6. Random song by search", "1;35")  # Magenta text
+            print_color_text("6. Clear the playlist", "1;31")  # Red text
+            print_color_text("0. Exit", "1;38;5;93")  # Magenta text
 
-            choice = input("Enter the number of your choice: ")
+
+
+            choice = input_colorized("Enter the number of your choice: ", "1;37")  # You can choose a color code
 
             if choice == '1':
                 fuzzy_search(data, output_file_path, f'year:{year}', rpcs3_path)
@@ -439,20 +448,16 @@ def parse_and_export_to_json():
                 fuzzy_search(data, output_file_path, f'genre:{genre}', rpcs3_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '5':
-                print("Options refreshed.")
+                print_color_text("Options refreshed.", "1;34")  # Blue text
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-            #elif choice == '6':
-            #    search_string = input("Enter a Song Title or Artist to search for: ")
-            #    fuzzy_search(data, output_file_path, f'title:{search_string}', rpcs3_path)
-            #    print(" ")
             elif choice == '6':
                 clear_playlist(output_file_path)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
-                print("Exiting Play A Show. Goodbye!")
+                print_color_text("Exiting Play A Show. Goodbye!", "1;31")  # Red text
                 break
             else:
-                print("Invalid choice.")
+                print_color_text("Invalid choice.", "1;31")  # Red text
 
 # Call the new function to run both parts
 if __name__ == "__main__":
