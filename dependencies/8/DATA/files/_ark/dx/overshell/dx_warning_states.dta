@@ -1,0 +1,513 @@
+(dxState_AnimatedGemWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions os_animmsg (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+         {$this show_state dxState_DTATextureLoader})
+      (overshell_cancel
+         {$this show_state dxState_TextureMenu})})
+      (on_cancel
+         {$this show_state dxState_TextureMenu}))
+
+(kState_SettingsWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_warning (overshell_continue))})
+   (SELECT_MSG
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(dxState_SaveWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions save_warning (os_save os_dontsave))})
+   (on_cancel
+      {$this show_game_options})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_save
+            {if_else $dx_settings_error
+            {$this show_state dxState_SaveWarnError}
+            {do {dx_settings_dta_writer} {$this show_game_options}}})
+         (os_dontsave
+            {$this show_game_options})}))
+
+(dxState_ThemeOverwriteWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions track_theme_overwrite_warning (os_overwrite os_dontsave))})
+   (on_cancel
+      {$this show_state dxState_TrackThemeLoader})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_overwrite
+            {if_else $dx_settings_error
+               {$this show_state dxState_SaveWarnError}
+               {if_else {== $dx_track_theme_name default}
+                  {dx_passive_messenger os_dont_overwrite_default}
+                  {do
+                     {dx_track_theme_dta_writer}
+                     {$this show_state dxState_TrackThemeLoader}
+                  }
+               }
+            }
+         )
+         (os_dontsave
+            {$this show_state dxState_TrackThemeLoader})}))
+
+(dxState_TrackThemeWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions theme_save_warning (os_save os_dontsave))})
+   (on_cancel
+      {$this show_state dxState_AppearanceMenu})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_save
+            {if_else $dx_settings_error
+            {$this show_state dxState_ThemeSaveWarnError}
+            {do {set $dx_track_theme_name $text} {dx_track_theme_dta_writer} {$this show_state dxState_TrackThemeLoader}}})
+         (os_dontsave
+            {$this show_state dxState_AppearanceMenu})}))
+
+(dxState_SaveWarnError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_game_options})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {$this show_game_options})}))
+
+(dxState_ThemeSaveWarnError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_state dxState_AppearanceMenu})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {$this show_state dxState_AppearanceMenu})}))
+
+(dxState_SaveWarnErrorAV
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (on_cancel
+      {$this show_options_av_settings})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {$this show_options_av_settings})}))
+
+(kState_SettingsSave
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_save (overshell_continue))})
+   (SELECT_MSG
+      {$this show_state dxState_DeluxeSettings})
+   (on_cancel
+      {$this show_state dxState_DeluxeSettings}))
+
+(kState_SettingsSaveError
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions settings_error (overshell_continue))})
+   (SELECT_MSG
+      {$this show_state dxState_DeluxeSettings})
+   (on_cancel
+      {$this show_state dxState_DeluxeSettings}))
+
+;modifier warnings
+
+(kState_AutoPlayWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions autoplay_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {modifier_mgr toggle_modifier_enabled mod_auto_play}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            {dx_passive_messenger saving_disabled}
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(kState_PostFXWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions postfx_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {overshell update_all}
+            {$this show_state dxState_PostFX}
+            {ui goto_screen meta_loading_main_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_PostFX}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_PostFX}
+   )
+)
+
+(kState_CustomizerWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions customizer_warn (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {ui_event_mgr trigger_event error_message
+               (dummy init {symbol "You are being taken to the in game Theme Customizer. In this mode you will be able to see your theme settings reflected in real time. You will not be able to play the game or leave until you specifically click 'Leave Customizer'. To begin, click continue and pause the game when the song has started."})
+            }
+            {set $dx_customizer TRUE}
+            {set $dx_moved_once FALSE}
+            {session disconnect}
+            {session_mgr disconnect}
+            ;{overshell set_active_status kOvershellInactive}
+            {ui goto_screen song_select_enter_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_TextureMenu}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_TextureMenu}
+   )
+)
+
+(kState_FakeJukeWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions fakejuke_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {set $dx_dont_save_mod TRUE}
+            {modifier_mgr toggle_modifier_enabled mod_fakejuke}
+            {unless {modifier_mgr is_modifier_active mod_auto_play}
+               {modifier_mgr toggle_modifier_enabled mod_auto_play}}
+            {unless {modifier_mgr is_modifier_active mod_nohud}
+               {modifier_mgr toggle_modifier_enabled mod_nohud}}
+            {unless {modifier_mgr is_modifier_active mod_nopause}
+               {modifier_mgr toggle_modifier_enabled mod_nopause}}
+            {unless {modifier_mgr is_modifier_active mod_dx_no_overdrive}
+               {modifier_mgr toggle_modifier_enabled mod_dx_no_overdrive}}
+            {set $dx_song_title default}
+            {set $dx_bpm_report FALSE}
+            {if {modifier_mgr is_modifier_active mod_drum_fills}
+               {modifier_mgr toggle_modifier_enabled mod_drum_fills}}
+            {set $dx_venue_intro FALSE}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            {dx_passive_messenger saving_disabled}
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}))
+
+(dxState_VideoMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_videoconfirm)})
+   (SELECT_MSG
+      {$this show_state kState_Modifiers}))
+
+(kState_CHModeWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions chmode_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {modifier_mgr toggle_modifier_enabled mod_chmode}
+            {set $dx_rails_needs_reset FALSE}
+            {set $gotcha FALSE}
+            {saveload_mgr disable_autosave $user}
+            {dx_passive_messenger saving_disabled}
+            {if {modifier_mgr is_modifier_active mod_calibration}
+               {modifier_mgr toggle_modifier_enabled mod_calibration}}
+            {if {modifier_mgr is_modifier_active mod_precision}
+               {modifier_mgr toggle_modifier_enabled mod_precision}}
+            {overshell update_all}
+            {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers})
+   (on_cancel
+      {$this show_modifiers}
+   )
+)
+(kState_BrutalWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions brutal_warning (overshell_continue overshell_cancel))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_brutalmode}
+      {set $dx_stars_needs_reset TRUE}
+      {set $dx_multiplier_ring_needs_reset TRUE}
+      {overshell update_all}
+      {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_modifiers}
+   )
+)
+
+(kState_CalibrationWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions calibration_warning (overshell_continue overshell_cancel))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_calibration}
+      {if {modifier_mgr is_modifier_active mod_precision}
+         {modifier_mgr toggle_modifier_enabled mod_precision}}
+      {if {modifier_mgr is_modifier_active mod_chmode}
+         {modifier_mgr toggle_modifier_enabled mod_chmode}}
+      {overshell update_all}
+      {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_modifiers}
+   )
+)
+
+(kState_PrecisionWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions precision_warning (overshell_continue overshell_cancel))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+      {modifier_mgr toggle_modifier_enabled mod_precision}
+      {set $dx_rails_needs_reset FALSE}
+      {if {modifier_mgr is_modifier_active mod_calibration}
+         {modifier_mgr toggle_modifier_enabled mod_calibration}}
+      {if {modifier_mgr is_modifier_active mod_chmode}
+         {modifier_mgr toggle_modifier_enabled mod_chmode}}
+      {overshell update_all}
+      {ui goto_screen meta_loading_main_screen})}
+      {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_modifiers}
+   )
+)
+
+(kState_RebootWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions reboot_warning (overshell_continue overshell_cancel))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {rb3e_relaunch_game}
+         )
+      }
+      {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_state dxState_DeluxeSettings}
+   )
+)
+
+(kState_DebugWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions debug_warning (os_iunderstand os_takemeback))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_iunderstand
+            {$this show_state dxState_Debug}
+            {set $dx_debug_first FALSE}
+         )
+         (os_takemeback
+            {$this show_state dxState_Advanced}
+         )
+      }
+   ;   {$this show_modifiers}
+   )
+   (on_cancel
+      {$this show_state dxState_Advanced}
+   )
+)
+
+(kState_ModifierSongLoad
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions modifier_song_load (overshell_confirm_yes overshell_confirm_no))})
+   (on_cancel
+      {$this show_modifiers})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_confirm_yes
+            {ui goto_screen meta_loading_main_screen})
+         (overshell_confirm_no
+            {$this show_modifiers})}))
+
+(dxState_MenuBGWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_bgwarn}})})
+   (SELECT_MSG
+      {set $fpsslider FALSE}
+      {$this show_state dxState_MenuBG}
+   )
+)
+
+(dxState_ReloadDenyMsg
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message os_reload_deny)})
+   (SELECT_MSG
+      {$this show_state dxState_CameraMenu}
+   )
+)
+
+(dxState_HimemWarn
+   (view confirm_action)
+   (enter
+      {confirm_action.lst set_selected 1}
+      {handle
+         ($this set_confirm_actions himem_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+      (overshell_continue
+         {set $dx_tracked_changed os_dx_himem_on}
+         {set $in_state FALSE}
+         {set $dx_write_hi_mem TRUE}
+         {$this show_state dxState_Debug}
+      )
+      (overshell_cancel
+         {$this show_state dxState_Debug})})
+      (on_cancel
+         {$this show_state dxState_Debug}))
+
+(dxState_ShadingMenuWarning
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_message {sprintf {localize os_bgwarn}})})
+   (SELECT_MSG
+      {$this show_state dxState_ShadingMenu}
+   )
+)
+
+(kState_GraphicsWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions postfx_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {overshell update_all}
+            {$this show_state dxState_Graphics}
+            {ui goto_screen meta_loading_main_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_Graphics}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_Graphics}
+   )
+)
+(kState_60FPSWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions 60fps_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {overshell update_all}
+            {$this show_state dxState_Graphics}
+            {ui goto_screen meta_loading_main_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_Graphics}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_Graphics}
+   )
+)
+(kState_HighLODWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions highlod_warning (overshell_continue overshell_cancel))})
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {overshell update_all}
+            {$this show_state dxState_Graphics}
+            {ui goto_screen meta_loading_main_screen}
+         )
+         (overshell_cancel
+            {$this show_state dxState_Graphics}
+         )
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_Graphics}
+   )
+)

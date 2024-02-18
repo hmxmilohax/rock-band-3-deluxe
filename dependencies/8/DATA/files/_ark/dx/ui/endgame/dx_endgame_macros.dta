@@ -1,0 +1,606 @@
+#define DX_ENDGAME_HANDLES
+(
+   (dx_swap_venue_mid_setlist
+      ;kDataUnhandled
+      ;this is really fucking bad on memory when done in endgame
+      {dx_log_writer info {sprint "func: dx_swap_venue_mid_setlist"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_swap_venue_mid_setlist - time: %.4fms"
+            {time
+               {if 
+                  {&&
+                     {||
+                        {! {gamemode in_mode practice}}
+                        {! {gamemode in_mode trainer}}
+                     }
+                     {! {meta_performer is_set_complete}}
+                     {session_mgr is_leader_local} ;set venue only if host of the lobby
+                     $dx_venue_swap
+                  }
+                  {dx_venue_setter}
+               }
+            }
+         }
+      }
+   )
+   (dx_swap_char_mid_setlist
+      {dx_log_writer info {sprint "func: dx_swap_char_mid_setlist"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_swap_char_mid_setlist - time: %.4fms"
+            {time
+               {if
+                  {&&
+                     {||
+                        {! {gamemode in_mode practice}}
+                        {! {gamemode in_mode trainer}}
+                     }
+                     {! {meta_performer is_set_complete}}
+                     {session_mgr is_leader_local} ;set venue only if host of the lobby
+                     $dx_character_swap
+                  }
+                  {prefab_mgr assign_prefabs_to_slots}
+                  {char_sync update_char_cache}
+               }
+            }
+         }
+      }
+   )
+   (dx_auto_endgame
+      {dx_log_writer info {sprint "func: dx_auto_endgame"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_auto_endgame - time: %.4fms"
+            {time
+               {if {|| {modifier_mgr is_modifier_active mod_fakejuke} {modifier_mgr is_modifier_active mod_auto_play}}
+                  {if $dx_auto_endgame
+                     {script_task kTaskSeconds
+                        (delay 7)
+                        (script ;this script is 1 for 1 pulled from the endgame SELECT_MSG handle for pressing green. im just adding a delay to do it automatically
+                           {if {is_leader_local}
+                              {play_instr_sfx $user button_select}
+                              {help.ihp set_config ()}
+                              {if_else {meta_performer is_set_complete}
+                                 {cond
+                                    ({gamemode in_mode audition}
+                                       {ui_event_mgr trigger_event quit_early})
+                                    ({gamemode in_mode tour}
+                                       {{tour performer}
+                                          complete_quest}
+                                       {ui sync_screen tour_challenge_results_screen 0})
+                                    ({&&
+                                          {gamemode in_mode campaign}
+                                          {campaign has_current_goal}}
+                                       {ui sync_screen complete_screen 0})
+                                    ({meta_performer has_battle}
+                                       {ui sync_screen complete_screen 0})
+                                    {ui sync_screen meta_loading_continue_screen 0}
+                                 }
+                                 {ui sync_screen preload_nextsong_screen 0}
+                              }
+                           }
+                        )
+                     }
+                  }
+               }
+            }
+         }
+      }
+   )
+   (dx_endgame_enter
+      {dx_presence_manager}
+      {$this dx_auto_endgame}
+      {$this dx_swap_venue_mid_setlist}
+      {$this dx_swap_char_mid_setlist}
+      {dx_countdown_var_reset}
+   )
+   (dx_endgame_exit
+      {if
+         {exists fc_clip}
+         {delete fc_clip}}
+      {if
+         {exists nice_clip}
+         {delete nice_clip}}
+      {if
+         {exists jurgen_clip}
+         {delete jurgen_clip}}
+      {set $dx_playing_a_show FALSE}
+   )
+   (dx_song_label_setter
+      {dx_log_writer info {sprint "func: dx_song_label_setter"}}
+      {dx_log_writer info
+         {sprintf "Executed dx_song_label_setter - time: %.4fms"
+            {time
+               ; dx - add song speed percent if above 100% to the song name by fetching the name directly
+               ;{dx_log_writer default {sprint "Endgame Reached. Number of songs completed this session: " $dx_num_songs_this_session " - Gamemode: " $dx_gamemode}}
+               {if_else {!= $speedmod 1}
+                  {song.lbl set_token_fmt
+                     {sprint
+                        {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
+                        " ("
+                        {int {'+' 0.5 {'*' $speedmod 100}}}
+                        "%)"
+                     }
+                  }
+                  {song.lbl
+                     set_song_name
+                     {meta_performer get_completed_song}
+                  }
+               }
+            }
+         }
+      }
+   )
+   (fc_clip
+      {dx_log_writer info {sprint "func: fc_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed fc_clip - time: %.4fms"
+            {time
+               {unless {== $dx_fullcombo_sound dx_none}
+                  ;{dx_log_writer default {sprint "Playing FC Sound. Congrats"}}
+                  {unless {exists fc_clip}
+                     {new MoggClip fc_clip}
+                  }
+                  {if {exists fc_clip}
+                     {fc_clip set file {sprint "sfx/streams/fc/" $dx_fullcombo_sound ".mogg"}}
+                     {fc_clip set loop FALSE}
+                     {fc_clip set volume -8}
+                     {fc_clip play}
+                  }
+               }
+            }
+         }
+      }
+   )
+   (nice_clip
+      {dx_log_writer info {sprint "func: nice_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed nice_clip - time: %.4fms"
+            {time
+               ;{dx_log_writer default {sprint "Playing Nice Sound. Nice"}}
+               {unless {exists nice_clip}
+                  {new MoggClip nice_clip}
+               }
+               {if $dx_nice_sound
+                  {if {exists nice_clip}
+                     {nice_clip set file "sfx/streams/fc/nice_clip.mogg"}
+                     {nice_clip set loop FALSE}
+                     {nice_clip set volume -0}
+                     {nice_clip play}
+                  }
+               }
+            }
+         }
+      }
+   )
+   (jurgen_clip
+      {dx_log_writer info {sprint "func: jurgen_clip"}}
+      {dx_log_writer info
+         {sprintf "Executed jurgen_clip - time: %.4fms"
+            {time
+               ;{dx_log_writer default {sprint "Playing Jurgen Sound. Skill Issue"}}
+               {unless {exists jurgen_clip}
+                  {new MoggClip jurgen_clip}
+               }
+               {set $jurgennumber {random_int 0 4}}
+               {if {<= $jurgennumber 1}
+                  {set $jurgennumber 1}
+               }
+               {if {>= $jurgennumber 3}
+                  {set $jurgennumber 3}
+               }
+               {if $dx_jurgen_sound
+                  {if {exists jurgen_clip}
+                     {jurgen_clip set file {sprint "sfx/streams/fc/jurgen_clip" $jurgennumber ".mogg"}}
+                     {jurgen_clip set loop FALSE}
+                     {jurgen_clip set volume -8}
+                     {jurgen_clip play}
+                  }
+               }
+            }
+         }
+      }
+   )
+   (dx_endgame_play_player_sfx
+      {dx_log_writer info {sprint "Checking player thresholds for sound effects - FC: " $dx_someone_fcd " NICE: " $dx_someone_niced " JURGEN: " $dx_someone_jurgend}}
+      {cond
+         ($dx_someone_fcd
+            {coop_endgame_panel fc_clip}
+         )
+         ($dx_someone_niced
+            {coop_endgame_panel nice_clip}
+         )
+         ($dx_someone_jurgend
+            {coop_endgame_panel jurgen_clip}
+         )
+      }
+   )
+)
+#define DX_ENDGAME_CHECK_FOR_PLAYER_SFX
+(
+   ($player $user)
+   {cond
+      ({== {/ {$player longest_streak} {$player get_gem_count}} 1.0}
+         {set $dx_someone_fcd TRUE}
+      )
+      ({== {int {'*' 100 {{$user player} notes_hit_fraction}}} 69}
+         {set $dx_someone_niced TRUE}
+      )
+      ({<= {int {'*' 100 {{$user player} notes_hit_fraction}}} 60}
+         {set $dx_someone_jurgend TRUE}
+      )
+   }
+)
+#define DX_ENDGAME_NOTES_HIT_LABEL_SETTER
+(
+   ($player $user)
+   {set $dx_num_songs_this_session
+      {+ $dx_num_songs_this_session 1}
+   }
+   {dx_log_writer default {sprint "Endgame stats - Song: " {{song_mgr get_meta_data {meta_performer get_completed_song}} title} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) - User: " {$user get_track_icon} " - Difficulty: " {$user get_difficulty_sym} " - Percentage: " {int {'*' 100 {{$user player} notes_hit_fraction}}} "% - Band Score: " {{beatmatch main_performer} accumulated_score}}}
+   {dx_log_writer info {sprint "Setting endgame information for: " {$user get_track_icon}}}
+   {cond
+      (
+         {&&
+            {modifier_mgr is_modifier_active mod_fastermode} ; if we are in acceleration mode
+            {||
+               {== {$user get_track_icon} "G"} ; acceleration mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in acceleration mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for acceleration mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {modifier_mgr is_modifier_active mod_brutalmode} ; if we are in brutal mode
+            {||
+               {== {$user get_track_icon} "G"} ; brutal mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in brutal mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for brutal mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {modifier_mgr is_modifier_active mod_precision} ; if we are in brutal mode
+            {||
+               {== {$user get_track_icon} "G"} ; brutal mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in precision mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for brutal mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {modifier_mgr is_modifier_active mod_calibration} ; if we are in brutal mode
+            {||
+               {== {$user get_track_icon} "G"} ; brutal mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in calibration mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for brutal mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {modifier_mgr is_modifier_active mod_chmode} ; if we are in brutal mode
+            {||
+               {== {$user get_track_icon} "G"} ; brutal mode is only supported in instruments, not vox
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " in drunk mode."}}
+            {noteshit_details.lbl set_token_fmt  ;hard set the score percentage ourselves for brutal mode
+               {sprint
+                  {int {'*' 100 {{$user player} notes_hit_fraction}}} ; print the notes hit then the difficulty letter
+                  "% "
+                  {localize
+                     {switch {$user get_difficulty_sym}
+                        (easy easy_short)
+                        (medium medium_short)
+                        (hard hard_short)
+                        (expert expert_short)
+                     }
+                  }
+               }
+            }
+         }
+      )
+      {noteshit_details.lbl set_token_fmt ;hard set the score percentage ourselves.
+         {sprint
+            {int {'*' 100 {{$user player} notes_hit_fraction}}}
+            "%"
+         }
+      }
+   }
+)
+#define DX_ENDGAME_DIFFICULTY_LABEL_SETTER
+(
+   {cond
+      ({modifier_mgr is_modifier_active mod_auto_play}
+         {do
+            {dx_log_writer info {sprint "Autoplay detected for user: " {$user get_track_icon}}}
+            {difficulty_details.lbl set_token_fmt ;report autoplay with diff
+               {sprint
+                  {localize {$user get_difficulty_sym}}
+                  " ("
+                  {localize mod_auto_play}
+                  ")"
+               }
+            }
+         }
+      )
+      ({&& {|| {== {$user get_track_icon} "d"} {== {$user get_track_icon} "D"}} {modifier_mgr is_modifier_active mod_auto_kick}}
+         {do
+            {dx_log_writer info {sprint "Auto Kick detected for user: " {$user get_track_icon}}}
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize {$user get_difficulty_sym}}
+                  " ("
+                  {localize mod_auto_kick}
+                  ")"
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {||
+               {== {$user get_track_icon} "G"}
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+            {modifier_mgr is_modifier_active mod_chmode}
+         }
+         {do
+            {dx_log_writer info {sprint "CH Mode detected for user: " {$user get_track_icon}}}
+            {difficulty_details.lbl set_token_fmt ;report ch mode for guitar and bass with diff
+               {sprint
+                  {localize mod_chmode}
+               }
+            }
+         }
+      )
+      (
+         {&&
+            {||
+               {== {$user get_track_icon} "G"}
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+            {modifier_mgr is_modifier_active mod_fastermode}
+         }
+         {do
+            {dx_log_writer info {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize mod_fastermode_topspeed}
+                  ": "
+                  {int {'+' 0.5 {'*' $speedmod_top 100}}}
+                  "%"
+               }
+            }
+         }
+      )
+      (
+         {&& 
+            {||
+               {== {$user get_track_icon} "G"}
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+            {modifier_mgr is_modifier_active mod_brutalmode}
+         }
+         {do
+            ;{dx_log_writer info {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize mod_brutalmode}
+               }
+            }
+         }
+      )
+      (
+         {&& 
+            {||
+               {== {$user get_track_icon} "G"}
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+            {modifier_mgr is_modifier_active mod_precision}
+         }
+         {do
+            ;{dx_log_writer info {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize mod_precision}
+               }
+            }
+         }
+      )
+      (
+         {&& 
+            {||
+               {== {$user get_track_icon} "G"}
+               {== {$user get_track_icon} "g"}
+               {== {$user get_track_icon} "B"}
+               {== {$user get_track_icon} "b"}
+               {== {$user get_track_icon} "K"}
+               {== {$user get_track_icon} "k"}
+               {== {$user get_track_icon} "D"}
+               {== {$user get_track_icon} "d"}
+            }
+            {modifier_mgr is_modifier_active mod_calibration}
+         }
+         {do
+            ;{dx_log_writer info {sprint "User " {$user get_track_icon} " Top Speed: " {int {'+' 0.5 {'*' $speedmod_top 100}}}"%"}}
+            {difficulty_details.lbl set_token_fmt ;report autokick for drum or pro drum
+               {sprint
+                  {localize mod_calibration}
+               }
+            }
+         }
+      )
+      {difficulty_details.lbl set text_token {$user get_difficulty_sym}} ;if we are a normal player just report difficulty
+   }
+)
+#define DX_ENDGAME_SHOW_NEXT_SONG
+(
+   {if {! $dx_fetched_label_info}
+      {set $dx_fetched_label_info TRUE}
+      {set $dx_num_songs_label_pos_y {songs.lbl get_local_pos_index 2}}
+      {set $dx_song_label_pos_y {song.lbl get_local_pos_index 2}}
+      {set $dx_song_label_scale_x {song.lbl get_local_scale_index 0}}
+      {set $dx_song_label_scale_y {song.lbl get_local_scale_index 2}}
+      {songs.lbl set leading 0.9}
+      {songs.lbl set wrap_width 1000}
+      {songs.lbl set width 1000}
+      {songs.lbl set fixed_width 500}
+   }
+   {if_else {> {meta_performer num_songs} 1}
+      {if_else {== {meta_performer num_completed} {meta_performer num_songs}}
+         {do
+            {songs.lbl set_local_pos_index 2 $dx_num_songs_label_pos_y}
+            {song.lbl set_local_pos_index 2 $dx_song_label_pos_y}
+            {song.lbl set_local_scale_index 0 $dx_song_label_scale_x}
+            {song.lbl set_local_scale_index 2 $dx_song_label_scale_y}
+            {songs.lbl
+               set_token_fmt
+               tour_event_songs
+               {meta_performer num_completed}
+               {meta_performer num_songs}}
+         }
+         {do
+            {songs.lbl
+               set_token_fmt
+               tour_event_songs_next
+               {meta_performer num_completed}
+               {meta_performer num_songs}
+               {symbol {{song_mgr get_meta_data {meta_performer song}} title}}}
+            {songs.lbl set_local_pos_index 2 {+ $dx_num_songs_label_pos_y 7}}
+            {song.lbl set_local_pos_index 2 {+ $dx_song_label_pos_y 14}}
+            {song.lbl set_local_scale_index 0 0.65}
+            {song.lbl set_local_scale_index 2 0.65}
+         }
+      }
+      {do
+         {songs.lbl set_local_pos_index 2 $dx_num_songs_label_pos_y}
+         {song.lbl set_local_pos_index 2 $dx_song_label_pos_y}
+         {song.lbl set_local_scale_index 0 $dx_song_label_scale_x}
+         {song.lbl set_local_scale_index 2 $dx_song_label_scale_y}
+         {songs.lbl set text_token ""}
+      }
+   }
+)

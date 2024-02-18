@@ -1,0 +1,704 @@
+{unless $dx_only_populate_once_holders
+   {set $dx_only_populate_once_holders TRUE}
+   {set $dx_current_song {array ()}}
+   {set $dx_mtv_holder {array ()}}
+   {set $dx_state_tracker {array ()}}
+}
+#ifndef HX_WII
+DX_LOG_CLEAR
+DX_JSON_CLEAR
+DX_CURRENT_SONG_CLEAR
+{set $dx_playlist_array ()}
+{resize $dx_playlist_array 0}
+{write_file DX_PLAYLIST_DTA_PATH $dx_playlist_array}
+#endif
+;rb4 loosly
+{set $dx_track_config_changed FALSE}
+{set $dx_pitch -46.0}
+{set $dx_fov 41}
+{set $dx_x_pos 0}
+{set $dx_y_pos -55}
+{set $dx_z_pos 20}
+{set $dx_gold_star_progress TRUE}
+{set $dx_connected_server none}
+
+;for some reason this breaks everything if its not here, dont touch
+{set $dx_icon_guitar "G"}
+{set $dx_icon_bass "B"}
+{set $dx_icon_drum "D"}
+{set $dx_icon_vocals "V"}
+{set $dx_icon_harmony_2 "2"}
+{set $dx_icon_harmony_3 "3"}
+{set $dx_icon_keys "K"}
+{set $dx_icon_real_keys "k"}
+{set $dx_icon_real_guitar "g"}
+{set $dx_icon_real_bass "b"}
+{set $dx_icon_drum_pro "d"}
+
+{set $overshell_showing TRUE}
+{set $dx_forced_song_load_bg FALSE}
+{set $dx_forced_main_menu_bg FALSE}
+{set $dx_forced_song_select_bg FALSE}
+{set $dx_no_song_transition FALSE}
+
+{set $dx_confirm_song_count TRUE}
+{set $dx_ash_welcome_msg FALSE}
+
+{set $dx_time_remaining_on_top TRUE}
+
+{set $brutal_number_0 -26}
+{set $brutal_number_1 -26}
+{set $brutal_number_2 -26}
+{set $brutal_number_3 -26}
+
+;song timer/total time defaults
+{set $dx_time_remaining down}
+{set $dx_disp_total_time TRUE}
+
+{set $dx_note_streak_popups TRUE}
+{set $dx_indv_note_streak FALSE}
+{set $dx_num_gem_tracks 0}
+{set $dx_loading_tip_var FALSE}
+
+{set $dx_you_rock TRUE}
+
+{set $dx_trainer_real_guitar FALSE}
+{set $dx_trainer_real_bass FALSE}
+{set $dx_trainer_real_keys FALSE}
+{set $dx_trainer_real_drum FALSE}
+
+#include ../countdown/dx_countdown_ui_init.dta
+{set $dx_modifiers {array ()}}
+{resize $dx_modifiers 0}
+{set $dx_track_theme {array ()}}
+{resize $dx_track_theme 0}
+{set $dx_settings {array ()}}
+{resize $dx_settings 0}
+{set $dx_values {array ()}}
+{resize $dx_values 0}
+{set $dx_tracked_track_themes {array ()}}
+{resize $dx_tracked_track_themes 0}
+{set $dx_log_categories
+   (never default info insane beatmatch)
+}
+
+;set default for online bug fix
+{set $dx_vocal_type solo}
+
+;platform detection
+#ifdef HX_PS3
+{if {file_exists "GD:/dev_hdd0/game/NPIA00025/USRDIR/EBOOT.BIN"} ; used for hw detection, NPIA00025 is the playstation store
+   {set $dx_ps3hw TRUE}
+}
+{unless $dx_ps3hw
+   {if {file_exists "GD:/dev_hdd0/game/BLES80608/USRDIR/COLOR.INI"} ; ps3 hw detection fallback, BLES80608 is multiman
+      {set $dx_ps3hw TRUE}
+   }
+}
+{if_else $dx_ps3hw
+   {set $dx_detected_platform platform_ps3}
+   {set $dx_detected_platform platform_rpcs3}
+}
+#endif
+
+#ifdef HX_XBOX
+#ifdef RB3E
+{set $dx_detected_platform platform_xbox_rb3e}
+#else
+{set $dx_detected_platform platform_xbox}
+#endif
+#ifdef RB3E_EMULATOR 
+{set $dx_detected_platform platform_xenia_rb3e}
+#endif
+#endif
+
+#ifdef HX_WII
+#ifdef RB3E
+{set $dx_detected_platform platform_wii_rb3e}
+#else
+{set $dx_detected_platform platform_wii}
+#endif
+#ifdef RB3E_EMULATOR
+{set $dx_detected_platform platform_dolphin_rb3e}
+#endif
+#endif
+
+{unless $dx_detected_platform
+   {set $dx_detected_platform platform_unknown}
+}
+
+{dx_log_writer default {localize $dx_detected_platform}}
+
+;since this is where we do HW detection, I presume this is a good starting point for checking time since boot, since logging doesn't seem to work here apparently, fuck it we're doing it live
+;{set $dx_boot_time {array ()}}
+;{push_back $dx_boot_time {sprintf "%s : %.2fms since boot" {localize $dx_detected_platform} {system_ms}}}
+;#ifdef HX_XBOX
+;   {write_file "GAME:/boot_time.dta" {array $dx_boot_time}}
+;#endif
+;#ifdef HX_PS3
+;   {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/boot_time.dta" {array $dx_boot_time}}
+;#endif
+   
+
+
+;author finder setup
+{unless $dx_ps3hw
+   {set $dx_author_finder_is_enabled TRUE}
+}
+
+#ifdef HX_PS3
+{unless $dx_ps3hw
+   {set $dx_song_delay TRUE}
+}
+#endif
+
+;set mtv vars, trainer doesn't like these empty on boot
+{set $artistvar "No Artist Found"}
+{set $yearvar "No Year Found"}
+{set $albumvar "No Album Found"}
+{set $genrevar "No Genre Found"}
+{set $subgenrevar "No Sub Genre Found"}
+{set $sourcevar "No Source Found"}
+
+#ifdef HX_WII
+{set $dx_overshell_platform wii}
+#endif
+
+#ifdef HX_PS3
+{set $dx_overshell_platform ps3}
+#endif
+
+#ifdef HX_XBOX
+{set $dx_overshell_platform xbox}
+#endif
+
+;overshell setup
+{set $dx_overshell_theme none} ;visual theme
+{resize $dx_state_tracker 0} ;resize the array
+{push_back $dx_state_tracker (kStateNone none)} ;push_back a new state into the array
+
+;highways
+;sets default guitar highway
+{set $dx_highway_guitar _2_rb3_guitar}
+
+;sets default bass highway
+{set $dx_highway_bass _rb3_bass}
+
+;sets default drum highway
+{set $dx_highway_drum _rb3_drum}
+
+;sets default keys highway
+{set $dx_highway_keys _rb3_keys}
+
+;spotlights
+;sets default guitar spotlight
+{set $dx_streak_guitar _1_rb3_guitarbass}
+
+;sets default bass spotlight
+{set $dx_streak_bass _1_rb3_guitarbass}
+
+;sets default drums spotlight
+{set $dx_streak_drum _rb3_drums}
+
+;sets default keys spotlight
+{set $dx_streak_keys _rb3_keys}
+{set $dx_streak_prokeys _rb3_prokeys}
+
+;emissives
+;sets default guitar emissive. same as above.
+{set $dx_overdrive_guitar _1_rb3_guitar}
+
+;sets default bass emissive. same as above.
+{set $dx_overdrive_bass _rb3_bass}
+
+;sets default drums emissive. same as above.
+{set $dx_overdrive_drum _rb3_drums}
+
+;sets default keys emissive. same as above.
+{set $dx_overdrive_keys _rb3_keys}
+
+{set $dx_overdrive_prokeys _rb3_prokeys}
+
+;sets default keyboard track colors.
+{set $dx_keyboard "rock band 3"}
+
+;sets default smasher track textures.
+{set $dx_smasher "rock band 3"}
+
+;sets default gem track textures.
+{set $dx_gem "rock band 3"}
+
+;sets default sustain track textures.
+{set $dx_sustain rb3}
+
+;sets default lanes track textures.
+{set $dx_lanes "rock band 3"}
+
+;sets default crowd meter track textures.
+{set $dx_crowd_meter "rock band 3"}
+
+;sets default multiplier ring track textures.
+{set $dx_multiplier_ring "rock band 3"}
+
+;sets default overdrive bar track textures.
+{set $dx_overdrive_bar "rock band 3"}
+
+;sets default track rails track textures.
+{set $dx_rails "rock band 3"}
+
+;sets default track rails track textures.
+{set $dx_beatlines "rock band 3"}
+
+;sets default score box track textures.
+{set $dx_score_box "rock band 3"}
+
+;sets default stars track textures.
+{set $dx_stars "rock band 3"}
+
+;sets default font track textures.
+{set $dx_font "rock band 3"}
+
+;sets default solo box track textures.
+{set $dx_solo_box "rock band 3"}
+
+;sets default bre track textures.
+{set $dx_bre "rock band 3"}
+
+;sets default flames track textures.
+;no flames: noflm
+{set $dx_flames "rock band 3"}
+
+;sets default vocal arrow track textures.
+{set $dx_vocal_arrow "rock band 3"}
+
+;sets default vocal highway track textures.
+{set $dx_vocal_highway "rock band 3"}
+
+;sets default vocal notes track textures.
+{set $dx_vocal_notes "rock band 3"}
+
+;sets default vocal overdrive track textures.
+{set $dx_vocal_overdrive "rock band 3"}
+
+;enable custom track angles
+{set $dx_use_multiangle FALSE}
+
+;sets default track angle
+{set $dx_multiangle 1}
+
+;allows for a lower angle to be used in multiplayer
+{set $dx_allow_lower_angle FALSE}
+
+;sets full combo sound effect.
+{set $dx_fullcombo_sound goul-nug_fc}
+{set $dx_jurgen_sound TRUE}
+{set $dx_nice_sound TRUE}
+{set $dx_song_select_noise FALSE}
+{set $dx_instrument_fx TRUE}
+{set $dx_whammy_fx TRUE}
+
+;sets default track speed. 1.15 is 115%, 1.30 is 130% and so on.
+{set $dx_trkspd_inst all}
+{set $trackspeed 1.0}
+{set $trackspeed_guitar 1.0}
+{set $trackspeed_bass 1.0}
+{set $trackspeed_drum 1.0}
+{set $trackspeed_keys 1.0}
+{set $trackspeed_real_keys 1.0}
+{set $trackspeed_real_guitar 1.0}
+{set $trackspeed_real_bass 1.0}
+{set $remote_trackspeed_guitar FALSE}
+{set $remote_trackspeed_bass FALSE}
+{set $remote_trackspeed_drum FALSE}
+{set $remote_trackspeed_keys FALSE}
+{set $remote_trackspeed_real_keys FALSE}
+{set $remote_trackspeed_real_guitar FALSE}
+{set $remote_trackspeed_real_bass FALSE}
+
+;sets default song speed 1.15 is 115%, 1.30 is 130% and so on.
+{set $speedmod 1.0}
+{set $speedmod_cap 1.5}
+
+
+
+;set default pp
+#ifdef HX_PS3
+{if_else $dx_ps3hw
+   {do
+	  {set $emulatefps 30}
+   }
+   {do
+	  {set $emulatefps 60}
+     {set $dx_force_lod TRUE}
+   }
+}
+#else
+{set $emulatefps 30}
+#endif
+
+;animated texture name. must have ran "enable_animation.bat" first. current animated gems are
+;rb4
+{set $dx_animated_gem none}
+
+;chooses which main menu to load, if you dont like the new one, vanilla is "3"
+;valid sv values are 2, 3, 4, 5, 7, 8
+{set $dx_main_menu_panel 3}
+
+;set default volumes for mics
+;0-11, default is "8"
+{set $mic_vol_1 8}
+{set $mic_vol_2 8}
+{set $mic_vol_3 8}
+
+;set default colors for notes
+;5 is overdrive (white)
+{set $dx_guitar_gem_color1 0} ;green
+{set $dx_guitar_gem_color2 1} ;red
+{set $dx_guitar_gem_color3 2} ;yellow
+{set $dx_guitar_gem_color4 3} ;blue
+{set $dx_guitar_gem_color5 4} ;orange
+
+;set default colors for sustains
+;5 is overdrive (white)
+{set $dx_guitar_sustain_color1 0} ;green
+{set $dx_guitar_sustain_color2 1} ;red
+{set $dx_guitar_sustain_color3 2} ;yellow
+{set $dx_guitar_sustain_color4 3} ;blue
+{set $dx_guitar_sustain_color5 4} ;orange
+
+;set default colors for smashers (frets)
+{set $dx_guitar_smasher_color1 0} ;green
+{set $dx_guitar_smasher_color2 1} ;red
+{set $dx_guitar_smasher_color3 2} ;yellow
+{set $dx_guitar_smasher_color4 3} ;blue
+{set $dx_guitar_smasher_color5 4} ;orange
+
+
+;set default colors for tom notes
+;4 is overdrive (white)
+{set $dx_drum_tom_color1 0} ;red
+{set $dx_drum_tom_color2 1} ;yellow
+{set $dx_drum_tom_color3 2} ;blue
+{set $dx_drum_tom_color4 3} ;green
+
+;set default colors for cymbal notes
+;4 is overdrive (white)
+{set $dx_drum_cymbal_color1 0} ;red
+{set $dx_drum_cymbal_color2 1} ;yellow
+{set $dx_drum_cymbal_color3 2} ;blue
+{set $dx_drum_cymbal_color4 3} ;green
+
+;set default colors for kick note
+;1 is overdrive (white)
+{set $dx_kick_color 0} ;orange
+
+;set default colors for drum smashers (frets)
+{set $dx_drum_smasher_color1 0} ;red
+{set $dx_drum_smasher_color2 1} ;yellow
+{set $dx_drum_smasher_color3 2} ;blue
+{set $dx_drum_smasher_color4 3} ;green
+
+; set default colors for pro guitar
+{set $dx_protar_color1 0} ;red
+{set $dx_protar_color2 1} ;green
+{set $dx_protar_color3 2} ;orange
+{set $dx_protar_color4 3} ;blue
+{set $dx_protar_color5 4} ;yellow
+{set $dx_protar_color6 5} ;purple
+
+;set default colors for overdrive textures (gold)
+{set $dx_overdrive_r 0.71}
+{set $dx_overdrive_g 0.54}
+{set $dx_overdrive_b 0.0}
+
+;set default part selection per slot
+{set $default_slot0 overshell_guitar}      ;Slot 1
+{set $default_slot1 overshell_drums}       ;Slot 2
+{set $default_slot2 overshell_vocal_solo}  ;Slot 3
+{set $default_slot3 overshell_bass}        ;Slot 4
+
+;{set $ireallywanttosavehackedscores FALSE} ;dont turn this on under penalty of saving autoplay scores to your profile
+{set $dx_bot_1 TRUE}
+{set $dx_bot_2 TRUE}
+{set $dx_bot_3 TRUE}
+{set $dx_bot_4 TRUE}
+{set $dx_bot_5 TRUE}
+{set $dx_bot_overdrive dx_on}
+
+{set $dx_bot_skill 11}
+{set $dx_auto_endgame TRUE}
+
+;log stuff
+{set $dx_num_songs_this_session 0}
+{set $dx_gamemode init}
+
+;in game hud
+{set $dx_crowd_meter_state dx_on}
+{set $dx_score_meter_visibility TRUE}
+
+
+;currentsong formatting defauts
+{set $dx_song_title default}
+{set $dx_song_title_mtv_line TRUE}
+{set $dx_artist_mtv_line TRUE}
+{set $dx_year_on_mtv TRUE}
+{set $dx_year_on_one_mtv_line TRUE}
+{set $dx_album_mtv_line FALSE}
+{set $dx_genre_mtv_line FALSE}
+{set $dx_sub_genre_mtv_line FALSE}
+{set $dx_game_origin_mtv_line FALSE}
+{set $dx_author_mtv_line TRUE}
+
+;set controller reassignments
+{set $dx_joypad_type_guitar kControllerGuitar}
+{set $dx_joypad_type_keys kControllerKeys}
+{set $dx_joypad_type_vocals kControllerVocals}
+{set $dx_joypad_pad_mapping joypad}
+
+;game hud default ui positioning
+{set $scoreboardpos_0 8} {set $scoreboardpos_1 0} {set $scoreboardpos_2 -16}
+{set $star_displaypos_0 0} {set $star_displaypos_1 0} {set $star_displaypos_2 0}
+
+;practice mode default ui positioning
+{set $speed_controlpos_0 46} {set $speed_controlpos_1 0} {set $speed_controlpos_2 -5}
+{set $scorepos_0 191} {set $scorepos_1 0} {set $scorepos_2 175}
+{set $sectionpos_0 0} {set $sectionpos_1 0} {set $sectionpos_2 185}
+
+{set $dx_postfx TRUE} ;post fx are on until we toggle them off, this sets up a var to match that
+
+;default pp
+{set $dx_noise 0}
+
+#ifdef HX_PS3
+{if_else $dx_ps3hw
+	{set $dx_motion_blur 1}
+	{set $dx_motion_blur 0}
+}
+#else
+{set $dx_motion_blur 1}
+#endif
+
+{set $dx_camera_blur 1}
+{set $dx_camera_shake 1}
+
+{set $dx_logging_essential FALSE}
+{set $dx_logging_default FALSE}
+{set $dx_logging_info FALSE}
+{set $dx_logging_insane FALSE}
+{set $dx_logging_beatmatch FALSE}
+{set $dx_logging_countdown FALSE}
+
+{set $dx_fctype both}
+{set $dx_streak_counter single}
+{set $dx_time_remaining down}
+{set $dx_current_intro_movie deluxe}
+{set $dx_splash_screen TRUE}
+{set $dx_additional_parts TRUE}
+
+{set $dx_venue_intro TRUE}
+
+; highway elements shading
+{set $dx_highway_bass_shading FALSE}
+{set $dx_highway_guitar_shading FALSE}
+{set $dx_highway_drum_shading FALSE}
+{set $dx_highway_keys_shading FALSE}
+{set $dx_overdrive_bass_shading FALSE}
+{set $dx_overdrive_guitar_shading FALSE}
+{set $dx_overdrive_drum_shading FALSE}
+{set $dx_overdrive_keys_shading FALSE}
+
+; Mic deploy sensitivity
+{set $dx_mic_deploy_sens 0.3}
+#ifndef HX_WII
+;sets default track theme name, this will be read from track_theme.dta
+{set $dx_track_theme_name default}
+{dx_track_theme_dta_writer}
+{push_back $dx_tracked_track_themes default}
+
+{set $dx_instrument_icons rb3}
+
+{if {file_exists DX_SETTINGS_FILE_PATH} {dx_settings_dta_reader}}
+
+{if {file_exists DX_MODIFIER_FILE_PATH} {dx_modifier_dta_reader}}
+
+{if {file_exists DX_VALUES_FILE_PATH} {dx_values_dta_reader}}
+
+{if {file_exists {dx_track_theme_name $dx_track_theme_name}} {dx_track_theme_dta_reader}}
+
+{if {file_exists "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_high_memory.dta"}
+   {if {== {size {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_high_memory.dta"}} 1}
+      {set $dx_heap_check {elem {find {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_high_memory.dta"} dx_high_memory} 1}}
+      {if {== $dx_heap_check 190000000}
+         {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_high_memory.dta"
+            {array
+               (
+                  (dx_high_memory 190000000)
+                  (dx_song_count 16000)
+               )
+            }
+         }
+      }
+   }
+}
+#endif
+;instrument icons, implement individual ones later
+{switch $dx_instrument_icons
+   (rb3 
+      {set $dx_icon_guitar "G"}
+      {set $dx_icon_bass "B"}
+      {set $dx_icon_drum "D"}
+      {set $dx_icon_vocals "V"}
+      {set $dx_icon_harmony_2 "2"}
+      {set $dx_icon_harmony_3 "3"}
+      {set $dx_icon_keys "K"}
+      {set $dx_icon_real_keys "k"}
+      {set $dx_icon_real_guitar "g"}
+      {set $dx_icon_real_bass "b"}
+      {set $dx_icon_drum_pro "d"}
+   )
+   (rb4
+      {set $dx_icon_guitar "C"}
+      {set $dx_icon_bass "T"}
+      {set $dx_icon_drum "E"}
+      {set $dx_icon_vocals "I"}
+      {set $dx_icon_harmony_2 "c"}
+      {set $dx_icon_harmony_3 "e"}
+      {set $dx_icon_keys "t"}
+      {set $dx_icon_real_keys "i"}
+      {set $dx_icon_real_guitar "U"}
+      {set $dx_icon_real_bass "A"}
+      {set $dx_icon_drum_pro "R"}
+   )
+}
+
+;for overshell reasons
+{if_else {>= $emulatefps 35}
+   {set $dx_60fps TRUE}
+   {set $dx_60fps FALSE}
+}
+
+;for safety
+{if $dx_ps3hw
+   {set $dx_author_finder_is_enabled FALSE}
+}
+
+{if $dx_forced_song_load_bg
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 1 $dx_forced_song_load_bg}
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 2 $dx_forced_song_load_bg}
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 3 $dx_forced_song_load_bg}
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 4 $dx_forced_song_load_bg}
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 5 $dx_forced_song_load_bg}
+   {set_elem {find $syscfg vignettes interstitials preloading_screen game_screen} 6 $dx_forced_song_load_bg}
+}
+{if $dx_forced_main_menu_bg
+   {set_elem {find $syscfg vignettes backdrops sv3} 1 $dx_forced_main_menu_bg}
+}
+{if $dx_forced_song_select_bg
+   {set_elem {find $syscfg vignettes backdrops sv4} 1 $dx_forced_song_select_bg}
+}
+
+{switch $dx_fctype
+   (ring {set $dx_fc_ring TRUE} {set $dx_fc_glow FALSE})
+   (glow {set $dx_fc_ring FALSE} {set $dx_fc_glow TRUE})
+   (both {set $dx_fc_ring TRUE} {set $dx_fc_glow TRUE})
+   (off {set $dx_fc_ring FALSE} {set $dx_fc_glow FALSE})
+}
+
+;quick chat settings
+{set $dx_chat_preset_0 "Hello!"}
+{set $dx_chat_preset_1 "Restart the song"}
+{set $dx_chat_preset_2 "What a save!"}
+{set $dx_chat_preset_3 "Activate!"}
+{set $dx_chat_preset_4 "Have you tried practice mode?"}
+{set $dx_chat_preset_5 "I choked."}
+{set $dx_chat_preset_6 "Be right back!"}
+{set $dx_chat_preset_7 "Gotta go!"}
+
+;developer settings below do not modify
+{set $screensaver TRUE}
+
+{set $gotcha TRUE}
+
+{set $leaderspeed $speedmod}
+
+{if_else $dx_venue
+   {set $force TRUE}
+   {do
+      {set $dx_venue VENUES}
+      {set $force FALSE}
+   }
+}
+
+
+{set $dx_no_message_sound FALSE}
+{set $dx_menu_message ""}
+{set $dx_is_in_chat FALSE}
+{set $dx_selected_chat_index 0}
+
+{unless {== $dx_joypad_type_guitar kControllerGuitar} {do DX_SWAP_INSTRUMENT_TYPE_GUITAR}}
+
+{unless {== $dx_joypad_type_keys kControllerKeys} {do DX_SWAP_INSTRUMENT_TYPE_KEYS}}
+
+{unless {== $dx_joypad_type_vocals kControllerVocals} {do DX_SWAP_INSTRUMENT_TYPE_VOCALS}}
+
+{unless {== $dx_joypad_pad_mapping joypad} {do DX_REMAP_PAD}}
+
+;reset textures and angle if set to rb3
+{do {dx_default_texture_var_reset} {dx_track_angle_var_reset}}
+
+{dx_texture_corrector}
+
+{profile_mgr set_mic_vol 0 $mic_vol_1} {profile_mgr update_mic_levels 0}
+
+{profile_mgr set_mic_vol 1 $mic_vol_2} {profile_mgr update_mic_levels 1}
+
+{profile_mgr set_mic_vol 2 $mic_vol_3} {profile_mgr update_mic_levels 2}
+
+{set $dx_remote_highway_guitar $dx_highway_guitar} {set $dx_remote_highway_bass $dx_highway_bass} {set $dx_remote_highway_drum $dx_highway_drum} {set $dx_remote_highway_keys $dx_highway_keys} {set $dx_remote_keyboard $dx_keyboard}
+{set $dx_remote_streak_guitar $dx_streak_guitar} {set $dx_remote_streak_bass $dx_streak_bass} {set $dx_remote_streak_drum $dx_streak_drum} {set $dx_remote_streak_keys $dx_streak_keys} {set $dx_remote_streak_prokeys $dx_streak_prokeys}
+{set $dx_remote_overdrive_guitar $dx_overdrive_guitar} {set $dx_remote_overdrive_bass $dx_overdrive_bass} {set $dx_remote_overdrive_drum $dx_overdrive_drum} {set $dx_remote_overdrive_keys $dx_overdrive_keys} {set $dx_remote_overdrive_prokeys $dx_overdrive_prokeys}
+{set $dx_remote_vocal_arrow $dx_vocal_arrow} {set $dx_remote_vocal_highway $dx_vocal_highway} {set $dx_remote_vocal_notes $dx_vocal_notes} {set $dx_remote_vocal_overdrive $dx_vocal_overdrive}
+
+{set $dx_local_highway_guitar $dx_highway_guitar} {set $dx_local_highway_bass $dx_highway_bass} {set $dx_local_highway_drum $dx_highway_drum} {set $dx_local_highway_keys $dx_highway_keys} {set $dx_local_keyboard $dx_keyboard}
+{set $dx_local_streak_guitar $dx_streak_guitar} {set $dx_local_streak_bass $dx_streak_bass} {set $dx_local_streak_drum $dx_streak_drum} {set $dx_local_streak_keys $dx_streak_keys} {set $dx_local_streak_prokeys $dx_streak_prokeys}
+{set $dx_local_overdrive_guitar $dx_overdrive_guitar} {set $dx_local_overdrive_bass $dx_overdrive_bass} {set $dx_local_overdrive_drum $dx_overdrive_drum} {set $dx_local_overdrive_keys $dx_overdrive_keys} {set $dx_local_overdrive_prokeys $dx_overdrive_prokeys}
+{set $dx_local_vocal_arrow $dx_vocal_arrow} {set $dx_local_vocal_highway $dx_vocal_highway} {set $dx_local_vocal_notes $dx_vocal_notes} {set $dx_local_vocal_overdrive $dx_vocal_overdrive}
+
+;force a venue name. found in macros.dta.
+;the following is all possible venue names internally
+;none video_01 video_02 video_03 video_04 video_05 video_06 video_07
+;small_club_01 small_club_02 small_club_03 small_club_04 small_club_05
+;small_club_06 small_club_10 small_club_11 small_club_13 small_club_14
+;small_club_15 big_club_01 big_club_02 big_club_04 big_club_05
+;big_club_06 big_club_07 big_club_08 big_club_09 big_club_10
+;big_club_11 big_club_12 big_club_13 big_club_14 big_club_15
+;big_club_17 arena_01 arena_02 arena_03 arena_04 arena_06
+;arena_07 arena_10 arena_11 arena_12 festival_01 festival_02
+;the following are groups of venues. these are organized by campaign progression
+;JET_VENUES contain BUS_VENUES which contain VAN_VENUES which contain SUBWAY_VENUES
+;ALL_VENUES VENUES JET_VENUES BUS_VENUES VAN_VENUES SUBWAY_VENUES VENUES_VIDEO
+#ifndef HX_WII
+{if {file_exists DX_SETTINGS_FILE_PATH}
+   {dx_settings_dta_writer}
+   {dx_modifier_dta_writer}
+   {dx_values_dta_writer}
+   DX_DEPRECATED_DTA_WRITER
+   {unless {&& {== $dx_track_theme_name default} {file_exists {dx_track_theme_name default}}}
+      {dx_track_theme_dta_writer}
+   }
+}
+#endif
+#ifdef HX_PS3
+{set $tempwrite {find_exists $syscfg missing_song_data}}
+{foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
+   {push_back $tempwrite $entry}
+}
+{write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/songs_updates.dta"} $tempwrite}
+{set $tempwrite FALSE}
+{set $tempwrite ()}
+{foreach $entry {read_file "dx/song_updates/rb3_songs.dta"}
+   {push_back $tempwrite $entry}
+}
+{write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/songs.dta"} $tempwrite}
+{set $tempwrite FALSE}
+#endif

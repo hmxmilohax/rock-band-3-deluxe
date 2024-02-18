@@ -1,0 +1,188 @@
+{func
+   dx_modifier_reader
+   ($dx_modifier_reader)
+   {dx_log_writer insane {sprint "func: dx_modifier_reader - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $dx_modifier_reader}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_modifier_reader - time: %.4fms"
+         {time
+            {foreach $entry {read_file DX_MODIFIER_FILE_PATH}
+               {if {== {elem $entry 0} {basename $dx_modifier_reader}}
+                  {if {== {elem {find $entry $dx_modifier_reader} 1} 1}
+                     {modifier_mgr toggle_modifier_enabled $dx_modifier_reader}
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_setting_saver
+   ($category $name $value)
+   {dx_log_writer insane {sprint "func: dx_setting_saver - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $category ", " $name ", " $value}}
+   {dx_log_writer insane
+      {sprintf "Executed dx_setting_saver - time: %.4fms"
+         {time
+            {set $found_elem FALSE}
+            ;{unless {|| {== $value none} {! $value}}
+               {switch $category
+                  (dx_modifiers
+                     {foreach $entry $dx_modifiers
+                        {if {== {elem $entry 0} {basename $name}}
+                           {remove_elem {find $dx_modifiers $name} {elem {find $dx_modifiers $name} 1}}
+                           {push_back {find $dx_modifiers $name} ($name $value)}
+                           {set $found_elem TRUE}
+                        }
+                     }
+                     {unless $found_elem
+                        {push_back $dx_modifiers ($name ($name $value))}
+                     }
+                     {set $dx_modifiers {array $dx_modifiers}}
+                  )
+                  (dx_track_theme
+                     {foreach $entry $dx_track_theme
+                        {if {== {elem $entry 0} {basename $name}}
+                           {remove_elem {find $dx_track_theme $name} {elem {find $dx_track_theme $name} 1}}
+                           {push_back {find $dx_track_theme $name} ($name $value)}
+                           {set $found_elem TRUE}
+                        }
+                     }
+                     {unless $found_elem
+                        {push_back $dx_track_theme ($name ($name $value))}
+                     }
+                     {set $dx_track_theme {array $dx_track_theme}}
+                  )
+                  (dx_settings
+                     {foreach $entry $dx_settings
+                        {if {== {elem $entry 0} {basename $name}}
+                           {remove_elem {find $dx_settings $name} {elem {find $dx_settings $name} 1}}
+                           {push_back {find $dx_settings $name} ($name $value)}
+                           {set $found_elem TRUE}
+                        }
+                     }
+                     {unless $found_elem
+                        {push_back $dx_settings ($name ($name $value))}
+                     }
+                     {set $dx_settings {array $dx_settings}}
+                  )
+                  (dx_values
+                     {foreach $entry $dx_values
+                        {if {== {elem $entry 0} {basename $name}}
+                           {remove_elem {find $dx_values $name} {elem {find $dx_values $name} 1}}
+                           {push_back {find $dx_values $name} ($name $value)}
+                           {set $found_elem TRUE}
+                        }
+                     }
+                     {unless $found_elem
+                        {push_back $dx_values ($name ($name $value))}
+                     }
+                     {set $dx_values {array $dx_values}}
+                  )
+               }
+            ;}
+         }
+      }
+   }
+}
+{func
+   dx_settings_dta_reader
+   {dx_log_writer info {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {foreach $entry {read_file DX_SETTINGS_FILE_PATH} 
+      LOADING_DX_SETTINGS_OPTIONS
+   }
+}
+{func
+   dx_track_theme_dta_reader
+   {dx_log_writer info {sprint "Attempting to read track_theme.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
+      {do
+         {foreach $entry {read_file {dx_track_theme_name $dx_track_theme_name}}
+            LOADING_TRACK_THEME_OPTIONS
+         }
+         {dx_passive_messenger track_theme_successfully_loaded}
+      }
+      {dx_passive_messenger no_track_theme_found}
+   }
+}
+{func
+   dx_values_dta_reader
+   {dx_log_writer info {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {foreach $entry {read_file DX_VALUES_FILE_PATH}
+      LOADING_VALUES_OPTIONS
+   }
+}
+{func
+   dx_modifier_dta_reader
+   {dx_log_writer info {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+   {dx_modifier_reader mod_static_fills}
+   {dx_modifier_reader mod_chord_numbers}
+   {dx_modifier_reader mod_nohud}
+   {dx_modifier_reader mod_miss_sounds}
+   {dx_modifier_reader mod_practiceoverdrive}
+   {dx_modifier_reader mod_nolanes}
+   {dx_modifier_reader mod_rb4lanes}
+   {dx_modifier_reader mod_synced_track_speeds}
+   {dx_modifier_reader mod_nopause}
+   {dx_modifier_reader mod_remote_texture_sync}
+   #ifndef RB3E
+   {dx_modifier_reader mod_mhx_color_shuffle}
+   #endif
+   {unless {modifier_mgr is_modifier_active mod_doublespeed}
+      {dx_modifier_reader mod_doublespeed}
+   }
+   {unless {modifier_mgr is_modifier_active mod_dx_no_overdrive}
+      {dx_modifier_reader mod_dx_no_overdrive}
+   }
+}
+{func
+   dx_settings_dta_writer
+   {dx_log_writer info {sprint "Macro: dx_settings_dta_writer"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_settings_dta_writer - time: %.4fms"
+         {time
+            DX_SETTINGS_POPULATION
+            {write_file DX_SETTINGS_FILE_PATH $dx_settings}
+         }
+      }
+   }
+}
+{func
+   dx_track_theme_dta_writer
+   {dx_log_writer info {sprint "Macro: dx_track_theme_dta_writer"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_track_theme_dta_writer - time: %.4fms"
+         {time
+            DX_TRACK_THEME_POPULATION
+            {write_file {dx_track_theme_name $dx_track_theme_name} $dx_track_theme}
+            {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
+               {dx_passive_messenger track_theme_successfully_written}
+               {dx_passive_messenger track_theme_failed_writing}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_values_dta_writer
+   {dx_log_writer info {sprint "Macro: dx_values_dta_writer"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_values_dta_writer - time: %.4fms"
+         {time
+            DX_VALUES_POPULATION
+            {write_file DX_VALUES_FILE_PATH $dx_values}
+         }
+      }
+   }
+}
+{func
+   dx_modifier_dta_writer
+   {dx_log_writer info {sprint "Macro: dx_modifier_dta_writer"}}
+   {dx_log_writer info
+      {sprintf "Executed dx_modifier_dta_writer - time: %.4fms"
+         {time
+            DX_MODIFIER_POPULATION
+            {write_file DX_MODIFIER_FILE_PATH $dx_modifiers}
+         }
+      }
+   }
+}

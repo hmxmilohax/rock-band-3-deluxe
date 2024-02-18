@@ -1,0 +1,466 @@
+{func
+   dx_overshell_msg
+   ($message)
+   ;opens player message panel on current player
+   {dx_log_writer info {sprint "func: dx_overshell_msg" " - Args: " $message}}
+   {dx_log_writer info
+      {sprintf "Executed dx_overshell_msg - time: %.4fms"
+         {time
+            {if {! {session is_in_game}}
+               {$this show_message}
+               {set $dx_no_message_sound TRUE} ;prevents message sound from playing in menus
+               {$this setup_message_text $message FALSE}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_check_for_dupe ; function to allow 5L/Pro instruments together but still block same parts from being selected
+   ($slot) ; current slot number of the user
+   {dx_log_writer info {sprint "func: dx_check_for_dupe" " - Args: " $slot}}
+   {dx_log_writer info
+      {sprintf "Executed dx_check_for_dupe - time: %.4fms"
+         {time
+            {do
+               {set $selected_part ; grabs the currently selected part of the user
+                  {switch $slot
+                     (0 $default_slot0)
+                     (1 $default_slot1)
+                     (2 $default_slot2)
+                     (3 $default_slot3)
+                  }
+               }
+               (set $dupe_allowed TRUE) ; allows dupe TRUE by default, any check below will set it to FALSE
+               {switch $selected_part
+                  ((overshell_drums overshell_drums_pro)
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackDrum} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_guitar
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_guitar
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_bass
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_bass
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_keys
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_keys
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+               }
+               $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
+            }
+         }
+      }
+   }
+   $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
+}
+{func
+   dx_state_setup
+   ($current_overshell_state $message)
+   ;{dx_log_writer insane {sprint "func: dx_state_setup" " - Args: " $current_overshell_state ", " $message}}
+   ;{dx_log_writer insane
+   ;   {sprintf "Executed dx_state_setup - time: %.4fms"
+   ;      {time
+            {unless $in_state ;the view code trick runs several times, so we need to make sure to only run the function once in the view
+               DX_OS_CLOSE_MSG
+               {set $in_state TRUE} ;gate it off REMEMBER, turn this to false when running this code in a reset handle
+               {set $dx_menu_message FALSE}
+               {overshell_list_creation}
+               {overshell_list_chooser}
+               {if_else {== $current_list users.lst}
+                  {gamercard_users.lbl set_showing FALSE}
+                  {gamercard_users.lbl set_showing TRUE}
+               }
+               {$current_list set circular $options_circular}
+               {$current_list set_data $options_list_data}
+               {set $previous_state $current_state} ;don't rely on this this is only useful for a big switch state with many entry points, aka texture states
+               {set $current_state $current_overshell_state}
+               {foreach $entry $dx_state_tracker
+                  {if {== {elem $entry 0} {basename $current_overshell_state}}
+                     {$current_list set_selected {elem {find $entry {sprint $current_overshell_state}} 1}}
+                     {if {! {== $message FALSE}}
+                        {set $dx_menu_message {sprint {elem {find $entry {sprint $current_overshell_state}} 1} "_desc"}}
+                     }
+                  }
+               }
+               {if {! {== $message FALSE}}
+                  {unless $dx_menu_message
+                     {set $dx_menu_message {sprint {elem $options_list_data 0} "_desc"}}
+                  }
+                  {dx_overshell_msg $dx_menu_message}
+               }
+               {set $dx_tracked_changed FALSE}
+               {if_else {$this in_game}
+                  {$current_list set_type overshell_menu_ingame}
+                  {$current_list set_type overshell_menu}
+               }
+               {$current_list restart_highlight_matanim}
+               {$current_list refresh}
+               {if {== $message FALSE}
+                  DX_OS_CLOSE_MSG
+               }
+            }
+   ;      }
+   ;   }
+   ;}
+}
+{func
+   dx_state_pos_tracker
+   ;{dx_log_writer insane {sprint "func: dx_state_pos_tracker"}}
+   ;{dx_log_writer insane
+   ;   {sprintf "Executed dx_state_pos_tracker - time: %.4fms"
+   ;      {time
+            {set $in_state FALSE}
+            {if_else $dx_tracked_changed
+               {set $current_state_pos $dx_tracked_changed} ;probe the item we will be switching too
+               {set $current_state_pos {$current_list selected_sym}} ;probe the current list position
+            }
+            {unless $dx_tracked_changed
+               ;clean up the list for the state transition
+               {switch $current_slots
+                  (1 {$current_list set_data (os_blnk)})
+                  (2 {$current_list set_data (os_blnk os_blnk)})
+                  (3 {$current_list set_data (os_blnk os_blnk os_blnk)})
+                  (4 {$current_list set_data (os_blnk os_blnk os_blnk os_blnk)})
+                  (5 {$current_list set_data (os_blnk os_blnk os_blnk os_blnk os_blnk)})
+                  (6 {$current_list set_data (os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)})
+                  (7 {$current_list set_data (os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)})
+               }
+            }
+            ;this is stupid but it works
+            {foreach $entry $dx_state_tracker
+               {if {== {elem $entry 0} {basename $current_state}} ;first check if we have the state tracked already
+                  {remove_elem {find $dx_state_tracker $current_state} {elem {find $dx_state_tracker $current_state} 1}} ;removed the previously tracked list position
+                  {push_back {find $dx_state_tracker $current_state} $current_state_pos} ;add in the new list position
+               }
+            }
+
+            {foreach $entry $dx_state_tracker
+               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+                  {set $pushtime_guitar TRUE} ;get ready to push it
+               }
+            }
+            {foreach $entry $dx_state_tracker
+               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+                  {set $pushtime_guitar FALSE} ;dont push it
+               }
+            }
+            {if $pushtime_guitar ;if we need to push
+               {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+            }
+
+            {foreach $entry $dx_state_tracker
+               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+                  {set $pushtime_drum TRUE} ;get ready to push it
+               }
+            }
+            {foreach $entry $dx_state_tracker
+               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+                  {set $pushtime_drum FALSE} ;dont push it
+               }
+            }
+            {if $pushtime_drum ;if we need to push
+               {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+            }
+            
+            {foreach $entry $dx_state_tracker
+               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+                  {set $pushtime_bass TRUE} ;get ready to push it
+               }
+            }
+            {foreach $entry $dx_state_tracker
+               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+                  {set $pushtime_bass FALSE} ;dont push it
+               }
+            }
+            {if $pushtime_bass ;if we need to push
+               {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+            }
+            
+            {foreach $entry $dx_state_tracker
+               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+                  {set $pushtime_keys TRUE} ;get ready to push it
+               }
+            }
+            {foreach $entry $dx_state_tracker
+               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+                  {set $pushtime_keys FALSE} ;dont push it
+               }
+            }
+            {if $pushtime_keys ;if we need to push
+               {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
+            }
+
+            {set $dx_state_tracker {array $dx_state_tracker}} ;re read the array so the vars enumerate and the array becomes static
+            {$current_list set circular FALSE}
+            {set $in_state FALSE}
+            DX_OS_CLOSE_MSG
+            ;{dx_log_writer insane {array $dx_state_tracker}}
+   ;      }
+   ;   }
+   ;}
+}
+{func
+   overshell_list_chooser
+   ;{dx_log_writer insane {sprint "func: overshell_list_chooser"}}
+   ;{dx_log_writer insane
+   ;   {sprintf "Executed overshell_list_chooser - time: %.4fms"
+   ;      {time
+            {switch $current_slots
+               (1 {do {set $current_list options_end_game.lst}})
+               (2 {do {set $current_list options_end_game.lst}})
+               (3 {do {set $current_list options_extras.lst}})
+               (4 {do {set $current_list users.lst}})
+               (5 {do {set $current_list options.lst}})
+               (6 {do {set $current_list options_audio.lst}})
+               (7 {do {set $current_list game_options.lst}})
+            }
+            {$current_list set circular $options_circular}
+            {$current_list set display_num $current_slots}
+            {$current_list set max_display $current_slots}
+            {$current_list set scroll_past_max_display FALSE}
+            {$current_list set scroll_time 0}
+            {$current_list set_data $options_list_data}
+   ;      }
+   ;   }
+   ;}
+}
+{func
+   overshell_view_chooser
+   ;{dx_log_writer insane {sprint "func: overshell_view_chooser"}}
+   ;{dx_log_writer insane
+   ;   {sprintf "Executed overshell_view_chooser - time: %.4fms"
+   ;      {time
+            {unless $in_state
+               DX_OS_CLOSE_MSG
+            }
+            {switch $current_slots
+               (1 options_end_game)
+               (2 options_end_game)
+               (3 options_extras)
+               (4 gamercard_users)
+               (5 options)
+               (6 options_audio)
+               (7 game_options)
+            }
+   ;      }
+   ;   }
+   ;}
+}
+{func
+   overshell_list_creation
+   ;{dx_log_writer insane {sprint "func: overshell_list_creation"}}
+   ;{dx_log_writer insane
+   ;   {sprintf "Executed overshell_list_creation - time: %.4fms"
+   ;      {time
+            {$this iterate CheckboxDisplay $c {$c set checked FALSE}}
+            {set $num_of_slots 0}
+            {foreach $entry $options
+               {set $num_of_slots {+ $num_of_slots 1}}
+            }
+            {if_else {>= $num_of_slots 9}
+               {set $options_circular TRUE}
+               {set $options_circular FALSE}
+            }
+            {if {>= $num_of_slots 6}
+               {set $num_of_slots 6}
+            }
+            {set $current_slots $num_of_slots}
+            {unless {$this in_game} ;in game overshell does not need to account for same slot size animation transitions
+               {if {== $current_slots $previous_num_slot}
+                  {if_else {< $current_slots 6}
+                     {set $num_of_slots {+ $num_of_slots 1}}
+                     {set $num_of_slots {- $num_of_slots 1}}
+                  }
+               }
+               {set $previous_num_slot $num_of_slots}
+               {set $current_slots $num_of_slots}
+            }
+            $options
+            {set $options_list_data {array $options}}
+   ;      }
+   ;   }
+   ;}
+}
+{func
+   dx_auto_endurance_handler
+   ; "{{$this get_user} set_track_type ...}" selects the part and will give the player a blank track if they don't have a part
+   ; in Vocals case it'll default to Solo if no Harmony part exists
+   {script_task kTaskSeconds
+      (delay {if_else $dx_auto_endurance 1.5 0})
+      (script
+         {set $dx_did_we_pick_guitar FALSE}
+         {set $dx_did_we_pick_real_guitar FALSE}
+         {if {&& {! $dx_customizer} $dx_auto_endurance}
+            {switch
+               {$this get_slot_num}
+               (0 {{$this get_user} set_track_type kTrackGuitar})
+               (1 
+                  {do 
+                     {$this select_drum_part TRUE}
+                     {{$this get_user} set_track_type kTrackDrum}
+                  }
+               )
+               (2 
+                  {if_else {modifier_mgr is_modifier_active mod_auto_vocals}
+                     {{$this get_user} set_track_type kTrackRealKeys}
+                     {do
+                        {$this select_vocal_part TRUE}
+                        {{$this get_user} set_track_type kTrackVocals}  
+                     }
+                  }
+               )
+               (3 {{$this get_user} set_track_type kTrackBass})
+               {fail {set $default_slot0 {$component selected_sym}}}
+            }
+            {$this show_state kState_ChooseDiff} ; force enter diff select even if song doesn't have a part
+         }
+         {if $dx_customizer
+            {switch
+               {$this get_slot_num}
+               (0
+                  {switch {{$this get_user} get_controller_type}
+                     (kControllerGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackBass} {do {set $dx_did_we_pick_guitar TRUE} {{$this get_user} set_track_type kTrackGuitar}}})
+                     (kControllerRealGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackRealBass} {do {set $dx_did_we_pick_real_guitar TRUE} {{$this get_user} set_track_type kTrackRealGuitar}}})
+                     (kControllerVocals {do {$this select_vocal_part TRUE} {{$this get_user} set_track_type kTrackVocals}})
+                     (kControllerKeys {{$this get_user} set_track_type kTrackRealKeys})
+                     (kControllerDrum {do {$this select_drum_part TRUE} {{$this get_user} set_track_type kTrackDrum}})
+                     kDataUnhandled
+                  }
+               )
+               (1 
+                  {switch {{$this get_user} get_controller_type}
+                     (kControllerGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackBass} {do {set $dx_did_we_pick_guitar TRUE} {{$this get_user} set_track_type kTrackGuitar}}})
+                     (kControllerRealGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackRealBass} {do {set $dx_did_we_pick_real_guitar TRUE} {{$this get_user} set_track_type kTrackRealGuitar}}})
+                     (kControllerVocals {do {$this select_vocal_part TRUE} {{$this get_user} set_track_type kTrackVocals}})
+                     (kControllerKeys {{$this get_user} set_track_type kTrackRealKeys})
+                     (kControllerDrum {do {$this select_drum_part TRUE} {{$this get_user} set_track_type kTrackDrum}})
+                     kDataUnhandled
+                  }
+               )
+               (2 
+                  {switch {{$this get_user} get_controller_type}
+                     (kControllerGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackBass} {do {set $dx_did_we_pick_guitar TRUE} {{$this get_user} set_track_type kTrackGuitar}}})
+                     (kControllerRealGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackRealBass} {do {set $dx_did_we_pick_real_guitar TRUE} {{$this get_user} set_track_type kTrackRealGuitar}}})
+                     (kControllerVocals {do {$this select_vocal_part TRUE} {{$this get_user} set_track_type kTrackVocals}})
+                     (kControllerKeys {{$this get_user} set_track_type kTrackRealKeys})
+                     (kControllerDrum {do {$this select_drum_part TRUE} {{$this get_user} set_track_type kTrackDrum}})
+                     kDataUnhandled
+                  }
+               )
+               (3
+                  {switch {{$this get_user} get_controller_type}
+                     (kControllerGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackBass} {do {set $dx_did_we_pick_guitar TRUE} {{$this get_user} set_track_type kTrackGuitar}}})
+                     (kControllerRealGuitar {if_else $dx_did_we_pick_guitar {{$this get_user} set_track_type kTrackRealBass} {do {set $dx_did_we_pick_real_guitar TRUE} {{$this get_user} set_track_type kTrackRealGuitar}}})
+                     (kControllerVocals {do {$this select_vocal_part TRUE} {{$this get_user} set_track_type kTrackVocals}})
+                     (kControllerKeys {{$this get_user} set_track_type kTrackRealKeys})
+                     (kControllerDrum {do {$this select_drum_part TRUE} {{$this get_user} set_track_type kTrackDrum}})
+                     kDataUnhandled
+                  }
+               )
+               {fail {set $default_slot0 {$component selected_sym}}}
+            }
+            {$this show_state kState_ChooseDiff} ; force enter diff select even if song doesn't have a part
+         }
+      )
+   }
+}
+{func
+   store_choose_char_size_pos
+   {unless $dx_stored_choose_char_defaults
+      {set $dx_stored_choose_char_defaults TRUE}
+      {set $dx_chose_char_default_pos_index_2 {choose_character.mesh get_local_pos_index 2}}
+      {set $dx_chose_char_default_scale_index_0 {choose_character.mesh get_local_scale_index 0}}
+      {set $dx_chose_char_default_scale_index_2 {choose_character.mesh get_local_scale_index 2}}
+   }
+}
+{func
+   restore_choose_char_size_pos
+   {choose_character.mesh set_local_pos_index 2 $dx_chose_char_default_pos_index_2}
+   {choose_character.mesh set_local_scale_index 0 $dx_chose_char_default_scale_index_0} ;X
+   {choose_character.mesh set_local_scale_index 2 $dx_chose_char_default_scale_index_2} ;Y
+   {choose_character.tex iterate_refs $ref {$ref set color {pack_color 1.0 1.0 1.0}}}
+   {choose_character.tex iterate_refs $ref {$ref set intensify 0}}
+   {choose_character.tex set_bitmap "dx/custom_textures/_additional_textures/choose_character.png"}
+}
+{func
+   dx_quick_chat
+   ($message)
+   {set $user_name " "} {set $track_icon "G"} ; set default values if user_name or track icon cannot be obtained
+   {set $user_name {$user get_user_name}}
+   {if {== {ui current_screen} game_screen} {set $track_icon {$user get_track_icon}}}
+   {if_else {== {ui current_screen} game_screen}
+      {do ;if in-game, use Road Challange's tracker display to show a chat message
+         {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+         {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+         {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+         {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+         {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon $message}}}
+         {unless {session_mgr is_local}
+            {session send_msg_to_all
+               {'`' 
+                  (
+                     {do
+                        {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+                        {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+                        {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+                        {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+                        {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' $message}}}}
+                     }
+                  )
+                  kNetReliable
+               }
+            }
+         }
+      }
+      {do ;if not in-game, use passive_messages_panel instead to show a chat message
+         {passive_messages_panel queue_message {symbol {sprintf "%s: %s" $user_name $message}}}
+         {unless {session_mgr is_local}
+            {session send_msg_to_all
+               {'`' 
+                  (
+                     {passive_messages_panel queue_message {symbol {sprintf "%s: %s" {',' $user_name} {',' $message}}}}
+                  )
+                  kNetReliable
+               }
+            }
+         }
+      }
+   }
+}      
