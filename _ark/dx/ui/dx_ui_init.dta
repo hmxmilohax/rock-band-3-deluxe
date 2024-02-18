@@ -4,9 +4,14 @@
    {set $dx_mtv_holder {array ()}}
    {set $dx_state_tracker {array ()}}
 }
+#ifndef HX_WII
 DX_LOG_CLEAR
 DX_JSON_CLEAR
 DX_CURRENT_SONG_CLEAR
+{set $dx_playlist_array ()}
+{resize $dx_playlist_array 0}
+{write_file DX_PLAYLIST_DTA_PATH $dx_playlist_array}
+#endif
 ;rb4 loosly
 {set $dx_track_config_changed FALSE}
 {set $dx_pitch -46.0}
@@ -16,6 +21,19 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_z_pos 20}
 {set $dx_gold_star_progress TRUE}
 {set $dx_connected_server none}
+
+;for some reason this breaks everything if its not here, dont touch
+{set $dx_icon_guitar "G"}
+{set $dx_icon_bass "B"}
+{set $dx_icon_drum "D"}
+{set $dx_icon_vocals "V"}
+{set $dx_icon_harmony_2 "2"}
+{set $dx_icon_harmony_3 "3"}
+{set $dx_icon_keys "K"}
+{set $dx_icon_real_keys "k"}
+{set $dx_icon_real_guitar "g"}
+{set $dx_icon_real_bass "b"}
+{set $dx_icon_drum_pro "d"}
 
 {set $overshell_showing TRUE}
 {set $dx_forced_song_load_bg FALSE}
@@ -41,6 +59,8 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_indv_note_streak FALSE}
 {set $dx_num_gem_tracks 0}
 {set $dx_loading_tip_var FALSE}
+
+{set $dx_you_rock TRUE}
 
 {set $dx_trainer_real_guitar FALSE}
 {set $dx_trainer_real_bass FALSE}
@@ -124,8 +144,13 @@ DX_CURRENT_SONG_CLEAR
 ;author finder setup
 {unless $dx_ps3hw
    {set $dx_author_finder_is_enabled TRUE}
+}
+
+#ifdef HX_PS3
+{unless $dx_ps3hw
    {set $dx_song_delay TRUE}
 }
+#endif
 
 ;set mtv vars, trainer doesn't like these empty on boot
 {set $artistvar "No Artist Found"}
@@ -466,7 +491,7 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_fctype both}
 {set $dx_streak_counter single}
 {set $dx_time_remaining down}
-{set $dx_intro_movie TRUE}
+{set $dx_current_intro_movie deluxe}
 {set $dx_splash_screen TRUE}
 {set $dx_additional_parts TRUE}
 
@@ -484,11 +509,13 @@ DX_CURRENT_SONG_CLEAR
 
 ; Mic deploy sensitivity
 {set $dx_mic_deploy_sens 0.3}
-
+#ifndef HX_WII
 ;sets default track theme name, this will be read from track_theme.dta
 {set $dx_track_theme_name default}
 {dx_track_theme_dta_writer}
 {push_back $dx_tracked_track_themes default}
+
+{set $dx_instrument_icons rb3}
 
 {if {file_exists DX_SETTINGS_FILE_PATH} {dx_settings_dta_reader}}
 
@@ -512,6 +539,36 @@ DX_CURRENT_SONG_CLEAR
          }
       }
    }
+}
+#endif
+;instrument icons, implement individual ones later
+{switch $dx_instrument_icons
+   (rb3 
+      {set $dx_icon_guitar "G"}
+      {set $dx_icon_bass "B"}
+      {set $dx_icon_drum "D"}
+      {set $dx_icon_vocals "V"}
+      {set $dx_icon_harmony_2 "2"}
+      {set $dx_icon_harmony_3 "3"}
+      {set $dx_icon_keys "K"}
+      {set $dx_icon_real_keys "k"}
+      {set $dx_icon_real_guitar "g"}
+      {set $dx_icon_real_bass "b"}
+      {set $dx_icon_drum_pro "d"}
+   )
+   (rb4
+      {set $dx_icon_guitar "C"}
+      {set $dx_icon_bass "T"}
+      {set $dx_icon_drum "E"}
+      {set $dx_icon_vocals "I"}
+      {set $dx_icon_harmony_2 "c"}
+      {set $dx_icon_harmony_3 "e"}
+      {set $dx_icon_keys "t"}
+      {set $dx_icon_real_keys "i"}
+      {set $dx_icon_real_guitar "U"}
+      {set $dx_icon_real_bass "A"}
+      {set $dx_icon_drum_pro "R"}
+   )
 }
 
 ;for overshell reasons
@@ -544,6 +601,7 @@ DX_CURRENT_SONG_CLEAR
    (ring {set $dx_fc_ring TRUE} {set $dx_fc_glow FALSE})
    (glow {set $dx_fc_ring FALSE} {set $dx_fc_glow TRUE})
    (both {set $dx_fc_ring TRUE} {set $dx_fc_glow TRUE})
+   (off {set $dx_fc_ring FALSE} {set $dx_fc_glow FALSE})
 }
 
 ;quick chat settings
@@ -619,7 +677,7 @@ DX_CURRENT_SONG_CLEAR
 ;the following are groups of venues. these are organized by campaign progression
 ;JET_VENUES contain BUS_VENUES which contain VAN_VENUES which contain SUBWAY_VENUES
 ;ALL_VENUES VENUES JET_VENUES BUS_VENUES VAN_VENUES SUBWAY_VENUES VENUES_VIDEO
-
+#ifndef HX_WII
 {if {file_exists DX_SETTINGS_FILE_PATH}
    {dx_settings_dta_writer}
    {dx_modifier_dta_writer}
@@ -629,3 +687,18 @@ DX_CURRENT_SONG_CLEAR
       {dx_track_theme_dta_writer}
    }
 }
+#endif
+#ifdef HX_PS3
+{set $tempwrite {find_exists $syscfg missing_song_data}}
+{foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
+   {push_back $tempwrite $entry}
+}
+{write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/songs_updates.dta"} $tempwrite}
+{set $tempwrite FALSE}
+{set $tempwrite ()}
+{foreach $entry {read_file "dx/song_updates/rb3_songs.dta"}
+   {push_back $tempwrite $entry}
+}
+{write_file {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/songs.dta"} $tempwrite}
+{set $tempwrite FALSE}
+#endif

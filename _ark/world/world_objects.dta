@@ -761,6 +761,21 @@
       (song
          #ifdef HX_PC
          #else
+         #ifdef HX_WII
+         (change_subdir
+            ($file)
+            {if_else
+               {has_substr
+                  $file
+                  "dlc/"}
+               {cond
+                  ({has_substr
+                        $file
+                        "/world/shared/director.milo"}
+                     "world/shared/director.milo")
+                  "stream_cache"}
+               kDataUnhandled})
+         #else
          (change_subdir
             ($file)
             {if_else
@@ -774,6 +789,7 @@
                      "world/shared/director.milo")
                   "stream_cache"}
                kDataUnhandled})
+         #endif
          #endif)))
 (RndDir
    (types
@@ -3655,6 +3671,17 @@
                {$this test_delta $shot_ok.delta_30fps}
                TRUE})
          (start_shot
+            {if {&& {exists game} {|| {$this in_game} $dx_apply_postproc}}
+               {if $world
+                  {dx_noise_setter $world}
+                  {dx_emulatefps_setter $world}
+                  {dx_motion_blur_setter $world}
+                  {dx_camera_shake_setter $world}
+                  {dx_camera_blur_setter $world}
+                  {dx_force_lod_setter $world}
+                  {set $dx_apply_postproc FALSE}
+               }
+            }
             {if
                $banddirector
                {$banddirector
@@ -3753,16 +3780,7 @@
                      ((OUTRO_MULTI OUTRO)
                         {$banddirector
                            set_dircut
-                           [category]})}}}
-            {unless {session is_in_game}
-               ;remove post fx when entering a shot not in game
-               {dx_noise_setter $this}
-               {dx_emulatefps_setter $this}
-               {dx_motion_blur_setter $this}
-               {dx_camera_shake_setter $this}
-               {dx_camera_blur_setter $this}
-               {dx_force_lod_setter $this}
-            })
+                           [category]})}}})
          (stop_shot
             {if
                $banddirector
@@ -4337,10 +4355,35 @@
                   {== $cat LOSE}
                   kExcitementLost
                   kExcitementWon}}
+            #ifdef HX_WII
+            {if_else
+               {== $cat WIN_PRE_FINALE}
+               {do
+                  {if_else
+                     {$this set_dircut WIN_FINALE}
+                     {set $has_finale 1}
+                     {set $has_finale 0}}
+                  {if_else
+                     {$this set_dircut WIN_PRE_FINALE}
+                     {set $has_pre_finale 1}
+                     {set $has_pre_finale 0}}
+                  {if
+                     {&&
+                        {! $has_finale}
+                        {! $has_pre_finale}}
+                     {handle
+                        (game game_outro)}}}
+               {if
+                  {!
+                     {$this set_dircut $cat}}
+                  {handle
+                     (game game_outro)}}}
+            #else
             {unless
                {$this set_dircut $cat}
                {handle
-                  (game game_outro)}})
+                  (game game_outro)}}
+               #endif)
          (append_shot
             ($first_cam $cat $notify)
             {do
