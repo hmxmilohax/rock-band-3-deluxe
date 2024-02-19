@@ -396,6 +396,21 @@
       {switch
          $component
          (name.btn
+            #ifdef HX_WII
+            {$this set_paused 1}
+            {set
+               $defaultName
+               {$this get_default_vk_name}}
+            {virtual_keyboard
+               show_keyboard
+               {$this get_user}
+               kVkCharacterNameLengthLimit
+               {localize create_char_vk_title}
+               {localize create_char_vk_desc}
+               $defaultName
+               $this
+               kVkNormalEntry}
+            #else
             {virtual_keyboard
                show_keyboard
                {$this get_user}
@@ -403,7 +418,8 @@
                {localize create_char_vk_title}
                {localize create_char_vk_desc}
                {$this get_default_vk_name}
-               $this})
+               $this}
+            #endif)
          (gender.btn
             {show_gender_spinner.trg trigger}
             {gender.lst store}
@@ -472,6 +488,13 @@
             {$this set_focus skin_tone.lst})
          (body_return.btn
             {$this set_state kCharCreatorState_CharacterOptions})
+         #ifdef HX_WII
+         (randomize.btn
+            {if_else
+               $can_randomize_face
+               {$this randomize_face}
+               {ui push_screen charactercreator_confirm_randomize_face_screen}})
+         #else
          (randomize.btn
             {if_else
                $can_randomize_face
@@ -482,6 +505,7 @@
                      eyebrows_grid.lst
                      {$this get_eyebrows}}}
                {ui push_screen charactercreator_confirm_randomize_face_screen}})
+         #endif
          (face_type.btn
             {show_facetype_spinner.trg trigger}
             {facetype.lst store}
@@ -637,10 +661,12 @@
                   {closet_mgr finalize_char_creator_changes}
                   {hide_facetype_spinner.trg trigger}
                   {facetype.lst confirm}
+                  #ifndef HX_WII
                   {$this
                      set_eyebrows_selected
                      eyebrows_grid.lst
                      {$this get_eyebrows}}
+                  #endif
                   {$this set_focus face_type.btn})
                (options_grid.lst
                   {set $can_randomize_face FALSE}
@@ -755,6 +781,24 @@
                   {arrow_right.mnm set_frame 0})
                kDataUnhandled})
          kDataUnhandled})
+   #ifdef HX_WII
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if
+         {&&
+            $ok
+            $this
+            {ui focus_panel}
+            {==
+               {ui focus_panel}
+               $this}}
+         {if_else
+            {==
+               $text
+               ""}
+            {$this set_name $defaultName}
+            {$this set_name $text}}}
+      {$this set_paused 0})
+   #else
    (VIRTUAL_KEYBOARD_RESULT_MSG
       {if
          {&&
@@ -768,7 +812,8 @@
                {==
                   $text
                   ""}}}
-         {$this set_name $text}})}
+         {$this set_name $text}})
+   #endif}
 {new
    BandScreen
    charactercreator_screen
@@ -779,7 +824,14 @@
    (enter
       {set
          [should_go_back]
-         FALSE})
+         FALSE}
+      #ifdef HX_WII
+      {overshell set_active_status kOvershellInactive}
+      #endif)
+   #ifdef HX_WII
+   (exit
+      {overshell set_active_status kOvershellInShell})
+   #endif
    (TRANSITION_COMPLETE_MSG
       {if
          [should_go_back]

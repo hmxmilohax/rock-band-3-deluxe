@@ -7,8 +7,33 @@
       "goals.lst")
    (goal '')
    (return_screen '')
+   #ifdef HX_WII
    (enter
-      {$this iterate UIList $l {$l set scroll_time 0}})
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)}
+      {if
+         {!
+            {profile_mgr has_primary_profile}}
+         {$this wii_quit}})
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {if
+         {!
+            {profile_mgr has_primary_profile}}
+         {$this wii_quit}})
+   (wii_quit
+      {$this set goal ''}
+      {ui
+         goto_screen
+         [return_screen]})
+   #else
+   (enter
+      {$this iterate UIList $l {$l set scroll_time 0}}
+   )
+   #endif
    (SELECT_MSG
       {$this
          set
@@ -55,6 +80,46 @@
    (focus
       "leaderboard.lst")
    (return_screen '')
+   #ifdef HX_WII
+   (enter
+      {$this iterate UIList $l {$l set scroll_time 0}}
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)}
+      {if_else
+         {!
+            {profile_mgr has_primary_profile}}
+         {$this wii_quit}
+         {do
+            {if_else
+               {$this has_goal_icon}
+               {icon.pic
+                  set
+                  tex_file
+                  {$this get_goal_icon}}
+               {icon.pic
+                  set
+                  tex_file
+                  "ui/image/blank_album_art_keep.png"}}
+            {title.lbl
+               set
+               text_token
+               {$this get_goal}}
+            {units.lbl
+               set
+               text_token
+               {$this get_goal_units}}
+            {description.lbl
+               set
+               text_token
+               {$this get_goal_desc}}
+            {leaderboard_types.lst
+               set_data
+               (lb_global lb_friends)
+               0
+               TRUE}}})
+   #else
    (enter
       {$this iterate UIList $l {$l set scroll_time 0}}
       {if_else
@@ -84,6 +149,7 @@
          (lb_global lb_friends)
          0
          TRUE})
+   #endif
    (update_leaderboard_provider
       ($provider)
       {leaderboard.lst set_provider $provider})
@@ -95,6 +161,19 @@
             set_leaderboard_mode
             {leaderboard_types.lst selected_data}}
          {leaderboard.lst refresh}})
+   #ifdef HX_WII
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {if
+         {!
+            {profile_mgr has_primary_profile}}
+         {$this wii_quit}})
+   (wii_quit
+      {ui
+         goto_screen
+         [return_screen]})
+   #endif
    (BUTTON_DOWN_MSG
       {switch
          $action
@@ -168,10 +247,14 @@
       {$this refresh_leaderboard}
       {leaderboard.lst set showing FALSE}
       {view_gamer_card.ihp set_showing FALSE}
+      #ifdef HX_WII
+      {lb_status.lbl set text_token lb_error_live}
+      #else
       {if_else
          {platform_mgr is_connected}
          {lb_status.lbl set text_token lb_error}
-         {lb_status.lbl set text_token lb_error_live}})}
+         {lb_status.lbl set text_token lb_error_live}}
+      #endif)}
 {new
    BandScreen
    campaign_goals_leaderboard_screen
