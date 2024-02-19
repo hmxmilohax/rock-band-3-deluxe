@@ -41,6 +41,12 @@
             upgrade_package_name
             {meta_performer song}}
          #endif))
+   #ifdef HX_WII
+   (load
+      {content_mgr set_passive_errors_enabled FALSE})
+   (finish_load
+      {content_mgr set_passive_errors_enabled TRUE})
+   #endif
    (on_preload_ok
       {net_sync disable}
       ;HEY BUD LISTEN UP
@@ -57,14 +63,26 @@
                {==
                   {ui current_screen}
                   preloading_screen}
+               #ifdef HX_WII
+               {ui goto_screen pregame_screen}
+               #else
                {ui
                   goto_screen
                   {gamemode get game_screen}}
+               #endif
                {ui goto_screen load_nextsong_screen}})
       }
    )
    (on_preload_failed
       {net_sync disable}
+      #ifdef HX_WII
+      {if_else
+         {==
+            {ui current_screen}
+            preloading_screen}
+         {ui goto_screen wii_preloading_failed_screen}
+         {ui goto_screen wii_preload_failed_nextsong_screen}}
+      #else
       {passive_messenger trigger_skip_song_msg}
       {if_else
          {!
@@ -75,14 +93,16 @@
                preloading_screen}
             {ui goto_screen preloading_failed_screen}
             {ui goto_screen preload_failed_nextsong_screen}}
-         {ui goto_screen meta_loading_continue_screen}})}
+         {ui goto_screen meta_loading_continue_screen}}
+         #endif)}
 {new
    BandScreen
    preloading_screen
-   (panels meta preload_panel transition_fallback_panel)
+   (panels meta preload_panel #ifndef HX_WII transition_fallback_panel #endif)
    (focus preload_panel)
    (show_fallback TRUE)
    (enter
+      #ifndef HX_WII
       {transition_fallback_panel
          set_showing
          [show_fallback]}
@@ -93,6 +113,7 @@
          [show_fallback]
          {transition_fallback_panel start_loading_quick_anim}}
       ;{$this set show_fallback FALSE}
+      #endif
       {session_mgr set_active_roster TRUE}
       {overshell set_active_status kOvershellInactive}
       {seed_random_context
@@ -108,6 +129,7 @@
          {acc_mgr clear_goal_info}})
    (TRANSITION_COMPLETE_MSG
       {net_sync disable}
+      #ifdef HX_WII {meta_performer load_festival} #endif
       kDataUnhandled)}
 {new
    BandScreen
@@ -116,3 +138,61 @@
    (TRANSITION_COMPLETE_MSG
       {meta_performer skip_song}
       {ui goto_screen preloading_screen})}
+#ifdef HX_WII
+#define WII_PRELOADING_FAILED_HANDLERS
+((focus dialog_panel)
+   (error_msg '')
+   (TRANSITION_COMPLETE_MSG
+      {do
+         ($data
+            {song_mgr
+               song_name
+               {meta_performer song}})
+         ($error
+            {content_mgr get_last_result})
+         {switch
+            $error
+            (kOpMissingCard
+               {set $error_msg dlc_restore_sdcardremoved})
+            (kOpCorruptData
+               {set
+                  $error_msg
+                  (dlc_restore_corrupt_name $data)})
+            (kOpCorruptCard
+               {set
+                  $error_msg
+                  (dlc_restore_corrupt_name $data)})
+            (kOpOutOfDate
+               {set
+                  $error_msg
+                  (dlc_restore_outofdate $data $data)})
+            (kOpNoLicense
+               {set
+                  $error_msg
+                  (dlc_restore_nolicense $data $data)})
+            (kOpIncompatibleCard
+               {set $error_msg dlc_restore_incompatible})
+            (kOpCorruptContent
+               {set $error_msg dlc_restore_corrupt_content})
+            (kOpFail
+               {set
+                  $error_msg
+                  (dlc_restore_failed_name $data)})
+            {if_else
+               {!
+                  {session_mgr is_local}}
+               {set
+                  $error_msg
+                  (wii_error_generic)}
+               {set
+                  $error_msg
+                  (dlc_restore_failed_name $data)}}}
+         {dialog_panel set_ok $error_msg}}))
+{new
+   BandScreen
+   wii_preloading_failed_screen
+   (panels meta dialog_panel)
+   WII_PRELOADING_FAILED_HANDLERS
+   (SELECT_MSG
+      {ui goto_screen meta_loading_continue_screen})}
+#endif
