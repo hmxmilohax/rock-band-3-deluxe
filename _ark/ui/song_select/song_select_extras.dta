@@ -573,9 +573,23 @@
       {switch
          $component
          (edit_name.btn
+            #ifdef HX_WII
+            {$this set_paused 1}
+            #endif
             {set
                [current_edit]
                name}
+            #ifdef HX_WII
+            {virtual_keyboard
+               show_keyboard
+               $user
+               kVkSetlistNameLengthLimit
+               {localize new_setlist_vk_title}
+               {localize new_setlist_vk_desc}
+               {localize setlist_default_name}
+               $this
+               kVkNormalEntry}
+            #else
             {virtual_keyboard
                show_keyboard
                $user
@@ -583,11 +597,26 @@
                {localize new_setlist_vk_title}
                {localize new_setlist_vk_desc}
                [setlist_name]
-               $this})
+               $this}
+            #endif)
          (edit_desc.btn
+            #ifdef HX_WII
+            {$this set_paused 1}
+            #endif
             {set
                [current_edit]
                desc}
+            #ifdef HX_WII
+            {virtual_keyboard
+               show_keyboard
+               $user
+               kVkSetlistDescLengthLimit
+               {localize new_setlist_vk_title}
+               {localize new_setlist_vk_desc}
+               {localize setlist_default_desc}
+               $this
+               kVkNormalEntry}
+            #else
             {virtual_keyboard
                show_keyboard
                $user
@@ -595,7 +624,8 @@
                {localize new_setlist_vk_title}
                {localize setlist_desc_vk_desc}
                [setlist_desc]
-               $this})
+               $this}
+            #endif)
          (edit_art.btn
             {do
                ($profile
@@ -642,6 +672,28 @@
                set_expiration_to_list_sym
                {edit_expiration.lst selected_sym}}
             {$this refresh_fields})})
+   #ifdef HX_WII
+   (virtual_keyboard_result_msg
+      ($ok $str)
+      {if
+         {&&
+            {== $ok 1}
+            {!=
+               $str
+               ""}}
+         {if_else
+            {==
+               [current_edit]
+               name}
+            {set
+               [setlist_name]
+               $str}
+            {set
+               [setlist_desc]
+               $str}}
+         {$this refresh_fields}}
+      {$this set_paused 0})
+   #else
    (virtual_keyboard_result_msg
       ($ok $str)
       {if
@@ -657,6 +709,7 @@
                [setlist_desc]
                $str}}
          {$this refresh_fields}})
+   #endif
    (leave_setlist
       {ui pop_screen})
    (goto_create_dialog
@@ -701,8 +754,12 @@
    delete_content_confirm_screen
    (panels dialog_panel)
    (focus dialog_panel)
+   #ifdef HX_WII
+   (content 0)
+   #else
    (content
       "")
+   #endif
    (enter
       {do
          ($num_songs
@@ -763,12 +820,44 @@
    (refresh_done
       {unless
          {ui in_transition}
-         {ui pop_screen}})}
+         #ifdef HX_WII
+         {script_task
+            kTaskUISeconds
+            (delay 0.5)
+            (script
+               {if_else
+                  {$this delete_failed}
+                  {ui goto_screen deleting_content_failed_screen}
+                  {ui pop_screen}})}
+         #else
+         {ui pop_screen}
+         #endif})}
 {new
    BandScreen
    deleting_content_screen
    (panels deleting_content_panel)
    (focus deleting_content_panel)}
+#ifdef HX_WII
+{new
+   BandScreen
+   deleting_content_failed_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($error
+            {content_mgr get_last_result})
+         {switch
+            $error
+            (kOpSDWriteProtected
+               {set $error dlc_backup_sdwriteprotected})
+            (kOpIncompatibleCard
+               {set $error dlc_backup_sdincompatible})
+            {set $error store_delete_failed}}
+         {dialog_panel set_ok $error}})
+   (SELECT_MSG
+      {ui pop_screen})}
+#endif
 {new
    BandScreen
    missing_setlist_songs_screen
