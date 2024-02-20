@@ -93,6 +93,8 @@ def copy_rawfiles(platform):
             return False
         if file.suffix.endswith("_xbox") and platform != "xbox":
             return False
+        if file.suffix.endswith("_wii") and platform != "wii":
+            return False
         if file.suffix.endswith(".dta"):
             return False
         if file.suffix.endswith(".png"):
