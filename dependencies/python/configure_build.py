@@ -4,26 +4,16 @@ from pathlib import Path
 import sys
 import os
 
-def print_color_text(*args):
-    text = ' '.join(map(str, args[:-1]))
-    color_code = args[-1]
-    print(f"\033[{color_code}m{text}\033[0m")
-
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print_color_text(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ", "1;36")  # Cyan text
-print_color_text(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖", "1;36")  # Cyan text
-print_color_text(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ", "1;36")  # Cyan text
-print_color_text(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘", "1;36")  # Cyan text
+print(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ")
+print(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖")
+print(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ")
+print(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘")
 
-match platform:
-        case "ps3":
-            print_color_text(f"Platform: {platform}", "1;38;5;196")
-        case "xbox":
-            print_color_text(f"Platform: {platform}", "1;32;40")
-        case "wii":
-           print_color_text(f"Platform: {platform}", "1;35")
+print(f"Platform: {platform}")
+
 def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
     match sys.platform:
