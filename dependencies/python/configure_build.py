@@ -7,17 +7,7 @@ import os
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print(
-    """
-        #       mmmm      #        
-  m mm  #mmm   "   "#  mmm#  m   m 
-  #"  " #" "#    mmm" #" "#   #m#  
-  #     #   #      "# #   #   m#m  
-  #     ##m#"  "mmm#" "#m##  m" "m 
-                                   
-===================================="""
-)
-
+print("Configuring Rock Band 3 Deluxe...")
 print(f"Platform: {platform}")
 
 def configure_tools(platform="ps3"):
