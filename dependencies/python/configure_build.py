@@ -7,10 +7,16 @@ import os
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ")
-print(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖")
-print(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ")
-print(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘")
+print(
+    """
+        #       mmmm      #        
+  m mm  #mmm   "   "#  mmm#  m   m 
+  #"  " #" "#    mmm" #" "#   #m#  
+  #     #   #      "# #   #   m#m  
+  #     ##m#"  "mmm#" "#m##  m" "m 
+                                   
+===================================="""
+)
 
 print(f"Platform: {platform}")
 
