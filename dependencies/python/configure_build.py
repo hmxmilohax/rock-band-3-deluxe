@@ -7,18 +7,20 @@ import os
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print(
-    """
-        #       mmmm      #        
-  m mm  #mmm   "   "#  mmm#  m   m 
-  #"  " #" "#    mmm" #" "#   #m#  
-  #     #   #      "# #   #   m#m  
-  #     ##m#"  "mmm#" "#m##  m" "m 
-                                   
-===================================="""
-)
+print("Configuring Rock Band 3 Deluxe...")
 
-print(f"Platform: {platform}")
+def print_color_text(*args):
+    text = ' '.join(map(str, args[:-1]))
+    color_code = args[-1]
+    print(f"\033[{color_code}m{text}\033[0m")
+
+match platform:
+    case "ps3":
+        print_color_text(f"Platform: {platform}", "1;38;5;196")
+    case "xbox":
+        print_color_text(f"Platform: {platform}", "1;32;40")
+    case "wii":
+        print_color_text(f"Platform: {platform}", "1;36")
 
 def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
@@ -92,6 +94,8 @@ def copy_rawfiles(platform):
         if file.suffix.endswith("_ps3") and platform != "ps3":
             return False
         if file.suffix.endswith("_xbox") and platform != "xbox":
+            return False
+        if file.suffix.endswith("_wii") and platform != "wii":
             return False
         if file.suffix.endswith(".dta"):
             return False
