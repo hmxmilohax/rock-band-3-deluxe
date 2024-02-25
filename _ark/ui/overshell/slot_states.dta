@@ -81,8 +81,10 @@
    (choose_char_flow TRUE)
    (remote_status remote_status_choose_char)
    (enter
+      #ifndef HX_WII
       {if $dx_track_to_reset_choose_character_texture
          {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}} ; dx - restore original character icon if it was changed
+      #endif
       {prefab_mgr load_portraits $this}
       {if
          {{$this get_user}
@@ -160,6 +162,472 @@
             (overshell_confirm_no
                {$user set_contributes_song_progress FALSE})}}
       {$this leave_options}))
+#ifdef HX_WII
+(kState_ChooseProfile
+   (view choose_profile_wii)
+   (prevents_override TRUE)
+   (enter
+      {$this set_wiiprofile_list_mode kWiiProfileListMode_Entry})
+   (on_cancel
+      {$this attempt_remove_user})
+   (SELECT_MSG
+      {$this
+         act_on_user_profile
+         {profiles_wii.lst selected_pos}}))
+(kState_WiiProfileList
+   (view choose_profile_wii)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this cancel_wii_profile_selector})
+   (SELECT_MSG
+      {$this
+         act_on_user_profile
+         {profiles_wii.lst selected_pos}}))
+(kState_WiiProfileConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_guest_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Register
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_register_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_guest_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_create_confirm
+                  (overshell_confirm_yes overshell_confirm_no))})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_delete_confirm
+                  (overshell_confirm_yes overshell_confirm_no))}
+            {confirm_question.lbl
+               set_token_fmt
+               overshell_wiiprofile_delete_confirm
+               {$this get_wiiprofile_list_selected_name}}
+            {confirm_action.lst set_selected overshell_confirm_no FALSE})})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {wiiprofile_panel set_user $user}
+            {splash_panel set last_user $user}
+            {$this act_on_user_profile_confirm}
+            {saveload_mgr autosave})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfileSwitchConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiiprofile_switch_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this act_on_user_profile_confirm})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfilePreconfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this
+                  set_confirm_actions
+                  overshell_wiiprofile_delete_preconfirm
+                  (overshell_confirm_yes overshell_confirm_no))}
+            {confirm_question.lbl
+               set_token_fmt
+               overshell_wiiprofile_delete_preconfirm
+               {$this get_wiiprofile_list_selected_name}}
+            {confirm_action.lst set_selected overshell_confirm_no FALSE})})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_wiiprofile_confirm})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfilePostAction
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_post)})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileFail
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Register
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_register_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_register_denial_in_override)}})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Create
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)}})
+         (kWiiProfileListMode_Delete
+            {if_else
+               {==
+                  {$this is_wiiprofile_delete_queue_full}
+                  TRUE}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_delete_full)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_delete_fail)}})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileFailBusy
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Register
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_register_denial_in_override)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_full)})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this cancel_wii_profile_selector}}))
+(kState_WiiProfileFailCreate
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Entry
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)})
+         (kWiiProfileListMode_Create
+            {if_else
+               {&&
+                  {!
+                     {memcardmgr is_disable_writing}}
+                  {!
+                     {overshell in_override_flow kOverrideFlow_SongSettings}}}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_fail)}
+               {handle
+                  ($this set_confirm_message overshell_wiiprofile_create_denial_in_override)}})})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this leave_options}}))
+(kState_WiiProfileSwapFail
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_swap_fail)})
+   (SELECT_MSG
+      {if_else
+         {==
+            {$this get_wiiprofile_list_mode}
+            kWiiProfileListMode_Entry}
+         {$this show_profiles}
+         {$this cancel_wii_profile_selector}}))
+(kState_WiiProfileListEmpty
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {switch
+         {$this get_wiiprofile_list_mode}
+         (kWiiProfileListMode_Register
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_register_empty)})
+         (kWiiProfileListMode_Switch
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_switch_empty)})
+         (kWiiProfileListMode_Create
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_create_empty)})
+         (kWiiProfileListMode_Delete
+            {handle
+               ($this set_confirm_message overshell_wiiprofile_delete_empty)})})
+   (SELECT_MSG
+      {$this cancel_wii_profile_selector}))
+(kState_WiiProfileOptions
+   (view wiiprofile_options)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_wiiprofile_register
+            {$this show_wiiprofile_list kWiiProfileListMode_Register})
+         (overshell_wiiprofile_switch
+            {$this show_wiiprofile_list kWiiProfileListMode_Switch})
+         (overshell_wiiprofile_create
+            {$this show_wiiprofile_list kWiiProfileListMode_Create})
+         (overshell_wiiprofile_delete
+            {$this show_wiiprofile_list kWiiProfileListMode_Delete})
+         (overshell_return
+            {$this leave_options})})
+   (on_cancel
+      {$this show_options}))
+(kState_RegisterWiiProfile
+   (view wait_wii)
+   (prevents_override TRUE)
+   (enter
+      {if_else
+         {&&
+            {!
+               {memcardmgr is_disable_writing}}
+            {!
+               {overshell in_override_flow kOverrideFlow_SongSettings}}
+            {==
+               {wiiprofile_panel get_wiiprofile_state}
+               kWiiProfileState_None}
+            {!
+               {ui_event_mgr has_transition_event invite_accepted}}}
+         {do
+            {wiiprofile_panel
+               set_wiiprofile_index
+               {$this get_wiiprofile_last_index}}
+            {wiiprofile_panel set_wiiprofile_state kWiiProfileState_Register}
+            {overshell set_active_status kOvershellInactive}
+            {$this leave_options}
+            {ui_event_mgr
+               trigger_event
+               go_to_wiiprofilecreator
+               (dummy init $user)}}
+         {do
+            {if_else
+               {!=
+                  {wiiprofile_panel get_wiiprofile_state}
+                  kWiiProfileState_None}
+               {$this show_wiiprofile_fail_busy}
+               {$this show_wiiprofile_fail}}}}))
+(kState_EnterWiiProfile
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_enter_new_wiiprofile
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {splash_panel set last_user $user}
+            {wiiprofile_panel set_user $user}
+            {if_else
+               {$this is_wiiprofile_full}
+               {$this show_wiiprofile_fail}
+               {do
+                  {if_else
+                     {&&
+                        {!
+                           {memcardmgr is_disable_writing}}
+                        {!
+                           {overshell in_override_flow kOverrideFlow_SongSettings}}
+                        {==
+                           {wiiprofile_panel get_wiiprofile_state}
+                           kWiiProfileState_None}
+                        {!
+                           {ui_event_mgr has_transition_event invite_accepted}}}
+                     {do
+                        {wiiprofile_panel set_wiiprofile_state kWiiProfileState_New}
+                        {overshell set_active_status kOvershellInactive}
+                        {$this leave_options}
+                        {if_else
+                           {!
+                              {wiiprofile_panel is_delay}}
+                           {do
+                              {ui_event_mgr
+                                 trigger_event
+                                 go_to_wiiprofilecreator
+                                 (dummy init $user)}}
+                           {do
+                              {splash_panel set last_user $user}}}}
+                     {do
+                        {if_else
+                           {!=
+                              {wiiprofile_panel get_wiiprofile_state}
+                              kWiiProfileState_None}
+                           {$this show_wiiprofile_fail_busy}
+                           {$this show_wiiprofile_fail}}}}}})
+         (overshell_confirm_no
+            {if_else
+               {==
+                  {$this get_wiiprofile_list_mode}
+                  kWiiProfileListMode_Entry}
+               {$this show_profiles}
+               {$this cancel_wii_profile_selector}})}))
+(kState_WiiProfileGuestConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiiprofile_guest_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this select_guest_profile}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_profiles})}))
+(kState_WiiProfileRemoveUserConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this show_wiiprofile_list kWiiProfileListMode_Confirmed})
+         (overshell_confirm_no
+            {$this show_wiiprofile_options})})
+   (on_cancel
+      {$this show_wiiprofile_options}))
+(kState_ChooseProfileConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_profiles})
+   (update_view
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_swap_profile
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {if
+               {!
+                  {$this confirm_swap_user_profile}}
+               {do
+                  {$this show_wiiprofile_swap_fail}}})
+         (overshell_confirm_no
+            {$this show_profiles})}))
+(kState_WiiProfileDenial
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_create_denial_remote_players)})
+   (SELECT_MSG
+      {$this show_profiles})
+   (on_cancel
+      {$this show_profiles}))
+(kState_RegisterWiiProfileDenial
+   (view confirm_action)
+   (prevents_override TRUE)
+   (update_view
+      {handle
+         ($this set_confirm_message overshell_wiiprofile_register_denial_remote_players)})
+   (SELECT_MSG
+      {$this cancel_wii_profile_selector})
+   (on_cancel
+      {$this cancel_wii_profile_selector}))
+(kState_WaitWii
+   (view wait_wii))
+#else
 (kState_ChooseProfile
    (view choose_profile)
    (prevents_override TRUE)
@@ -197,6 +665,7 @@
             {$this confirm_swap_user_profile})
          (overshell_confirm_no
             {$this show_choose_profile})}))
+#endif
 (kState_Options
    (view
       {if_else
@@ -266,6 +735,7 @@
                      {gamemode get show_change_difficulty}
                      $showing_metronome
                      {gamemode get show_pause_practice_new}
+					 #ifdef HX_WII {gamemode get show_pause_trainer} #endif
                      $can_quit)}
                {handle
                   ($this update_restart_allowed $restart_allowed)}}
@@ -601,8 +1071,46 @@
                   #ifdef HX_XBOX
                   {platform_mgr show_user_friends $user}
                   #else
+                  #ifdef HX_WII
+                  {if_else
+                     {$user is_signed_in_online}
+                     {if
+                        {&&
+                           {==
+                              {ui current_screen}
+                              main_hub_screen}
+                           {!
+                              {ui_event_mgr has_transition_event friends_screen_event}}}
+                        {do
+                           {main_hub_panel set_state kMainHubState_Main}
+                           {input_mgr set_user $user}
+                           {wiifriends_screen go_to_friends_screen $user}}}
+                     {ui_event_mgr trigger_event sign_in}}
+                  #else
                   {$this show_invite_friends}
+                  #endif
                   #endif)
+         #ifdef HX_WII
+         (overshell_import_wii_friends
+            {if
+               {==
+                  {ui current_screen}
+                  main_hub_screen}
+               {do
+                  {main_hub_panel set_state kMainHubState_Main}
+                  {$this leave_options}
+                  {wiifriends_screen go_to_import_friends_screen}}})
+         (wii_friends_view_invite
+            {do
+               {rock_central clear_pending_invitations}
+               {$this show_choose_invitation}
+               {{$this get_state}
+                  set
+                  return_to_options_menu
+                  FALSE}})
+         #endif
+         (overshell_wiispeak_toggle
+            {$this toggle_wii_speak})
                (overshell_kick
                   {$this show_kick_users})
                (overshell_mute
@@ -667,6 +1175,27 @@
    (on_cancel
       {$this leave_options}))
 (kState_RemoveCriticalUserConfirm
+   (view confirm_action)
+   (prevents_override TRUE)
+   (remove_user_prompt TRUE)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_confirm_remove_critical_user
+            (overshell_confirm_yes overshell_confirm_no))}
+      {handle
+         ($this set_default_option overshell_confirm_no)})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {$this remove_user})
+         (overshell_confirm_no
+            {$this leave_options})})
+   (on_cancel
+      {$this leave_options}))
+(kState_RemoveUserInCampaignConfirm
    (view confirm_action)
    (prevents_override TRUE)
    (remove_user_prompt TRUE)
@@ -826,6 +1355,8 @@
             {$this show_options_av_settings})
          (overshell_extras
             {$this show_options_extras})
+         (overshell_wiispeak_options
+            {$this show_options_wiispeak})
          (overshell_rb3esettings
             {$this show_state dxState_DeluxeSettings})
          (overshell_modifiers
@@ -859,6 +1390,8 @@
          ($this update_bass_boost_check)}
       {handle
          ($this update_overscan_check)}
+      {handle
+         ($this update_sdmode_check)}
       {do
          ($user
             {$this get_user})
@@ -920,7 +1453,38 @@
                      }
                      {overshell update_all}}
                   {$this show_saveloadmgr_not_idle}}
-               {$this show_saveloadmgr_not_meta}})}))
+               {$this show_saveloadmgr_not_meta}})
+         (dlc_sdmode
+            {if
+               {&&
+                  {session_mgr is_local}
+                  {!
+                     {ui in_transition}}
+                  {==
+                     main_hub_screen
+                     {ui current_screen}}}
+               {do
+                  ($isSdMode
+                     {==
+                        kSDMode
+                        {content_mgr get_mode}})
+                  {if_else
+                     $isSdMode
+                     {do
+                        {print
+                           "* Switching from kSDMode to kNANDMode\n"}
+                        {if_else
+                           {content_mgr refresh_done}
+                           {do
+                              {content_mgr set_mode kNANDMode}
+                              {content_mgr start_refresh}}
+                           {do
+                              {push_disable_sdmode_dialog}}}}
+                     {do
+                        {print
+                           "* Switching from kNANDMode to kSDMode\n"}
+                        {push_enable_sdmode_dialog}}}}}
+            {$this update_sdmode_check})}))
 #define AUDIO_DATA
 (
    overshell_audio_instruments
@@ -1177,6 +1741,103 @@
       {$this on_slider_change $component $user})
    (SCROLL_MSG
       {$this on_slider_change $component $user}))
+(kState_OptionsWiiSpeak
+   (view options_wiispeak)
+   (on_cancel
+      {$this show_game_options})
+   (update_view
+      {do
+         ($options
+            {{$this get_user}
+               get_gameplay_options})
+         {handle
+            ($this
+               update_slider
+               MicrophoneSensitivity.sld
+               "")}
+         {handle
+            ($this
+               update_slider
+               FriendsVolume.sld
+               "")}
+         {handle
+            ($this
+               update_toggle_wiispeak_check
+               {profile_mgr get_wiispeak_toggle})}
+         {handle
+            ($this
+               update_wiispeak_headphone_mode_check
+               {profile_mgr get_wiispeak_headphone_mode})}})
+   (enter
+      {MicrophoneSensitivity.sld set_num_steps 4}
+      {platform_mgr set_party_mic_options_showing 1}
+      {if
+         {{$this get_user}
+            is_local}
+         {{ui get_wiispeak_icon_panel}
+            show_warning_messages}})
+   (exit
+      {platform_mgr set_party_mic_options_showing 0})
+   (SELECT_MSG
+      {if
+         {== $component options_wiispeak.lst}
+         {switch
+            {$component selected_sym}
+            (wiispeak_button_toggle_wiispeak
+               {profile_mgr
+                  set_wiispeak_toggle
+                  {!
+                     {profile_mgr get_wiispeak_toggle}}}
+               {$this update}
+               {saveload_mgr autosave})
+            (wiispeak_button_headphone_mode
+               {profile_mgr
+                  set_wiispeak_headphone_mode
+                  {!
+                     {profile_mgr get_wiispeak_headphone_mode}}}
+               {$this update}
+               {do
+                  {HeadphoneMode.chk
+                     set
+                     checked
+                     {profile_mgr get_wiispeak_headphone_mode}}
+                  {{ui get_wiispeak_icon_panel}
+                     refresh_headphone_mode}}
+               {saveload_mgr autosave})
+            (wiispeak_button_friends_volume
+               {FriendsVolume.sld store}
+               {FriendsVolume.sld set_showing TRUE}
+               {$this set_focus FriendsVolume.sld})
+            (wiispeak_button_microphone_sensitivity
+               {MicrophoneSensitivity.sld store}
+               {MicrophoneSensitivity.sld set_showing TRUE}
+               {$this set_focus MicrophoneSensitivity.sld})}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {find_elem
+            ("FriendsVolume.sld"
+               "MicrophoneSensitivity.sld")
+            {$this focus_name}}
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {{$this
+                     find
+                     {$this focus_name}}
+                  confirm}
+               {{$this
+                     find
+                     {$this focus_name}}
+                  set_showing
+                  FALSE}
+               {$this set_focus options_wiispeak.lst}
+               {saveload_mgr autosave})
+            kDataUnhandled}
+         kDataUnhandled})
+   (SCROLL_SELECT_MSG
+      {$this on_slider_change $component $user})
+   (SCROLL_MSG
+      {$this on_slider_change $component $user}))
 (kState_OptionsExtras
    (view options_extras)
    (enter
@@ -1212,7 +1873,10 @@
             {if_else
                {&&
                   {$user can_save_data}
-                  {$user is_signed_in_online}}
+                  {$user is_signed_in_online}
+                  #ifdef HX_WII
+                  {server is_connected}
+                  #endif}
                {$this show_linking_code}
                #ifdef HX_PS3
                {do
@@ -2073,7 +2737,15 @@
          (overshell_sign_in_continue
             {$this show_sign_in_wait})
          (overshell_sign_in
-            {platform_mgr signin 1 TRUE})
+            #ifdef HX_WII
+            {platform_mgr
+               signin
+               1
+               TRUE
+               {$this get_user}}
+            #else
+            {platform_mgr signin 1 TRUE}
+            #endif)
          (overshell_sign_in_cancel
             {overshell end_override_flow kOverrideFlow_RegisterOnline TRUE})})
    (on_cancel
@@ -2244,6 +2916,8 @@
                #else
                TRUE
                #endif
+               #ifdef HX_WII
+               {$this set_paused 1}
                {virtual_keyboard
                   show_keyboard
                   $user
@@ -2251,7 +2925,18 @@
                   {localize create_char_vk_title}
                   {localize create_char_vk_desc}
                   {$this character_name}
-                  $this}})
+                  $this
+                  kVkNormalEntry}
+               #else
+               {virtual_keyboard
+                  show_keyboard
+                  $user
+                  kCharNameLength
+                  {localize create_char_vk_title}
+                  {localize create_char_vk_desc}
+                  {$this character_name}
+                  $this}
+               #endif})
          (overshell_delete_character
             {$this attempt_show_char_delete})})
    (VIRTUAL_KEYBOARD_RESULT_MSG
@@ -2265,7 +2950,8 @@
                   ""}}}
          {$this rename_character $text}
          {$this show_chars}
-         DX_AUTOSAVE})
+         DX_AUTOSAVE}
+      #ifdef HX_WII {$this set_paused 0} #endif)
    (on_cancel
       {$this show_chars}))
 (kState_ChooseCharDelete
@@ -2368,11 +3054,100 @@
       {switch
          {$component selected_sym}
          (overshell_sign_in
-            {platform_mgr signin 1})
+            #ifdef HX_WII
+            {platform_mgr
+               signin
+               1
+               FALSE
+               {$this get_user}}
+            #else
+            {platform_mgr signin 1}
+            #endif)
          (overshell_sign_in_cancel
             {$this show_chars})})
    (on_cancel
       {$this show_chars}))
+(kState_EnterWiiSpeakOptions
+   (view confirm_action)
+   (enter
+      {handle
+         ($this
+            set_confirm_actions
+            overshell_wiispeak_confirm
+            (overshell_confirm_yes overshell_confirm_no))})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (overshell_confirm_yes
+            {ui_event_mgr trigger_event go_to_wiispeak_options}
+            {$this leave_options})
+         (overshell_confirm_no
+            {$this show_game_options})}))
+(kState_AutoSignInNintendo
+   (view wait_wii)
+   (register_online_flow TRUE)
+   (on_cancel
+      {$this leave_wait_wii}))
+(kState_ChooseInvitation
+   (view choose_invitation)
+   (prevents_override TRUE)
+   (return_to_options_menu TRUE)
+   (update_view
+      {rock_central clear_pending_invitations}
+      {if_else
+         {wii_invitations_provider is_invitation_pending}
+         {invitations.lst refresh}
+         {$this show_no_invitations}})
+   (on_cancel
+      {if_else
+         {{$this get_state}
+            get
+            return_to_options_menu}
+         {$this show_options}
+         {$this show_online_options}})
+   (SELECT_MSG
+      {if
+         {== $component invitations.lst}
+         {do
+            {wii_invitations_provider
+               set_invitation
+               {$component selected_pos}}
+            {print
+               "[ISDebug] accpeting invitation from "
+               {wii_invitations_provider get_sender_name}
+               "\n"}
+            {accept_invitation.lbl
+               set_token_fmt
+               wii_friends_accept_invitation
+               {wii_invitations_provider get_sender_name}}
+            {$this show_accept_invitation}}}))
+(kState_AcceptInvitation
+   (view accept_invitation)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_choose_invitation})
+   (SELECT_MSG
+      {if
+         {== $component accept_invitation.lst}
+         {do
+            {switch
+               {$component selected_sym}
+               (wii_friends_accept_invitation_yes
+                  {wii_invitations_provider accept_invitation $user}
+                  {$this leave_options})
+               (wii_friends_accept_invitation_no
+                  {wii_invitations_provider decline_invitation}
+                  {$this show_choose_invitation})
+               (wii_friends_accept_invitation_cancel
+                  {$this show_choose_invitation})
+               kDataUnhandled}}}))
+(kState_NoInvitations
+   (view no_invitations)
+   (prevents_override TRUE)
+   (on_cancel
+      {$this show_options})
+   (SELECT_MSG
+      {$this show_options}))
 (kState_CharCreatorDenialMaxChars
    (view confirm_action)
    (choose_char_flow TRUE)

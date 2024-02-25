@@ -7,19 +7,27 @@ import os
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print(
-    """
-        #       mmmm      #        
-  m mm  #mmm   "   "#  mmm#  m   m 
-  #"  " #" "#    mmm" #" "#   #m#  
-  #     #   #      "# #   #   m#m  
-  #     ##m#"  "mmm#" "#m##  m" "m 
-                                   
-===================================="""
-)
+print("Configuring Rock Band 3 Deluxe...")
 
-print(f"Platform: {platform}")
+def print_color_text(*args):
+    text = ' '.join(map(str, args[:-1]))
+    color_code = args[-1]
+    print(f"\033[{color_code}m{text}\033[0m")
 
+if len(sys.argv) > 2 and sys.argv[2] == "--fun":
+    print_color_text(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ", "1;36")  # Cyan text
+    print_color_text(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖", "1;36")  # Cyan text
+    print_color_text(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ", "1;36")  # Cyan text
+    print_color_text(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘", "1;36")  # Cyan text
+    match platform:
+        case "ps3":
+            print_color_text(f"Platform: {platform}", "1;38;5;196")
+        case "xbox":
+            print_color_text(f"Platform: {platform}", "1;32;40")
+        case "wii":
+            print_color_text(f"Platform: {platform}", "1;36")
+else:
+    print(f"Platform: {platform}")
 
 def configure_tools(platform="ps3"):
     ark_dir = Path("obj", platform, "ark")
@@ -67,18 +75,34 @@ def configure_tools(platform="ps3"):
                 f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 $silence",
                 description="Building ARK",
             )
+        case "wii":
+            out_dir = Path("out", platform, "files")
+            ninja.rule(
+                "ark",
+                f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} platform/wii/files/gen/main_wii.hdr platform/wii/sys/main.dol $silence",
+                description="Building ARK",
+            )
 
     ninja.rule("sfreq", "$superfreq png2tex $in $out --miloVersion 26 --platform x360")
     ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns")
     ninja.rule("dtab_serialize", "$dtab -b $in $out")
     ninja.rule("dtab_encrypt", "$dtab -e $in $out")
 
+def wii_file_filer(file: Path):
+    if file.parts[slice(2)] == ("_ark", "songs"):
+        return False
+    if file.parts[slice(3)] == ("_ark", "dx", "song_updates"):
+        return False
+
+    return True
 
 def copy_rawfiles(platform):
     def file_filter(file: Path):
         if file.suffix.endswith("_ps3") and platform != "ps3":
             return False
         if file.suffix.endswith("_xbox") and platform != "xbox":
+            return False
+        if file.suffix.endswith("_wii") and platform != "wii":
             return False
         if file.suffix.endswith(".dta"):
             return False
@@ -89,6 +113,9 @@ def copy_rawfiles(platform):
         return True
 
     files = filter(file_filter, Path("_ark").rglob("*"))
+
+    if platform == "wii":
+        files = filter(wii_file_filer, files)
 
     output_files = []
     for f in files:
@@ -102,6 +129,10 @@ def copy_rawfiles(platform):
 
 def run_dtab():
     files = list(Path("_ark").rglob("*.dta"))
+
+    if platform == "wii":
+        files = filter(wii_file_filer, files)
+
     output_files = []
     for f in files:
         target_filename = Path("gen", f.stem + ".dtb")
@@ -125,6 +156,10 @@ def convert_pngs(platform):
 
     if platform == "yarg":
         files = list(Path("_ark", "songs").rglob("*.png"))
+
+    if platform == "wii":
+        files = filter(wii_file_filer, files)
+
     output_files = []
     for f in files:
         output_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
@@ -187,6 +222,15 @@ def generate_ark(platform, deps):
             hdr = str(Path("out", platform, "gen", "patch_xbox.hdr"))
             ninja.build(
                 str(Path("out", platform, "gen", "patch_xbox_0.ark")),
+                "ark",
+                implicit=deps,
+                implicit_outputs=hdr,
+            )
+            return [hdr]
+        case "wii":
+            hdr = str(Path("out", platform, "files", "gen", "main_wii.hdr"))
+            ninja.build(
+                str(Path("out", platform, "files", "gen", "main_wii_10.ark")),
                 "ark",
                 implicit=deps,
                 implicit_outputs=hdr,
@@ -277,7 +321,8 @@ match platform:
 
     case _:
         buildfiles = []
-        buildfiles += copy_buildfiles(platform)
+        if platform != "wii":
+            buildfiles += copy_buildfiles(platform)
 
         # generate and copy files into the ark
         arkfiles = copy_rawfiles(platform)

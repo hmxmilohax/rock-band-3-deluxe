@@ -154,6 +154,7 @@
          "oboyoboy!"
          "yboobyyo!"
          "RB3DX costs less than a beefy 5 layer burrito!"
+         "INTERNAL BUILD ONLY. DO NOT DISTRIBUTE IN ANY FORM."
       )
    )
 )
@@ -170,10 +171,9 @@
       #endif
    )
 )
-#define DX_SPLASH_PANEL_HANDLES
+#define DX_YELLOW_SPLASH_TEXT
 (
-   (dx_splash_panel_enter
-      {start.btn set text_token {localize {random_elem {elem DX_SPLASHTEXT $index}}}} ; dx - set a random splash text
+     {start.btn set text_token {localize {random_elem {elem DX_SPLASHTEXT $index}}}} ; dx - set a random splash text
       {start.btn set_local_pos 197.5 0 140}
       ;{start.btn set_local_scale 0.75}
       {start.btn set_local_rot 35 12.5 -25} ; dx - set the position of the splash text
@@ -246,15 +246,65 @@
             {$task loop}
          )
       }
+)
+
+#define DX_INTERNAL_SPLASH_TEXT
+(
+   {set $old_this $this}
+   {set_this {splash_panel loaded_dir}}
+   {delete internalbuild.color}
+   {new UIColor internalbuild.color}
+   {internalbuild.color set color {pack_color 1 0 0}}
+   {set_this start.btn}
+   {$this set color_override internalbuild.color}
+   {$this set_token_fmt {sprint "INTERNAL BUILD ONLY.  DO NOT DISTRIBUTE IN ANY FORM."}}
+   {set_this $old_this}
+   {set $btn_width {start.btn get width}}
+   {start.btn set width {+ 200 $btn_width}}
+   {start.btn set_local_pos 0 0 63} ;figure out how to get the right cords somehow, this is a guess
+)
+
+#define DX_SPLASH_PANEL_HANDLES
+(
+   (dx_splash_panel_enter 
+
+      {set $dx_random_number {random_int 0 500}}
+      {if {== $dx_random_number 1}
+         {set $dx_splash_beta_egg TRUE}
+      }
+      #ifndef _SHIP
+      {set $dx_splash_beta_egg FALSE} ;test
+      #endif
+      {if {== $dx_splash_beta_egg FALSE}
+         DX_YELLOW_SPLASH_TEXT
+      }
+      #ifdef _SHIP
+      {if {== $dx_splash_beta_egg TRUE}
+         DX_INTERNAL_SPLASH_TEXT
+      }
+      #endif
+      #ifndef HX_WII
       #ifdef RB3E
       {{{{sv8_panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/rb3dx-rb3e_logo.png"}
       #else
       {{{{sv8_panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/rb3dx_logo.png"}
       #endif
+      {if {== $dx_splash_beta_egg TRUE}
+         {{{{sv8_panel find sv8_a} find cityscape_ao} find logo.mesh} set_showing FALSE}
+      }
+      #endif
       {rb3.lbl set_showing TRUE} ; dx - this is an unused label i found, we're using it to print version info
-      {rb3.lbl set caps_mode kCapsModeNone} ; dx - make label lowercase
-      {rb3.lbl set_token_fmt rb3e_mod_string} ; dx - show version info
-      {rb3.lbl set_local_scale 0.35 0.35 0.35} {rb3.lbl set_local_pos 225 0 -175} ; dx - set the size and position of the version info
+      {if {== $dx_splash_beta_egg TRUE}
+         {set $dx_random_number {random_int 0 2}}
+         {if {== $dx_random_number 1}
+            {rb3.lbl set_token_fmt "Rock Band 3 DX"}
+         }
+      }
+      {if {== $dx_splash_beta_egg FALSE}
+         {rb3.lbl set caps_mode kCapsModeNone} ; dx - make label lowercase
+         {rb3.lbl set_token_fmt rb3e_mod_string} ; dx - show version info
+         {rb3.lbl set_local_scale 0.35 0.35 0.35} {rb3.lbl set_local_pos 225 0 -175} ; dx - set the size and position of the version info
+      }
    )
    (dx_splash_panel_exit
       {if {exists animate_splash}

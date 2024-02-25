@@ -1,3 +1,4 @@
+#ifndef HX_WII
 {func dx_print_gamemode
    ;{dx_log_writer info {sprint "func: dx_print_gamemode"}}
    ;{dx_log_writer info
@@ -35,11 +36,13 @@
 #define DX_LOG_FILE_PATH
 (
    #ifdef HX_XBOX "GAME:/log.dta" #endif
+   #ifdef HX_WII "log.dta" #endif
    #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/log.dta" #endif
 )
 #define DX_LAST_LOG_FILE_PATH
 (
    #ifdef HX_XBOX "GAME:/last_log.dta" #endif
+   #ifdef HX_WII "last_log.dta" #endif
    #ifdef HX_PS3 "GD:/dev_hdd0/game/BLUS30463/USRDIR/last_log.dta" #endif
 )
 #define DX_LOG_CLEAR
@@ -50,6 +53,7 @@
       {write_file DX_LOG_FILE_PATH {array $dx_log_reader}}
    }
 )
+#ifdef DX_LEGACY_LOG
 {func
    dx_log_writer
    ($loglevel $dx_log_writer)
@@ -101,7 +105,31 @@
       }
    }
 }
-
+#else
+{func
+   dx_log_writer
+   ($loglevel $dx_log_writer)
+   kDataUnhandled
+}
+#endif
+#endif
+#ifdef HX_WII
+{func
+   dx_log_writer
+   ($loglevel $dx_log_writer)
+   {if
+      {||
+          {&& {== $loglevel essential} $dx_logging_essential}
+          {&& {== $loglevel default} $dx_logging_default}
+          {&& {== $loglevel info} $dx_logging_info}
+          {&& {== $loglevel insane} $dx_logging_insane}
+          {&& {== $loglevel beatmatch} $dx_logging_beatmatch}
+          {&& {== $loglevel countdown} $dx_logging_countdown}
+      }
+      {notify {sprint $dx_log_writer}}
+   }
+}
+#endif
 {func
    dx_passive_messenger
    ($message)
@@ -187,17 +215,16 @@
    dx_uptime
    {sprintf " - Uptime: %s" {dx_ms_to_time_str {system_ms} FALSE}}
 }
-
 ;usage: {dx_log_objs_type $panel $type $suffix}
 ;       $panel is a symbol representing the panel you wish to dump the object list from
 ;       $type is a symbol representing the type of object to filter the list to
 ;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
 {func dx_log_objs_type
    ($obj $type $suffix)
-   {dx_log_writer info {sprint "func: dx_log_objs_type"}}
-   {dx_log_writer info
-      {sprintf "Executed dx_log_objs_type - time: %.4fms"
-         {time
+   ;{dx_log_writer info {sprint "func: dx_log_objs_type"}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_log_objs_type - time: %.4fms"
+   ;      {time
             {do
                {set $objArray {array ({sprintf "List of %s in %s" $type $obj})}}
 ;               {dx_log_writer default {sprintf "Iterating through %s and fetching list of objects of type %s..." $obj $type}}
@@ -223,9 +250,9 @@
                   }
                }
             }
-         }
-      }
-   }
+   ;      }
+   ;   }
+   ;}
 }
 
 ;usage: {dx_log_objs $panel $suffix}
@@ -233,10 +260,10 @@
 ;       $suffix is a string containing a suffix to be added to the filename, or "" for no suffix
 {func dx_log_objs
    ($obj $suffix)
-   {dx_log_writer info {sprint "func: dx_log_objs" "Args - " $obj ", " $suffix}}
-   {dx_log_writer info
-      {sprintf "Executed dx_log_objs - time: %.4fms"
-         {time
+   ;{dx_log_writer info {sprint "func: dx_log_objs" "Args - " $obj ", " $suffix}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_log_objs - time: %.4fms"
+   ;      {time
             {do
                ($objsize {size $obj})
                {set $objArray {array ({sprintf "List of %d Objects in %s" $objsize $obj})}}
@@ -264,16 +291,16 @@
                   }
                }
             }
-         }
-      }
-   }
+   ;      }
+   ;   }
+   ;}
 }
 {func dx_print_objects
-   {dx_log_writer info {sprint "func: dx_print_objects"}}
-   {dx_log_writer info
-      {sprintf "Executed dx_print_objects - time: %.4fms"
-         {time
-            {if_else {$this in_game}
+   ;{dx_log_writer info {sprint "func: dx_print_objects"}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_print_objects - time: %.4fms"
+   ;      {time
+            {if_else {session is_in_game}
                {do
                   ($focus_panel {get_track_panel})
                   {set $objArray {array ({sprintf "List of objects" })}}
@@ -289,9 +316,9 @@
                   }
                }
             }
-         }
-      }
-   }
+   ;      }
+   ;   }
+   ;}
 }
 {func
    dx_print_current_panel
@@ -316,10 +343,10 @@
 }
 {func
    print_hmx_panel
-   {dx_log_writer info {sprint "func: dx_print_objects"}}
-   {dx_log_writer info
-      {sprintf "Executed dx_print_objects - time: %.4fms"
-         {time
+   ;{dx_log_writer info {sprint "func: dx_print_objects"}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_print_objects - time: %.4fms"
+   ;      {time
             {do
                ($list_items
                   ())
@@ -408,7 +435,7 @@
                   $resources}
                {dx_log_writer info $list_item_strings}
             }
-         }
-      }
-   }
+   ;      }
+   ;   }
+   ;}
 }

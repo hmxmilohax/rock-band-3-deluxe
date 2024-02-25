@@ -44,11 +44,11 @@
       {set $theactualpath FALSE}
       {if_else {file_exists SONGPATH_DLC}
          {set $theactualpath SONGPATH_DLC} ;a dlc dta
-         {if_else {file_exists SONGPATH_UPDATE}
+          {if_else {&& {file_exists SONGPATH_UPDATE} {file_exists SONGPATH_RAW_DTB}}
             {set $theactualpath SONGPATH_UPDATE} ;on disc update
             {if_else {file_exists SONGPATH_DISC}
                {set $theactualpath SONGPATH_DISC} ;inside the ark
-               {set $dx_author_finder_is_enabled FALSE}
+               {set $dx_path_failed TRUE}
             }
          }
       }
@@ -77,20 +77,22 @@
 )
 #define MTV_DTA_READER
 (
-   {if {find_exists $songdtareader {meta_performer song}}
-      {set $songdtareader
-         {find $songdtareader {meta_performer song}}
+   {if {&& $dx_author_finder_is_enabled {! $dx_path_failed}}
+      {if {find_exists $songdtareader {meta_performer song}}
+         {set $songdtareader
+            {find $songdtareader {meta_performer song}}
+         }
       }
-   }
-   {dx_mtv_array_reader}
-   {set $songdtareader FALSE}
-   {if {find_exists $syscfg missing_song_data {meta_performer song}}
-      {set $songdtareader
-         {find $syscfg missing_song_data {meta_performer song}}
-      }
-   }
-   {if $songdtareader
       {dx_mtv_array_reader}
+      {set $songdtareader FALSE}
+      {if {find_exists $syscfg missing_song_data {meta_performer song}}
+         {set $songdtareader
+            {find $syscfg missing_song_data {meta_performer song}}
+         }
+      }
+      {if $songdtareader
+         {dx_mtv_array_reader}
+      }
    }
 )
 #define DX_MTV_FORMATTER_HANDLER
@@ -261,9 +263,8 @@
 )
 #define MTV_WRITER_CHOOSER
 (
-   {if_else $dx_author_finder_is_enabled
-      {if {! {gamemode in_mode trainer}}
-         {set $author_finder_disabled FALSE}
+   {if {! {gamemode in_mode trainer}}
+      {if {&& $dx_author_finder_is_enabled {! $dx_path_failed}}
          {unless $dx_path_failed
             {do
                {unless $dx_mtv_dta_reader_once
@@ -275,7 +276,7 @@
                      {! $artistvar}
                      {! $namevar}
                   }
-                  {set $author_finder_disabled TRUE}
+                  {set $dx_path_failed TRUE}
                }
                {if {! $artistvar} {set $artistvar "No Artist Found"}}
                {if {! $yearvar} {set $yearvar "No Year Found"}}
@@ -293,14 +294,7 @@
             }
          }
       }
-      {set $author_finder_disabled TRUE}
-   }
-   {if {! {gamemode in_mode trainer}}
-      {if
-         {||
-            $dx_path_failed
-            $author_finder_disabled
-         }
+      {if $dx_path_failed
          {unless $dx_author_finder_failed
             {set $dx_author_finder_failed TRUE}
             {dx_log_writer default {sprint "Author Finder Failed - Song Loaded: " $song_title}}
@@ -315,5 +309,17 @@
             {artist.lbl set_artist_name_from_shortname $short_name}
          }
       }
+   }
+)
+#define MTV_WRITER_NO_AUTHOR_FINDER
+(
+   {if
+      {exists song.lbl}
+      {song.lbl set fixed_length 1000}
+      {$this mtv_song_title_writer}
+   }
+   {if
+      {exists artist.lbl}
+      {artist.lbl set_artist_name_from_shortname $short_name}
    }
 )

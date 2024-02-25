@@ -2,9 +2,9 @@
    dx_overshell_msg
    ($message)
    ;opens player message panel on current player
-   {dx_log_writer info {sprint "func: dx_overshell_msg" " - Args: " $message}}
-   {dx_log_writer info
-      {sprintf "Executed dx_overshell_msg - time: %.4fms"
+   ;{dx_log_writer info {sprint "func: dx_overshell_msg" " - Args: " $message}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_overshell_msg - time: %.4fms"
          {time
             {if {! {session is_in_game}}
                {$this show_message}
@@ -12,15 +12,15 @@
                {$this setup_message_text $message FALSE}
             }
          }
-      }
-   }
+   ;   }
+   ;}
 }
 {func
    dx_check_for_dupe ; function to allow 5L/Pro instruments together but still block same parts from being selected
    ($slot) ; current slot number of the user
-   {dx_log_writer info {sprint "func: dx_check_for_dupe" " - Args: " $slot}}
-   {dx_log_writer info
-      {sprintf "Executed dx_check_for_dupe - time: %.4fms"
+   ;{dx_log_writer info {sprint "func: dx_check_for_dupe" " - Args: " $slot}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_check_for_dupe - time: %.4fms"
          {time
             {do
                {set $selected_part ; grabs the currently selected part of the user
@@ -31,7 +31,7 @@
                      (3 $default_slot3)
                   }
                }
-               (set $dupe_allowed TRUE) ; allows dupe TRUE by default, any check below will set it to FALSE
+               {set $dupe_allowed TRUE} ; allows dupe TRUE by default, any check below will set it to FALSE
                {switch $selected_part
                   ((overshell_drums overshell_drums_pro)
                      {user_mgr foreach_user $user
@@ -86,8 +86,8 @@
                $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
             }
          }
-      }
-   }
+   ;   }
+   ;}
    $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
 }
 {func
@@ -98,48 +98,51 @@
    ;   {sprintf "Executed dx_state_setup - time: %.4fms"
    ;      {time
             {unless $in_state ;the view code trick runs several times, so we need to make sure to only run the function once in the view
-               DX_OS_CLOSE_MSG
-               {set $in_state TRUE} ;gate it off REMEMBER, turn this to false when running this code in a reset handle
-               {set $dx_menu_message FALSE}
-               {overshell_list_creation}
-               {overshell_list_chooser}
-               {if_else {== $current_list users.lst}
-                  {gamercard_users.lbl set_showing FALSE}
-                  {gamercard_users.lbl set_showing TRUE}
-               }
-               {$current_list set circular $options_circular}
-               {$current_list set_data $options_list_data}
-               {set $previous_state $current_state} ;don't rely on this this is only useful for a big switch state with many entry points, aka texture states
-               {set $current_state $current_overshell_state}
-               {foreach $entry $dx_state_tracker
-                  {if {== {elem $entry 0} {basename $current_overshell_state}}
-                     {$current_list set_selected {elem {find $entry {sprint $current_overshell_state}} 1}}
-                     {if {! {== $message FALSE}}
-                        {set $dx_menu_message {sprint {elem {find $entry {sprint $current_overshell_state}} 1} "_desc"}}
+               {do
+                  DX_OS_CLOSE_MSG
+                  {set $in_state TRUE} ;gate it off REMEMBER, turn this to false when running this code in a reset handle
+                  {set $dx_menu_message FALSE}
+                  {overshell_list_creation}
+                  {overshell_list_chooser}
+                  {if_else {== $current_list users.lst}
+                     {gamercard_users.lbl set_showing FALSE}
+                     {gamercard_users.lbl set_showing TRUE}
+                  }
+                  {$current_list set circular $options_circular}
+                  {$current_list set_data $options_list_data}
+                  {set $previous_state $current_state} ;don't rely on this this is only useful for a big switch state with many entry points, aka texture states
+                  {set $current_state $current_overshell_state}
+                  {foreach $entry $dx_state_tracker
+                     {if {== {elem $entry 0} $current_state}
+                        {$current_list set_selected {elem $entry 1}}
+                        {if {! {== $message FALSE}}
+                           {set $dx_menu_message {sprint {elem $entry 1} "_desc"}}
+                        }
                      }
                   }
-               }
-               {if {! {== $message FALSE}}
-                  {unless $dx_menu_message
-                     {set $dx_menu_message {sprint {elem $options_list_data 0} "_desc"}}
+                  {if {! {== $message FALSE}}
+                     {unless $dx_menu_message
+                        {set $dx_menu_message {sprint {elem $options_list_data 0} "_desc"}}
+                     }
+                     {dx_overshell_msg $dx_menu_message}
                   }
-                  {dx_overshell_msg $dx_menu_message}
-               }
-               {set $dx_tracked_changed FALSE}
-               {if_else {$this in_game}
-                  {$current_list set_type overshell_menu_ingame}
-                  {$current_list set_type overshell_menu}
-               }
-               {$current_list restart_highlight_matanim}
-               {$current_list refresh}
-               {if {== $message FALSE}
-                  DX_OS_CLOSE_MSG
+                  {set $dx_tracked_changed FALSE}
+                  {if_else {$this in_game}
+                     {$current_list set_type overshell_menu_ingame}
+                     {$current_list set_type overshell_menu}
+                  }
+                  {$current_list restart_highlight_matanim}
+                  {$current_list refresh}
+                  {if {== $message FALSE}
+                     DX_OS_CLOSE_MSG
+                  }
                }
             }
    ;      }
    ;   }
    ;}
 }
+
 {func
    dx_state_pos_tracker
    ;{dx_log_writer insane {sprint "func: dx_state_pos_tracker"}}
@@ -165,19 +168,19 @@
             }
             ;this is stupid but it works
             {foreach $entry $dx_state_tracker
-               {if {== {elem $entry 0} {basename $current_state}} ;first check if we have the state tracked already
-                  {remove_elem {find $dx_state_tracker $current_state} {elem {find $dx_state_tracker $current_state} 1}} ;removed the previously tracked list position
-                  {push_back {find $dx_state_tracker $current_state} $current_state_pos} ;add in the new list position
+               {if {== {elem $entry 0} $current_state} ;first check if we have the state tracked already
+                  {remove_elem $entry {elem $entry 1}} ;removed the previously tracked list position
+                  {push_back $entry $current_state_pos} ;add in the new list position
                }
             }
 
             {foreach $entry $dx_state_tracker
-               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+               {if {!= {elem $entry 0} $current_state} ;check if the state isnt in the list
                   {set $pushtime_guitar TRUE} ;get ready to push it
                }
             }
             {foreach $entry $dx_state_tracker
-               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+               {if {== {elem $entry 0} $current_state} ;check the list again, and if it is in the list
                   {set $pushtime_guitar FALSE} ;dont push it
                }
             }
@@ -186,12 +189,12 @@
             }
 
             {foreach $entry $dx_state_tracker
-               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+               {if {!= {elem $entry 0} $current_state} ;check if the state isnt in the list
                   {set $pushtime_drum TRUE} ;get ready to push it
                }
             }
             {foreach $entry $dx_state_tracker
-               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+               {if {== {elem $entry 0} $current_state} ;check the list again, and if it is in the list
                   {set $pushtime_drum FALSE} ;dont push it
                }
             }
@@ -200,12 +203,12 @@
             }
             
             {foreach $entry $dx_state_tracker
-               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+               {if {!= {elem $entry 0} $current_state} ;check if the state isnt in the list
                   {set $pushtime_bass TRUE} ;get ready to push it
                }
             }
             {foreach $entry $dx_state_tracker
-               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+               {if {== {elem $entry 0} $current_state} ;check the list again, and if it is in the list
                   {set $pushtime_bass FALSE} ;dont push it
                }
             }
@@ -214,19 +217,18 @@
             }
             
             {foreach $entry $dx_state_tracker
-               {if {!= {elem $entry 0} {basename $current_state}} ;check if the state isnt in the list
+               {if {!= {elem $entry 0} $current_state} ;check if the state isnt in the list
                   {set $pushtime_keys TRUE} ;get ready to push it
                }
             }
             {foreach $entry $dx_state_tracker
-               {if {== {elem $entry 0} {basename $current_state}} ;check the list again, and if it is in the list
+               {if {== {elem $entry 0} $current_state} ;check the list again, and if it is in the list
                   {set $pushtime_keys FALSE} ;dont push it
                }
             }
             {if $pushtime_keys ;if we need to push
                {push_back $dx_state_tracker ($current_state $current_state_pos)} ;push_back a new state into the array
             }
-
             {set $dx_state_tracker {array $dx_state_tracker}} ;re read the array so the vars enumerate and the array becomes static
             {$current_list set circular FALSE}
             {set $in_state FALSE}
@@ -236,6 +238,7 @@
    ;   }
    ;}
 }
+
 {func
    overshell_list_chooser
    ;{dx_log_writer insane {sprint "func: overshell_list_chooser"}}
@@ -267,9 +270,9 @@
    ;{dx_log_writer insane
    ;   {sprintf "Executed overshell_view_chooser - time: %.4fms"
    ;      {time
-            {unless $in_state
-               DX_OS_CLOSE_MSG
-            }
+            ;{unless $in_state
+            ;   DX_OS_CLOSE_MSG
+            ;}
             {switch $current_slots
                (1 options_end_game)
                (2 options_end_game)
@@ -312,7 +315,7 @@
                {set $previous_num_slot $num_of_slots}
                {set $current_slots $num_of_slots}
             }
-            $options
+            ;$options
             {set $options_list_data {array $options}}
    ;      }
    ;   }
