@@ -1,0 +1,461 @@
+{new
+   StoreInfoPanel
+   store_info_panel
+   (file
+      "store_info.milo")
+   (focus buttons.lst)
+   (force_exit TRUE)
+   (purchase_allowed
+      ($offer)
+      {&&
+         {$offer is_available}
+         {!
+            {{store_panel offer_provider}
+               show_browser_purchased
+               $offer}}})
+   (refresh_buttons
+      ($init)
+      {do
+         ($offer
+            [cur_offer])
+         ($is_song
+            {==
+               {$offer offer_type}
+               song})
+         ($buttons
+            ())
+         {resize $buttons 0}
+         {insert_elem $buttons 0 exit}
+         #ifdef HX_WII
+         {if
+            {'||'
+               {$offer is_partially_downloaded}
+               {$offer upgrade_downloaded}}
+            {insert_elem $buttons 0 store_delete}}
+         #endif
+         {if
+            $is_song
+            #ifndef HX_WII
+            {if
+               {&&
+                  {$offer has_available_demo}
+                  {$this purchase_allowed $offer}}
+               {insert_elem $buttons 0 store_download_demo}}
+            #endif
+            {if
+               {$offer has_available_pack}
+               {insert_elem
+                  $buttons
+                  0
+                  (store_view_pack
+                     {$offer pack_name})}}
+            {if
+               {$offer has_available_album}
+               {insert_elem
+                  $buttons
+                  0
+                  (store_view_album
+                     {$offer album_name})}}}
+         {if
+            {$offer has_available_upgrade}
+            {if_else
+               {$offer upgrade_purchased}
+               {insert_elem $buttons 0 store_download_upgrade_again}
+               {insert_elem $buttons 0 store_buy_upgrade}}}
+         {if_else
+            {$offer is_purchased}
+            {insert_elem $buttons 0 store_download_again}
+            {if
+               {$this purchase_allowed $offer}
+               {insert_elem $buttons 0 store_buy_now}}}
+         {if
+            {&&
+               $is_song
+               {$offer has_preview_audio}
+               {is_allowed_to_preview_offer $offer}
+               {store_preview_mgr
+                  allow_preview_download
+                  {sprintf
+                     "%s%s"
+                     {store_panel get_request_prefix}
+                     {$offer preview_audio}}}}
+            {insert_elem $buttons 0 store_preview_audio}}
+         {if_else
+            $init
+            {buttons.lst set_data $buttons 0 FALSE TRUE}
+            {do
+               ($sym
+                  {buttons.lst selected_sym})
+               {buttons.lst set_data $buttons 0 FALSE TRUE}
+               {buttons.lst set_selected $sym FALSE}}}
+         {if_else
+            {$offer is_purchased}
+            {buttons.lst undim_data store_buy_upgrade}
+            {buttons.lst dim_data store_buy_upgrade}}})
+   (enter
+      {$this refresh_panel})
+   (refresh_panel
+      {do
+         ($offer
+            [cur_offer])
+         ($offer_type
+            {$offer offer_type})
+         {song.lbl set_offer_name $offer}
+         {$this refresh_buttons TRUE}
+         {cost_ps3.lbl set_showing FALSE}
+         {cost.lbl set_showing FALSE}
+         {if
+            {$this purchase_allowed $offer}
+            #ifdef HX_PS3
+            {cost_ps3.lbl set_offer_cost $offer}
+            {cost_ps3.lbl set_showing TRUE}
+            #else
+            {cost.lbl set_offer_cost $offer}
+            {cost.lbl set_showing TRUE}
+            #endif}
+         {if_else
+            {[cur_offer]
+               has_rating}
+            {do
+               {rating.lbl
+                  set_rating_icon
+                  {[cur_offer]
+                     rating_num}}
+               {rating_description.lbl
+                  set
+                  text_token
+                  {[cur_offer]
+                     rating}}
+               {rating.grp set_showing TRUE}}
+            {rating.grp set_showing FALSE}}
+         {if
+            {'||'
+               {== $offer_type pack}
+               {== $offer_type album}}
+            {drm.lbl set_offer_description $offer}
+            #ifdef HX_WII
+            {wii_drm_fix.lst set_showing TRUE}
+            {do
+               ($desc_data_list
+                  {[cur_offer]
+                     description_data
+                     drm.lbl})
+               ($count
+                  {size $desc_data_list})
+               {if_else
+                  {< $count 4}
+                  {do
+                     {wii_drm_fix.lst set_num_display $count}
+                     {wii_drm_fix.lst set circular FALSE}
+                     {wii_drm_fix.lst set_data $desc_data_list}}
+                  {do
+                     {wii_drm_fix.lst set_num_display 3}
+                     {wii_drm_fix.lst set circular FALSE}
+                     {wii_drm_fix.lst set_data $desc_data_list}
+                     {wii_drm_fix.lst auto_scroll}}}}
+            {drm.lbl set_showing FALSE}
+            #endif}
+         {recommended.grp set_showing FALSE}
+         {recommended_wait.grp set_showing TRUE}
+         {art_cycle.anim set_frame 10}
+         {$this fetch_recommendations}
+         {store_details_panel refresh $offer}})
+   (no_recommendations
+      {recommended_wait.grp set_showing FALSE})
+   (recommendations_ready
+      {$this refresh_recommendations}
+      {recommended.grp set_showing TRUE}
+      {recommended_wait.grp set_showing FALSE})
+   (refresh_recommendations
+      {recommended.lbl set_recommendation $this}
+      {foreach_int
+         $i
+         0
+         6
+         {{object
+               {sprintf
+                  "r%02i.mat"
+                  {'+' $i 1}}}
+            set
+            diffuse_tex
+            {do
+               ($tex
+                  {$this get_recommendation_tex $i})
+               {if_else $tex $tex default.tex}}}})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({!
+               {store_panel user_can_do_input}}
+            TRUE)
+         ({== $action kAction_Cancel}
+            {play_instr_sfx $user button_back}
+            {$this go_back})
+         ({== $action kAction_ShellOption}
+            {if
+               {&&
+                  {recommended.grp showing}
+                  {rotate_art.trg is_done}}
+               {$this rotate_recommendation}
+               {$this refresh_recommendations}
+               {rotate_art.trg trigger}})
+         ({== $action kAction_Option}
+            {if
+               {recommended.grp showing}
+               {do
+                  ($path
+                     {$this recommendation_path})
+                  {if
+                     $path
+                     {store_preview_mgr clear_current_preview}
+                     {store_panel set_source similar_recommendation TRUE}
+                     {store_panel request $path FALSE}
+                     {ui goto_screen store_menu_screen}}}})
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         {$component selected_sym}
+         (store_preview_audio
+            {do
+               ($offer
+                  [cur_offer])
+               {if_else
+                  {$offer has_preview_audio}
+                  {do
+                     {store_preview_mgr
+                        download_preview_file
+                        {sprintf
+                           "%s%s"
+                           {store_panel get_request_prefix}
+                           {$offer preview_audio}}}
+                     {store_details_panel refresh $offer}}
+                  {notify
+                     "No preview audio file in store_index\n"}}
+               {$this refresh_buttons FALSE}})
+         (store_buy_now
+            {if_else
+               {[cur_offer]
+                  in_library}
+               {ui push_screen store_library_warning_screen}
+               #ifndef HX_WII
+               {store_panel
+                  check_out
+                  [cur_offer]}
+               #else
+               {$this wii_start_checkout 0}
+               #endif})
+         (store_download_again
+            #ifndef HX_WII
+            {store_panel
+               re_download
+               [cur_offer]}
+            #else
+            {$this wii_start_re_download 0}
+            #endif)
+         (store_buy_upgrade
+            {if_else
+               {{store_panel offer_provider}
+                  show_browser_purchased
+                  [cur_offer]}
+               {if_else
+                  {[cur_offer]
+                     upgrade_in_library}
+                  {ui push_screen store_library_upgrade_warning_screen}
+                  #ifndef HX_WII
+                  {store_panel
+                     check_out
+                     {[cur_offer]
+                        upgrade}}
+                  #else
+                  {$this wii_start_checkout 1}
+                  #endif}
+               {push_basic_confirm_dialog store_prevent_upgrade_purchase}})
+         (store_download_upgrade_again
+            #ifndef HX_WII
+            {store_panel
+               re_download
+               {[cur_offer]
+                  upgrade}}
+            #else
+            {$this wii_start_re_download 1}
+            #endif)
+         (store_view_album
+            {store_panel
+               request
+               {[cur_offer]
+                  album_link}
+               FALSE})
+         (store_view_pack
+            {store_panel
+               request
+               {[cur_offer]
+                  pack_link}
+               FALSE})
+         #ifndef HX_WII
+         (store_download_demo
+            {store_panel
+               check_out
+               {[cur_offer]
+                  demo}})
+         #endif
+         #ifdef HX_WII
+         (store_delete
+            {$this wii_start_delete})
+         #endif
+         (exit
+            {$this go_back})})
+   #ifdef HX_WII
+   (wii_start_checkout
+      ($isUpgrade)
+      {store_preview_mgr clear_current_preview}
+      {store_panel checkout 0}
+      {store_panel set current_offer_upgrade $isUpgrade}
+      {store_panel
+         set
+         current_offer
+         [cur_offer]}
+      {if_else
+         {&&
+            {!=
+               {[cur_offer]
+                  offer_type}
+               song}
+            {[cur_offer]
+               is_partially_purchased}}
+         {ui push_screen wii_store_purchase_pack_confirmation}
+         {if_else
+            {!
+               {commerce_mgr parental_control_active}}
+            {wii_store_goto_first_purchase_screen}
+            {ui push_screen wii_store_pin_message_screen}}})
+   (wii_start_re_download
+      ($isUpgrade)
+      {store_preview_mgr clear_current_preview}
+      {store_panel checkout 0}
+      {store_panel set current_offer_upgrade $isUpgrade}
+      {store_panel
+         set
+         current_offer
+         [cur_offer]}
+      {if_else
+         {==
+            {[cur_offer]
+               offer_type}
+            song}
+         {ui push_screen wii_store_song_download_again_screen}
+         {ui push_screen wii_store_pack_download_again_screen}})
+   (wii_start_delete
+      {store_panel checkout 0}
+      {store_panel
+         set
+         current_offer
+         [cur_offer]}
+      {if_else
+         {==
+            {[cur_offer]
+               offer_type}
+            song}
+         {ui push_screen wii_store_delete_screen}
+         {ui push_screen wii_store_song_delete_select_screen}})
+   #endif
+   (go_back
+      {ui
+         goto_screen
+         {store_info_screen get back_screen}
+         FALSE
+         TRUE})
+   (enum_finished
+      {if
+         {store_panel is_up}
+         {do
+            ($offer
+               [cur_offer])
+            {$this refresh_buttons FALSE}
+            #ifdef HX_PS3
+            {cost_ps3.lbl
+               set_showing
+               {$this purchase_allowed $offer}}
+            #else
+            {cost.lbl
+               set_showing
+               {$this purchase_allowed $offer}}
+            #endif}})}
+{new
+   BandScreen
+   store_info_screen
+   (panels
+      meta
+      sv2_panel
+      (store_banner_panel
+         (active FALSE)
+         (always_load FALSE))
+      (store_menu_panel
+         (active FALSE)
+         (always_load FALSE))
+      store_info_panel
+      store_panel
+      store_details_panel)
+   (focus store_info_panel)
+   (back_screen store_browser_screen)
+   (enter
+      {store_panel set_select_help})
+   #ifdef HX_WII
+   (TRANSITION_COMPLETE_MSG
+      {wii_store_enable_input})
+   #endif}
+{new
+   BandScreen
+   store_library_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($offer
+            {store_info_panel get cur_offer})
+         {dialog_panel
+            set_custom
+            ({sprintf
+                  "store_library_%s_warning"
+                  {$offer offer_type}}
+               {$offer offer_name})
+            continue
+            cancel
+            opt2.btn}})
+   (SELECT_MSG
+      {ui pop_screen}
+      {if
+         {== $component opt1.btn}
+         #ifndef HX_WII
+         {store_panel
+            check_out
+            {store_info_panel get cur_offer}}
+         #else
+         {store_info_panel wii_start_checkout 0}
+         #endif})}
+{new
+   BandScreen
+   store_library_upgrade_warning_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {do
+         ($offer
+            {store_info_panel get cur_offer})
+         {dialog_panel
+            set_custom
+            (store_library_upgrade_warning
+               {$offer offer_name})
+            continue
+            cancel
+            opt2.btn}})
+   (SELECT_MSG
+      {if
+         {== $component opt1.btn}
+         #ifndef HX_WII
+         {store_panel
+            check_out
+            {{store_info_panel get cur_offer}
+               upgrade}}
+         #else
+         {store_info_panel wii_start_checkout 1}
+         #endif}
+      {ui pop_screen})}
