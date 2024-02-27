@@ -35,13 +35,14 @@ def Convert(pathIn, pathOut):
                 break
 
 def GetImageDimensions(file):
-    file.seek(8)  # Skip TPL signature
+    file.seek(0x0C)  # Skip to Image Offset Table
+    image_header_offset = struct.unpack(">I", file.read(4))[0]  # u32 int
+    file.seek(image_header_offset)  # Go to Image Header
     height = struct.unpack(">H", file.read(2))[0]  # u16 int
-    width = struct.unpack(">I", file.read(4))[0]   # u32 int
+    width = struct.unpack(">H", file.read(2))[0]   # u16 int
     print("Width:", width)
     print("Height:", height)
     return width, height
-
 
 
 def GetHeader(width, height):
