@@ -1,0 +1,344 @@
+{func
+   push_disable_sdmode_dialog
+   {overshell set_active_status kOvershellInactive}
+   {ui push_screen disable_sdmode_begin_dialog}}
+{func
+   push_enable_sdmode_dialog
+   {overshell set_active_status kOvershellInactive}
+   {enable_sdmode_begin_dialog set in_startup FALSE}
+   {ui push_screen enable_sdmode_begin_dialog}}
+{func
+   sdmode_dlg_pop
+   {if
+      {!=
+         {ui bottom_screen}
+         startup_sdmode_screen}
+      {overshell set_active_status kOvershellInShell}}
+   {ui pop_screen}}
+{new
+   BandScreen
+   startup_sdmode_screen
+   (panels meta sv8_panel)
+   (enter_dialogs 1)
+   (final_screen '')
+   (TRANSITION_COMPLETE_MSG
+      {if_else
+         [enter_dialogs]
+         {do
+            {$this set enter_dialogs 0}
+            {enable_sdmode_begin_dialog set in_startup TRUE}
+            {ui push_screen enable_sdmode_begin_dialog}}
+         {do
+            {$this set enter_dialogs 1}
+            {ui
+               goto_screen
+               [final_screen]}}})}
+#define SD_DISABLE_WAIT_REFRESH_DONE
+(0)
+#define SD_DISABLE_WAIT_DONE
+(1)
+#define SD_DISABLE_SD_MODE
+(2)
+#define SD_DISABLE_DONE
+(3)
+{new
+   BandScreen
+   disable_sdmode_begin_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (state SD_DISABLE_WAIT_REFRESH_DONE)
+   (enter
+      {platform_mgr set_home_menu_enabled FALSE}
+      {set
+         [state]
+         SD_DISABLE_WAIT_REFRESH_DONE}
+      {dialog_panel set_msg dlc_sdmode_checking})
+   (exit
+      {platform_mgr set_home_menu_enabled TRUE})
+   (poll
+      {switch
+         [state]
+         (SD_DISABLE_WAIT_REFRESH_DONE
+            {if
+               {&&
+                  {content_mgr refresh_done}
+                  {saveload_mgr is_idle}}
+               {set
+                  [state]
+                  SD_DISABLE_WAIT_DONE}
+               {script_task
+                  kTaskUISeconds
+                  (delay 1.0)
+                  (script
+                     {set
+                        [state]
+                        SD_DISABLE_SD_MODE})}})
+         (SD_DISABLE_SD_MODE
+            {set
+               [state]
+               SD_DISABLE_DONE}
+            {content_mgr set_mode kNANDMode}
+            {content_mgr start_refresh}
+            {sdmode_dlg_pop})})}
+#define SD_INIT_LOAD_SAVE
+(0)
+#define SD_INIT_REFRESH_CONTENT
+(1)
+#define SD_INIT_WAIT_DONE
+(2)
+#define SD_WAIT_REFRESH_DONE
+(3)
+#define SD_CHECK_SD_MODE
+(4)
+#define SD_PROMPT
+(5)
+#define SD_START_SD_CHECK
+(6)
+#define SD_CHECK_BUSY
+(7)
+#define SD_DONE
+(8)
+{new
+   BandScreen
+   dx_warn_sdmode_begin_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {platform_mgr set_home_menu_enabled FALSE}
+      {dialog_panel set_yesno dx_warn_sdmode no.btn}
+   )
+   (exit
+      {platform_mgr set_home_menu_enabled TRUE}
+   )
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {content_mgr set_mode kSDMode}
+            {ui goto_screen startup_sdmode_backup_dialog})
+         (no.btn
+            {sdmode_dlg_pop}
+         )
+         (ok.btn
+            {sdmode_dlg_pop})})}
+{new
+   BandScreen
+   enable_sdmode_begin_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (result kOpSuccess)
+   (state SD_INIT_LOAD_SAVE)
+   (in_startup TRUE)
+   (enter
+      {platform_mgr set_home_menu_enabled FALSE}
+      {set
+         [result]
+         kOpSuccess}
+      {dialog_panel set_msg dlc_sdmode_checking}
+      {if_else
+         [in_startup]
+         {do
+            {set
+               [state]
+               SD_INIT_LOAD_SAVE}
+            {saveload_mgr activate}
+            {saveload_mgr autoload}}
+         {do
+            {set
+               [state]
+               SD_WAIT_REFRESH_DONE}}})
+   (exit
+      {platform_mgr set_home_menu_enabled TRUE})
+   (poll
+      {switch
+         [state]
+         (SD_INIT_LOAD_SAVE
+            {if
+               {saveload_mgr is_initial_load_done}
+               {set
+                  [state]
+                  SD_INIT_REFRESH_CONTENT}
+               {if
+                  {!
+                     {content_mgr refresh_for_backup FALSE}}
+                  {$this leave}}})
+         (SD_WAIT_REFRESH_DONE
+            {if
+               {content_mgr refresh_done}
+               {set
+                  [state]
+                  SD_INIT_REFRESH_CONTENT}
+               {if
+                  {!
+                     {content_mgr refresh_for_backup FALSE}}
+                  {$this goto_fail_screen dlc_unknown_error TRUE}}})
+         (SD_INIT_REFRESH_CONTENT
+            {if
+               {&&
+                  {content_mgr refresh_done}
+                  {saveload_mgr is_idle}}
+               {set
+                  [state]
+                  SD_INIT_WAIT_DONE}
+               {script_task
+                  kTaskUISeconds
+                  (delay 1.0)
+                  (script
+                     {set
+                        [state]
+                        SD_CHECK_SD_MODE})}})
+         (SD_CHECK_SD_MODE
+            {if_else
+               {content_mgr is_sdcard_inserted}
+               {do
+                  {set
+                     [state]
+                     SD_PROMPT}
+                  {dialog_panel set_yesno dlc_start_sdmode yes.btn}}
+               {do
+                  {set
+                     [state]
+                     SD_DONE}
+                  {if_else
+                     [in_startup]
+                     {$this leave}
+                     {$this goto_fail_screen dlc_backup_nosdcard TRUE}}}})
+         (SD_START_SD_CHECK
+            {set
+               [state]
+               SD_CHECK_BUSY}
+            {dialog_panel set_msg matchmaker_please_wait}
+            {content_mgr sd_mode_check})
+         (SD_CHECK_BUSY
+            {if
+               {!=
+                  {content_mgr get_last_result}
+                  kOpBusy}
+               {set
+                  [state]
+                  SD_DONE}
+               {$this check_result}})})
+   (SELECT_MSG
+      {if
+         {==
+            [state]
+            SD_PROMPT}
+         {do
+            {switch
+               $component
+               (yes.btn
+                  {set
+                     [state]
+                     SD_START_SD_CHECK})
+               (no.btn
+                  {if_else
+                     [in_startup]
+                     {ui goto_screen startup_sdmode_notify_disabled_dialog}
+                     {$this leave}})
+               (ok.btn
+                  {$this leave})}}})
+   (check_result
+      {set
+         [result]
+         {content_mgr get_last_result}}
+      {switch
+         [result]
+         (kOpSuccess
+            {$this enable_sd_leave})
+         (kOpDataPresent
+            {$this enable_sd_leave})
+         (kOpBackupNeeded
+            {content_mgr set_mode kSDMode}
+            {ui goto_screen startup_sdmode_backup_dialog})
+         (kOpMissingCard
+            {$this goto_fail_screen dlc_backup_nosdcard TRUE})
+         (kOpSDWriteProtected
+            {$this goto_fail_screen dlc_backup_sdwriteprotected TRUE})
+         (kOpIncompatibleCard
+            {$this goto_fail_screen dlc_restore_incompatible TRUE})
+         (kOpCorruptCard
+            {$this goto_fail_screen dlc_backup_failed TRUE})
+         (kOpIncorrectCard
+            {$this goto_fail_screen dlc_restore_failed TRUE})
+         (kOpNoNANDSpace
+            {if_else {== [result] kOpMissingCard}
+               {$this goto_fail_screen dlc_backup_nosdcard TRUE}
+               {ui goto_screen dx_warn_sdmode_begin_dialog}
+            }
+         )
+         (kOpNoNANDInodes
+            {$this goto_fail_screen dlc_missing_inodes TRUE})
+         (kOpFail
+            {$this goto_fail_screen dlc_unknown_error TRUE})
+         {$this goto_fail_screen dlc_unknown_error TRUE}})
+   (goto_fail_screen
+      ($msg $notify_disabled)
+      {startup_sdmode_failed_dialog set fail_msg $msg}
+      {startup_sdmode_failed_dialog set notify_failed $notify_disabled}
+      {ui goto_screen startup_sdmode_failed_dialog})
+   (enable_sd_leave
+      {content_mgr set_mode kSDMode}
+      {$this leave})
+   (leave
+      {sdmode_dlg_pop})}
+{new
+   BandScreen
+   startup_sdmode_failed_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (fail_msg '')
+   (notify_failed FALSE)
+   (enter
+      {dialog_panel
+         set_ok
+         [fail_msg]})
+   (SELECT_MSG
+      {if_else
+         [notify_failed]
+         {ui goto_screen startup_sdmode_notify_disabled_dialog}
+         {sdmode_dlg_pop}})}
+{new
+   BandScreen
+   startup_sdmode_notify_disabled_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok dlc_no_sdmode})
+   (SELECT_MSG
+      {sdmode_dlg_pop})}
+
+{new
+   BandScreen
+   startup_sdmode_backup_dialog
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (num_contents 0)
+   (enter
+      {dialog_panel set_ok dlc_missing_nand})
+   (SELECT_MSG
+      {content_backup_screen set result_screen startup_sdmode_backup_result_screen}
+      {ui goto_screen content_backup_screen})}
+{new
+   BandScreen
+   startup_sdmode_backup_result_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (backup_result kOpSuccess)
+   (enter
+      {set
+         [backup_result]
+         {content_backup_screen get result}}
+      {if_else
+         {==
+            [backup_result]
+            kOpSuccess}
+         {$this backup_succeeded}
+         {$this backup_failed}})
+   (backup_succeeded
+      {content_mgr clear_nand_contents}
+      {dialog_panel set_ok dlc_backup_complete})
+   (backup_failed
+      {content_mgr set_mode kNANDMode}
+      {dialog_panel set_ok dlc_sdmode_failed})
+   (SELECT_MSG
+      {sdmode_dlg_pop})}
