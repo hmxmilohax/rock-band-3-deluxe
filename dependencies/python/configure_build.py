@@ -40,6 +40,7 @@ def configure_tools(platform="ps3"):
             ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
             ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
             ninja.variable("dtacheck", "dependencies\\windows\\dtacheck.exe")
+            ninja.variable("pngwiitool", "dependencies\\windows\\pngwiitool.exe")
         case "darwin":
             ninja.variable("silence", "> /dev/null")
             ninja.rule("copy", "cp $in $out")
@@ -87,6 +88,7 @@ def configure_tools(platform="ps3"):
     ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns")
     ninja.rule("dtab_serialize", "$dtab -b $in $out")
     ninja.rule("dtab_encrypt", "$dtab -e $in $out")
+    ninja.rule("pngwiitool", "$pngwiitool $in $out")
 
 def wii_file_filer(file: Path):
     if file.parts[slice(2)] == ("_ark", "songs"):
@@ -191,6 +193,12 @@ def convert_pngs(platform):
                 xbox_output = xbox_directory.joinpath(target_filename)
                 ninja.build(str(xbox_output), "sfreq", str(f))
                 output_files.append(str(xbox_output))
+            case "wii":
+                target_filename = Path("gen", f.stem + ".png_wii")
+                wii_directory = Path("obj", platform, "ark").joinpath(*f.parent.parts[1:])
+                wii_output = wii_directory.joinpath(target_filename)
+                ninja.build(str(wii_output), "pngwiitool", str(f))
+                output_files.append(str(wii_output))
 
     return output_files
 
