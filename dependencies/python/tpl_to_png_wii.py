@@ -16,24 +16,28 @@ def Main():
     Convert(sys.argv[1], sys.argv[2])
 
 def Convert(pathIn, pathOut):
-    with open(pathIn, "rb") as binaryReader, open(pathOut, "wb") as binaryWriter:
+    with open(pathIn, "rb") as binaryReader:
         width, height = GetImageDimensions(binaryReader)
         header = GetHeader(width, height)
         if header:
-            binaryWriter.write(header)
+            # Jump to Image Data Address
+            binaryReader.seek(0x08)  # Image Data Address in Image Header
+            image_data_address = struct.unpack(">I", binaryReader.read(4))[0]  # u32 int
+            binaryReader.seek(image_data_address)  # Go to Image Data Address
+
+            # Read image data by its length
+            image_data = binaryReader.read(width * height * 4)  # Assuming RGBA format
+
+            with open(pathOut, "wb") as binaryWriter:
+                # Write the header
+                binaryWriter.write(header)
+                # Write the image data
+                binaryWriter.write(image_data)
         else:
             print("Unsupported image size.")
             exit()
             return
 
-        binaryReader.seek(32)  # Skip TPL header
-        buffer = bytearray(64)
-        while True:
-            num = binaryReader.readinto(buffer)
-            if num > 0:
-                binaryWriter.write(buffer[:num])
-            else:
-                break
 
 def GetImageDimensions(file):
     file.seek(0x0C)  # Skip to Image Offset Table
