@@ -23,6 +23,7 @@ def Convert(pathIn, pathOut):
             binaryWriter.write(header)
         else:
             print("Unsupported image size.")
+            exit()
             return
 
         binaryReader.seek(32)  # Skip TPL header
