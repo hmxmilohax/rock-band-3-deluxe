@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="dependencies/images/header.gif" width="100%" alt="Header GIF">
+<img src="dependencies/media/images/header.gif" width="100%" alt="Header GIF">
 
 # Downloads and install instructions have been moved to our [brand new website](https://rb3dx.neocities.org/)!
 
@@ -26,7 +26,7 @@
 * Head to the [**Python downloads**](https://www.python.org/downloads/), download and install Python (version 3.11 or later).
   * ***Select "Add python.exe to PATH"*** on the installer.
 
-![Python PATH](dependencies/images/pythonpath.png)
+![Python PATH](dependencies/media/images/pythonpath.png)
 
 ### Initializing the Repo
 
@@ -37,7 +37,7 @@
 
 ### ***The folder should look something like this once it's done:***
 
-![Repo Folder](dependencies/images/repofolder.png)
+![Repo Folder](dependencies/media/images/repofolder.png)
 
 ### ✅ ***The Rock Band 3 Deluxe repo is now set up!***
 
