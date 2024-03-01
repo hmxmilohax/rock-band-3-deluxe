@@ -65,7 +65,7 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "USRDIR", "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -s 4073741823 -v 6 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -s 4073741823 -v 6 --logLevel error",
                 description="Building ARK",
             )
             ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform x360")
@@ -73,7 +73,7 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "gen")
             ninja.rule(
                 "ark",
-                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 $silence",
+                f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 --logLevel error",
                 description="Building ARK",
             )
             ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform x360")
@@ -81,7 +81,7 @@ def configure_tools(platform="ps3"):
             out_dir = Path("out", platform, "files")
             ninja.rule(
                 "ark",
-                f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} platform/wii/files/gen/main_wii.hdr platform/wii/sys/main.dol $silence",
+                f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} platform/wii/files/gen/main_wii.hdr platform/wii/sys/main.dol --logLevel error",
                 description="Building ARK",
             )
             ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform wii")
