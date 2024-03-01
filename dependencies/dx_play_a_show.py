@@ -383,14 +383,18 @@ def refresh_options(data):
     return year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct
 
 def get_rpcs3_path():
-    rpcs3_path = input("\033[1;33mEnter the path for RPCS3: \033[0m")
-    rpcs3_path = Path(rpcs3_path)
-    
-    if not rpcs3_path.is_dir():
-        print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
-        exit()
-
-    return rpcs3_path
+    while True:
+        rpcs3_path_str = input("\033[1;33mEnter the path for RPCS3: \033[0m")
+        if rpcs3_path_str.strip():  # Check if the input is not empty after stripping whitespace
+            rpcs3_path = Path(rpcs3_path_str)
+            
+            if not rpcs3_path.is_dir():
+                print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
+                continue  # Prompt again for valid input
+            
+            return rpcs3_path
+        else:
+            print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
 
 def save_rpcs3_path(config_path: Path, rpcs3_path: Path):
     config = configparser.ConfigParser()
@@ -428,7 +432,7 @@ def input_colorized(prompt, color_code):
     return input()
 
 def parse_and_export_to_json():
-    config_path = Path.cwd() / 'dx_play_a_show_config.ini'
+    config_path = Path.cwd() / 'dx_config.ini'
     rpcs3_path = load_rpcs3_path(config_path)
 
     if rpcs3_path is None:
@@ -505,7 +509,7 @@ def parse_and_export_to_json():
             print_color_text(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘", "1;36")  # Cyan text
             print_color_text(f"Welcome to RB3DX Play A Show! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             print_color_text("Choose an option:", "1;37")  # White text
-            print_color_text(f"1. A random song from {str(year)}", "1;32;40")  # Red text
+            print_color_text(f"1. A random song from {str(year)}", "1;32")  # Red text
             print_color_text(f"2. A random song by '{artist}'", "1;38;5;196")  # Green text
             print_color_text(f"3. '{song_title_direct}' by '{artist_direct}'", "1;38;5;226")  # Yellow text
             print_color_text(f"4. A random {genre_display} song", "1;34")  # Blue text

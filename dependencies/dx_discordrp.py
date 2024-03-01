@@ -3,11 +3,40 @@ import subprocess
 import json
 import time
 import os
+import configparser
 import logging
 from pathlib import Path
 
 # Check if the system is running on macOS
 is_macos = sys.platform == "darwin"
+
+def get_rpcs3_path():
+    while True:
+        rpcs3_path_str = input("\033[1;33mEnter the path for RPCS3: \033[0m")
+        if rpcs3_path_str.strip():  # Check if the input is not empty after stripping whitespace
+            rpcs3_path = Path(rpcs3_path_str)
+            
+            if not rpcs3_path.is_dir():
+                print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
+                continue  # Prompt again for valid input
+            
+            return rpcs3_path
+        else:
+            print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
+
+def save_rpcs3_path(config_path: Path, rpcs3_path: Path):
+    config = configparser.ConfigParser()
+    config['Paths'] = {'RPCS3Folder': f'"{str(rpcs3_path)}"'}
+    with open(config_path, 'w') as configfile:
+        config.write(configfile)
+
+def load_rpcs3_path(config_path: Path):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    if 'Paths' in config and 'RPCS3Folder' in config['Paths']:
+        return Path(config['Paths']['RPCS3Folder'].strip('"'))
+    else:
+        return None
 
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
@@ -53,61 +82,40 @@ def load_json(parsed_input):
 
 # Function to prompt for JSON file path
 def prompt_json_path(suffix):
-    json_path = input(f"Enter the path to the JSON file{suffix}: ")
+    json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
     return json_path.strip()
 
 # Connect to Discord RPC and update rich presence
-def connect_and_update(client_id, interval, RPC, json_path_suffix="", large_text=""):
+def connect_and_update(client_id, interval, RPC, json_path, large_text=""):
     try:
-        # Try to read JSON file path from the text file
-        json_path_file = Path(f"json_path{json_path_suffix}.txt")
-        if not json_path_file.is_file():
-            logger.error(f"JSON file path text file not found{json_path_suffix}.")
-            json_path = prompt_json_path(json_path_suffix)
-            json_path_file.write_text(json_path)
+        # Read the raw input data from the stored file
+        with json_path.open('r') as file:
+            raw_input_data = file.read()
+
+        # Print the parsed raw input
+        #logger.debug("Parsed Raw Input:")
+        #logger.debug(raw_input_data)
+
+        # Parse the raw input data
+        parsed_input_data = parse_raw_input(raw_input_data)
+
+        # Print the parsed JSON
+        #logger.debug("Parsed JSON:")
+        #logger.debug(parsed_input_data)
+
+        # Load the JSON data from parsed input
+        presence_data = load_json(parsed_input_data)
+
+        # Check if the JSON data was loaded successfully
+        if presence_data is not None:
+            # Update Discord Rich Presence
+            #logger.debug(f"Presence data: {presence_data}")
+            update_presence(client_id, presence_data, RPC, large_text)
         else:
-            json_path = json_path_file.read_text().strip()
-            #logger.debug(f"JSON file path read from the text file: {json_path}")
+            logger.error("Failed to load presence data. Check the JSON input.")
 
-        json_file = Path(json_path)
-        if not json_file.is_file():
-            logger.error(f"JSON file does not exist: {json_path}")
-            return
-
-        try:
-            # Read the raw input data from the stored file
-            with json_file.open('r') as file:
-                raw_input_data = file.read()
-
-            # Print the parsed raw input
-            #logger.debug("Parsed Raw Input:")
-            #logger.debug(raw_input_data)
-
-            # Parse the raw input data
-            parsed_input_data = parse_raw_input(raw_input_data)
-
-            # Print the parsed JSON
-            #logger.debug("Parsed JSON:")
-            #logger.debug(parsed_input_data)
-
-            # Load the JSON data from parsed input
-            presence_data = load_json(parsed_input_data)
-
-            # Check if the JSON data was loaded successfully
-            if presence_data is not None:
-                # Update Discord Rich Presence
-                #logger.debug(f"Presence data: {presence_data}")
-                update_presence(client_id, presence_data, RPC, large_text)
-            else:
-                logger.error("Failed to load presence data. Check the JSON input.")
-
-        except Exception as e:
-            logger.exception(f"An error occurred: {str(e)}")
-
-    except FileNotFoundError:
-        # If the text file doesn't exist, prompt for JSON file path
-        json_path = prompt_json_path()
-        logger.error(f"JSON file path text file not found: {json_path}")
+    except Exception as e:
+        logger.exception(f"An error occurred: {str(e)}")
 # Update Discord Rich Presence
 def update_presence(client_id, parsed_input, RPC, large_text):
     try:
@@ -261,8 +269,7 @@ def clean_difficulty(difficulty):
 update_presence.previous_mode = ''
 update_presence.start_time = 0
 
-# Main function
-def main(suffix=None):
+def main():
     # Check if Discord is installed and running
     try:
         import pypresence
@@ -274,16 +281,21 @@ def main(suffix=None):
     client_id = "1125571051607298190"
     interval = 1  # Check for updates every 10 seconds
 
-    # Set the JSON path suffix based on the provided argument
-    json_path_suffix = ""
-    large_text = "Rock Band 3 Deluxe"  # Default value for large_text
+    config_path = Path.cwd() / 'dx_config.ini'
+    rpcs3_path = load_rpcs3_path(config_path)
 
-    if suffix == "_xenia":
-        json_path_suffix = suffix
-        large_text = "Rock Band 3 Deluxe Xenia"
-    elif suffix == "_rpcs3":
-        json_path_suffix = suffix
-        large_text = "Rock Band 3 Deluxe RPCS3"
+    if rpcs3_path is None:
+        rpcs3_path = get_rpcs3_path()
+        save_rpcs3_path(config_path, rpcs3_path)
+
+    json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / f"discordrp.json"
+
+    json_file = Path(json_path)
+    if not json_file.is_file():
+        logger.error(f"JSON file does not exist: {json_path}")
+        return
+
+    large_text = "Rock Band 3 Deluxe"  # Default value for large_text
 
     # Connect to Discord RPC
     try:
@@ -296,8 +308,8 @@ def main(suffix=None):
 
     try:
         while True:
-            # Pass the json_path_suffix and large_text to connect_and_update function
-            connect_and_update(client_id, interval, RPC, json_path_suffix, large_text)
+            # Pass the json_path and large_text to connect_and_update function
+            connect_and_update(client_id, interval, RPC, json_path, large_text)
             # Wait for the specified interval before checking again
             time.sleep(interval)
 
@@ -308,8 +320,4 @@ def main(suffix=None):
     RPC.close()
 
 if __name__ == '__main__':
-    # Check for the script argument and pass it to the main function
-    if len(sys.argv) > 1:
-        main(sys.argv[1])
-    else:
-        main()
+    main()
