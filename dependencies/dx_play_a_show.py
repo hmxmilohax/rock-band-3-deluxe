@@ -481,17 +481,9 @@ def parse_and_export_to_json():
     updates_dta_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "songs_updates.dta"
     all_parsed_dicts = parse_updates_dta(updates_dta_path, all_parsed_dicts)
 
-    # Export the output JSON to the working directory
-    with open(output_json_path_str, 'w') as json_file:
-        json.dump(all_parsed_dicts, json_file, indent=2)
+    json_data = json.dumps(all_parsed_dicts, indent=2)
 
-    # Check if the JSON file already exists
-    if not output_json_path.is_file():
-        with open(output_json_path, 'w') as json_file:
-            json.dump(all_parsed_dicts, json_file, indent=2)
-
-    # Read the JSON file
-    data = read_json(output_json_path)
+    data = json.loads(json_data)
 
     if data:
         song_title_index = "name"
