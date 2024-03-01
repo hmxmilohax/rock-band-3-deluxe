@@ -398,15 +398,15 @@ def get_rpcs3_path():
 
 def save_rpcs3_path(config_path: Path, rpcs3_path: Path):
     config = configparser.ConfigParser()
-    config['Paths'] = {'RPCS3Folder': f'"{str(rpcs3_path)}"'}
+    config['Paths'] = {'rpcs3_path': f'"{str(rpcs3_path)}"'}
     with open(config_path, 'w') as configfile:
         config.write(configfile)
 
 def load_rpcs3_path(config_path: Path):
     config = configparser.ConfigParser()
     config.read(config_path)
-    if 'Paths' in config and 'RPCS3Folder' in config['Paths']:
-        return Path(config['Paths']['RPCS3Folder'].strip('"'))
+    if 'Paths' in config and 'rpcs3_path' in config['Paths']:
+        return Path(config['Paths']['rpcs3_path'].strip('"'))
     else:
         return None
 
