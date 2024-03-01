@@ -7,8 +7,6 @@ import os
 platform = sys.argv[1]
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
-print("Configuring Rock Band 3 Deluxe...")
-
 def print_color_text(*args):
     text = ' '.join(map(str, args[:-1]))
     color_code = args[-1]
@@ -23,10 +21,11 @@ if len(sys.argv) > 2 and sys.argv[2] == "--fun":
         case "ps3":
             print_color_text(f"Platform: {platform}", "1;38;5;196")
         case "xbox":
-            print_color_text(f"Platform: {platform}", "1;32;40")
+            print_color_text(f"Platform: {platform}", "1;32")
         case "wii":
             print_color_text(f"Platform: {platform}", "1;36")
 else:
+    print("Configuring Rock Band 3 Deluxe...")
     print(f"Platform: {platform}")
 
 def configure_tools(platform="ps3"):
