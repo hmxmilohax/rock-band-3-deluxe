@@ -68,6 +68,7 @@ def configure_tools(platform="ps3"):
                 f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_ps3 -e -s 4073741823 -v 6 $silence",
                 description="Building ARK",
             )
+            ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform x360")
         case "xbox":
             out_dir = Path("out", platform, "gen")
             ninja.rule(
@@ -75,6 +76,7 @@ def configure_tools(platform="ps3"):
                 f"$arkhelper dir2ark {ark_dir} {out_dir} -n patch_xbox -e -v 6 -s 4073741823 $silence",
                 description="Building ARK",
             )
+            ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform x360")
         case "wii":
             out_dir = Path("out", platform, "files")
             ninja.rule(
@@ -82,8 +84,8 @@ def configure_tools(platform="ps3"):
                 f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} platform/wii/files/gen/main_wii.hdr platform/wii/sys/main.dol $silence",
                 description="Building ARK",
             )
+            ninja.rule("sfreq", "$superfreq png2tex $in $out -l error --miloVersion 26 --platform wii")
 
-    ninja.rule("sfreq", "$superfreq png2tex $in $out --miloVersion 26 --platform x360")
     ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns")
     ninja.rule("dtab_serialize", "$dtab -b $in $out")
     ninja.rule("dtab_encrypt", "$dtab -e $in $out")
@@ -183,6 +185,14 @@ def convert_pngs(platform):
                 xbox_output = xbox_directory.joinpath(target_filename)
                 ninja.build(str(xbox_output), "sfreq", str(f))
                 output_files.append(str(xbox_output))
+            case "wii":
+                target_filename = Path("gen", f.stem + ".png_wii")
+                wii_directory = Path("obj", platform, "ark").joinpath(
+                    *f.parent.parts[1:]
+                )
+                wii_output = wii_directory.joinpath(target_filename)
+                ninja.build(str(wii_output), "sfreq", str(f))
+                output_files.append(str(wii_output))
             case "yarg":
                 target_filename = Path("gen", f.stem + ".png_xbox")
                 xbox_directory = Path("obj", platform, "ark").joinpath(
