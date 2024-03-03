@@ -46,6 +46,7 @@ match sys.platform:
         ninja.variable("silence", ">nul")
         ninja.rule("copy", "cmd /c copy $in $out $silence", description="COPY $in")
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
+        ninja.rule("version", "python dependencies\\python\\gen_version.py > $out", description="Writing version info")
         ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
         ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
         ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
@@ -54,6 +55,7 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
+        ninja.rule("version", "python dependencies/python/gen_version.py > $out", description="Writing version info")
         ninja.variable("superfreq", "dependencies/macos/superfreq")
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
@@ -63,6 +65,7 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
+        ninja.rule("version", "python dependencies/python/gen_version.py > $out", description="Writing version info")
         ninja.variable("superfreq", "dependencies/linux/superfreq")
         ninja.variable("arkhelper", "dependencies/linux/arkhelper")
         ninja.variable("dtab", "dependencies/linux/dtab")
@@ -100,7 +103,6 @@ ninja.rule(
 ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns", description="DTACHECK $in")
 ninja.rule("dtab_serialize", "$dtab -b $in $out", description="DTAB SER $in")
 ninja.rule("dtab_encrypt", "$dtab -e $in $out", description="DTAB ENC $in")
-ninja.rule("version", "python dependencies/python/gen_version.py > $out", description="Writing version info")
 ninja.build("_always", "phony")
 
 build_files = []
