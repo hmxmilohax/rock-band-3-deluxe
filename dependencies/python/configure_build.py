@@ -65,7 +65,7 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
-        ninja.rule("version", "python dependencies/python/gen_version.py > $out", description="Writing version info")
+        ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.variable("superfreq", "dependencies/linux/superfreq")
         ninja.variable("arkhelper", "dependencies/linux/arkhelper")
         ninja.variable("dtab", "dependencies/linux/dtab")
