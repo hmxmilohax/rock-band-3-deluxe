@@ -100,6 +100,7 @@ ninja.rule(
 ninja.rule("dtacheck", "$dtacheck $in .dtacheckfns", description="DTACHECK $in")
 ninja.rule("dtab_serialize", "$dtab -b $in $out", description="DTAB SER $in")
 ninja.rule("dtab_encrypt", "$dtab -e $in $out", description="DTAB ENC $in")
+ninja.rule("version", "python dependencies/python/gen_version.py > $out", description="Writing version info")
 ninja.build("_always", "phony")
 
 build_files = []
@@ -196,6 +197,16 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
             ninja.build(str(out_path), "copy", str(f))
             ark_files.append(str(out_path))
 
+# write version info
+dta = Path("obj", args.platform, "raw", "dx", "locale", "dx_version.dta")
+dtb = Path("obj", args.platform, "raw", "dx", "locale", "gen", "dx_version.dtb")
+enc = Path("obj", args.platform, "ark", "dx", "locale", "gen", "dx_version.dtb")
+
+ninja.build(str(dta), "version", implicit="_always")
+ninja.build(str(dtb), "dtab_serialize", str(dta))
+ninja.build(str(enc), "dtab_encrypt", str(dtb))
+
+ark_files.append(str(enc))
 
 # build ark
 match args.platform:
