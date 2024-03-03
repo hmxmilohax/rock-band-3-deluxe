@@ -12,7 +12,6 @@ def main():
     # sed -i -e "s/devbuild/"$GITHUB_SHA_SHORT"/g" _ark/ui/locale/locale_dx_keep.dta
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],text=True).strip("\n")
     print(f"Commit: {commit}\n")
-    print("Injecting devbuild into locale...\n")
 
     for locale in root_dir.joinpath("_ark/dx/locale").glob("dx_version.dta"):
         #print(locale)
