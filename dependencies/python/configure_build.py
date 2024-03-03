@@ -11,7 +11,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--no-upgrades", action="store_true", help="disable dx song upgrades"
+    "--no-updates", action="store_true", help="disable dx song updates"
 )
 
 args = parser.parse_args()
@@ -122,9 +122,9 @@ def ark_file_filter(file: Path):
         return False
     if file.suffix.endswith("_wii") and args.platform != "wii":
         return False
-    if (args.platform == "wii"  or args.no_upgrades) and file.parts[slice(2)] == ("_ark", "songs"):
+    if (args.platform == "wii"  or args.no_updates) and file.parts[slice(2)] == ("_ark", "songs"):
         return False
-    if (args.platform == "wii" or args.no_upgrades) and  file.parts[slice(3)] == ("_ark", "dx", "song_updates"):
+    if (args.platform == "wii" or args.no_updates) and  file.parts[slice(3)] == ("_ark", "dx", "song_updates"):
         return False
 
     return True
