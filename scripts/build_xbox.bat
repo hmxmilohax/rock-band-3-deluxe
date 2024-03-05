@@ -14,10 +14,8 @@ if defined base_xex_path echo Xenia directory set, launching Xenia Canary on com
 
 cd "%~dp0.."
 del >nul 2>&1 /s /q obj\xbox\*.dtb
-python dependencies\python\add_devbuild.py
 python dependencies\python\configure_build.py xbox --fun
 dependencies\windows\ninja
-python dependencies\python\remove_devbuild.py
 if %errorlevel% neq 0 (pause /b %errorlevel% && exit /b %errorlevel%)
 
 if not defined xenia_path (
