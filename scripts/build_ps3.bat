@@ -40,33 +40,8 @@ copy "%~dp0..\out\ps3\USRDIR\EBOOT.BIN" "%rpcs3_path%\dev_hdd0\game\BLUS30463\US
 if not defined base_eboot_path goto :end
 START "" "%rpcs3_path%\rpcs3.exe" "%base_eboot_path%" --no-gui
 
-:wait_for_rpcs3
-SETLOCAL EnableExtensions
-set EXE=rpcs3.exe
-FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq %EXE%"') DO IF NOT %%x == %EXE% (
-    sleep 1
-    goto wait_for_rpcs3
-)
-if not errorlevel 1 (
-    goto discordrp
-)
-
-:discordrp
 if not defined run_rich_presence goto :end
 cd "%~dp0"
-echo Discord Rich Presence Running
-START /B pythonw dx_discordrp.py
-
-:check_rpcs3
-SETLOCAL EnableExtensions
-set EXE=rpcs3.exe
-FOR /F %%x IN ('tasklist /NH /FI "IMAGENAME eq %EXE%"') DO IF NOT %%x == %EXE% (
-  goto end
-)
-if not errorlevel 1 (
-    sleep 1
-    goto check_rpcs3
-)
+START /B python dx_discordrp.py
 
 :end
-exit
