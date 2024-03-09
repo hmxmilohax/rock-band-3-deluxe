@@ -3,70 +3,107 @@
    (track_texture_reset_handler
       {dx_log_writer info {sprint "Setting up textures"}}
       {unless {modifier_mgr is_modifier_active mod_nohud} ;don't run anything if performance mode is enabled
-         {if_else $fcringonce ;check if we have already generated new textures for the fc ring
-            {do ;if we have
-               {{coop_track_panel find fcframe.tex} set_bitmap
-                  {if_else {== $dx_multiplier_ring none}
-                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/rock band 3.png"}
-                     {do
-                        {set $temp $dx_multiplier_ring}
-                        {search_replace $temp "'" "" $temp}
-                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/" $temp ".png"}
-                     }
-                  }
-               }
-               {{coop_track_panel find multframe.tex} set_bitmap
-                  {if_else {== $dx_multiplier_ring none}
-                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/rock band 3.png"}
-                     {do
-                        {set $temp $dx_multiplier_ring}
-                        {search_replace $temp "'" "" $temp}
-                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/" $temp ".png"}
-                     }
-                  }
-               }
-               {if_else $dx_fc_ring
-                  {do
-                     {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
-                     {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the fc texture to the ring material
-                     {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}} ;apply the multiplier texture to the second ring material
-                  }
-                  {do
-                     {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
-                     {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
-                     {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
-                  }
-               }
-            }
-            {do ;if we havent
-               {set $fcringonce TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
+         {do ;if we havent
+            {if {! {exists fcframe.tex}}
                {new Tex fcframe.tex} ;generate a new texture to hold the fc indicator
+            }
+            {if {! {exists multframe.tex}}
                {new Tex multframe.tex} ;generate a new texture to hold the non fc texture
-               {if_else $dx_fc_ring
-                  {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
-                  {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
-               }
-               {{coop_track_panel find fcframe.tex} set_bitmap
-                  {if_else {== $dx_multiplier_ring none}
-                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/rock band 3.png"}
-                     {do
-                        {set $temp $dx_multiplier_ring}
-                        {search_replace $temp "'" "" $temp}
-                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/" $temp ".png"}
-                     }
-                  }
-               }
-               {{coop_track_panel find multframe.tex} set_bitmap
-                  {if_else {== $dx_multiplier_ring none}
-                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/rock band 3.png"}
-                     {do
-                        {set $temp $dx_multiplier_ring}
-                        {search_replace $temp "'" "" $temp}
-                        {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/" $temp ".png"}
-                     }
+            }
+            {{coop_track_panel find fcframe.tex} set_bitmap
+               {if_else {== $dx_multiplier_ring none}
+                  {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/rock band 3.png"}
+                  {do
+                     {set $temp $dx_multiplier_ring}
+                     {search_replace $temp "'" "" $temp}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate_fc/" $temp ".png"}
                   }
                }
             }
+            {{coop_track_panel find multframe.tex} set_bitmap
+               {if_else {== $dx_multiplier_ring none}
+                  {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/rock band 3.png"}
+                  {do
+                     {set $temp $dx_multiplier_ring}
+                     {search_replace $temp "'" "" $temp}
+                     {sprint "dx/custom_textures/multiplier_ring/multiplier_ring_plate/" $temp ".png"}
+                  }
+               }
+            }
+            {if_else $dx_fc_ring
+               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
+               {{coop_track_panel find streak_meter_plate.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
+            }
+            {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex fcframe.tex}}
+            {{coop_track_panel find multframe.tex} iterate_refs $ref {$ref set diffuse_tex multframe.tex}}
+         }
+
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_fx_stripes fx_peak_stripes.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_glow multiplier_meter_glow.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_bg streak_meter_bg.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_bg_vox streak_meter_bg_vox.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_lens streak_meter_lens.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_lens_vox streak_meter_lens_vox.tex $dx_multiplier_ring}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_plate streak_meter_plate.tex $dx_multiplier_ring}
+
+         {if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex clone_hero}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
+         }
+
+         {if {modifier_mgr is_modifier_active mod_precision}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex precision}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
+         }
+
+         {if {modifier_mgr is_modifier_active mod_calibration}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex calibration}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
+         }
+
+         {if {modifier_mgr is_modifier_active mod_brutalmode}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex brutal}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
+         }
+
+         {if {modifier_mgr is_modifier_active mod_fastermode}
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex faster_mode}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
+         }
+         {if {modifier_mgr is_modifier_active mod_auto_play} ;check if a new texture is queued
+            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex auto_play}
+            #ifndef HX_WII
+            {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
+            #endif
+            {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
+            {set $dx_multiplier_ring_needs_reset TRUE}
          }
 
          {if $dx_highway_guitar_needs_reset
@@ -78,7 +115,7 @@
                {watermark_bass.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
             }
          }
-
+         #ifndef HX_WII
          {if $dx_highway_bass_needs_reset
             {dx_custom_texture_setter FALSE highways watermark_guitar.tex $dx_highway_bass}
             {unless $dx_highway_bass_shading
@@ -108,14 +145,14 @@
                {watermark_keys.tex iterate_refs $ref {$ref set emissive_multiplier 0.8}} ;make the texture pop a bit, this also might not actually do anything for the highway idk
             }
          }
-
+         #endif
          {if $dx_streak_guitar_needs_reset
             {dx_custom_texture_setter FALSE streaks spotlight_bass_track.tex $dx_streak_guitar}
             {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
             {spotlight_bass_track.tex iterate_refs $ref {$ref set emissive_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
             {spotlight_bass_track.tex iterate_refs $ref {$ref set normal_map spotlight_bass_track.tex}} ;apply the emissive map as well so it looks proper
          }
-
+         #ifndef HX_WII
          {if $dx_streak_bass_needs_reset
             {dx_custom_texture_setter FALSE streaks spotlight_bass_track.tex $dx_streak_bass}
             {spotlight_bass_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_bass_track.tex}} ;load the tex into the material
@@ -142,8 +179,8 @@
             {spotlight_prokeys_track.tex iterate_refs $ref {$ref set diffuse_tex spotlight_prokeys_track.tex}} ;load the tex into the material
             {spotlight_prokeys_track.tex iterate_refs $ref {$ref set emissive_map spotlight_prokeys_track.tex}} ;apply the emissive map as well so it looks proper
             {spotlight_prokeys_track.tex iterate_refs $ref {$ref set normal_map spotlight_prokeys_track.tex}} ;apply the emissive map as well so it looks proper
-         } 
-
+         }
+         #endif
          {if $dx_overdrive_guitar_needs_reset
             {dx_custom_texture_setter FALSE overdrive spotlight_bass_track_emissive.tex $dx_overdrive_guitar}
             {unless $dx_overdrive_guitar_shading
@@ -154,7 +191,7 @@
             }
             {set $dx_overdrive_color_needs_reset TRUE}
          }
-
+         #ifndef HX_WII
          {if $dx_overdrive_bass_needs_reset
             {dx_custom_texture_setter FALSE overdrive spotlight_guitar_track_emmissive.tex $dx_overdrive_bass}
             {unless $dx_overdrive_bass_shading
@@ -199,7 +236,7 @@
             }
             {set $dx_overdrive_color_needs_reset TRUE}
          }
-
+         #endif
          {if $dx_overdrive_color_needs_reset ;if we are queued to update a per instrument emissive texture
             {unless {== $dx_overdrive_color none} ;check the texture is not set to default
                {dx_log_writer insane {sprint "Setting Emissive Color to: " {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}}
@@ -220,7 +257,6 @@
             {dx_custom_texture_setter gems gems_cymbals_emissive gem_cymbal_ems.tex $dx_gem}
             {dx_custom_texture_setter gems gems_gliss gliss_gems.tex $dx_gem}
          }
-
          {if $dx_smasher_needs_reset ;check if a new texture is queued
             {dx_custom_texture_setter strikeline strikeline_guitar gem_smashers_guitar_nomip.tex $dx_smasher}
             {dx_custom_texture_setter strikeline strikeline_guitar gem_smashers_guitar.tex $dx_smasher}
@@ -247,12 +283,11 @@
                   }
                }
             }
-            {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set alpha_cut true}}
-            {gem_smashers_guitar.tex iterate_refs $ref {$ref set alpha_cut true}}
-            {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set alpha_cut true}}
-            {gem_smashers_drum.tex iterate_refs $ref {$ref set alpha_cut true}}
+            {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
+            {gem_smashers_guitar.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
+            {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
+            {gem_smashers_drum.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
          }
-
          {if $dx_flames_needs_reset ;check if a new texture is queued
             {dx_custom_texture_setter flames flames_caps gem_cap.tex $dx_flames}
             {dx_custom_texture_setter flames flames_glass1 broken_glass01.tex $dx_flames}
@@ -289,11 +324,11 @@
             {dx_custom_texture_setter score star_multiplier_meter_frame star_multiplier_meter_frame.tex $dx_score_box}
             {dx_custom_texture_setter score star_multiplier_meter_lens star_multiplier_meter_lens.tex $dx_score_box}
          }
-
+         #ifndef HX_WII
          {if $dx_font_needs_reset
             {dx_custom_texture_setter FALSE font 'Pentatonic_Hub(5_00)4x.tex' $dx_font}
          }
-
+         #endif
          {if $dx_solo_box_needs_reset
             {dx_custom_texture_setter FALSE solo_box vox_slider_bkgrnd.tex $dx_solo_box}
             {if_else {== $dx_solo_box "rock band 3"}
@@ -317,6 +352,58 @@
             {dx_custom_texture_setter crowd_meter crowd_meter_lens crowd_meter_lens.tex $dx_crowd_meter}
          }
 
+         {if {! {exists dx_star_base.tex}}
+            {new Tex dx_star_base.tex}
+         }
+         {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $dx_stars}
+         {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $dx_stars}
+         {{coop_track_panel find dx_star_base.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
+         {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
+         {if {! {exists dx_star_gold_0.tex}}
+            {new Tex dx_star_gold_0.tex}
+         }
+         {if {! {exists dx_star_gold_1.tex}}
+            {new Tex dx_star_gold_1.tex}
+         }
+         {if {! {exists dx_star_gold_2.tex}}
+            {new Tex dx_star_gold_2.tex}
+         }
+         {if {! {exists dx_star_gold_3.tex}}
+            {new Tex dx_star_gold_3.tex}
+         }
+         {if {! {exists dx_star_gold_4.tex}}
+            {new Tex dx_star_gold_4.tex}
+         }
+         {if {! {exists dx_star_gold_5.tex}}
+            {new Tex dx_star_gold_5.tex}
+         }
+         {if {! {exists dx_star_gold_6.tex}}
+            {new Tex dx_star_gold_6.tex}
+         }
+         {if {! {exists dx_star_gold_7.tex}}
+            {new Tex dx_star_gold_7.tex}
+         }
+         {if {! {exists dx_star_gold_8.tex}}
+            {new Tex dx_star_gold_8.tex}
+         }
+         {if {! {exists dx_star_gold_9.tex}}
+            {new Tex dx_star_gold_9.tex}
+         }
+         {if {! {exists dx_star_gold_10.tex}}
+            {new Tex dx_star_gold_10.tex}
+         }
+         {dx_custom_texture_setter gold_star_transitions 0 dx_star_gold_0.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 1 dx_star_gold_1.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 2 dx_star_gold_2.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 3 dx_star_gold_3.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 4 dx_star_gold_4.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 5 dx_star_gold_5.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 6 dx_star_gold_6.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 7 dx_star_gold_7.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 8 dx_star_gold_8.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 9 dx_star_gold_9.tex $dx_stars}
+         {dx_custom_texture_setter gold_star_transitions 10 dx_star_gold_10.tex $dx_stars}
+
          {if $dx_stars_needs_reset
             {dx_custom_texture_setter stars score_meter_wipe score_meter_wipe.tex $dx_stars}
             {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $dx_stars}
@@ -331,69 +418,6 @@
                {dx_custom_texture_setter stars score_star_gold score_star_gold.tex $dx_stars}
             }
             {dx_custom_texture_setter stars score_tour_icon tour_icon.tex $dx_stars}
-            
-         }
-
-         {if_else $dx_star_populate_once ;check if we have already generated new textures for the fc ring
-            {do ;if we have
-               {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_0.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_1.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_2.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_3.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_4.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_5.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_6.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_7.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_8.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_9.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {{coop_track_panel find dx_star_gold_10.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-            }
-            {do ;if we havent
-               {set $dx_star_populate_once TRUE} ;ensure this task does not run again until reboot (texture stays in memory)
-               {new Tex dx_star_base.tex}
-               {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $dx_stars}
-               {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-               {new Tex dx_star_gold_0.tex}
-               {dx_custom_texture_setter gold_star_transitions 0 dx_star_gold_0.tex $dx_stars}
-               {new Tex dx_star_gold_1.tex}
-               {dx_custom_texture_setter gold_star_transitions 1 dx_star_gold_1.tex $dx_stars}
-               {new Tex dx_star_gold_2.tex}
-               {dx_custom_texture_setter gold_star_transitions 2 dx_star_gold_2.tex $dx_stars}
-               {new Tex dx_star_gold_3.tex}
-               {dx_custom_texture_setter gold_star_transitions 3 dx_star_gold_3.tex $dx_stars}
-               {new Tex dx_star_gold_4.tex}
-               {dx_custom_texture_setter gold_star_transitions 4 dx_star_gold_4.tex $dx_stars}
-               {new Tex dx_star_gold_5.tex}
-               {dx_custom_texture_setter gold_star_transitions 5 dx_star_gold_5.tex $dx_stars}
-               {new Tex dx_star_gold_6.tex}
-               {dx_custom_texture_setter gold_star_transitions 6 dx_star_gold_6.tex $dx_stars}
-               {new Tex dx_star_gold_7.tex}
-               {dx_custom_texture_setter gold_star_transitions 7 dx_star_gold_7.tex $dx_stars}
-               {new Tex dx_star_gold_8.tex}
-               {dx_custom_texture_setter gold_star_transitions 8 dx_star_gold_8.tex $dx_stars}
-               {new Tex dx_star_gold_9.tex}
-               {dx_custom_texture_setter gold_star_transitions 9 dx_star_gold_9.tex $dx_stars}
-               {new Tex dx_star_gold_10.tex}
-               {dx_custom_texture_setter gold_star_transitions 10 dx_star_gold_10.tex $dx_stars}
-               {set $dx_stars_needs_reset FALSE}
-            }
-         }
-
-         {if $dx_stars_needs_reset
-            {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $dx_stars}
-            {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-            {dx_custom_texture_setter gold_star_transitions 0 dx_star_gold_0.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 1 dx_star_gold_1.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 2 dx_star_gold_2.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 3 dx_star_gold_3.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 4 dx_star_gold_4.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 5 dx_star_gold_5.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 6 dx_star_gold_6.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 7 dx_star_gold_7.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 8 dx_star_gold_8.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 9 dx_star_gold_9.tex $dx_stars}
-            {dx_custom_texture_setter gold_star_transitions 10 dx_star_gold_10.tex $dx_stars}
          }
 
          {if $dx_rails_needs_reset ;check if a new texture is queued
@@ -403,7 +427,7 @@
             {dx_custom_texture_setter rails rails_track rails_rg.tex $dx_rails}
             {dx_custom_texture_setter rails rails_bracket smasher_plate_bracket.tex $dx_rails}
             {unless {== $dx_rails none} ;check the texture is not set to default
-               {smasher_plate_bracket.tex iterate_refs $ref {$ref set alpha_cut true}} ;alpha_cut fixes some specific issues where the transparant part of one texture "cuts" into another texture in use
+               {smasher_plate_bracket.tex iterate_refs $ref {$ref set alpha_cut TRUE}} ;alpha_cut fixes some specific issues where the transparant part of one texture "cuts" into another texture in use
             }
          }
 
@@ -417,65 +441,6 @@
             {dx_custom_texture_setter overdrive_bar od_bar_glass overdrive_meter_glass.tex $dx_overdrive_bar}
             {dx_custom_texture_setter overdrive_bar od_bar_lens player_meter_long_lens.tex $dx_overdrive_bar}
             {dx_custom_texture_setter overdrive_bar od_bar_long player_meter_long.tex $dx_overdrive_bar}
-         }
-
-         {if $dx_multiplier_ring_needs_reset ;check if a new texture is queued
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_fx_stripes fx_peak_stripes.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_glow multiplier_meter_glow.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_bg streak_meter_bg.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_bg_vox streak_meter_bg_vox.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_lens streak_meter_lens.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_lens_vox streak_meter_lens_vox.tex $dx_multiplier_ring}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_plate streak_meter_plate.tex $dx_multiplier_ring}
-
-            {if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex clone_hero}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
-
-            {if {modifier_mgr is_modifier_active mod_precision}
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex precision}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
-
-            {if {modifier_mgr is_modifier_active mod_calibration}
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex calibration}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
-
-            {if {modifier_mgr is_modifier_active mod_brutalmode}
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex brutal}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
-
-            {if {modifier_mgr is_modifier_active mod_fastermode}
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex faster_mode}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
-
-            {if {modifier_mgr is_modifier_active mod_auto_play} ;check if a new texture is queued
-               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex auto_play}
-               {multiplier_meter.tex iterate_refs $ref {$ref set emissive_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set normal_map multiplier_meter.tex}} ;apply the emissive map as well so it looks proper
-               {multiplier_meter.tex iterate_refs $ref {$ref set intensify TRUE}} ;double the intensity of the material so it looks brighter and vibrant
-               {set $dx_multiplier_ring_needs_reset TRUE}
-            }
          }
 
          {if $dx_keyboard_needs_reset ;check if a new texture is queued
