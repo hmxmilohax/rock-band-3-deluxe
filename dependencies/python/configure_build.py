@@ -47,6 +47,7 @@ match sys.platform:
         ninja.rule("copy", "cmd /c copy $in $out $silence", description="COPY $in")
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
         ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
+        ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
         ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
         ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
@@ -55,7 +56,8 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
-        ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
+        ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
+        ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies/macos/superfreq")
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
@@ -66,6 +68,7 @@ match sys.platform:
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
         ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
+        ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies/linux/superfreq")
         ninja.variable("arkhelper", "dependencies/linux/arkhelper")
         ninja.variable("dtab", "dependencies/linux/dtab")
@@ -210,6 +213,17 @@ ninja.build(str(enc), "dtab_encrypt", str(dtb))
 
 ark_files.append(str(enc))
 
+# def generate texture lists
+def generate_file_list(input_path: Path):
+    base = input_path.parts[1:]
+    dta = Path("obj", args.platform, "raw").joinpath(*base).joinpath("_list.dta")
+    dtb = Path("obj", args.platform, "raw").joinpath(*base).joinpath("gen", "_list.dtb")
+    enc = Path("obj", args.platform, "ark").joinpath(*base).joinpath("gen", "_list.dtb")
+    ninja.build(str(dta), "png_list", variables={"dir": str(input_path)}, implicit="_always")
+    ninja.build(str(dtb), "dtab_serialize", str(dta))
+    ninja.build(str(enc), "dtab_encrypt", str(dtb))
+
+generate_file_list(Path("_ark", "dx", "custom_textures", "streaks"))
 # build ark
 match args.platform:
     case "ps3":
