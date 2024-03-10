@@ -130,8 +130,6 @@ def ark_file_filter(file: Path):
         return False
     if (args.platform == "wii"  or args.no_updates) and file.parts[slice(2)] == ("_ark", "songs"):
         return False
-    if (args.platform == "wii" or args.no_updates) and  file.parts[slice(3)] == ("_ark", "dx", "song_updates"):
-        return False
 
     return True
 
