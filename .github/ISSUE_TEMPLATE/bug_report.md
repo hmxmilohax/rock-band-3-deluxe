@@ -24,9 +24,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **DX Settings**
-- `dx_settings.dta`: (attach here)
-- `dx_modifiers.dta`: (attach here)
-- `dx_values.dta`: (attach here)
+- `dx_settings.dta`: (rename to .txt and attach here)
+- `dx_modifiers.dta`: (rename to .txt and attach here)
+- `dx_values.dta`: (rename to .txt and attach here)
 
 **Game Information**
  - Platform: [eg. Wii/Dolphin/Xbox 360/PS3/
