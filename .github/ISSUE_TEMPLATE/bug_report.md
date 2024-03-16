@@ -31,6 +31,7 @@ If applicable, add screenshots to help explain your problem.
 **Game Information**
  - Platform: [eg. Wii/Dolphin/Xbox 360/PS3/
  - Version: [eg. 1.1.0-beta4]
+ - Song Count: [eg. 4269]
 
 **Additional context**
 Add any other context about the problem here.
