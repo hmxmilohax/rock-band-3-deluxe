@@ -516,14 +516,17 @@ def parse_and_export_to_json():
 
             if choice == '1':
                 fuzzy_search(data, output_file_path, f'year:{year}', rpcs3_path)
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '2':
                 fuzzy_search(data, output_file_path, f'artist:{artist}', rpcs3_path)
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '3':
                 clear_screen()
                 print_color_text(f"'{song_title_direct}' by '{artist_direct}' added to playlist.", "1;38;5;77")
                 append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '4':
                 fuzzy_search(data, output_file_path, f'genre:{genre_internal}', rpcs3_path)
