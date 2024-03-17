@@ -539,6 +539,7 @@ def parse_and_export_to_json():
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '6':
                 clear_playlist(output_file_path)
+                genre_internal, genre_display = get_random_genre(data)
                 year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
             elif choice == '0':
                 clear_screen()
