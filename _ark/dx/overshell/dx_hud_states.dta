@@ -60,31 +60,6 @@
       DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
    )
    (SELECT_MSG
-      {if {has_substr {$component selected_sym} "highway_text"}
-         {set $dx_highway_text
-            {switch $dx_highway_text
-               (off overdrive)
-               (overdrive streaks)
-               (streaks username)
-               (username off)
-            }
-         }
-         {set $dx_tracked_changed {sprint "os_highway_text_" $dx_highway_text}}
-         {dx_state_pos_tracker}
-         DX_INGAME_HUD_DATA
-         {set $previous_state dxState_InGameHUD}
-         {if {$this in_game}
-            {coop_track_panel dx_set_failed_pos}
-            {switch $dx_highway_text
-               (username {dx_show_track_username})
-               (overdrive {dx_show_user_overdrive})
-               ;needs player call and i cannot be bothered
-               ;will update on next note hit
-               ;(streaks {dx_indv_note_streak})
-               kDataUnhandled
-            }
-         }
-      }
       {switch {$component selected_sym}
          (os_practice_hud
             {$this show_state dxState_ScreenElements_Practice}
@@ -122,6 +97,36 @@
          (os_solo_box_pos
             {set $dx_set_ui_pos_tracked_ui solo_box}
             {$this show_state dxState_PositionRemapper}
+         )
+         ((os_highway_text_off os_highway_text_overdrive os_highway_text_streaks os_highway_text_username)
+            {set $dx_highway_text
+               {switch $dx_highway_text
+                  (off overdrive)
+                  (overdrive streaks)
+                  (streaks username)
+                  (username off)
+               }
+            }
+            {switch $dx_highway_text
+               (overdrive {set $dx_tracked_changed os_highway_text_overdrive})
+               (streaks {set $dx_tracked_changed os_highway_text_streaks})
+               (username {set $dx_tracked_changed os_highway_text_username})
+               (off {set $dx_tracked_changed os_highway_text_off})
+            }
+            {dx_state_pos_tracker}
+            DX_INGAME_HUD_DATA
+            {set $previous_state dxState_InGameHUD}
+            {if {$this in_game}
+               {coop_track_panel dx_set_failed_pos}
+               {switch $dx_highway_text
+                  (username {dx_show_track_username})
+                  (overdrive {dx_show_user_overdrive})
+                  ;needs player call and i cannot be bothered
+                  ;will update on next note hit
+                  ;(streaks {dx_indv_note_streak})
+                  kDataUnhandled
+               }
+            }
          )
          (os_streak_counter_single
             {set $dx_streak_counter multi}
@@ -288,6 +293,7 @@
             DX_INGAME_HUD_DATA
             {set $previous_state dxState_InGameHUD}
          )
+         kDataUnhandled
       }
       {set $in_state FALSE}
       DX_INGAME_HUD_DATA
