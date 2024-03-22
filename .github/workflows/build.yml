@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Build Files
@@ -17,53 +17,43 @@ jobs:
           sed -i '1d' _ark/dx/song_updates/songs_updates.dta
           dependencies/python/configure_yarg_build.py
           dependencies/linux/ninja
-
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: RB3DX-YARG-Updates
           path: out/yarg
 
   build_xbox:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Set env
-        run: |
-          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: Build ARK
         run: |
           dependencies/python/configure_build.py xbox
           dependencies/linux/ninja
-
-      - name: Remove Excess files
+      - name: Remove .gitkeep
         run: |
-          find . -name "*.txt" -type f -delete
-          find . -name "*.zbm" -type f -delete
-      
+          find . -name ".gitkeep" -type f -delete
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: RB3DX-Xbox
           path: out/xbox
 
   build_ps3:
     runs-on: windows-2019
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: GuillaumeFalourd/command-output-file-action@v1.1
         with:
           command_line: echo InstallDirectory = BLUS30463
           output_file_name: ps3_package.conf
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Build ARK
@@ -77,7 +67,61 @@ jobs:
           $packageversion="1.05"
           dependencies/windows/make_package_npdrm_retail.exe --k-licensee 0x00000000000000000000000000000000 --drm-type Local --package-version $packageversion --content-type GameData --content-id ($content + $sha_short) ps3_package.conf out/ps3
       - name: Upload result
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: RB3DX-PS3
           path: '*.pkg'
+
+  build_wii:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set env
+        run: |
+          mkdir ./build
+          mkdir platform/wii/files
+          mkdir platform/wii/files/gen
+          cp dependencies/wii_patcher/main_wii.hdr platform/wii/files/gen/main_wii.hdr
+          mkdir platform/wii/sys
+          truncate -s 13068128 platform/wii/sys/main.dol
+          truncate -s 22353239 platform/wii/files/gen/main_wii_0.ark
+          truncate -s 5721833 platform/wii/files/gen/main_wii_1.ark
+          truncate -s 24584681 platform/wii/files/gen/main_wii_2.ark
+          truncate -s 266057007 platform/wii/files/gen/main_wii_3.ark
+          truncate -s 688887924 platform/wii/files/gen/main_wii_4.ark
+          truncate -s 107950925 platform/wii/files/gen/main_wii_5.ark
+          truncate -s 468328063 platform/wii/files/gen/main_wii_6.ark
+          truncate -s 22352016 platform/wii/files/gen/main_wii_7.ark
+          truncate -s 1983799220 platform/wii/files/gen/main_wii_8.ark
+          truncate -s 300667016 platform/wii/files/gen/main_wii_9.ark
+      - name: Build ARK
+        run: |
+          dependencies/python/configure_build.py wii
+          dependencies/linux/ninja
+      - uses: edgarrc/action-7z@v1
+        with:
+          args: 7z a -t7z -mx=9 build.7z ./build/
+      - name: Configure Tools
+        run: |
+          curl -L https://dlhb.gamebrew.org/wiihomebrews/wiimmfiisopatcherwii.7z -o wiimmfi-patcher-latest.7z
+          7z x wiimmfi-patcher-latest.7z
+          7z x wiimmfi-patcher-v7.4.zip
+          mv wiimmfi-patcher-v7.4 rb3dx_wii_patcher
+          mkdir rb3dx_wii_patcher/wii_patch_files
+          mkdir rb3dx_wii_patcher/wii_patch_files/gen
+          cp out/wii/files/gen/main_wii.hdr rb3dx_wii_patcher/wii_patch_files/gen/main_wii.hdr
+          cp out/wii/files/gen/main_wii_10.ark rb3dx_wii_patcher/wii_patch_files/gen/main_wii_10.ark
+          cp dependencies/wii_patcher/patch-images.sh rb3dx_wii_patcher/patch-images.sh
+          cp dependencies/wii_patcher/setup.sh rb3dx_wii_patcher/bin/setup.sh
+      - name: Remove .gitkeep
+        run: |
+          find . -name ".gitkeep" -type f -delete
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: RB3DX-Wii-Patcher
+          path: rb3dx_wii_patcher

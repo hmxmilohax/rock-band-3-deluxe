@@ -6,6 +6,7 @@
 (
    {$current_list set_data
       (
+         ;if we are inside our special menu item, we want to blank out the other lines so it looks nice
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_track_speeds}
          DX_PRINT_SONG_SPEED
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk os_acceleration_mode}
@@ -17,6 +18,7 @@
       options_extras
    )
    (enter
+      ;setup/reset the list tracking info
       {set $dx_list_item_selected FALSE}
       {set $dx_list_pos 0}
       {set $current_list options_extras.lst}
@@ -31,6 +33,7 @@
    ;(SCROLL_MSG
    ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
    ;)
+   ;these two options are selectable and act normal with a destination trail
    (SELECT_MSG
       {switch {$component selected_sym}
          (os_track_speeds
@@ -39,23 +42,29 @@
             {$this show_state dxState_AccelerationMode})
       }
    )
+   ;this is handling the dynamic "slider" replacement
    (BUTTON_DOWN_MSG
       {if_else
          $dx_list_item_selected
+         ;we selected an object so now only track up/down
          {switch
             $action
+            ;if we confirm or back out of the internal selection shell, go back up to the normal level and refresh the list
             ((kAction_Confirm kAction_Cancel)
                {set $dx_list_item_selected FALSE}
                DX_SET_SPEEDS_DATA
             )
+            ;if we pressed Up or Down while inside a selected list item
             ((kAction_Down kAction_Up)
                {switch {$current_list selected_data}
                   (1
                      {if
+                        ;set minimum and maximum for up and down presses for this variable
                         {switch $action
-                           (kAction_Down {> $leaderspeed 1})
-                           (kAction_Up {< $leaderspeed 2.45})
+                           (kAction_Down {> $leaderspeed 1}) ;minimum
+                           (kAction_Up {< $leaderspeed 2.45}) ;maximum
                         }
+                        ;actually set our variable, based on the pressed action
                         {set $leaderspeed
                            {switch $action
                               (kAction_Down {- $leaderspeed 0.05})
@@ -63,19 +72,24 @@
                            }
                         }
                      }
+                     ;track our current list position for hiding other list elements while we have selected this one
                      {set $dx_list_pos 1}
                   )
                   kDataUnhandled
                }
+               ;refresh the list
                DX_SET_SPEEDS_DATA
             )
             kDataUnhandled
          }
+         ;we havent specifically selected anything, we are only hovering on a list item
          {switch
             $action
+            ;check if we are selecting on the special item that drills down a level
             (kAction_Confirm
                {switch {$current_list selected_data}
                   (1
+                     ;refresh the list but this time tell the game we are a level deeper to hide other options
                      {set $dx_list_item_selected TRUE}
                      {set $dx_list_pos {$current_list selected_data}}
                      DX_SET_SPEEDS_DATA
@@ -83,14 +97,17 @@
                   kDataUnhandled
                }
             )
+            ;if we pressed left or right while hovering on a specific list item
             ((kAction_Left kAction_Right)
                {switch {$current_list selected_data}
                   (1
                      {if
+                        ;set minimum and maximum for left and right presses for this variable
                         {switch $action
-                           (kAction_Left {> $leaderspeed 1})
-                           (kAction_Right {< $leaderspeed 2.45})
+                           (kAction_Left {> $leaderspeed 1}) ;minimum
+                           (kAction_Right {< $leaderspeed 2.45}) ;maximum
                         }
+                        ;actually set our variable, based on the pressed action
                         {set $leaderspeed
                            {switch $action
                               (kAction_Left {- $leaderspeed 0.05})
@@ -98,10 +115,12 @@
                            }
                         }
                      }
+                     ;track our current list position for hiding other list elements while we have selected this one
                      {set $dx_list_pos 1}
                   )
                   kDataUnhandled
                }
+               ;refresh the list
                DX_SET_SPEEDS_DATA
             )
             kDataUnhandled

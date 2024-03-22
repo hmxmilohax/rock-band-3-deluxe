@@ -13,6 +13,9 @@
             {push_back $options os_instreset} ;shows controller reset menu if at least one instrument faking is active
       }
       {push_back $options os_pad_mapping}
+      {if {== $dx_joypad_type_vocals kControllerVocals}
+         {push_back $options os_button_remapper}
+      }
       {options_extras.lst set_data $options}
    }
 )
@@ -40,7 +43,7 @@
             }
          )
          (os_instreset
-            {unless $dx_prompt_save
+            {if {! $dx_prompt_save}
                {dx_settings_dta_writer}}
             DX_OS_CLOSE_MSG
             DX_RESET_INST_TYPES
@@ -49,6 +52,9 @@
          )
          (os_pad_mapping
             {$this show_state dxState_PadMappingSwap}
+         )
+         (os_button_remapper
+            {$this show_state dxState_ButtonRemapper}
          )
       }
       DX_SET_CONTROLLER_MENU
@@ -131,7 +137,7 @@
             {set $dx_joypad_type_guitar kControllerVocals}
          )
       }
-      {unless $dx_prompt_save
+      {if {! $dx_prompt_save}
          {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_GUITAR
       {dx_log_writer info {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
@@ -169,7 +175,7 @@
             {set $dx_joypad_type_keys kControllerVocals}
          )
       }
-      {unless $dx_prompt_save
+      {if {! $dx_prompt_save}
          {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_KEYS
       {dx_log_writer info {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
@@ -207,7 +213,7 @@
             {set $dx_joypad_type_vocals kControllerKeys}
          )
       }
-      {unless $dx_prompt_save
+      {if {! $dx_prompt_save}
          {dx_settings_dta_writer}}
       DX_SWAP_INSTRUMENT_TYPE_VOCALS
       {dx_log_writer info {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
@@ -215,6 +221,312 @@
    )
    (exit 
       DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_ControllerMenu}
+   )
+)
+
+;#define kPad_L2
+;(0)
+;#define kPad_R2
+;(1)
+;#define kPad_L1
+;(2)
+;#define kPad_R1
+;(3)
+;#define kPad_Tri
+;(4)
+;#define kPad_Circle
+;(5)
+;#define kPad_X
+;(6)
+;#define kPad_Square
+;(7)
+;#define kPad_Select
+;(8)
+;#define kPad_L3
+;(9)
+;#define kPad_R3
+;(10)
+;#define kPad_Start
+;(11)
+;#define kPad_DUp
+;(12)
+;#define kPad_DRight
+;(13)
+;#define kPad_DDown
+;(14)
+;#define kPad_DLeft
+;(15)
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 1 kPad_DLeft}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 2 0}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 3 kPad_DUp}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 4 1}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 5 kPad_Square}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 6 2}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 7 kPad_Tri}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 8 3}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 9 kPad_Circle}
+;{set_elem {find $syscfg beatmatcher controller joypad slots} 10 4}
+#define DX_BUTTON_REMAP_DATA
+(
+   {$current_list set_data
+      (
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_0_array_num}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_1_array_num}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_2_array_num}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_3_array_num}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_4_array_num}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5}} os_blnk {sprint "mapped_button_" {elem $dx_button_list $dx_button_5_array_num}}}
+      )
+   }
+)
+(dxState_ButtonRemapper
+   (view
+      options_audio
+   )
+   (enter
+      {set $dx_button_list (kPad_L2 kPad_R2 kPad_L1 kPad_R1 kPad_Tri kPad_Circle kPad_X kPad_Square kPad_Select kPad_L3 kPad_R3 kPad_Start kPad_DUp kPad_DRight kPad_DDown kPad_DLeft)}
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {set $current_list options_audio.lst}
+      {if_else {$this in_game}
+         {$current_list set_type overshell_menu_ingame}
+         {$current_list set_type overshell_menu}
+      }
+      {$current_list restart_highlight_matanim}
+      {$current_list refresh}
+      DX_BUTTON_REMAP_DATA
+   )
+   ;(SCROLL_MSG
+   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   ;)
+   (BUTTON_DOWN_MSG
+      {if_else
+         $dx_list_item_selected
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {set $dx_list_item_selected FALSE}
+               DX_BUTTON_REMAP_DATA
+            )
+            ((kAction_Down kAction_Up)
+               {switch {$current_list selected_data}
+                  (0
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_0_array_num 0})
+                           (kAction_Up {< $dx_button_0_array_num 15})
+                        }
+                        {set $dx_button_0_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_0_array_num 1})
+                              (kAction_Up {+ $dx_button_0_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 1 {elem $dx_button_list $dx_button_0_array_num}}
+                     }
+                     {set $dx_list_pos 0}
+                  )
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_1_array_num 0})
+                           (kAction_Up {< $dx_button_1_array_num 15})
+                        }
+                        {set $dx_button_1_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_1_array_num 1})
+                              (kAction_Up {+ $dx_button_1_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 3 {elem $dx_button_list $dx_button_1_array_num}}
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  (2
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_2_array_num 0})
+                           (kAction_Up {< $dx_button_2_array_num 15})
+                        }
+                        {set $dx_button_2_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_2_array_num 1})
+                              (kAction_Up {+ $dx_button_2_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 5 {elem $dx_button_list $dx_button_2_array_num}}
+                     }
+                     {set $dx_list_pos 2}
+                  )
+                  (3
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_3_array_num 0})
+                           (kAction_Up {< $dx_button_3_array_num 15})
+                        }
+                        {set $dx_button_3_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_3_array_num 1})
+                              (kAction_Up {+ $dx_button_3_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 7 {elem $dx_button_list $dx_button_3_array_num}}
+                     }
+                     {set $dx_list_pos 3}
+                  )
+                  (4
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_4_array_num 0})
+                           (kAction_Up {< $dx_button_4_array_num 15})
+                        }
+                        {set $dx_button_4_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_4_array_num 1})
+                              (kAction_Up {+ $dx_button_4_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 9 {elem $dx_button_list $dx_button_4_array_num}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  (5
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_button_5_array_num 0})
+                           (kAction_Up {< $dx_button_5_array_num 15})
+                        }
+                        {set $dx_button_5_array_num
+                           {switch $action
+                              (kAction_Down {- $dx_button_5_array_num 1})
+                              (kAction_Up {+ $dx_button_5_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad force_mercury} 1 {elem $dx_button_list $dx_button_5_array_num}}
+                     }
+                     {set $dx_list_pos 5}
+                  )
+                  kDataUnhandled
+               }
+               DX_BUTTON_REMAP_DATA
+            )
+            kDataUnhandled
+         }
+         {switch
+            $action
+            (kAction_Confirm
+               {set $dx_list_item_selected TRUE}
+               {set $dx_list_pos {$current_list selected_data}}
+               DX_BUTTON_REMAP_DATA
+            )
+            ((kAction_Left kAction_Right)
+               {switch {$current_list selected_data}
+                  (0
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_0_array_num 0})
+                           (kAction_Right {< $dx_button_0_array_num 15})
+                        }
+                        {set $dx_button_0_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_0_array_num 1})
+                              (kAction_Right {+ $dx_button_0_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 1 {elem $dx_button_list $dx_button_0_array_num}}
+                     }
+                     {set $dx_list_pos 0}
+                  )
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_1_array_num 0})
+                           (kAction_Right {< $dx_button_1_array_num 15})
+                        }
+                        {set $dx_button_1_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_1_array_num 1})
+                              (kAction_Right {+ $dx_button_1_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 3 {elem $dx_button_list $dx_button_1_array_num}}
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  (2
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_2_array_num 0})
+                           (kAction_Right {< $dx_button_2_array_num 15})
+                        }
+                        {set $dx_button_2_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_2_array_num 1})
+                              (kAction_Right {+ $dx_button_2_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 5 {elem $dx_button_list $dx_button_2_array_num}}
+                     }
+                     {set $dx_list_pos 2}
+                  )
+                  (3
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_3_array_num 0})
+                           (kAction_Right {< $dx_button_3_array_num 15})
+                        }
+                        {set $dx_button_3_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_3_array_num 1})
+                              (kAction_Right {+ $dx_button_3_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 7 {elem $dx_button_list $dx_button_3_array_num}}
+                     }
+                     {set $dx_list_pos 3}
+                  )
+                  (4
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_4_array_num 0})
+                           (kAction_Right {< $dx_button_4_array_num 15})
+                        }
+                        {set $dx_button_4_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_4_array_num 1})
+                              (kAction_Right {+ $dx_button_4_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad slots} 9 {elem $dx_button_list $dx_button_4_array_num}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  (5
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_button_5_array_num 0})
+                           (kAction_Right {< $dx_button_5_array_num 15})
+                        }
+                        {set $dx_button_5_array_num
+                           {switch $action
+                              (kAction_Left {- $dx_button_5_array_num 1})
+                              (kAction_Right {+ $dx_button_5_array_num 1})
+                           }
+                        }
+                        {set_elem {find $syscfg beatmatcher controller joypad force_mercury} 1 {elem $dx_button_list $dx_button_5_array_num}}
+                     }
+                     {set $dx_list_pos 5}
+                  )
+                  kDataUnhandled
+               }
+               DX_BUTTON_REMAP_DATA
+            )
+            kDataUnhandled
+         }
+      }
    )
    (on_cancel
       {$this show_state dxState_ControllerMenu}

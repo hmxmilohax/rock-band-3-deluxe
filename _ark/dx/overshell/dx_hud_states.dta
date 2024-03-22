@@ -43,6 +43,7 @@
       #endif
       {push_back $options os_practice_hud}
       {push_back $options os_trackconfig}
+      {push_back $options {if_else $dx_dim_remote_players os_dim_remote_players_on os_dim_remote_players_off}}
       ;-----func----------state name------message
       {dx_state_setup dxState_InGameHUD TRUE}
    }
@@ -60,31 +61,6 @@
       DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
    )
    (SELECT_MSG
-      {if {has_substr {$component selected_sym} "highway_text"}
-         {set $dx_highway_text
-            {switch $dx_highway_text
-               (off overdrive)
-               (overdrive streaks)
-               (streaks username)
-               (username off)
-            }
-         }
-         {set $dx_tracked_changed {sprint "os_highway_text_" $dx_highway_text}}
-         {dx_state_pos_tracker}
-         DX_INGAME_HUD_DATA
-         {set $previous_state dxState_InGameHUD}
-         {if {$this in_game}
-            {coop_track_panel dx_set_failed_pos}
-            {switch $dx_highway_text
-               (username {dx_show_track_username})
-               (overdrive {dx_show_user_overdrive})
-               ;needs player call and i cannot be bothered
-               ;will update on next note hit
-               ;(streaks {dx_indv_note_streak})
-               kDataUnhandled
-            }
-         }
-      }
       {switch {$component selected_sym}
          (os_practice_hud
             {$this show_state dxState_ScreenElements_Practice}
@@ -121,7 +97,37 @@
          )
          (os_solo_box_pos
             {set $dx_set_ui_pos_tracked_ui solo_box}
-            {$this show_state dxState_AxisPositionSetup}
+            {$this show_state dxState_PositionRemapper}
+         )
+         ((os_highway_text_off os_highway_text_overdrive os_highway_text_streaks os_highway_text_username)
+            {set $dx_highway_text
+               {switch $dx_highway_text
+                  (off overdrive)
+                  (overdrive streaks)
+                  (streaks username)
+                  (username off)
+               }
+            }
+            {switch $dx_highway_text
+               (overdrive {set $dx_tracked_changed os_highway_text_overdrive})
+               (streaks {set $dx_tracked_changed os_highway_text_streaks})
+               (username {set $dx_tracked_changed os_highway_text_username})
+               (off {set $dx_tracked_changed os_highway_text_off})
+            }
+            {dx_state_pos_tracker}
+            DX_INGAME_HUD_DATA
+            {set $previous_state dxState_InGameHUD}
+            {if {$this in_game}
+               {coop_track_panel dx_set_failed_pos}
+               {switch $dx_highway_text
+                  (username {dx_show_track_username})
+                  (overdrive {dx_show_user_overdrive})
+                  ;needs player call and i cannot be bothered
+                  ;will update on next note hit
+                  ;(streaks {dx_indv_note_streak})
+                  kDataUnhandled
+               }
+            }
          )
          (os_streak_counter_single
             {set $dx_streak_counter multi}
@@ -288,6 +294,17 @@
             DX_INGAME_HUD_DATA
             {set $previous_state dxState_InGameHUD}
          )
+         ((os_dim_remote_players_on os_dim_remote_players_off)
+            {set $dx_dim_remote_players {! $dx_dim_remote_players}}
+            {if_else $dx_dim_remote_players
+               {set $dx_tracked_changed os_dim_remote_players_on}
+               {set $dx_tracked_changed os_dim_remote_players_off}
+            }
+            {dx_state_pos_tracker}
+            DX_INGAME_HUD_DATA
+            {set $previous_state dxState_InGameHUD}
+         )
+         kDataUnhandled
       }
       {set $in_state FALSE}
       DX_INGAME_HUD_DATA
@@ -441,7 +458,7 @@
          )
          (os_pos
             {set $dx_set_ui_pos_tracked_ui mtv}
-            {$this show_state dxState_AxisPositionSetup})
+            {$this show_state dxState_PositionRemapper})
          ((os_bpm_on os_bpm_off)
             {set $dx_bpm_report {! $dx_bpm_report}}
             {if_else $dx_bpm_report
@@ -492,10 +509,10 @@
          ;   {$this show_state dxState_ScoreTextures})
          (os_scoreboard_pos
             {set $dx_set_ui_pos_tracked_ui scoreboard}
-            {$this show_state dxState_AxisPositionSetup})
+            {$this show_state dxState_PositionRemapper})
          (os_star_display_pos
             {set $dx_set_ui_pos_tracked_ui star_display}
-            {$this show_state dxState_AxisPositionSetup}
+            {$this show_state dxState_PositionRemapper}
          )
          ((os_star_gold_fill_on os_star_gold_fill_off)
             {set $dx_gold_star_progress {! $dx_gold_star_progress}}
@@ -598,352 +615,6 @@
    )
    (on_cancel
       {$this show_state dxState_InGameHUD}
-   )
-)
-
-(dxState_AxisPositionSetup
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_horizontal}
-         {push_back $options os_vertical}         
-         {push_back $options os_zspace}
-         {dx_state_setup dxState_AxisPositionSetup FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_horizontal
-            {set $mtvtracked 0}
-            {$this show_state dxState_AxisXYZ})
-         (os_vertical
-            {set $mtvtracked 2}
-            {$this show_state dxState_AxisXYZ})
-         (os_zspace
-            {set $mtvtracked 1}
-            {$this show_state dxState_AxisXYZ}
-         )
-      }
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state
-         {switch $dx_set_ui_pos_tracked_ui
-            (mtv dxState_MTVElements)
-            (speed_control dxState_ScreenElements_Practice)
-            (all_item dxState_ScreenElements_Practice)
-            (score dxState_ScreenElements_Practice)
-            (section dxState_ScreenElements_Practice)
-            ;(crowd_meter dxState_CrowdMeterElements)
-            (scoreboard dxState_ScoreElements)
-            (star_display dxState_ScoreElements)
-            (solo_box dxState_InGameHUD)
-         }
-      }
-   )
-)
-
-(dxState_AxisXYZ
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_100}
-         {push_back $options os_50}         
-         {push_back $options os_25}
-         {push_back $options os_10}
-         {push_back $options os_1}
-         {push_back $options os_reset}
-         {push_back $options os_minus1}
-         {push_back $options os_minus10}
-         {push_back $options os_minus25}
-         {push_back $options os_minus50}
-         {push_back $options os_minus100}
-         {dx_state_setup dxState_AxisXYZ FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (enter
-      {switch $dx_set_ui_pos_tracked_ui
-         (mtv
-            {set $dx_set_ui_pos_0 $mtvpos_0}
-            {set $dx_set_ui_pos_1 $mtvpos_1}
-            {set $dx_set_ui_pos_2 $mtvpos_2}
-         )
-         (speed_control
-            {set $dx_set_ui_pos_0 $speed_controlpos_0}
-            {set $dx_set_ui_pos_1 $speed_controlpos_1}
-            {set $dx_set_ui_pos_2 $speed_controlpos_2}
-         )
-         (all_item
-            {set $dx_set_ui_pos_0 $all_itempos_0}
-            {set $dx_set_ui_pos_1 $all_itempos_1}
-            {set $dx_set_ui_pos_2 $all_itempos_2}
-         )
-         (score
-            {set $dx_set_ui_pos_0 $scorepos_0}
-            {set $dx_set_ui_pos_1 $scorepos_1}
-            {set $dx_set_ui_pos_2 $scorepos_2}
-         )
-         (section
-            {set $dx_set_ui_pos_0 $sectionpos_0}
-            {set $dx_set_ui_pos_1 $sectionpos_1}
-            {set $dx_set_ui_pos_2 $sectionpos_2}
-         )
-         (crowd_meter
-            {set $dx_set_ui_pos_0 $crowd_meterpos_0}
-            {set $dx_set_ui_pos_1 $crowd_meterpos_1}
-            {set $dx_set_ui_pos_2 $crowd_meterpos_2}
-         )
-         (scoreboard
-            {set $dx_set_ui_pos_0 $scoreboardpos_0}
-            {set $dx_set_ui_pos_1 $scoreboardpos_1}
-            {set $dx_set_ui_pos_2 $scoreboardpos_2}
-         )
-         (star_display
-            {set $dx_set_ui_pos_0 $star_displaypos_0}
-            {set $dx_set_ui_pos_1 $star_displaypos_1}
-            {set $dx_set_ui_pos_2 $star_displaypos_2}
-         )
-         (solo_box
-            {set $dx_set_ui_pos_0 $solo_boxpos_0}
-            {set $dx_set_ui_pos_1 $solo_boxpos_1}
-            {set $dx_set_ui_pos_2 $solo_boxpos_2}
-         )
-      }
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_100
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {+ $dx_set_ui_pos_0 100}})
-               (1 {set $dx_set_ui_pos_1 {- $dx_set_ui_pos_1 100}})
-               (2 {set $dx_set_ui_pos_2 {+ $dx_set_ui_pos_2 100}})
-            }
-         )
-         (os_50
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {+ $dx_set_ui_pos_0 50}})
-               (1 {set $dx_set_ui_pos_1 {- $dx_set_ui_pos_1 50}})
-               (2 {set $dx_set_ui_pos_2 {+ $dx_set_ui_pos_2 50}})
-            }
-         )
-         (os_25
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {+ $dx_set_ui_pos_0 25}})
-               (1 {set $dx_set_ui_pos_1 {- $dx_set_ui_pos_1 25}})
-               (2 {set $dx_set_ui_pos_2 {+ $dx_set_ui_pos_2 25}})
-            }
-         )
-         (os_10
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {+ $dx_set_ui_pos_0 10}})
-               (1 {set $dx_set_ui_pos_1 {- $dx_set_ui_pos_1 10}})
-               (2 {set $dx_set_ui_pos_2 {+ $dx_set_ui_pos_2 10}})
-            }
-         )
-         (os_1
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {+ $dx_set_ui_pos_0 1}})
-               (1 {set $dx_set_ui_pos_1 {- $dx_set_ui_pos_1 1}})
-               (2 {set $dx_set_ui_pos_2 {+ $dx_set_ui_pos_2 1}})
-            }
-         )
-         (os_reset
-            {switch $mtvtracked
-               (0
-                  {switch $dx_set_ui_pos_tracked_ui
-                     (mtv {set $dx_set_ui_pos_0 0})
-                     (speed_control {set $dx_set_ui_pos_0 46})
-                     (all_item {set $dx_set_ui_pos_0 0})
-                     (score {set $dx_set_ui_pos_0 191})
-                     (section {set $dx_set_ui_pos_0 0})
-                     (scoreboard {set $dx_set_ui_pos_0 8})
-                     (star_display {set $dx_set_ui_pos_0 0})
-                     (solo_box {set $dx_set_ui_pos_0 0})
-                  }
-               )
-               (1
-                  {switch $dx_set_ui_pos_tracked_ui
-                     (mtv {set $dx_set_ui_pos_1 0})
-                     (speed_control {set $dx_set_ui_pos_1 0})
-                     (all_item {set $dx_set_ui_pos_1 0})
-                     (score {set $dx_set_ui_pos_1 0})
-                     (section {set $dx_set_ui_pos_1 0})
-                     (scoreboard {set $dx_set_ui_pos_1 0})
-                     (star_display {set $dx_set_ui_pos_1 0})
-                     (solo_box {set $dx_set_ui_pos_1 0})
-                  }
-               )
-               (2
-                  {switch $dx_set_ui_pos_tracked_ui
-                     (mtv {set $dx_set_ui_pos_2 0})
-                     (speed_control {set $dx_set_ui_pos_2 -5})
-                     (all_item {set $dx_set_ui_pos_2 0})
-                     (score {set $dx_set_ui_pos_2 175})
-                     (section {set $dx_set_ui_pos_2 185})
-                     (scoreboard {set $dx_set_ui_pos_2 -16})
-                     (star_display {set $dx_set_ui_pos_2 0})
-                     (solo_box {set $dx_set_ui_pos_2 0})
-                  }
-               )
-            }
-         )
-         (os_minus100
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {- $dx_set_ui_pos_0 100}})
-               (1 {set $dx_set_ui_pos_1 {+ $dx_set_ui_pos_1 100}})
-               (2 {set $dx_set_ui_pos_2 {- $dx_set_ui_pos_2 100}})
-            }
-         )
-         (os_minus50
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {- $dx_set_ui_pos_0 50}})
-               (1 {set $dx_set_ui_pos_1 {+ $dx_set_ui_pos_1 50}})
-               (2 {set $dx_set_ui_pos_2 {- $dx_set_ui_pos_2 50}})
-            }
-         )
-         (os_minus25
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {- $dx_set_ui_pos_0 25}})
-               (1 {set $dx_set_ui_pos_1 {+ $dx_set_ui_pos_1 25}})
-               (2 {set $dx_set_ui_pos_2 {- $dx_set_ui_pos_2 25}})
-            }
-         )
-         (os_minus10
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {- $dx_set_ui_pos_0 10}})
-               (1 {set $dx_set_ui_pos_1 {+ $dx_set_ui_pos_1 10}})
-               (2 {set $dx_set_ui_pos_2 {- $dx_set_ui_pos_2 10}})
-            }
-         )
-         (os_minus1
-            {switch $mtvtracked
-               (0 {set $dx_set_ui_pos_0 {- $dx_set_ui_pos_0 1}})
-               (1 {set $dx_set_ui_pos_1 {+ $dx_set_ui_pos_1 1}})
-               (2 {set $dx_set_ui_pos_2 {- $dx_set_ui_pos_2 1}})
-            }
-         )
-      }
-      {switch $dx_set_ui_pos_tracked_ui
-         (mtv
-            {set $mtvpos_0 $dx_set_ui_pos_0}
-            {set $mtvpos_1 $dx_set_ui_pos_1}
-            {set $mtvpos_2 $dx_set_ui_pos_2}
-            {if $dx_mtvup
-               {{{gamemode get track_panel} find mtv_overlay} dx_set_mtv_pos}
-            }
-         )
-         (speed_control
-            {set $speed_controlpos_0 $dx_set_ui_pos_0}
-            {set $speed_controlpos_1 $dx_set_ui_pos_1}
-            {set $speed_controlpos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-                  {exists beatmatch}
-               }
-               {practice_panel dx_speed_control_set_pos}
-            }
-         )
-         (all_item
-            {set $all_itempos_0 $dx_set_ui_pos_0}
-            {set $all_itempos_1 $dx_set_ui_pos_1}
-            {set $all_itempos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-                  {exists beatmatch}
-               }
-               {practice_panel dx_all_item_set_pos}
-            }
-         )
-         (score
-            {set $scorepos_0 $dx_set_ui_pos_0}
-            {set $scorepos_1 $dx_set_ui_pos_1}
-            {set $scorepos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-                  {exists beatmatch}
-               }
-               {practice_panel dx_score_set_pos}
-            }
-         )
-         (section
-            {set $sectionpos_0 $dx_set_ui_pos_0}
-            {set $sectionpos_1 $dx_set_ui_pos_1}
-            {set $sectionpos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-                  {exists beatmatch}
-               }
-               {practice_panel dx_section_set_pos}
-            }
-         )
-         (crowd_meter
-            {set $crowd_meterpos_0 $dx_set_ui_pos_0}
-            {set $crowd_meterpos_1 $dx_set_ui_pos_1}
-            {set $crowd_meterpos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-                  {exists beatmatch}
-               }
-               {coop_track_panel dx_set_crowd_meter_pos}
-            }
-         )
-         (scoreboard
-            {set $scoreboardpos_0 $dx_set_ui_pos_0}
-            {set $scoreboardpos_1 $dx_set_ui_pos_1}
-            {set $scoreboardpos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {! {gamemode in_mode practice}}
-                  {! {gamemode in_mode trainer}}
-                  {exists beatmatch}
-               }
-               {coop_track_panel dx_set_scoreboard_pos}
-            }
-         )
-         (star_display
-            {set $star_displaypos_0 $dx_set_ui_pos_0}
-            {set $star_displaypos_1 $dx_set_ui_pos_1}
-            {set $star_displaypos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {! {gamemode in_mode practice}}
-                  {! {gamemode in_mode trainer}}
-                  {exists beatmatch}
-               }
-               {coop_track_panel dx_set_star_display_pos}
-            }
-         )
-         (solo_box
-            {set $solo_boxpos_0 $dx_set_ui_pos_0}
-            {set $solo_boxpos_1 $dx_set_ui_pos_1}
-            {set $solo_boxpos_2 $dx_set_ui_pos_2}
-            {if
-               {&&
-                  {! {gamemode in_mode practice}}
-                  {! {gamemode in_mode trainer}}
-                  {exists beatmatch}
-               }
-               {coop_track_panel dx_set_solo_box_pos}
-            }
-         )
-      }
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_AxisPositionSetup}
    )
 )
 
@@ -1383,16 +1054,16 @@
       {switch {$component selected_sym}
          (os_all_item
             {set $dx_set_ui_pos_tracked_ui all_item}
-            {$this show_state dxState_AxisPositionSetup})
+            {$this show_state dxState_PositionRemapper})
          (os_speed_control
             {set $dx_set_ui_pos_tracked_ui speed_control}
-            {$this show_state dxState_AxisPositionSetup})
+            {$this show_state dxState_PositionRemapper})
          (os_score_percent
             {set $dx_set_ui_pos_tracked_ui score}
-            {$this show_state dxState_AxisPositionSetup})
+            {$this show_state dxState_PositionRemapper})
          (os_section
             {set $dx_set_ui_pos_tracked_ui section}
-            {$this show_state dxState_AxisPositionSetup}
+            {$this show_state dxState_PositionRemapper}
          )
       }
    )
