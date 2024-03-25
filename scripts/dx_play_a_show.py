@@ -445,9 +445,9 @@ def get_dx_play_a_show_status(filename):
 def get_dx_play_a_show_vote(filename):
     with open(filename, 'r') as file:
         for line in file:
-            match = re.match(r'\(dx_play_a_show_vote\s+(\S+)\)', line)
+            match = re.match(r'\(dx_play_a_show_vote\s+(\d+)\)', line)
             if match:
-                return match.group(1)
+                return int(match.group(1))
     return None
 
 def parse_and_export_to_json():
@@ -532,6 +532,8 @@ def parse_and_export_to_json():
         while True:
             current_status = get_dx_play_a_show_status(output_sys_file_path_str)
             if current_status == 'none':
+                genre_internal, genre_display = get_random_genre(data)
+                year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
                 with open(output_sys_file_path_str, 'w') as output:
                     output.write(f"(dx_play_a_show_status voting)\n")
                     output.write(f"(dx_play_a_show_info\n")
@@ -551,6 +553,12 @@ def parse_and_export_to_json():
                 print_color_text(f"RB3DX Play A Show Running! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             else:
                 time.sleep(1)
+                clear_screen()
+                print_color_text(f"▛▀▖      ▌   ▛▀▖        ▌ ▞▀▖ ▛▀▖   ▜          ", "1;36")  # Cyan text
+                print_color_text(f"▙▄▘▞▀▖▞▀▖▌▗▘ ▙▄▘▝▀▖▛▀▖▞▀▌  ▄▘ ▌ ▌▞▀▖▐ ▌ ▌▚▗▘▞▀▖", "1;36")  # Cyan text
+                print_color_text(f"▌▚ ▌ ▌▌ ▖▛▚  ▌ ▌▞▀▌▌ ▌▌ ▌ ▖ ▌ ▌ ▌▛▀ ▐ ▌ ▌▗▚ ▛▀ ", "1;36")  # Cyan text
+                print_color_text(f"▘ ▘▝▀ ▝▀ ▘ ▘ ▀▀ ▝▀▘▘ ▘▝▀▘ ▝▀  ▀▀ ▝▀▘ ▘▝▀▘▘ ▘▝▀▘", "1;36")  # Cyan text
+                print_color_text(f"RB3DX Play A Show Running! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
                 print_color_text(f"No vote? Checking again", "1;36")  # Cyan text
             #print_color_text(f"Welcome to RB3DX Play A Show! {len(all_parsed_dicts)} songs loaded!", "1;36")  # Cyan text
             #print_color_text("Choose an option:", "1;37")  # White text
@@ -564,43 +572,41 @@ def parse_and_export_to_json():
             #print_color_text("0. Exit", "1;38;5;93")  # Magenta text
             
             if current_status == 'voted':
+                #clear_screen()
                 dx_play_a_show_vote_value = get_dx_play_a_show_vote(output_sys_file_path_str)
                 with open(output_sys_file_path_str, 'w') as output:
                     output.write(f"(dx_play_a_show_status none)\n")
                 choice = dx_play_a_show_vote_value
 
-                if choice == '1':
+                if choice == 1:
                     fuzzy_search(data, output_file_path, f'year:{year}', rpcs3_path)
                     genre_internal, genre_display = get_random_genre(data)
                     year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-                elif choice == '2':
+                elif choice == 2:
                     fuzzy_search(data, output_file_path, f'artist:{artist}', rpcs3_path)
                     genre_internal, genre_display = get_random_genre(data)
                     year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-                elif choice == '3':
-                    #clear_screen()
+                elif choice == 3:
                     print_color_text(f"'{song_title_direct}' by '{artist_direct}' added to playlist.", "1;38;5;77")
                     append_short_name_to_output(output_file_path, short_name_direct, rpcs3_path)
                     genre_internal, genre_display = get_random_genre(data)
                     year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-                elif choice == '4':
+                elif choice == 4:
                     fuzzy_search(data, output_file_path, f'genre:{genre_internal}', rpcs3_path)
                     genre_internal, genre_display = get_random_genre(data)
                     year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-                elif choice == '5':
-                    #clear_screen()
+                elif choice == 5:
                     print_color_text("Options refreshed.", "1;34")  # Blue text
                     genre_internal, genre_display = get_random_genre(data)
                     year, artist, song_title, genre, song_title_direct, artist_direct, short_name_direct = refresh_options(data)
-                elif choice == '6':
+                elif choice == 6:
                     clear_playlist(output_file_path)
                 elif choice == '0':
-                    #clear_screen()
                     print_color_text("Exiting Play A Show. Goodbye!", "1;31")  # Red text
                     break
                 else:
-                    #clear_screen()
                     print_color_text("Invalid choice.", "1;31")  # Red text
+                    print_color_text(f"{choice}", "1;31")  # Red text
                     print(" ")
 
 # Call the new function to run both parts

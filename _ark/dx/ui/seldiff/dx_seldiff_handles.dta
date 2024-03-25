@@ -4,11 +4,18 @@
       {set $dx_playlist_array ()}
       {resize $dx_playlist_array 0}
       {{dx_play_a_show_panel find career.grp} set_showing TRUE}
-         {if {! $got_career_desc_pos}
-            {set $got_career_desc_pos TRUE}
-            {set $dx_original_career_desc_pos {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 2}}
-         }
-      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 2 {+ $dx_original_career_desc_pos 10}}
+      {{dx_play_a_show_panel find career_bg.mesh} set_showing FALSE}
+      {{dx_play_a_show_panel find career.pic} set_showing FALSE}
+      {{dx_play_a_show_panel find career_frame.mesh} set_showing FALSE}
+      {if {! $got_career_desc_pos}
+         {set $got_career_desc_pos TRUE}
+         {set $dx_original_career_desc_pos {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 2}}
+         {set $dx_original_career_desc_posx {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 0}}
+         {set $dx_original_career_desc_posz {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 1}}
+      }
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 2 {+ $dx_original_career_desc_pos 45}}
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 0 {- $dx_original_career_desc_posx 55}}
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 1 {+ $dx_original_career_desc_posz 30}}
       {foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
          {if {== {elem $entry 0} dx_play_a_show_info}
             {set $dx_play_a_show_line1 {elem $entry 1}}
@@ -33,21 +40,31 @@
             $dx_play_a_show_line5
          }
       }
-      {{dx_play_a_show_panel find career_description.lbl} set height 150}
+      {{dx_play_a_show_panel find career_description.lbl} set height 125}
       {{dx_play_a_show_panel find career_description.lbl} set width 600}
       {{dx_play_a_show_panel find career_description.lbl} set leading 1}
       {{dx_play_a_show_panel find career_description.lbl} set fit_type kFitJust}
-      {{dx_play_a_show_panel find career_description.lbl} set text_size 100}
+      {{dx_play_a_show_panel find career_description.lbl} set text_size 75}
       {{dx_play_a_show_panel find career_description.lbl} set reserve_lines 5}
       {$this dx_play_a_show_send_voting}
       {if $current_voted_song
-         {$this update_preview_song $current_voted_song "" 0}
+         {dx_play_a_show_panel update_preview_song $current_voted_song "" 0}
       }
    )
    (dx_play_a_show_send_waiting
       {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"
          (
             (dx_play_a_show_status waiting)
+            (dx_play_a_show_info)
+            (dx_play_a_show_vote)
+            (dx_play_a_show_chosen_vote)
+         )
+      }
+   )
+   (dx_play_a_show_send_none
+      {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"
+         (
+            (dx_play_a_show_status none)
             (dx_play_a_show_info)
             (dx_play_a_show_vote)
             (dx_play_a_show_chosen_vote)
@@ -89,9 +106,13 @@
    )
    (dx_play_a_show_report_vote
       {foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
-         {if {== {elem $entry 0} dx_play_a_show_chosen_vote}
+         {if {&& {> {size $entry} 1} {== {elem $entry 0} dx_play_a_show_chosen_vote}}
             {set $current_voted_song {elem $entry 1}}
             {meta_performer set_song {elem $entry 1}}
+         }
+         {if {== {size $entry} 1}
+            {set $current_voted_song none}
+            {meta_performer set_song none}
          }
       }
       {if $current_voted_song
@@ -102,6 +123,8 @@
    (dx_play_a_show_recieve_song
       {if_else {> {size {read_file DX_PLAYLIST_DTA_PATH}} 0}
          {do
+            {set $dx_in_show_flow FALSE}
+            {dx_play_a_show_panel dx_play_a_show_send_none}
             {foreach $entry {elem {read_file DX_PLAYLIST_DTA_PATH} 0}
                {push_back $dx_playlist_array $entry}
             }
@@ -112,10 +135,11 @@
          }
          {do
             {dx_passive_messenger_symbol "no songs queued"}
-            {if {! $dx_play_a_show_warn}
-               {set $dx_play_a_show_warn TRUE}
-               {dx_modal_messenger_symbol "Play a show is a highly alpha feature and requires the usage of an external tool to generate a playlist. this is placeholder text that should be updated later"}
-            }
+            ;{ui sync_screen main_hub_screen 0}
+            ;{if {! $dx_play_a_show_warn}
+            ;   {set $dx_play_a_show_warn TRUE}
+            ;   {dx_modal_messenger_symbol "Play a show is a highly alpha feature and requires the usage of an external tool to generate a playlist. this is placeholder text that should be updated later"}
+            ;}
          }
       }
    )
