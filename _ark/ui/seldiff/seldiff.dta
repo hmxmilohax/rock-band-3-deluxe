@@ -191,7 +191,51 @@
    dx_play_a_show_screen
    (panels meta #ifdef HX_WII sv4_panel #else DX_SV4_PANEL #endif dx_play_a_show_panel)
    (enter
+      {overshell add_sink $this}
+      {if
+         {session_mgr is_leader_local}
+         {overshell set_song_options_required FALSE}
+         {if
+            {overshell in_override_flow kOverrideFlow_None}
+            {overshell begin_override_flow kOverrideFlow_SongSettings}}}
       {dx_play_a_show_panel dx_play_a_show_info})
+   (exit
+      {overshell remove_sink $this}
+      {if
+         {overshell in_override_flow kOverrideFlow_SongSettings}
+         {overshell end_override_flow kOverrideFlow_SongSettings TRUE}})
+   (override_ended
+      ($override_type $cancel)
+      {cond
+         ({&&
+               {== $override_type kOverrideFlow_RegisterOnline}
+               {is_leader_local}}
+            {overshell leave_options}
+            {overshell begin_override_flow kOverrideFlow_SongSettings})
+         ({&&
+               {== $override_type kOverrideFlow_SongSettings}
+               {is_leader_local}}
+            {if_else
+               $cancel
+               {do
+                  {cond
+                     ({gamemode in_mode qp_coop}
+                        {if_else {session is_local}
+                           {ui goto_screen song_select_screen 0}
+                           {ui sync_screen song_select_screen 0}
+                        }
+                     )
+                     {if_else {session is_local}
+                        {ui goto_screen main_hub_screen 0}
+                        {ui sync_screen main_hub_screen 0}
+                     }
+                  }
+               }
+               {dx_play_a_show_panel dx_play_a_show_recieve_song}
+            }
+         )
+      }
+   )
 }
 {new
    BandScreen
