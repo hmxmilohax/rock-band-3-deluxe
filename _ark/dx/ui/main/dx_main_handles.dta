@@ -11,27 +11,16 @@
          {dx_passive_messenger you_lost}
       }
       {$this dx_check_birthday}
-      {unless {== $dx_detected_platform platform_rpcs3}
-         {$this disable mb_musicstore.btn}
-         {mb_musicstore.btn set_showing FALSE}
-      }
+      #ifndef HX_PS3
+      {$this disable mb_musicstore.btn}
+      {mb_musicstore.btn set_showing FALSE}
+      #endif
       #ifndef HX_PS3
       {content_mgr start_refresh}
       #endif
       {if {|| {! $screensaver} {! $gotcha} {modifier_mgr is_modifier_active mod_auto_play}}
          DX_MAIN_BUTTON_DISABLER
       }
-      {set $current_voted_song none}
-      #ifdef HX_PS3
-      {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"
-         (
-            (dx_play_a_show_status none)
-            (dx_play_a_show_info)
-            (dx_play_a_show_vote)
-            (dx_play_a_show_chosen_vote)
-         )
-      }
-      #endif
    )
    (dx_unlock_pre_orders
       {switch {{$player get_user} get_slot_num}
@@ -91,12 +80,44 @@
       }
    )
    (dx_play_a_show
+      {if {! $play_a_show_mentioned}
+         {set $play_a_show_mentioned TRUE}
+         {dx_passive_messenger_symbol 'Scanning songs please wait...'}
+         {set $read_array ()}
+         {set $song_array ()}
+         {set $dtaarray ()}
+         {resize $read_array 0}
+         {resize $song_array 0}
+         {resize $dtaarray 0}
+         {set $num_voted_songs 0}
+         {set $read_array {array {file_list_paths "GD:/dev_hdd0/game/BLUS30463/USRDIR/*/songs/songs.dta"}}}
+         {foreach $entry $read_array
+            {search_replace $entry "./GD:/" "GD:/" $entry}
+            {foreach $entry2 {read_file $entry}
+               {set $temp $entry2}
+               {resize $temp 1}
+               {push_back $dtaarray $temp}
+            }
+         }
+         {set $read_array {array {file_list_paths "GD:/dev_hdd0/game/BLUS30050/USRDIR/*/songs/songs.dta"}}}
+         {foreach $entry $read_array
+            {search_replace $entry "./GD:/" "GD:/" $entry}
+            {foreach $entry2 {read_file $entry}
+               {set $temp $entry2}
+               {resize $temp 1}
+               {push_back $dtaarray $temp}
+            }
+         }
+      }
+      {set $current_voted_song none}
       {meta_performer set_song none}
       {set $dx_playing_a_show TRUE}
       {set $dx_in_show_flow TRUE}
       {set $current_voted_song none}
       {set $dx_playlist_array ()}
       {resize $dx_playlist_array 0}
+      {set $dx_playlist_queue_array ()}
+      {resize $dx_playlist_queue_array 0}
       {set $dx_play_a_show_required_votes 0}
       {set $dx_play_a_show_num_votes 0}
       {set $slot1_voted FALSE}

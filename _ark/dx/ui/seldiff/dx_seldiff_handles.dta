@@ -1,8 +1,16 @@
 #define DX_SEL_DIFF_HANDLES
 (
+   (dx_refesh_songs
+      {set $random_genre_song {elem {random_elem $dtaarray} 0}}
+      {set $random_genre {{song_mgr get_meta_data $random_genre_song} genre}}
+      {set $random_year_song {elem {random_elem $dtaarray} 0}}
+      {set $random_year {{song_mgr get_meta_data $random_year_song} year_released}}
+      {set $random_length_song {elem {random_elem $dtaarray} 0}}
+      {set $random_length {{song_mgr get_meta_data $random_year_song} length_ms}}
+      {set $random_song {elem {random_elem $dtaarray} 0}}
+      {set $random_song_title {{song_mgr get_meta_data $random_song} title}}
+   )
    (dx_play_a_show_info
-      {set $dx_playlist_array ()}
-      {resize $dx_playlist_array 0}
       {set $dx_play_a_show_num_votes 0}
       {set $slot1_voted FALSE}
       {set $slot2_voted FALSE}
@@ -16,7 +24,6 @@
       {{dx_play_a_show_panel find career_bg.mesh} set_showing FALSE}
       {{dx_play_a_show_panel find career.pic} set_showing FALSE}
       {{dx_play_a_show_panel find career_frame.mesh} set_showing FALSE}
-      {7_player.grp set_showing FALSE}
       {if {! $got_career_desc_pos}
          {set $got_career_desc_pos TRUE}
          {set $dx_original_career_desc_pos {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 2}}
@@ -26,21 +33,25 @@
       {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 2 {+ $dx_original_career_desc_pos 30}}
       {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 0 {- $dx_original_career_desc_posx 55}}
       {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 1 {+ $dx_original_career_desc_posz 30}}
-      {foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
-         {if {== {elem $entry 0} dx_play_a_show_info}
-            {set $dx_play_a_show_line1 {elem $entry 1}}
-            {set $dx_play_a_show_line2 {elem $entry 2}}
-            {set $dx_play_a_show_line3 {elem $entry 3}}
-            {set $dx_play_a_show_line4 {elem $entry 4}}
-            {set $dx_play_a_show_line5 {elem $entry 5}}
-         }
-      }
-      {foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
-         {if {== {elem $entry 0} dx_play_a_show_chosen_vote}
-            {set $current_voted_song {elem $entry 1}}
-            {meta_performer set_song {elem $entry 1}}
-         }
-      }
+      {$this dx_refesh_songs}
+      ;{foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
+      ;   {if {== {elem $entry 0} dx_play_a_show_info}
+            {set $dx_play_a_show_line1 {sprint "1. A random " {localize $random_genre} " song"}}
+            {set $dx_play_a_show_line2 {sprint "2. A random song from " $random_year}}
+            {if_else {> $random_length 420000}
+               {set $dx_play_a_show_line3 {sprint "3. A REALLY long song"}}
+               {if_else {> $random_length 240000}
+                  {set $dx_play_a_show_line3 {sprint "3. A long song"}}
+                  {if_else {> $random_length 120000}
+                     {set $dx_play_a_show_line3 {sprint "3. A short song"}}
+                     {set $dx_play_a_show_line3 {sprint "3. A REALLY short song"}}
+                  }
+               }
+            }
+            {set $dx_play_a_show_line4 {sprint "4. " $random_song_title}}
+            {set $dx_play_a_show_line5 {sprint "5. Refresh Options"}}
+         ;}
+      ;}
       {{dx_play_a_show_panel find career_description.lbl} set_token_fmt
          {sprint
             $dx_play_a_show_line1 "\n"
@@ -137,18 +148,6 @@
       {$this dx_play_a_show_send_voted}
    )
    (dx_play_a_show_send_voted
-      {set $vote_array
-         ()
-      }
-      {resize $vote_array 0}
-      {push_back $vote_array (dx_play_a_show_status voted)}
-      {push_back $vote_array (dx_play_a_show_info)}
-      {push_back $vote_array (dx_play_a_show_vote $dx_play_a_show_vote)}
-      {push_back $vote_array (dx_play_a_show_chosen_vote)}
-      {set $vote_array {array $vote_array}}
-      {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"
-         $vote_array
-      }
       {if {exists dx_send_vote}
          {delete dx_send_vote}
       }
@@ -164,6 +163,32 @@
             {if_else {== $dx_play_a_show_vote 5} {sprint "<alt>j</alt>" $dx_play_a_show_line5} " "}
          }
       }
+      {switch $dx_play_a_show_vote
+         (1
+            {set $current_voted_song $random_genre_song}
+            {meta_performer set_song $random_genre_song}
+            {push_back $dx_playlist_array $random_genre_song}
+         )
+         (2
+            {set $current_voted_song $random_year_song}
+            {meta_performer set_song $random_year_song}
+            {push_back $dx_playlist_array $random_year_song}
+         )
+         (3
+            {set $current_voted_song $random_length_song}
+            {meta_performer set_song $random_length_song}
+            {push_back $dx_playlist_array $random_length_song}
+         )
+         (4
+            {set $current_voted_song $random_song}
+            {meta_performer set_song $random_song}
+            {push_back $dx_playlist_array $random_song}
+         )
+         (5
+            {$this dx_refesh_songs}
+         )
+      }
+      {set $dx_playlist_array {array $dx_playlist_array}}
       {script_task
          kTaskSeconds
          (name dx_send_vote)
@@ -221,32 +246,17 @@
       }
    )
    (dx_play_a_show_report_vote
-      {foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
-         {if {&& {> {size $entry} 1} {== {elem $entry 0} dx_play_a_show_chosen_vote}}
-            {set $current_voted_song {elem $entry 1}}
-            {meta_performer set_song {elem $entry 1}}
-         }
-         {if {== {size $entry} 1}
-            {set $current_voted_song none}
-            {meta_performer set_song none}
-         }
-      }
       {if $current_voted_song
          {$this update_preview_song $current_voted_song "" 0}
       }
       {$this dx_play_a_show_info}
    )
    (dx_play_a_show_recieve_song
-      {if_else {> {size {read_file DX_PLAYLIST_DTA_PATH}} 0}
+      {if_else {> {size $dx_playlist_array} 0}
          {do
             {set $dx_in_show_flow FALSE}
-            {dx_play_a_show_panel dx_play_a_show_send_none}
-            {foreach $entry {elem {read_file DX_PLAYLIST_DTA_PATH} 0}
-               {push_back $dx_playlist_array $entry}
-            }
             {meta_performer set_songs $dx_playlist_array}
             {set $dx_playing_a_show TRUE}
-            {write_file DX_PLAYLIST_DTA_PATH ()}
             {ui sync_screen {music_library get_next_screen} 0}
          }
          {do
