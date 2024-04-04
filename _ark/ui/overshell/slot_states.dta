@@ -959,10 +959,16 @@
                {set $dx_online_temp TRUE}
             }
             {if_else {&& $dx_online_temp {is_leader_local}}
+               {if_else $dx_playing_a_show
+                  {ui goto_screen meta_loading_main_screen}
                   {ui sync_screen meta_loading_continue_screen 0}
-               {do
-                  {ui_event_mgr trigger_event quit_early}
-                  {$this leave_options}
+               }
+               {if_else $dx_playing_a_show
+                  {ui goto_screen meta_loading_main_screen}
+                  {do
+                     {ui_event_mgr trigger_event quit_early}
+                     {$this leave_options}
+                  }
                }
             }
          )
@@ -2203,16 +2209,18 @@
    {$this toggle_lefty_flip})
 (kState_ChoosePart
    (view
-      {switch
-         {{$this get_user}
-            get_controller_type}
-         (kControllerGuitar choose_part_guitar)
-         (kControllerRealGuitar choose_part_real_guitar)
-         (kControllerVocals choose_part_vocals)
-         (kControllerKeys choose_part_keys)
-         (kControllerDrum choose_part_drum)
-         {fail
-            "No choose part view for this controller type"}})
+      {if_else $dx_in_show_flow
+         options_audio
+         {switch
+            {{$this get_user}
+               get_controller_type}
+            (kControllerGuitar choose_part_guitar)
+            (kControllerRealGuitar choose_part_real_guitar)
+            (kControllerVocals choose_part_vocals)
+            (kControllerKeys choose_part_keys)
+            (kControllerDrum choose_part_drum)
+            {fail
+               "No choose part view for this controller type"}}})
    (song_settings_flow TRUE)
    (part_unresolved TRUE)
    (shows_extended_mic_arrows TRUE)
@@ -2224,89 +2232,187 @@
          {choose_part.lst set_type overshell_part_select_ingame}
          {choose_part.lst set_type overshell_part_select}
       }
-      {choose_part.lst restart_highlight_matanim}
-      {choose_part.lst refresh}
-   )
-   (enter
-      {$this update_part_select_list}
-      DX_PART_SELECT_HANDLERS
-      {dx_auto_endurance_handler}
-      {if_else {$this in_game}
-         {choose_part.lst set_type overshell_part_select_ingame}
-         {choose_part.lst set_type overshell_part_select}
+      {if $dx_in_show_flow
+         {options_audio.lst set_type overshell_menu}
+         {options_audio.lst restart_highlight_matanim}
+         {options_audio.lst refresh}
       }
       {choose_part.lst restart_highlight_matanim}
       {choose_part.lst refresh}
    )
-   (SELECT_MSG
-      {unless {|| $dx_customizer $dx_auto_endurance}
-         ;Saves default instrument by slot number
-         {switch
-            {$this get_slot_num}
-            (0 {set $default_slot0 {$component selected_sym}})
-            (1 {set $default_slot1 {$component selected_sym}})
-            (2 {set $default_slot2 {$component selected_sym}})
-            (3 {set $default_slot3 {$component selected_sym}})
-            {fail {set $default_slot0 {$component selected_sym}}}
+   (enter
+      {if $dx_in_show_flow
+         {options_audio.lst set_data (play_one play_two play_three play_four play_five play_show)}
+         {set $dx_play_a_show_required_votes {+ $dx_play_a_show_required_votes 1}}
+      }
+      {if {! $dx_in_show_flow}
+         {$this update_part_select_list}
+         DX_PART_SELECT_HANDLERS
+         {dx_auto_endurance_handler}
+         {if_else {$this in_game}
+            {choose_part.lst set_type overshell_part_select_ingame}
+            {choose_part.lst set_type overshell_part_select}
          }
-         {switch
-            {$component selected_sym}
-            (overshell_guitar
-               {$this select_part kTrackGuitar})
-            (overshell_bass
-               {$this select_part kTrackBass})
-            (overshell_keys
-               {$this select_part kTrackKeys})
-            (overshell_real_guitar
-               {$this select_part kTrackRealGuitar}
-               {if
-                  {gamemode in_mode trainer}
-                  {gamemode set_mode pro_song_lessons_real_guitar}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
-            (overshell_real_bass
-               {$this select_part kTrackRealBass}
-               {if
-                  {gamemode in_mode trainer}
-                  {gamemode set_mode pro_song_lessons_real_bass}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
-            (overshell_real_guitar_22
-               {$this select_part kTrackRealGuitar}
-               {if
-                  {gamemode in_mode trainer}
-                  {gamemode set_mode pro_song_lessons_real_guitar}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
-            (overshell_real_bass_22
-               {$this select_part kTrackRealBass}
-               {if
-                  {gamemode in_mode trainer}
-                  {gamemode set_mode pro_song_lessons_real_bass}}
-               {if
-                  {modifier_mgr is_modifier_active mod_auto_play}
-                  {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
-            (overshell_real_keys
-               {$this select_part kTrackRealKeys})
-            (overshell_vocal_solo
-               {$this select_vocal_part FALSE}
-               {if
-                  {gamemode in_mode practice}
-                  {practice_panel set uses_harmony FALSE}}
-               {set $dx_vocal_type solo})
-            (overshell_vocal_harmony
-               {$this select_vocal_part TRUE}
-               {if
-                  {gamemode in_mode practice}
-                  {practice_panel set uses_harmony TRUE}}
-               {set $dx_vocal_type harmony})
-            (overshell_drums
-               {$this select_drum_part FALSE})
-            (overshell_drums_pro
-               {$this select_drum_part TRUE})
+         {choose_part.lst restart_highlight_matanim}
+         {choose_part.lst refresh}
+      }
+   )
+   (exit
+      {set $dx_play_a_show_num_votes 0}
+      {set $dx_play_a_show_required_votes 0}
+   )
+   (SELECT_MSG
+      {if $dx_in_show_flow
+         {switch {options_audio.lst selected_sym}
+            (play_one
+               {set $dx_play_a_show_vote 1}
+            )
+            (play_two
+               {set $dx_play_a_show_vote 2}
+            )
+            (play_three
+               {set $dx_play_a_show_vote 3}
+            )
+            (play_four
+               {set $dx_play_a_show_vote 4}
+            )
+            (play_five
+               {set $dx_play_a_show_vote 5}
+            )
+            (play_show
+               {dx_play_a_show_panel dx_play_a_show_recieve_song}
+            )
+         }
+         {switch {{$this get_user} get_controller_type}
+            (kControllerGuitar {set $dx_voted_icon G})
+            (kControllerDrum {set $dx_voted_icon D})
+            (kControllerVocals {set $dx_voted_icon V})
+            (kControllerKeys {set $dx_voted_icon K})
+            (kControllerRealGuitar {set $dx_voted_icon g})
+            {set $dx_voted_icon G}
+         }
+         {switch {$this get_slot_num}
+            (0
+               {if {! $slot1_voted} {set $dx_play_a_show_num_votes {+ $dx_play_a_show_num_votes 1}}}
+               {set $slot1_voted TRUE}
+               {set $slot1_voted_icon $dx_voted_icon}
+               {switch $dx_play_a_show_vote
+                  (1 {set $slot1_vote 1})
+                  (2 {set $slot1_vote 2})
+                  (3 {set $slot1_vote 3})
+                  (4 {set $slot1_vote 4})
+                  (5 {set $slot1_vote 5})
+               }
+            )
+            (1
+               {if {! $slot2_voted} {set $dx_play_a_show_num_votes {+ $dx_play_a_show_num_votes 1}}}
+               {set $slot2_voted TRUE}
+               {set $slot2_voted_icon $dx_voted_icon}
+               {switch $dx_play_a_show_vote
+                  (1 {set $slot2_vote 1})
+                  (2 {set $slot2_vote 2})
+                  (3 {set $slot2_vote 3})
+                  (4 {set $slot2_vote 4})
+                  (5 {set $slot2_vote 5})
+               }
+            )
+            (2
+               {if {! $slot3_voted} {set $dx_play_a_show_num_votes {+ $dx_play_a_show_num_votes 1}}}
+               {set $slot3_voted TRUE}
+               {set $slot3_voted_icon $dx_voted_icon}
+               {switch $dx_play_a_show_vote
+                  (1 {set $slot3_vote 1})
+                  (2 {set $slot3_vote 2})
+                  (3 {set $slot3_vote 3})
+                  (4 {set $slot3_vote 4})
+                  (5 {set $slot3_vote 5})
+               }
+            )
+            (3
+               {if {! $slot4_voted} {set $dx_play_a_show_num_votes {+ $dx_play_a_show_num_votes 1}}}
+               {set $slot4_voted TRUE}
+               {set $slot4_voted_icon $dx_voted_icon}
+               {switch $dx_play_a_show_vote
+                  (1 {set $slot4_vote 1})
+                  (2 {set $slot4_vote 2})
+                  (3 {set $slot4_vote 3})
+                  (4 {set $slot4_vote 4})
+                  (5 {set $slot4_vote 5})
+               }
+            )
+         }
+         {dx_play_a_show_panel dx_slot_voted}
+      }
+      {if {! $dx_in_show_flow}
+         {unless {|| $dx_customizer $dx_auto_endurance}
+            ;Saves default instrument by slot number
+            {switch
+               {$this get_slot_num}
+               (0 {set $default_slot0 {$component selected_sym}})
+               (1 {set $default_slot1 {$component selected_sym}})
+               (2 {set $default_slot2 {$component selected_sym}})
+               (3 {set $default_slot3 {$component selected_sym}})
+               {fail {set $default_slot0 {$component selected_sym}}}
+            }
+            {switch
+               {$component selected_sym}
+               (overshell_guitar
+                  {$this select_part kTrackGuitar})
+               (overshell_bass
+                  {$this select_part kTrackBass})
+               (overshell_keys
+                  {$this select_part kTrackKeys})
+               (overshell_real_guitar
+                  {$this select_part kTrackRealGuitar}
+                  {if
+                     {gamemode in_mode trainer}
+                     {gamemode set_mode pro_song_lessons_real_guitar}}
+                  {if
+                     {modifier_mgr is_modifier_active mod_auto_play}
+                     {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
+               (overshell_real_bass
+                  {$this select_part kTrackRealBass}
+                  {if
+                     {gamemode in_mode trainer}
+                     {gamemode set_mode pro_song_lessons_real_bass}}
+                  {if
+                     {modifier_mgr is_modifier_active mod_auto_play}
+                     {{$this get_user} set_has_22_fret_guitar FALSE}}) ; dx - forces 17 fret part in autoplay for chart demos
+               (overshell_real_guitar_22
+                  {$this select_part kTrackRealGuitar}
+                  {if
+                     {gamemode in_mode trainer}
+                     {gamemode set_mode pro_song_lessons_real_guitar}}
+                  {if
+                     {modifier_mgr is_modifier_active mod_auto_play}
+                     {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
+               (overshell_real_bass_22
+                  {$this select_part kTrackRealBass}
+                  {if
+                     {gamemode in_mode trainer}
+                     {gamemode set_mode pro_song_lessons_real_bass}}
+                  {if
+                     {modifier_mgr is_modifier_active mod_auto_play}
+                     {{$this get_user} set_has_22_fret_guitar TRUE}}) ; dx - forces 22 fret part in autoplay for chart demos
+               (overshell_real_keys
+                  {$this select_part kTrackRealKeys})
+               (overshell_vocal_solo
+                  {$this select_vocal_part FALSE}
+                  {if
+                     {gamemode in_mode practice}
+                     {practice_panel set uses_harmony FALSE}}
+                  {set $dx_vocal_type solo})
+               (overshell_vocal_harmony
+                  {$this select_vocal_part TRUE}
+                  {if
+                     {gamemode in_mode practice}
+                     {practice_panel set uses_harmony TRUE}}
+                  {set $dx_vocal_type harmony})
+               (overshell_drums
+                  {$this select_drum_part FALSE})
+               (overshell_drums_pro
+                  {$this select_drum_part TRUE})
+            }
          }
       }
    )
@@ -2363,7 +2469,17 @@
       {choose_part.lst refresh}
       {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
    (on_cancel
-      {$this leave_choose_part}))
+      {if_else $dx_in_show_flow
+         {do
+            {set $dx_in_show_flow FALSE}
+            {set $dx_playing_a_show FALSE}
+            {overshell end_override_flow kOverrideFlow_SongSettings TRUE}
+            {ui sync_screen meta_loading_main_screen 0}
+         }
+         {$this leave_choose_part}
+      }
+   )
+)
 (kState_ChoosePartDenial
    (view confirm_action)
    (song_settings_flow TRUE)
