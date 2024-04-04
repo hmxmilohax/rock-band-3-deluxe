@@ -1,0 +1,241 @@
+#define DX_SEL_DIFF_HANDLES
+(
+   (dx_refesh_songs
+      {set $random_genre_song {elem {random_elem $dtaarray} 0}}
+      {set $random_genre {{song_mgr get_meta_data $random_genre_song} genre}}
+      {set $random_year_song {elem {random_elem $dtaarray} 0}}
+      {set $random_year {{song_mgr get_meta_data $random_year_song} year_released}}
+      {set $random_length_song {elem {random_elem $dtaarray} 0}}
+      {set $random_length {{song_mgr get_meta_data $random_year_song} length_ms}}
+      {set $random_song {elem {random_elem $dtaarray} 0}}
+      {set $random_song_title {{song_mgr get_meta_data $random_song} title}}
+   )
+   (dx_play_a_show_info
+      {set $dx_play_a_show_num_votes 0}
+      {set $slot1_voted FALSE}
+      {set $slot2_voted FALSE}
+      {set $slot3_voted FALSE}
+      {set $slot4_voted FALSE}
+      {set $slot1_vote FALSE}
+      {set $slot2_vote FALSE}
+      {set $slot3_vote FALSE}
+      {set $slot4_vote FALSE}
+      {{dx_play_a_show_panel find career.grp} set_showing TRUE}
+      {{dx_play_a_show_panel find career_bg.mesh} set_showing FALSE}
+      {{dx_play_a_show_panel find career.pic} set_showing FALSE}
+      {{dx_play_a_show_panel find career_frame.mesh} set_showing FALSE}
+      {if {! $got_career_desc_pos}
+         {set $got_career_desc_pos TRUE}
+         {set $dx_original_career_desc_pos {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 2}}
+         {set $dx_original_career_desc_posx {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 0}}
+         {set $dx_original_career_desc_posz {{dx_play_a_show_panel find career_description.lbl} get_local_pos_index 1}}
+      }
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 2 {+ $dx_original_career_desc_pos 30}}
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 0 {- $dx_original_career_desc_posx 55}}
+      {{dx_play_a_show_panel find career_description.lbl} set_local_pos_index 1 {+ $dx_original_career_desc_posz 30}}
+      {$this dx_refesh_songs}
+      ;{foreach $entry {read_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/dx_play_a_show_status.dta"}
+      ;   {if {== {elem $entry 0} dx_play_a_show_info}
+            {set $dx_play_a_show_line1 {sprint "1. A random " {localize $random_genre} " song"}}
+            {set $dx_play_a_show_line2 {sprint "2. A random song from " $random_year}}
+            {if_else {> $random_length 420000}
+               {set $dx_play_a_show_line3 {sprint "3. A REALLY long song"}}
+               {if_else {> $random_length 240000}
+                  {set $dx_play_a_show_line3 {sprint "3. A long song"}}
+                  {if_else {> $random_length 120000}
+                     {set $dx_play_a_show_line3 {sprint "3. A short song"}}
+                     {set $dx_play_a_show_line3 {sprint "3. A REALLY short song"}}
+                  }
+               }
+            }
+            {set $dx_play_a_show_line4 {sprint "4. " $random_song_title}}
+            {set $dx_play_a_show_line5 {sprint "5. Refresh Options"}}
+         ;}
+      ;}
+      {{dx_play_a_show_panel find career_description.lbl} set_token_fmt
+         {sprint
+            $dx_play_a_show_line1 "\n"
+            $dx_play_a_show_line2 "\n"
+            $dx_play_a_show_line3 "\n"
+            $dx_play_a_show_line4 "\n"
+            $dx_play_a_show_line5
+         }
+      }
+      {{dx_play_a_show_panel find career_description.lbl} set height 125}
+      {{dx_play_a_show_panel find career_description.lbl} set width 600}
+      {{dx_play_a_show_panel find career_description.lbl} set leading 1}
+      {{dx_play_a_show_panel find career_description.lbl} set fit_type kFitJust}
+      {{dx_play_a_show_panel find career_description.lbl} set text_size 75}
+      {{dx_play_a_show_panel find career_description.lbl} set reserve_lines 5}
+      {if $current_voted_song
+         {dx_play_a_show_panel update_preview_song $current_voted_song "" 0}
+      }
+   )
+   (calc_highest_vote
+      {set $vote_check_array ()}
+      {resize $vote_check_array 0}
+      {if $slot1_voted {push_back $vote_check_array $slot1_vote}}
+      {if $slot2_voted {push_back $vote_check_array $slot2_vote}}
+      {if $slot3_voted {push_back $vote_check_array $slot3_vote}}
+      {if $slot4_voted {push_back $vote_check_array $slot4_vote}}
+      {set $vote_check_array {array $vote_check_array}}
+      {set $1count 0}
+      {set $2count 0}
+      {set $3count 0}
+      {set $4count 0}
+      {set $5count 0}
+      {set $max 0}
+      {foreach $entry $vote_check_array
+         {switch $entry
+            (1 {set $1count {+ $1count 1}})
+            (2 {set $2count {+ $2count 1}})
+            (3 {set $3count {+ $3count 1}})
+            (4 {set $4count {+ $4count 1}})
+            (5 {set $5count {+ $5count 1}})
+         }
+      }
+      {if {> $1count $max}
+        {set $max $1count}
+        {set $dx_play_a_show_vote 1}
+      }
+      {if {> $2count $max}
+        {set $max $2count}
+        {set $dx_play_a_show_vote 2}
+      }
+      {if {> $3count $max}
+        {set $max $3count}
+        {set $dx_play_a_show_vote 3}
+      }
+      {if {> $4count $max}
+        {set $max $4count}
+        {set $dx_play_a_show_vote 4}
+      }
+      {if {> $5count $max}
+        {set $max $5count}
+        {set $dx_play_a_show_vote 5}
+      }
+      {$this dx_play_a_show_send_voted}
+   )
+   (dx_play_a_show_send_voted
+      {if {exists dx_send_vote}
+         {delete dx_send_vote}
+      }
+      {{dx_play_a_show_panel find career_description.lbl} set alt_font_resource_name instrument_icons_small}
+      {{dx_play_a_show_panel find career_description.lbl} set alt_style_enabled TRUE}
+      {{dx_play_a_show_panel find career_description.lbl} set alt_text_size {{dx_play_a_show_panel find career_description.lbl} get text_size}}
+      {{dx_play_a_show_panel find career_description.lbl} set_token_fmt
+         {sprint
+            {if_else {== $dx_play_a_show_vote 1} {sprint "<alt>j</alt>" $dx_play_a_show_line1} " "} "\n"
+            {if_else {== $dx_play_a_show_vote 2} {sprint "<alt>j</alt>" $dx_play_a_show_line2} " "} "\n"
+            {if_else {== $dx_play_a_show_vote 3} {sprint "<alt>j</alt>" $dx_play_a_show_line3} " "} "\n"
+            {if_else {== $dx_play_a_show_vote 4} {sprint "<alt>j</alt>" $dx_play_a_show_line4} " "} "\n"
+            {if_else {== $dx_play_a_show_vote 5} {sprint "<alt>j</alt>" $dx_play_a_show_line5} " "}
+         }
+      }
+      {switch $dx_play_a_show_vote
+         (1
+            {set $current_voted_song $random_genre_song}
+            {meta_performer set_song $random_genre_song}
+            {push_back $dx_playlist_array $random_genre_song}
+         )
+         (2
+            {set $current_voted_song $random_year_song}
+            {meta_performer set_song $random_year_song}
+            {push_back $dx_playlist_array $random_year_song}
+         )
+         (3
+            {set $current_voted_song $random_length_song}
+            {meta_performer set_song $random_length_song}
+            {push_back $dx_playlist_array $random_length_song}
+         )
+         (4
+            {set $current_voted_song $random_song}
+            {meta_performer set_song $random_song}
+            {push_back $dx_playlist_array $random_song}
+         )
+         (5
+            {$this dx_refesh_songs}
+         )
+      }
+      {set $dx_playlist_array {array $dx_playlist_array}}
+      {script_task
+         kTaskSeconds
+         (name dx_send_vote)
+         (delay 2)
+         (script {$this dx_play_a_show_report_vote})
+      }
+   )
+   (dx_slot_voted
+      {{dx_play_a_show_panel find career_description.lbl} set alt_font_resource_name instrument_icons_small}
+      {{dx_play_a_show_panel find career_description.lbl} set alt_style_enabled TRUE}
+      {{dx_play_a_show_panel find career_description.lbl} set alt_text_size {{dx_play_a_show_panel find career_description.lbl} get text_size}}
+      {{dx_play_a_show_panel find career_description.lbl} set_token_fmt
+         {sprint
+            {if_else {&& $slot1_voted {== $slot1_vote 1}} {sprint "<alt>" $slot1_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot2_voted {== $slot2_vote 1}} {sprint "<alt>" $slot2_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot3_voted {== $slot3_vote 1}} {sprint "<alt>" $slot3_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot4_voted {== $slot4_vote 1}} {sprint "<alt>" $slot4_voted_icon "</alt>"} {sprint " "}}
+            $dx_play_a_show_line1
+            "\n"
+            {if_else {&& $slot1_voted {== $slot1_vote 2}} {sprint "<alt>" $slot1_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot2_voted {== $slot2_vote 2}} {sprint "<alt>" $slot2_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot3_voted {== $slot3_vote 2}} {sprint "<alt>" $slot3_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot4_voted {== $slot4_vote 2}} {sprint "<alt>" $slot4_voted_icon "</alt>"} {sprint " "}}
+            $dx_play_a_show_line2
+            "\n"
+            {if_else {&& $slot1_voted {== $slot1_vote 3}} {sprint "<alt>" $slot1_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot2_voted {== $slot2_vote 3}} {sprint "<alt>" $slot2_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot3_voted {== $slot3_vote 3}} {sprint "<alt>" $slot3_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot4_voted {== $slot4_vote 3}} {sprint "<alt>" $slot4_voted_icon "</alt>"} {sprint " "}}
+            $dx_play_a_show_line3
+            "\n"
+            {if_else {&& $slot1_voted {== $slot1_vote 4}} {sprint "<alt>" $slot1_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot2_voted {== $slot2_vote 4}} {sprint "<alt>" $slot2_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot3_voted {== $slot3_vote 4}} {sprint "<alt>" $slot3_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot4_voted {== $slot4_vote 4}} {sprint "<alt>" $slot4_voted_icon "</alt>"} {sprint " "}}
+            $dx_play_a_show_line4
+            "\n"
+            {if_else {&& $slot1_voted {== $slot1_vote 5}} {sprint "<alt>" $slot1_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot2_voted {== $slot2_vote 5}} {sprint "<alt>" $slot2_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot3_voted {== $slot3_vote 5}} {sprint "<alt>" $slot3_voted_icon "</alt>"} {sprint " "}}
+            {if_else {&& $slot4_voted {== $slot4_vote 5}} {sprint "<alt>" $slot4_voted_icon "</alt>"} {sprint " "}}
+            $dx_play_a_show_line5
+         }
+      }
+      {if {== $dx_play_a_show_num_votes $dx_play_a_show_required_votes}
+         {if {exists dx_hold_vote}
+            {delete dx_hold_vote}
+         }
+         {script_task
+            kTaskSeconds
+            (name dx_hold_vote)
+            (delay 2)
+            (script {$this calc_highest_vote})
+         }
+      }
+   )
+   (dx_play_a_show_report_vote
+      {if $current_voted_song
+         {$this update_preview_song $current_voted_song "" 0}
+      }
+      {$this dx_play_a_show_info}
+   )
+   (dx_play_a_show_recieve_song
+      {if_else {> {size $dx_playlist_array} 0}
+         {do
+            {set $dx_in_show_flow FALSE}
+            {meta_performer set_songs $dx_playlist_array}
+            {set $dx_playing_a_show TRUE}
+            {ui sync_screen {music_library get_next_screen} 0}
+         }
+         {do
+            {dx_passive_messenger_symbol "no songs queued"}
+            ;{ui sync_screen main_hub_screen 0}
+            ;{if {! $dx_play_a_show_warn}
+            ;   {set $dx_play_a_show_warn TRUE}
+            ;   {dx_modal_messenger_symbol "Play a show is a highly alpha feature and requires the usage of an external tool to generate a playlist. this is placeholder text that should be updated later"}
+            ;}
+         }
+      }
+   )
+)
