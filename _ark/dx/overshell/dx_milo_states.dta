@@ -1,0 +1,557 @@
+(dxState_MiloPanels
+   (view
+      {do
+         ($options
+            {array 0})
+         {ui foreach_screen $screen
+            {$screen foreach_panel $panel
+               {if
+                  {&&
+                     {$panel loaded_dir}
+                     {! {find_elem $options {$panel loaded_dir}}}
+                  }
+                  {push_back $options {sprint $panel}}
+               }
+            }
+         }
+         {if_else {== {size $options} 0}
+            {set $options ('couldnt' 'find' 'panels')}
+            {sort $options}
+         }
+         {dx_state_setup dxState_MiloPanels FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {set $categorizemetrail ()}
+      {resize $categorizemetrail 0}
+      {set $findmetrail ()}
+      {resize $findmetrail 0}
+
+      {set $temp {$component selected_sym}}
+      {set $findme {{sprint $temp} loaded_dir}}
+
+      {push_back $findmetrail $findme}
+      {set $findmetrail {array $findmetrail}}
+      {$this show_state dxState_MiloObjects}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_Debug}
+   )
+)
+(dxState_MiloObjects
+   (view
+      {do
+         ($options
+            {array 0})
+         {if {>= {size $findmetrail} 1}
+            {set $findme
+               {elem $findmetrail {- {size $findmetrail} 1}}
+            }
+         }
+         {$findme iterate Object $p
+            {if {! {find_elem $options {sprintf "%s" {$p class_name}}}}
+               {push_back $options {sprintf "%s" {$p class_name}}}
+            }
+         }
+         {if_else {== {size $options} 0}
+            {set $options ('couldnt' 'find' 'object' 'classes')}
+            {sort $options}
+         }
+         {dx_state_setup dxState_MiloObjects FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {set $categorizeme {$component selected_sym}}
+      {push_back $categorizemetrail $categorizeme}
+      {set $categorizemetrail {array $categorizemetrail}}
+      {$this show_state dxState_MiloFind}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {resize $categorizemetrail {- {size $categorizemetrail} 1}}
+      {if_else {>= {size $categorizemetrail} 1}
+         {$this show_state dxState_MiloFind}
+         {$this show_state dxState_MiloPanels}
+      }
+   )
+)
+(dxState_MiloFind
+   (view
+      {do
+         ($options
+            {array 0})
+         {if {>= {size $findmetrail} 1}
+            {set $findme
+               {elem $findmetrail {- {size $findmetrail} 1}}
+            }
+         }
+         {if {>= {size $categorizeme} 1}
+            {set $categorizeme
+               {elem $categorizemetrail {- {size $categorizemetrail} 1}}
+            }
+         }
+         {$findme iterate Object $p
+            {if {== {$p class_name} $categorizeme}
+               {push_back $options {sprintf "%s" {$p name}}}
+            }
+         }
+         {if_else {== {size $options} 0}
+            {set $options ('couldnt' 'find' 'objects' 'of' 'type')}
+            {sort $options}
+         }
+         {dx_state_setup dxState_MiloFind FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {if
+         {&&
+            {!= $categorizeme EventTrigger}
+            {!= $categorizeme Sfx}
+         }
+         {set $findme {$findme find {$component selected_sym}}}
+      }
+      {if {has_substr $categorizeme Dir}
+         {push_back $findmetrail $findme}
+         {set $findmetrail {array $findmetrail}}
+         {$this show_state dxState_MiloObjects}
+      }
+      {if {has_substr $categorizeme Label} kDataUnhandled}
+      {switch $categorizeme
+         (AnimFilter kDataUnhandled)
+         (Cam {$this show_state dxState_PositionRemapper})
+         (Environ kDataUnhandled)
+         (EventTrigger {{$findme find {$component selected_sym}} trigger})
+         (FXSendEQ kDataUnhandled)
+         (Group {$this show_state dxState_PositionRemapper})
+         (Mat {$this show_state dxState_MiloMat})
+         (BandCharacter
+            {push_back $findmetrail $findme}
+            {set $findmetrail {array $findmetrail}}
+            {$this show_state dxState_MiloObjects})
+         (AmbientOcclusion {$this show_state dxState_MiloAO})
+         (Character
+            {push_back $findmetrail $findme}
+            {set $findmetrail {array $findmetrail}}
+            {$this show_state dxState_MiloObjects})
+         (BandWardrobe
+            {push_back $findmetrail $findme}
+            {set $findmetrail {array $findmetrail}}
+            {$this show_state dxState_MiloObjects})
+         (Wind {$this show_state dxState_MiloWind})
+         (BandCamShot kDataUnhandled)
+         (PostProc kDataUnhandled)
+         (MatAnim kDataUnhandled)
+         (Mesh {$this show_state dxState_PositionRemapper})
+         (ParticleSys kDataUnhandled)
+         (PropAnim kDataUnhandled)
+         (RandomGroupSeq kDataUnhandled)
+         (Sfx {{$findme find {$component selected_sym}} play})
+         (SynthFader kDataUnhandled)
+         (SynthSample kDataUnhandled)
+         (Tex kDataUnhandled)
+         (Text {{$findme find {$component selected_sym}} set font default})
+         (TrackWidget kDataUnhandled)
+         (Trans kDataUnhandled)
+         (TransAnim kDataUnhandled)
+         (UIColor kDataUnhandled)
+         (UIGuide kDataUnhandled)
+         (WaitSeq kDataUnhandled)
+         kDataUnhandled
+      }
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {resize $findmetrail {- {size $findmetrail} 1}}
+      {if_else {>= {size $findmetrail} 1}
+         {$this show_state dxState_MiloObjects}
+         {$this show_state dxState_MiloPanels}
+      }
+   )
+)
+(dxState_MiloMat
+   (view
+      {do
+         ($options
+            {array 0})
+         {push_back $options color}
+         {push_back $options use_environ}
+         {push_back $options prelit}
+         {push_back $options intensify}
+         {push_back $options alpha_cut}
+         {push_back $options alpha_write}
+         {push_back $options point_lights}
+         {push_back $options fog}
+         {push_back $options fade_out}
+         {push_back $options color_adjust}
+         {push_back $options recv_proj_lights}
+         {push_back $options recv_point_cube_tex}
+         {push_back $options per_pixel_lit}
+         {push_back $options ps3_force_trilinear}
+         {push_back $options rim_light_under}
+         {push_back $options environ_map_falloff}
+         {push_back $options environ_map_specmask}
+         {push_back $options refract_enabled}
+         {dx_state_setup dxState_MiloMat FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (color {$this show_state dxState_MiloRGBColor})
+         (use_environ {$findme set use_environ {! {$findme get use_environ}}})
+         (prelit {$findme set prelit {! {$findme get prelit}}})
+         (intensify {$findme set intensify {! {$findme get intensify}}})
+         (alpha_cut {$findme set alpha_cut {! {$findme get alpha_cut}}})
+         (alpha_write {$findme set alpha_write {! {$findme get alpha_write}}})
+         (point_lights {$findme set point_lights {! {$findme get point_lights}}})
+         (fog {$findme set fog {! {$findme get fog}}})
+         (fade_out {$findme set fade_out {! {$findme get fade_out}}})
+         (color_adjust {$findme set color_adjust {! {$findme get color_adjust}}})
+         (recv_proj_lights {$findme set recv_proj_lights {! {$findme get recv_proj_lights}}})
+         (recv_point_cube_tex {$findme set recv_point_cube_tex {! {$findme get recv_point_cube_tex}}})
+         (per_pixel_lit {$findme set per_pixel_lit {! {$findme get per_pixel_lit}}})
+         (ps3_force_trilinear {$findme set ps3_force_trilinear {! {$findme get ps3_force_trilinear}}})
+         (rim_light_under {$findme set rim_light_under {! {$findme get rim_light_under}}})
+         (environ_map_falloff {$findme set environ_map_falloff {! {$findme get environ_map_falloff}}})
+         (environ_map_specmask {$findme set environ_map_specmask {! {$findme get environ_map_specmask}}})
+         (refract_enabled {$findme set refract_enabled {! {$findme get refract_enabled}}})
+      }
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_MiloObjects}
+   )
+)
+
+(dxState_MiloWind
+   (view
+      {do
+         ($options
+            {array 0})
+         {push_back $options prevailing}
+         {push_back $options random}
+         {push_back $options time_loop}
+         {push_back $options space_loop}
+         {push_back $options set_defaults}
+         {push_back $options set_zero}
+         {dx_state_setup dxState_MiloWind FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (prevailing {$findme set prevailing 0 0 0})
+         (random {$findme set random 0 0 0})
+         (time_loop {$findme set time_loop 0})
+         (space_loop {$findme set space_loop 0})
+         (set_defaults {$findme set_defaults})
+         (set_zero {$findme set_zero})
+      }
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_MiloObjects}
+   )
+)
+(dxState_MiloAO
+   (view
+      {do
+         ($options
+            {array 0})
+         {push_back $options dont_cast_ao}
+         {push_back $options dont_receive_ao}
+         {push_back $options tessellate}
+         {push_back $options ignore_transparent}
+         {push_back $options ignore_prelit}
+         {push_back $options ignore_hidden}
+         {push_back $options intersect_back_faces}
+         {push_back $options use_mesh_normals}
+         {push_back $options calculate}
+         {dx_state_setup dxState_MiloAO FALSE}
+      }
+      {overshell_view_chooser}
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (dont_cast_ao {$findme resize dont_cast_ao 0})
+         (dont_receive_ao {$findme resize dont_cast_ao 0})
+         (tessellate {$findme resize tessellate 0})
+         (ignore_transparent {$findme set ignore_transparent {! {$findme get ignore_transparent}}})
+         (ignore_prelit {$findme set ignore_prelit {! {$findme get ignore_prelit}}})
+         (ignore_hidden {$findme set ignore_hidden {! {$findme get ignore_hidden}}})
+         (intersect_back_faces {$findme set intersect_back_faces {! {$findme get intersect_back_faces}}})
+         (use_mesh_normals {$findme set use_mesh_normals {! {$findme get use_mesh_normals}}})
+         (calculate {$findme calculate})
+      }
+   )
+   (exit 
+      {dx_state_pos_tracker}
+   )
+   (on_cancel
+      {$this show_state dxState_MiloObjects}
+   )
+)
+
+#define DX_SET_RBG_COLOR_DATA
+(
+   {$current_list set_data
+      (
+         ;if we are inside our special menu item, we want to blank out the other lines so it looks nice
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk {sprintf "Red: %.2f" $mycoolcolor_r}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprintf "Green: %.2f" $mycoolcolor_g}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprintf "Blue: %.2f" $mycoolcolor_b}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprintf "Alpha: %.2f" $mycoolalpha}}
+      )
+   }
+)
+(dxState_MiloRGBColor
+   (view
+      options_audio
+   )
+   (enter
+      {unpack_color {$findme get color} $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}
+      {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+      {set $mycoolalpha {$findme get alpha}}
+      ;setup/reset the list tracking info
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {set $current_list options_audio.lst}
+      {if_else {$this in_game}
+         {$current_list set_type overshell_menu_ingame}
+         {$current_list set_type overshell_menu}
+      }
+      {$current_list restart_highlight_matanim}
+      {$current_list refresh}
+      DX_SET_RBG_COLOR_DATA
+   )
+   ;(SCROLL_MSG
+   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   ;)
+   ;these two options are selectable and act normal with a destination trail
+   ;(SELECT_MSG
+   ;   {switch {$component selected_sym}
+   ;      (os_track_speeds
+   ;         {$this show_state dxState_TrackSpeeds})
+   ;      (os_acceleration_mode
+   ;         {$this show_state dxState_AccelerationMode})
+   ;   }
+   ;)
+   ;this is handling the dynamic "slider" replacement
+   (BUTTON_DOWN_MSG
+      {if_else
+         $dx_list_item_selected
+         ;we selected an object so now only track up/down
+         {switch
+            $action
+            ;if we confirm or back out of the internal selection shell, go back up to the normal level and refresh the list
+            ((kAction_Confirm kAction_Cancel)
+               {set $dx_list_item_selected FALSE}
+               DX_SET_RBG_COLOR_DATA
+            )
+            ;if we pressed Up or Down while inside a selected list item
+            ((kAction_Down kAction_Up)
+               {switch {$current_list selected_data}
+                  (0
+                     {if
+                        ;set minimum and maximum for up and down presses for this variable
+                        {switch $action
+                           (kAction_Down {> $mycoolcolor_r 0.01}) ;minimum
+                           (kAction_Up {< $mycoolcolor_r 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_r
+                           {switch $action
+                              (kAction_Down {- $mycoolcolor_r 0.02})
+                              (kAction_Up {+ $mycoolcolor_r 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 0}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (1
+                     {if
+                        ;set minimum and maximum for up and down presses for this variable
+                        {switch $action
+                           (kAction_Down {> $mycoolcolor_g 0.01}) ;minimum
+                           (kAction_Up {< $mycoolcolor_g 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_g
+                           {switch $action
+                              (kAction_Down {- $mycoolcolor_g 0.02})
+                              (kAction_Up {+ $mycoolcolor_g 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 1}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (2
+                     {if
+                        ;set minimum and maximum for up and down presses for this variable
+                        {switch $action
+                           (kAction_Down {> $mycoolcolor_b 0.01}) ;minimum
+                           (kAction_Up {< $mycoolcolor_b 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_b
+                           {switch $action
+                              (kAction_Down {- $mycoolcolor_b 0.02})
+                              (kAction_Up {+ $mycoolcolor_b 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 2}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (3
+                     {if
+                        ;set minimum and maximum for up and down presses for this variable
+                        {switch $action
+                           (kAction_Down {> $mycoolalpha 0.01}) ;minimum
+                           (kAction_Up {< $mycoolalpha 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolalpha
+                           {switch $action
+                              (kAction_Down {- $mycoolalpha 0.02})
+                              (kAction_Up {+ $mycoolalpha 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 3}
+                     {$findme set alpha $mycoolalpha}
+                  )
+                  kDataUnhandled
+               }
+               ;refresh the list
+               DX_SET_RBG_COLOR_DATA
+            )
+            kDataUnhandled
+         }
+         ;we havent specifically selected anything, we are only hovering on a list item
+         {switch
+            $action
+            ;check if we are selecting on the special item that drills down a level
+            (kAction_Confirm
+               {switch {$current_list selected_data}
+                  ((0 1 2 3)
+                     ;refresh the list but this time tell the game we are a level deeper to hide other options
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                     DX_SET_RBG_COLOR_DATA
+                  )
+                  kDataUnhandled
+               }
+            )
+            ;if we pressed left or right while hovering on a specific list item
+            ((kAction_Left kAction_Right)
+               {switch {$current_list selected_data}
+                  (0
+                     {if
+                        ;set minimum and maximum for left and right presses for this variable
+                        {switch $action
+                           (kAction_Left {> $mycoolcolor_r 0.01}) ;minimum
+                           (kAction_Right {< $mycoolcolor_r 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_r
+                           {switch $action
+                              (kAction_Left {- $mycoolcolor_r 0.02})
+                              (kAction_Right {+ $mycoolcolor_r 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 0}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (1
+                     {if
+                        ;set minimum and maximum for left and right presses for this variable
+                        {switch $action
+                           (kAction_Left {> $mycoolcolor_g 0.01}) ;minimum
+                           (kAction_Right {< $mycoolcolor_g 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_g
+                           {switch $action
+                              (kAction_Left {- $mycoolcolor_g 0.02})
+                              (kAction_Right {+ $mycoolcolor_g 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 1}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (2
+                     {if
+                        ;set minimum and maximum for left and right presses for this variable
+                        {switch $action
+                           (kAction_Left {> $mycoolcolor_b 0.01}) ;minimum
+                           (kAction_Right {< $mycoolcolor_b 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolcolor_b
+                           {switch $action
+                              (kAction_Left {- $mycoolcolor_b 0.02})
+                              (kAction_Right {+ $mycoolcolor_b 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 2}
+                     {$findme set color {pack_color $mycoolcolor_r $mycoolcolor_g $mycoolcolor_b}}
+                  )
+                  (3
+                     {if
+                        ;set minimum and maximum for left and right presses for this variable
+                        {switch $action
+                           (kAction_Left {> $mycoolalpha 0.01}) ;minimum
+                           (kAction_Right {< $mycoolalpha 0.99}) ;maximum
+                        }
+                        ;actually set our variable, based on the pressed action
+                        {set $mycoolalpha
+                           {switch $action
+                              (kAction_Left {- $mycoolalpha 0.02})
+                              (kAction_Right {+ $mycoolalpha 0.02})
+                           }
+                        }
+                     }
+                     ;track our current list position for hiding other list elements while we have selected this one
+                     {set $dx_list_pos 3}
+                     {$findme set alpha $mycoolalpha}
+                  )
+                  kDataUnhandled
+               }
+               ;refresh the list
+               DX_SET_RBG_COLOR_DATA
+            )
+            kDataUnhandled
+         }
+      }
+   )
+   (on_cancel
+      {$this show_state dxState_MiloMat}
+   )
+)
