@@ -3,19 +3,68 @@ from lib import ninja_syntax
 from pathlib import Path
 import sys
 import argparse
-import json
 import os
 
+game_name = "Rock Band 3 Deluxe"
+
+#versions
+#gh1, gh2 - " "
+#rb1, track packs - "-v 4"
+#rb2, tbrb, gdrb - "-v 5"
+#rb3, dc, blitz - "-v 6"
+ark_version = "-v 6"
+
+#require user provided vanilla ark extract in "vanilla/platform" folder
 vanilla_files = False
-generate_texture_list = False
+
+#set True for rb1 and newer 
 new_gen = True
+#rock band 1 has quirks that mix old_gen and new_gen
+rb1 = False
 
-script_dir = os.path.dirname(os.path.realpath(__file__))
-config_path = os.path.join(script_dir, 'config.json')
-with open(config_path, 'r') as f:
-    config = json.load(f)
+#patch for patch arks, main for patchcreator, old gen, and rb1
+hdr_name = "patch"
 
-ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
+dtb_encrypt = "-e"
+#versions
+# gh1, gh2 - "--miloVersion 25"
+# rb1 onward - "--miloVersion 26"
+miloVersion = "--miloVersion 26"
+
+#paths in _ark/dx/custom_textures that should generate list dtbs
+custom_texture_paths = [
+    "highways",
+    "streaks",
+    "overdrive",
+    "gems/gems_default",
+    "strikeline/strikeline_guitar",
+    "flames/flames_spark",
+    "sustains",
+    "score/scoreboard_frame",
+    "rails/beat_lines",
+    "stars/score_star_frame",
+    "font",
+    "solo_box",
+    "bre/bre_shield",
+    "rails/rails_track",
+    "lanes/gem_mash_green_emmisive",
+    "overdrive_bar/od_bar_background",
+    "multiplier_ring/multiplier_ring_plate_fc",
+    "crowd_meter/crowd_meter_frame",
+    "keyboard/keyboard_lanes",
+    "vocal_highway/vocal_highway_bg",
+    "vocal_arrows/vocal_arrow",
+    "vocal_note/vocal_note_tube",
+    "vocal_overdrive/vocal_overdrive_now_bar"
+]
+
+#patchcreator options
+patchcreator = False
+new_ark_part = "10"
+dol_name = "main.dol"
+elf_name = " "
+bin_name = " "
+xex_name = " "
 
 parser = argparse.ArgumentParser(prog="configure")
 parser.add_argument("platform")
@@ -25,30 +74,24 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-game_name = config.get("game_name", "")
-ark_version = config.get("ark_version", "")
-vanilla_files = config.get("vanilla_files", False)
-new_gen = config.get("new_gen", False)
-hdr_name = config.get("hdr_name", "")
-dtb_encrypt = config.get("dtb_encrypt", "")
-miloVersion = config.get("miloVersion", "")
+#new gen games (rb2 onward) add platform suffix to ark name
+if new_gen == True:
+    hdr_name = hdr_name + "_" + args.platform
 
-if game_name == "Guitar Hero II Deluxe":
-    from vanilla_files import vanilla
-    if args.platform == "ps2":
-        hdr_name = hdr_name.upper()
-        dtb_encrypt = dtb_encrypt.upper()
-        miloVersion = "--preset gh2"
-
-if game_name == "Rock Band 3 Deluxe":
-        match args.platform:
-            case "ps3":
-                hdr_name = hdr_name + "_ps3"
-            case "xbox":
-                hdr_name = hdr_name + "_xbox"
+if args.platform == "ps2":
+    #all milo ps2 games from gh to rb use MAIN_0.ARK
+    hdr_name = "MAIN"
+    if new_gen == False:
+        #pre rb2 does not use miloVersion for superfreq image generation on ps2
+        miloVersion = " "
+        if rb1 == False:
+            #pre rb1 uses -E for dtb encryption on ps2
+            dtb_encrypt = dtb_encrypt.upper()
 
 print(f"Configuring {game_name}...")
 print(f"Platform: {args.platform}")
+
+ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
 # configure tools
 ark_dir = Path("obj", args.platform, "ark")
@@ -56,8 +99,7 @@ match sys.platform:
     case "win32":
         ninja.variable("silence", ">nul")
         ninja.rule("copy", "cmd /c copy $in $out $silence", description="COPY $in")
-        if new_gen == True:
-            ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
+        ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
         ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
@@ -67,8 +109,7 @@ match sys.platform:
     case "darwin":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
-        if new_gen == True:
-            ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
+        ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
         ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies/macos/superfreq")
@@ -79,8 +120,7 @@ match sys.platform:
     case "linux":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
-        if new_gen == True:
-            ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
+        ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
         ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies/linux/superfreq")
@@ -88,35 +128,53 @@ match sys.platform:
         ninja.variable("dtab", "dependencies/linux/dtab")
         ninja.variable("dtacheck", "dependencies/linux/dtacheck")
 
+#specify output directories per platform
 match args.platform:
     case "ps3":
         out_dir = Path("out", args.platform, "USRDIR", "gen")
-        ninja.rule(
-            "ark",
-            f"$arkhelper dir2ark -n {hdr_name} -e -s 4073741823 {ark_version} --logLevel error {ark_dir} {out_dir}",
-            description="Building ark",
-        )
     case "xbox":
         out_dir = Path("out", args.platform, "gen")
-        ninja.rule(
-            "ark",
-            f"$arkhelper dir2ark -n {hdr_name} -e {ark_version} -s 4073741823 --logLevel error {ark_dir} {out_dir}",
-            description="Building ark",
-        )
     case "wii":
         out_dir = Path("out", args.platform, "files")
-        ninja.rule(
-            "ark",
-            f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} platform/wii/files/gen/main_wii.hdr platform/wii/sys/main.dol --logLevel error",
-            description="Building ark",
-        )
     case "ps2":
         out_dir = Path("out", args.platform, "GEN")
-        ninja.rule(
-            "ark",
-            f"$arkhelper dir2ark -n {hdr_name.toupper()} {ark_version} -s 4073741823 --logLevel error {ark_dir} {out_dir}",
-            description="Building ark",
-        )
+
+#building an ark
+if args.platform in ["ps3", "xbox", "ps2"] and patchcreator == False:
+    ark_encrypt = "-e"
+    #ps2 pre rb1 does not encrypt the ark
+    if args.platform == "ps2" and new_gen == False and rb1 == False:
+        ark_encrypt = " "
+    ninja.rule(
+        "ark",
+        f"$arkhelper dir2ark -n {hdr_name} {ark_version} {ark_encrypt} -s 4073741823 --logLevel error {ark_dir} {out_dir}",
+        description="Building ark",
+    )
+#patchcreating an ark
+if args.platform == "wii" or patchcreator == True:
+    #patch creator time! force using main as the root name
+    hdr_name = "main"
+    #append platform if this is new style ark
+    if new_gen == True:
+        hdr_name = hdr_name + "_" + args.platform
+    match args.platform:
+        case "wii":
+            hdr_path = "platform/" + args.platform + "/files/gen/" + hdr_name + ".hdr"
+            exec_path = "platform/" + args.platform + "/sys/" + dol_name
+        case "ps2":
+            hdr_path = "platform/" + args.platform + "/GEN/" + hdr_name.upper() + ".HDR"
+            exec_path = "platform/" + args.platform + "/" + elf_name
+        case "ps3":
+            hdr_path = "platform/" + args.platform + "/USRDIR/gen/" + hdr_name + ".hdr"
+            exec_path = "platform/" + args.platform + "/USRDIR/" + bin_name
+        case "xbox":
+            hdr_path = "platform/" + args.platform + "/gen/" + hdr_name + ".hdr"
+            exec_path = "platform/" + args.platform + "/" + xex_name
+    ninja.rule(
+        "ark",
+        f"$arkhelper patchcreator -a {ark_dir} -o {out_dir} {hdr_path} {exec_path} --logLevel error",
+        description="Building ark",
+    )
 
 ninja.rule(
     "sfreq",
@@ -131,7 +189,7 @@ ninja.build("_always", "phony")
 build_files = []
 
 # copy platform files
-if args.platform != "wii":
+if args.platform != "wii" and patchcreator == False:
     for f in filter(lambda x: x.is_file(), Path("platform", args.platform).rglob("*")):
         index = f.parts.index(args.platform)
         out_path = Path("out", args.platform).joinpath(*f.parts[index + 1 :])
@@ -147,7 +205,7 @@ def ark_file_filter(file: Path):
         return False
     if file.suffix.endswith("_wii") and args.platform != "wii":
         return False
-    if file.suffix.endswith("mogg") and new_gen != True:
+    if file.suffix.endswith("mogg") and args.platform == "ps2":
         return False
     if any(file.suffix.endswith(suffix) for suffix in ["_ps2", "vgs"]) and args.platform != "ps2":
         return False
@@ -193,6 +251,15 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
                     wii_output = wii_directory.joinpath(target_filename)
                     ninja.build(str(wii_output), "sfreq", str(f), variables={"platform": "wii"})
                     ark_files.append(str(wii_output))
+                #disabled as we need resizing
+                #case "ps2":
+                #    target_filename = Path("gen", f.stem + ".png_ps2")
+                #    ps2_directory = Path("obj", args.platform, "ark").joinpath(
+                #        *f.parent.parts[1:]
+                #    )
+                #    ps2_output = ps2_directory.joinpath(target_filename)
+                #    ninja.build(str(ps2_output), "sfreq", str(f), variables={"platform": "ps2"})
+                #    ark_files.append(str(ps2_output))
 
         case [".dta"]:
             target_filename = Path("gen", f.stem + ".dtb")
@@ -234,7 +301,9 @@ ninja.build(str(enc), "dtab_encrypt", str(dtb))
 
 ark_files.append(str(enc))
 
-if vanilla_files == True:
+#copy vanilla files to obj if required
+if vanilla_files == True and patchcreator == False:
+    from vanilla_files import vanilla
     ark_files, vanilla_files = vanilla(ark_files, args.platform, ninja, Path)
 
 def generate_texture_list(input_path: Path):
@@ -246,68 +315,34 @@ def generate_texture_list(input_path: Path):
     ninja.build(str(dtb), "dtab_serialize", str(dta))
     ninja.build(str(enc), "dtab_encrypt", str(dtb))
 
-generate_texture_list(Path("_ark", "dx", "custom_textures", "highways"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "streaks"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "overdrive"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "gems", "gems_default"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "strikeline", "strikeline_guitar"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "flames", "flames_spark"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "sustains"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "score", "scoreboard_frame"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "rails", "beat_lines"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "stars", "score_star_frame"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "font"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "solo_box"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "bre", "bre_shield"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "rails", "rails_track"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "lanes", "gem_mash_green_emmisive"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "overdrive_bar", "od_bar_background"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "multiplier_ring", "multiplier_ring_plate_fc"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "crowd_meter", "crowd_meter_frame"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "keyboard", "keyboard_lanes"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "vocal_highway", "vocal_highway_bg"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tube"))
-generate_texture_list(Path("_ark", "dx", "custom_textures", "vocal_overdrive", "vocal_overdrive_now_bar"))
+root_path = Path("_ark", "dx", "custom_textures")
+for texture_list_path in [root_path.joinpath(path) for path in custom_texture_paths]:
+    generate_texture_list(texture_list_path)
 
 # build ark
+ark_part = "0"
+if patchcreator == True:
+    ark_part = new_ark_part
 match args.platform:
     case "ps3":
-        hdr = str(Path("out", args.platform, "USRDIR", "gen", "patch_ps3.hdr"))
-        ninja.build(
-            str(Path("out", args.platform, "USRDIR", "gen", "patch_ps3_0.ark")),
-            "ark",
-            implicit=ark_files,
-            implicit_outputs=[hdr],
-        )
-        build_files.append(hdr)
+        hdr = str(Path("out", args.platform, "USRDIR", hdr_name + ".hdr"))
+        ark = str(Path("out", args.platform, "USRDIR", hdr_name + "_" + ark_part + ".ark"))
     case "xbox":
-        hdr = str(Path("out", args.platform, "gen", "patch_xbox.hdr"))
-        ninja.build(
-            str(Path("out", args.platform, "gen", "patch_xbox_0.ark")),
-            "ark",
-            implicit=ark_files,
-            implicit_outputs=hdr,
-        )
-        build_files.append(hdr)
+        hdr = str(Path("out", args.platform, hdr_name + ".hdr"))
+        ark = str(Path("out", args.platform, hdr_name + "_" + ark_part + ".ark"))
     case "wii":
-        hdr = str(Path("out", args.platform, "files", "gen", "main_wii.hdr"))
-        ninja.build(
-            str(Path("out", args.platform, "files", "gen", "main_wii_10.ark")),
-            "ark",
-            implicit=ark_files,
-            implicit_outputs=hdr,
-        )
-        build_files.append(hdr)
+        hdr = str(Path("out", args.platform, "files", hdr_name + "_" + args.platform + ".hdr"))
+        ark = str(Path("out", args.platform, "files", hdr_name + "_" + args.platform + "_" + ark_part + ".ark"))
     case "ps2":
-        hdr = str(Path("out", args.platform, "GEN", "MAIN.HDR"))
-        ninja.build(
-            str(Path("out", args.platform, "GEN", "MAIN_0.ARK")),
-            "ark",
-            implicit=ark_files,
-            implicit_outputs=hdr,
-        )
-        build_files.append(hdr)
+        hdr = str(Path("out", args.platform, hdr_name + ".HDR"))
+        ark = str(Path("out", args.platform, hdr_name + "_" + ark_part + ".ARK"))
+ninja.build(
+    ark,
+    "ark",
+    implicit=ark_files,
+    implicit_outputs=[hdr],
+)
+build_files.append(hdr)
 
 # make the all target build everything
 ninja.build("all", "phony", build_files)
