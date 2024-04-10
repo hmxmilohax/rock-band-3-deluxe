@@ -17,7 +17,7 @@ if defined debug_dol_path echo Debug dol path set, launching debug instead of va
 
 cd "%~dp0.."
 del >nul 2>&1 /s /q obj\wii\*.dtb
-python dependencies\python\configure_build.py wii --fun
+python dependencies\python\configure_build.py wii
 dependencies\windows\ninja
 if %errorlevel% neq 0 (pause /b %errorlevel% && exit /b %errorlevel%)
 
