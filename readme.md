@@ -87,3 +87,5 @@ From here, you can make any personal modifications to the game or build it yours
 [swap_rb_art_bytes.py](https://github.com/PikminGuts92/re-notes/blob/master/scripts/swap_rb_art_bytes.py) - Python script for converting Xbox images to PS3
 
 [dtab](https://github.com/mtolly/dtab) - For serializing `.dtb` script files
+
+[RB3DXBuildPkgPS3](https://github.com/InvoxiPlayGames/RB3DXBuildPkgPS3) - For building an RB3DX PKG for PS3
