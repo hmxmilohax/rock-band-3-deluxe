@@ -1,0 +1,1434 @@
+#define UPDATE_MILO_PRESET
+({do
+      ($start)
+      ($end)
+      ($frame)
+      {milo get_anim_frame $start $end $frame}
+      {milo set_anim_frame $start $end $frame}})
+#define CROWDS_READONLY
+((read_only
+      {!
+         {$this
+            get
+            (crowds
+               {elem $milo_prop_path 1}
+               crowd)}}))
+(WorldInstance
+   (description
+      "Shared instance of a RndDir")
+   (types)
+   (ext inst)
+   (superclasses RndDir)
+   (editor
+      (instance_file
+         file
+         (help
+            "Which file we instance, only set in instances")
+         (read_only TRUE)
+         (no_test))
+      (shared_group
+         object
+         (class Group)
+         (help
+            "Pointer to shared group, if any")
+         (read_only TRUE)
+         (no_test))
+      (poll_master
+         bool
+         (help
+            "Am I the guy that polls the shared group")
+         (read_only TRUE)
+         (no_test))))
+(LightHue
+   (description
+      "Represents a hue translation for LightPresets")
+   (types)
+   (ext hue)
+   (editor
+      (path
+         file
+         (ext
+            "BMP file"
+            bmp)
+         (help
+            "BMP file comparable to /system/run/world/hue.bmp")
+         (post_sync UPDATE_MILO_PRESET))
+      #ifdef _DEBUG
+      (save_default
+         script
+         (script
+            {$this
+               save_default
+               "/system/run/world/hue.bmp"}))
+      #endif))
+#define LEDPRESETS
+(("kStageOff"
+      "kStageOn"
+      "kStageBass"
+      "kStageDrumKick"
+      "kStageDrumSnare"
+      "kStageDrumCrash"
+      "kStageGuitar"
+      "kStageVocal"
+      "kStageSweepLeft_slow"
+      "kStageSweepLeft_medium"
+      "kStageSweepLeft_fast"
+      "kStageSweepRight_slow"
+      "kStageSweepRight_medium"
+      "kStageSweepRight_fast"))
+#define LEDPATTERNS
+(("kStageOne"
+      "kStageTwo"
+      "kStageFour"
+      "kStageOneOffset"
+      "kStageTwoOffset"
+      "kStageFourOffset"
+      "kStageAll"))
+#define STROBESETTINGS
+(("kStageStrobeOff"
+      "kStageStrobe6"
+      "kStageStrobe8"
+      "kStageStrobe10"
+      "kStageStrobe12"))
+(LightPreset
+   (description
+      "Represents an animated sequence of states of certain\n        objects in the world. For now, we store states for Spotlight and\n        Environment objects.")
+   (superclasses Anim)
+   (types)
+   (ext pst)
+   (editor
+      (locked
+         bool
+         (refresh keyframes)
+         (help
+            "Whether the keyframes are locked (no editing allowed)"))
+      (manual
+         bool
+         (refresh keyframes)
+         (help
+            "Whether this is a manual keyframe (keyframes controlled by MIDI)"))
+      (looping
+         bool
+         (help
+            "Whether this preset loops its animation"))
+      (category
+         symbol
+         (list
+            (''))
+         (help
+            "Category for preset-picking"))
+      (keyframes
+         (array
+            (struct
+               (description
+                  string
+                  (refresh keyframes)
+                  (help
+                     "Description of the keyframe"))
+               (duration
+                  float
+                  (help
+                     "Duration of the keyframe")
+                  (read_only
+                     {$this get manual}))
+               (fade_out
+                  float
+                  (help
+                     "Fade-out time of the keyframe"))
+               (entries
+                  (indent
+                     (spotlight_entries
+                        (array
+                           (struct
+                              (spotlight
+                                 string
+                                 (help
+                                    "Spotlight name"))))
+                        (read_only TRUE))
+                     (spotlight_drawer_entries
+                        (array
+                           (struct
+                              (spotlight_drawer
+                                 string
+                                 (help
+                                    "Spotlight drawer name"))
+                              (total
+                                 float
+                                 (help
+                                    "Global intensity scale"))
+                              (base_intensity
+                                 float
+                                 (help
+                                    "Intensity of smokeless beam"))
+                              (smoke_intensity
+                                 float
+                                 (help
+                                    "Intensity from smoke"))
+                              (light_influence
+                                 float
+                                 (help
+                                    "The amount the spotlights will influence the real lighting of the world"))))
+                        (read_only TRUE))
+                     (environment_entries
+                        (array
+                           (struct
+                              (environment
+                                 string
+                                 (help
+                                    "Environment name"))
+                              (ambient_color
+                                 color
+                                 (help
+                                    "Ambient color"))
+                              (fog_enable
+                                 bool
+                                 (help
+                                    "Fog showing?"))
+                              (fog_start
+                                 float
+                                 (help
+                                    "Intensity from smoke"))
+                              (fog_end
+                                 float
+                                 (help
+                                    "Intensity from smoke"))
+                              (fog_color
+                                 color
+                                 (help
+                                    "Intensity from smoke"))))
+                        (read_only TRUE))
+                     (light_entries
+                        (array
+                           (struct
+                              (light
+                                 string
+                                 (help
+                                    "Light name"))
+                              (position
+                                 VECTOR3
+                                 (help
+                                    "Light's position"))
+                              (color
+                                 color
+                                 (help
+                                    "Light's color"))
+                              (range
+                                 float
+                                 (help
+                                    "Falloff distance for point lights"))
+                              (type
+                                 string
+                                 (help
+                                    "Light type"))
+                              (rotation
+                                 MATRIX3
+                                 (help
+                                    "Light transform"))))
+                        (read_only TRUE))))
+               (LED
+                  (indent
+                     (LED_blue
+                        int
+                        (list LEDPRESETS)
+                        (help
+                           "preset for this LED ring"))
+                     (LED_blue_pattern
+                        int
+                        (list LEDPATTERNS)
+                        (help
+                           "pattern for this LED ring"))
+                     (LED_green
+                        int
+                        (list LEDPRESETS)
+                        (help
+                           "preset for this LED ring"))
+                     (LED_green_pattern
+                        int
+                        (list LEDPATTERNS)
+                        (help
+                           "pattern for this LED ring"))
+                     (LED_red
+                        int
+                        (list LEDPRESETS)
+                        (help
+                           "preset for this LED ring"))
+                     (LED_red_pattern
+                        int
+                        (list LEDPATTERNS)
+                        (help
+                           "pattern for this LED ring"))
+                     (LED_yellow
+                        int
+                        (list LEDPRESETS)
+                        (help
+                           "preset for this LED ring"))
+                     (LED_yellow_pattern
+                        int
+                        (list LEDPATTERNS)
+                        (help
+                           "pattern for this LED ring"))
+                     (strobe_setting
+                        int
+                        (list STROBESETTINGS)
+                        (help
+                           "strobe setting to use"))))
+               ('Set Keyframe'
+                  script
+                  (read_only
+                     {$this get locked})
+                  (label
+                     "SET")
+                  (script
+                     {if
+                        {exists milo}
+                        {milo record $this 'Set Keyframe'}}
+                     {$this
+                        set_keyframe
+                        {elem
+                           $milo_prop_path
+                           {-
+                              {size $milo_prop_path}
+                              2}}})
+                  (refresh keyframes)
+                  (help
+                     "Sets the keyframe to the current state of the scene"))
+               ('View Keyframe'
+                  script
+                  (label
+                     "VIEW")
+                  (script
+                     {$this
+                        view_keyframe
+                        {elem
+                           $milo_prop_path
+                           {-
+                              {size $milo_prop_path}
+                              2}}}
+                     {if
+                        {exists milo}
+                        {milo update_objects}
+                        {milo invalidate_listers_and_trees}})
+                  (help
+                     "Sets the scene to this keyframe"))
+               (video_venue_postproc
+                  object
+                  (class PostProc)
+                  (help
+                     "postproc used in video venues"))
+               (triggers
+                  (array
+                     object
+                     (class EventTrigger)
+                     (obj_flags no_null))
+                  (help
+                     "Trigger to fire when keyframe starts blending")))
+            (header
+               [keyframes
+                  {elem $milo_prop_path 1}
+                  description])))
+      (select_triggers
+         (array
+            object
+            (class EventTrigger)
+            (obj_flags no_null))
+         (help
+            "Triggers to fire upon selection"))
+      (legacy_fade_in
+         float
+         (read_only TRUE)
+         (help
+            "How long this preset should fade in from the previous one"))
+      (platform_only
+         int
+         (list
+            ("kPlatformNone"
+               "kPlatformPS3"
+               "kPlatformXbox"))
+         (help
+            "Limit this shot to given platform"))
+      #ifdef _DEBUG
+      (hue
+         object
+         (class LightHue)
+         (no_test))
+      #endif))
+#define FILTER_READONLY
+((read_only
+      {!
+         [anims
+            {elem $milo_prop_path 1}
+            enable]}))
+#define EVENT_ANIM_TRIGGER
+((struct
+      (dir
+         object
+         (class RndDir))
+      (event
+         object
+         (class EventTrigger)
+         (dir
+            {do
+               ($path
+                  {array $milo_prop_path})
+               {set_elem
+                  $path
+                  {-
+                     {size $path}
+                     1}
+                  dir}
+               {print
+                  "path array is "
+                  $path
+                  "\n"}
+               {$this get $path}}))))
+(EventAnim
+   (description
+      "Triggers events on proxy's along a timeline")
+   (allowed_dirs RndDir)
+   (ext eventanm)
+   (superclasses Anim)
+   (types)
+   (editor
+      (start
+         (array EVENT_ANIM_TRIGGER)
+         (help
+            "Triggers played first, during StartAnim"))
+      (end
+         (array EVENT_ANIM_TRIGGER)
+         (help
+            "Triggers played when done, during EndAnim"))
+      (keys
+         (array
+            (struct
+               (time
+                  float
+                  (help
+                     "time for event")
+                  (refresh keys))
+               (events
+                  (array EVENT_ANIM_TRIGGER))))
+         (help
+            "Triggers played during a particular keyframe.  Do not set key to zero, hoping it will always get fired on start, put them in start instead."))
+      (reset_on_end
+         bool
+         (help
+            "Resets all start + keys events when done, during EndAnim, normally should be checked"))))
+(WorldDir
+   (description
+      "A WorldDir contains world objects.")
+   (superclasses PanelDir)
+   (allowed_dirs)
+   (types)
+   (editor
+      (hide_overrides
+         (array
+            object
+            (list
+               {$this
+                  list_objs
+                  Draw
+                  (subdir_only)
+                  (no_null)})
+            (help
+               "Subdir objects to hide")))
+      (bitmap_overrides
+         (array
+            (struct
+               (original
+                  object
+                  (list
+                     {$this
+                        list_objs
+                        Tex
+                        (subdir_only)})
+                  (help
+                     "Subdir texture to replace"))
+               (replacement
+                  object
+                  (list
+                     {$this
+                        list_objs
+                        Tex
+                        (curdir_only)})
+                  (help
+                     "Curdir texture to replace with")))))
+      (mat_overrides
+         (array
+            (struct
+               (mesh
+                  object
+                  (list
+                     {$this
+                        list_objs
+                        Mesh
+                        (subdir_only)})
+                  (help
+                     "Subdir mesh to modify"))
+               (mat
+                  object
+                  (list
+                     {$this
+                        list_objs
+                        Mat
+                        (curdir_only)})
+                  (help
+                     "Curdir material to set")))))
+      (preset_overrides
+         (array
+            (struct
+               (preset
+                  object
+                  (list
+                     {$this
+                        list_objs
+                        LightPreset
+                        (subdir_only)})
+                  (help
+                     "Subdir preset to modify")
+                  (pre_sync UPDATE_MILO_PRESET)
+                  (post_sync UPDATE_MILO_PRESET))
+               (hue
+                  object
+                  (class LightHue)
+                  (help
+                     "Hue texture to use")
+                  (post_sync UPDATE_MILO_PRESET)))))
+      (camshot_overrides
+         (array
+            object
+            (list
+               {$this
+                  list_objs
+                  CamShot
+                  (subdir_only)
+                  (no_null)})
+            (help
+               "Subdir camshots to inhibit")))
+      (ps3_per_pixel_hides
+         (array
+            object
+            (list
+               {$this
+                  list_objs
+                  Draw
+                  (no_null)})
+            (help
+               "Things to hide when ps3_per_pixel on CamShot")))
+      (ps3_per_pixel_shows
+         (array
+            object
+            (list
+               {$this
+                  list_objs
+                  Draw
+                  (no_null)})
+            (help
+               "Things to show when ps3_per_pixel on CamShot")))
+      (hud_filename
+         file
+         (help
+            "HUD Preview Dir")
+         (ext
+            "Milo files"
+            milo))
+      (show_hud
+         bool
+         (help
+            "Whether to draw the HUD preview")
+         (no_test))
+      (find_char_interest_objects
+         script
+         (script
+            {foreach
+               $char
+               {object_list $this BandCharacter}
+               {if
+                  {exists $char}
+                  {$char find_interest_objects $this}}}
+            {foreach
+               $char
+               {object_list $this HamCharacter}
+               {if
+                  {exists $char}
+                  {$char find_interest_objects $this}}})
+         (help
+            "collects all the interest objects in the scene and assigns them to each character"))
+      ('test preset animation'
+         (indent
+            (test_light_preset_1
+               object
+               (class LightPreset)
+               (alias 'test light preset 1')
+               (help
+                  "The first light preset to start"))
+            ('select preset 1'
+               script
+               (help
+                  "Starts the selected preset")
+               (script
+                  {$this
+                     start_test_preset
+                     [test_light_preset_1]}))
+            (test_light_preset_2
+               object
+               (class LightPreset)
+               (alias 'test light preset 2')
+               (help
+                  "The second light preset to start"))
+            ('select preset 2'
+               script
+               (help
+                  "Starts the selected preset")
+               (script
+                  {$this
+                     start_test_preset
+                     [test_light_preset_2]}))
+            ('reset testing'
+               script
+               (help
+                  "reset all presets")
+               (script
+                  {$this stop_test_preset}
+                  {$this reset_presets}))
+            (test_animation_time
+               float
+               (alias 'animation time')
+               (range 1 120)
+               (help
+                  "animation time in beats"))
+            (forwards
+               script
+               (help
+                  "blend preset 1 into preset 2")
+               (script
+                  {$this
+                     test_preset_blending
+                     [test_light_preset_1]
+                     [test_light_preset_2]
+                     [test_animation_time]}))
+            (backwards
+               script
+               (help
+                  "blend preset 2 into preset 1")
+               (script
+                  {$this
+                     test_preset_blending
+                     [test_light_preset_2]
+                     [test_light_preset_1]
+                     [test_animation_time]})))
+         (help
+            "for testing light preset blending"))
+      (hud
+         object
+         (class RndDir)
+         (help
+            "hud to be drawn last"))))
+(Spotlight
+   (description
+      "Represents a beam and floorspot for venue modeling")
+   (allowed_dirs RndDir)
+   (ext spot)
+   (editor
+      (beam
+         (indent
+            (length
+               float
+               (help
+                  "Length of the beam/cone"))
+            (top_radius
+               float
+               (help
+                  "Radius at the top of the beam/cone"))
+            (bottom_radius
+               float
+               (help
+                  "Radius at the bottom of the beam/cone"))
+            (top_side_border
+               float
+               (help
+                  "For beams, length of the side transparency border at the top of the beam"))
+            (bottom_side_border
+               float
+               (help
+                  "For beams, length of the side transparency border at the bottom of the beam"))
+            (bottom_border
+               float
+               (help
+                  "Length of the bottom transparency border"))
+            (material
+               object
+               (class Mat)
+               (help
+                  "The material to use for the beam/cone"))
+            (offset
+               float
+               (help
+                  "Offset of beam along trajectory"))
+            (angle_offset
+               VECTOR2
+               (help
+                  "Amount to offset beam rotation (in degrees)"))
+            (is_cone
+               bool
+               (help
+                  "Whether this is a beam or a cone"))
+            (ng
+               (indent
+                  (xsection
+                     object
+                     (class Tex)
+                     (help
+                        "cross section intensity override texture"))
+                  (brighten
+                     float
+                     (help
+                        "raise or lower intensity compared to og beams"))
+                  (expand
+                     float
+                     (help
+                        "expand or shrink the radii compared to og beams"))
+                  (shape
+                     int
+                     (list
+                        ("kBeamConic"
+                           "kBeamRect"
+                           "kBeamSheet"
+                           "kBeamQuadXYZ"
+                           "kBeamQuadZ"))
+                     (help
+                        "Shape of the beam"))
+                  (sections
+                     int
+                     (help
+                        "Number of divisions along length"))
+                  (segments
+                     int
+                     (help
+                        "Number of divisions along width or around cone"))
+                  (cutouts
+                     (array
+                        object
+                        (class Draw)
+                        (obj_flags no_null))
+                     (help
+                        "Objects that create cutout shadow in the beam."))
+                  (slaves
+                     (array
+                        object
+                        (class Light)
+                        (obj_flags no_null))
+                     (help
+                        "Slave lights for projection lights and shadows"))))))
+      (color
+         color
+         (help
+            "Color of the spotlight"))
+      (intensity
+         float
+         (help
+            "Intensity of the spotlight"))
+      (color_owner
+         object
+         (class Spotlight)
+         (help
+            "Master for light color and intensity")
+         (obj_flags no_null)
+         (no_test))
+      (light_can
+         object
+         (class Mesh)
+         (help
+            "Optional light can mesh to use"))
+      (light_can_offset
+         float
+         (help
+            "Offset of light can along beam trajectory"))
+      (light_can_sort
+         bool
+         (help
+            "Can't optimize render end of render batching of light can with others"))
+      (target
+         object
+         (class Trans)
+         (help
+            "Object to target spotlight"))
+      (target_shadow
+         bool
+         (help
+            "Whether the target should cast a shadow"))
+      (spot_target
+         object
+         (class Trans)
+         (help
+            "Reference object for floor height, uses spot target if not set"))
+      (spot_scale
+         float
+         (help
+            "Scale of the floor disc"))
+      (spot_height
+         float
+         (help
+            "Height offset of the floor disc"))
+      (spot_material
+         object
+         (class Mat)
+         (help
+            "Material to use for the floor spot"))
+      (damping_constant
+         float
+         (help
+            "0-1, controls how fast spotlight moves to reach target"))
+      (flare_enabled
+         bool
+         (help
+            "Whether the flare is enabled (keyframed by light presets)"))
+      (flare_material
+         object
+         (class Mat)
+         (help
+            "Material to use for the flare"))
+      (flare_size
+         VECTOR2
+         (help
+            "Size of the flare"))
+      (flare_range
+         VECTOR2
+         (help
+            "Range of the flare"))
+      (flare_steps
+         int
+         (help
+            "Steps for the flare"))
+      (flare_offset
+         float
+         (help
+            "Offset of flare along spotlight trajectory"))
+      (flare_visibility_test
+         bool
+         (help
+            "Whether the flare performs a visiblity test (or is always visible)"))
+      (lens_size
+         float
+         (help
+            "Size of the lens billboard"))
+      (lens_offset
+         float
+         (help
+            "Offset of the lens billboard"))
+      (lens_material
+         object
+         (class Mat)
+         (help
+            "Material to use for the lens"))
+      (additional_objects
+         (array
+            object
+            (class Draw))
+         (help
+            "Additional objects that should be drawn by the spotlight."))
+      (animate_orientation_from_preset
+         bool
+         (help
+            "Whether this spotlight position/rotation should be animated by light presets."))
+      (animate_color_from_preset
+         bool
+         (help
+            "Whether this spotlight coloring should be animated by light presets."))
+      (propogate_coloring_to_presets
+         script
+         (script
+            {$this propogate_coloring_to_presets})
+         (help
+            "Propogate the spotlight's current color state to all light presets in the file."))
+      (propogate_targeting_to_presets
+         script
+         (script
+            {$this propogate_targeting_to_presets})
+         (help
+            "Propogate the spotlight's current target/rotation state to all light presets in the file.")))
+   (types)
+   (superclasses Draw Trans Poll)
+   (views
+      ('Eat it'
+         ("Beam Length"
+            [length])
+         ("Beam Color"
+            [color])
+         ("Beam Intensity"
+            [intensity]))))
+(SpotlightDrawer
+   (superclasses Draw)
+   (description
+      "A SpotlightDrawer draws spotlights.")
+   (ext sd)
+   (editor
+      (ng
+         (indent
+            (total
+               float
+               (help
+                  "global intensity scale")
+               (range 0.0 1.0))
+            (base_intensity
+               float
+               (help
+                  "intensity of smokeless beam"))
+            (smoke_intensity
+               float
+               (help
+                  "intensity from smoke"))
+            (color
+               color
+               (help
+                  "color of ambient (unlit) fog")
+               (range 0.0 1.0))
+            (proxy
+               object
+               (class Draw)
+               (help
+                  "proxy fog object"))
+            (light_influence
+               float
+               (help
+                  "The amount the spotlights will influence the real lighting of the world")
+               (range 0.0 10.0))
+            (select
+               script
+               (help
+                  "Start using these parameters for light cone drawing.")
+               (script
+                  {$this select})))
+         (help
+            "ng spotlight rendering parameters")))
+   (types))
+(SpotlightEnder
+   (superclasses Draw)
+   (description
+      "Object that ends spotlights, must put after the last spotlight and before anything that would render using those spotlights")
+   (allowed_dirs RndDir)
+   (ext se)
+   (editor)
+   (types))
+(WorldCrowd
+   (description
+      "A quickly-rendered bunch of instanced characters within an area")
+   (allowed_dirs RndDir)
+   (ext crd)
+   (editor
+      (num
+         int
+         (help
+            "Number of characters to place"))
+      (characters
+         (array
+            (struct
+               (character
+                  object
+                  (class Character)
+                  (struct characters)
+                  (help
+                     "The character to use as the archetype"))
+               (height
+                  float
+                  (struct characters)
+                  (help
+                     "The height at which to render the character"))
+               (density
+                  float
+                  (struct characters)
+                  (help
+                     "Density to place this character"))
+               (radius
+                  float
+                  (struct characters)
+                  (help
+                     "Collision radius of the character - characters won't be placed within this range"))))
+         (help
+            "Character archetypes for the crowd"))
+      (placement_mesh
+         object
+         (class Mesh)
+         (help
+            "The placement mesh"))
+      (environ
+         object
+         (class Environ)
+         (help
+            "The environ to render the imposter billboards with"))
+      (environ_3d
+         object
+         (class Environ)
+         (help
+            "The environ used when rendering the 3D crowd set by a cam shot"))
+      (focus
+         object
+         (class Trans)
+         (help
+            "Optional crowd facing focus when rotate is set to kCrowdRotateNone"))
+      (generate
+         script
+         (script
+            {if
+               {exists milo}
+               {do
+                  {milo clear_highlights}
+                  {milo record $this 'Rebuild crowd'}}}
+            {$this rebuild})
+         (help
+            "Completely rebuilds the crowd placements"))
+      ('Assign Random Colors'
+         script
+         (script
+            {if
+               {exists milo}
+               {milo record $this 'Set crowd random colors'}}
+            {$this assign_random_colors})
+         (help
+            "Reassigns the random crowd colors"))
+      (force_3D_crowd
+         bool
+         (help
+            "Makes crowd be 3D regardless of the CamShot")
+         (pre_sync
+            {if
+               {exists milo}
+               {milo clear_highlights}}))
+      (show_3d_only
+         bool
+         (help
+            "Shows only the 3D crowd, but ONLY in Milo so you can more easily distinguish them from the 2d crowd")))
+   (types)
+   (superclasses Draw))
+(CamShot
+   (description
+      "A camera shot. This is an animated camera path with keyframed settings.")
+   (allowed_dirs PanelDir)
+   (ext shot)
+   (editor
+      (looping
+         bool
+         (help
+            "Whether the animation should loop."))
+      (loop_keyframe
+         int
+         (help
+            "If looping true, which keyframe to loop to.")
+         (range
+            0
+            {max
+               0
+               {-
+                  {$this
+                     size
+                     (keyframes)}
+                  1}}))
+      (keyframes
+         (array
+            (struct
+               (duration
+                  float
+                  (help
+                     "Duration this keyframe holds steady")
+                  (post_sync
+                     {if
+                        {&&
+                           {milo cur_anim}
+                           {==
+                              $this
+                              {milo cur_anim}}}
+                        {do
+                           ($start)
+                           ($end)
+                           ($curr)
+                           {milo get_anim_frame $start $end $curr}}}))
+               (blend
+                  float
+                  (help
+                     "Duration this keyframe blends into the next one")
+                  (post_sync
+                     {if
+                        {&&
+                           {milo cur_anim}
+                           {==
+                              $this
+                              {milo cur_anim}}}
+                        {do
+                           ($start)
+                           ($end)
+                           ($curr)
+                           {milo get_anim_frame $start $end $curr}}})
+                  (refresh keyframes))
+               (blend_ease
+                  float
+                  (help
+                     "Amount to ease into this keyframe")
+                  (read_only
+                     {==
+                        [keyframes
+                           {elem $milo_prop_path 1}
+                           blend]
+                        0})
+                  (range 0.0 1000.0))
+               (blend_ease_mode
+                  int
+                  (list BLEND_EASE)
+                  (help
+                     "Amount to ease out to the next keyframe")
+                  (read_only
+                     {==
+                        [keyframes
+                           {elem $milo_prop_path 1}
+                           blend]
+                        0}))
+               (set_frame
+                  script
+                  (refresh keyframes)
+                  (script
+                     {$this
+                        set_pos
+                        {elem
+                           $milo_prop_path
+                           {-
+                              {size $milo_prop_path}
+                              2}}}))
+               (field_of_view
+                  float
+                  (help
+                     "Field of view, in degrees, for this keyframe. Same as setting lens focal length below")
+                  (alias
+                     "field of view (deg.)")
+                  (refresh keyframes)
+                  (range 0.0 360.0))
+               (lens_mm
+                  float
+                  (help
+                     "Lens focal length for this keyframe. Same as setting field of view above.")
+                  (alias
+                     "lens (mm.)")
+                  (refresh keyframes)
+                  (range 0.0 500.0))
+               (lens_preset
+                  symbol
+                  (list
+                     (15mm 20mm 24mm 28mm 35mm 50mm 85mm 135mm 200mm Custom))
+                  (refresh keyframes)
+                  (help
+                     "A preset lens for a 35mm camera that sets the appropriate field of view")
+                  (alias
+                     "stock lens"))
+               (zoom_fov
+                  float
+                  (help
+                     "Field of view adjustment (not affected by target reframing"))
+               (world_offset
+                  TRANSFORM
+                  (help
+                     "Camera position for this keyframe"))
+               (screen_offset
+                  VECTOR2
+                  (help
+                     "Screen space offset of target for this keyframe"))
+               (targets
+                  (array
+                     object
+                     (class Trans)
+                     (refresh keyframes)
+                     (obj_flags no_null))
+                  (help
+                     "Target(s) that the camera should look at")
+                  (refresh keyframes))
+               (parent
+                  object
+                  (class Trans)
+                  (help
+                     "Parent that the camera should attach itself to")
+                  (refresh keyframes))
+               (use_parent_rotation
+                  bool
+                  (help
+                     "Whether to take the parent object's rotation into account"))
+               (parent_first_frame
+                  bool
+                  (help
+                     "Only parent on the first frame"))
+               (focal_target
+                  object
+                  (class Trans)
+                  (help
+                     "The focal point when calculated depth of field"))
+               (blur_depth
+                  float
+                  (help
+                     "0 to 1 scale representing the Depth size of the blur valley (offset from the focal target + focus_blur_multiplier) in the Camera Frustrum. Zero puts everything in Blur. 1 puts everything in the Blur falloff valley.")
+                  (read_only
+                     {'||'
+                        {!= $gfx_mode kNewGfx}
+                        {!
+                           [use_depth_of_field]}})
+                  (range 0.0 1.0))
+               (max_blur
+                  float
+                  (help
+                     "Maximum blurriness")
+                  (read_only
+                     {'||'
+                        {!= $gfx_mode kNewGfx}
+                        {!
+                           [use_depth_of_field]}})
+                  (range 0.0 1.0))
+               (min_blur
+                  float
+                  (help
+                     "Minimum blurriness")
+                  (read_only
+                     {'||'
+                        {!= $gfx_mode kNewGfx}
+                        {!
+                           [use_depth_of_field]}})
+                  (range 0.0 1.0))
+               (focus_blur_multiplier
+                  float
+                  (help
+                     "Multiplier of distance from camere to focal target. Offsets focal point of blur.")
+                  (read_only
+                     {!
+                        [use_depth_of_field]}))
+               (shake_noisefreq
+                  float
+                  (help
+                     "Noise frequency for camera shake"))
+               (shake_noiseamp
+                  float
+                  (help
+                     "Noise amplitude for camera shake"))
+               (shake_maxangle
+                  VECTOR2
+                  (help
+                     "Maximum angle for camera shake")))))
+      (category
+         symbol
+         (list
+            (''))
+         (help
+            "Category for shot-picking"))
+      (filter
+         float
+         (help
+            "Filter amount"))
+      (clamp_height
+         float
+         (help
+            "Height above target's base at which to clamp camera"))
+      (near_plane
+         float
+         (help
+            "Near clipping plane for the camera"))
+      (far_plane
+         float
+         (help
+            "Far clipping plane for the camera"))
+      (use_depth_of_field
+         bool
+         (help
+            "Whether to use depth-of-field effect on platforms that support it")
+         (refresh))
+      (path
+         object
+         (class TransAnim)
+         (help
+            "Optional camera path to use"))
+      (anims
+         (array
+            object
+            (class Anim))
+         (help
+            "animatables to be driven with the same frame"))
+      (platform_only
+         int
+         (list
+            ("kPlatformNone"
+               "kPlatformPS3"
+               "kPlatformXbox"))
+         (help
+            "Limit this shot to given platform"))
+      (hide_list
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "List of objects to hide while this camera shot is active, shows them when done"))
+      (gen_hide_list
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "Automatically generated list of objects to hide while this camera shot is active, shows them when done.  Not editable")
+         (read_only TRUE))
+      (show_list
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "List of objects to show while this camera shot is active, hides them when done"))
+      (draw_overrides
+         (array
+            object
+            (class Draw))
+         (help
+            "List of objects to draw in order instead of whole world"))
+      (postproc_overrides
+         (array
+            object
+            (class Draw))
+         (help
+            "List of objects to draw after post-processing"))
+      (glow_spot
+         object
+         (class Spotlight)
+         (help
+            "The spotlight to get glow settings from"))
+      (duration
+         float
+         (help
+            "duration of the camshot")
+         (read_only TRUE))
+      (ps3_per_pixel
+         bool
+         (help
+            "global per-pixel setting for PS3"))
+      (disabled
+         int
+         (help
+            "disabled bits")
+         (read_only TRUE)
+         (no_test))
+      (crowds
+         (array
+            (struct
+               (crowd
+                  object
+                  (class WorldCrowd)
+                  (help
+                     "The crowd to show for this shot")
+                  (refresh crowds))
+               (crowd_rotate
+                  int
+                  (list CROWD_ROTATE)
+                  (help
+                     "How to rotate crowd"))
+               ('set 3D crowd'
+                  script
+                  (script
+                     {$this
+                        set_3d_crowd
+                        {elem $milo_prop_path 1}})
+                  (help
+                     "Sets the selected crowd characters to be 3D for this shot")
+                  CROWDS_READONLY)
+               ('add 3D crowd'
+                  script
+                  (script
+                     {$this
+                        add_3d_crowd
+                        {elem $milo_prop_path 1}})
+                  (help
+                     "Adds the selected crowd characters to be 3D for this shot")
+                  CROWDS_READONLY)
+               ('clear 3D crowd'
+                  script
+                  (script
+                     {$this
+                        clear_3d_crowd
+                        {elem $milo_prop_path 1}})
+                  (help
+                     "Clears the list of 3D crowd characters for this shot")
+                  CROWDS_READONLY)
+               ('set all to 3D'
+                  script
+                  (script
+                     {$this
+                        set_all_to_3D
+                        {elem $milo_prop_path 1}})
+                  (help
+                     "Sets all crowd characters to 3D for this shot")
+                  CROWDS_READONLY))))
+      ('gen hide list'
+         script
+         (script
+            {if
+               {exists milo}
+               {milo record $this gen_hide_list}}
+            {$this gen_hide_list})
+         (refresh hide_list)
+         (help
+            "Append occluded objects to this cam shot's hide list"))
+      ('clear hide list'
+         script
+         (script
+            {if
+               {exists milo}
+               {milo record $this clear_hide_list}}
+            {$this clear_hide_list})
+         (refresh hide_list)
+         (help
+            "Clear this cam shot's hide list")))
+   (anim_props
+      (path_frame
+         float
+         (range 0 1)))
+   (types)
+   (superclasses Anim))
+(WorldReflection
+   (description
+      "Reflects all drawables in draws.")
+   (allowed_dirs RndDir)
+   (superclasses Draw Trans)
+   (ext refl)
+   (editor
+      (draws
+         (array
+            object
+            (class Draw))
+         (help
+            "things to draw in the reflection, in this order"))
+      (vertical_stretch
+         float
+         (help
+            "How far to stretch vertically"))
+      (lod_chars
+         (array
+            object
+            (class Character)
+            (obj_flags no_null))
+         (help
+            "Set LOD to 1 on these reflected characters"))
+      (hide_list
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "List of objects to hide in the reflection, shows them when reflection has finished drawing."))
+      (show_list
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "List of objects to show in the reflection, hides them when reflection has finished drawing.")))
+   (types))
+(ColorPalette
+   (description
+      "List of primary/secondary colors for OutfitConfig")
+   (allowed_dirs RndDir)
+   (types)
+   (ext pal)
+   (editor
+      (colors
+         (array
+            color
+            (help
+               "Color for materials")))))
