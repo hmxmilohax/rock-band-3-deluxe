@@ -1,0 +1,1388 @@
+(PanelDir
+   (description
+      "Top-level UI Object,\n    contains UI components and an optional camera")
+   (superclasses RndDir)
+   (allowed_dirs)
+   (editor
+      (cam
+         object
+         (class Cam)
+         (help
+            "Camera to use in game, else standard UI cam")
+         (post_sync
+            {milo update_camera_buttons}))
+      (use_specified_cam
+         bool
+         (help
+            "Forces the usage of the 'cam' property to render in milo. This is a milo only feature."))
+      (postprocs_before_draw
+         bool
+         (help
+            "Trigger postprocs before drawing this panel.\nIf checked, this panel will not be affected by the postprocs."))
+      (front_view_only_panels
+         (array file)
+         (help
+            "Additional panels to display in front of this panel.")
+         (post_sync
+            {handle
+               ($this enter)}
+            {milo update_objects})
+         (hide
+            {$this is_proxy}))
+      (back_view_only_panels
+         (array file)
+         (help
+            "Additional panels to display behind this panel.")
+         (post_sync
+            {handle
+               ($this enter)}
+            {milo update_objects})
+         (hide
+            {$this is_proxy}))
+      (show_view_only_panels
+         bool
+         (help
+            "Whether or no this panel displays its view only panels")))
+   (types))
+(UIComponent
+   (description
+      "Base class of all UI components, \n   defines navigation and component state")
+   (superclasses Draw Trans Poll)
+   (allowed_dirs)
+   (editor
+      (resource_name
+         string
+         (list
+            {if_else
+               {$this get_resources_path}
+               {file_list
+                  {sprint
+                     {$this get_resources_path}
+                     "/*.milo"}}
+               ("")})
+         (help
+            "path to resource file for this component")
+         (no_test))
+      (open_resource
+         script
+         (script
+            {set
+               $resourcePath
+               {sprint
+                  {file_root}
+                  "/"
+                  {$this get_resources_path}
+                  "/"
+                  [resource_name]
+                  ".milo"}}
+            {set
+               $execCmd
+               {sprint
+                  "cmd /c start "
+                  $resourcePath}}
+            {system_exec $execCmd})
+         (help
+            "opens the current resource file for this component - will open in a new milo window"))
+      (nav_right
+         object
+         (list
+            {do
+               ($dir
+                  {$this dir})
+               ($list
+                  ())
+               {if
+                  {$dir is_a PanelDir}
+                  {set
+                     $list
+                     {$dir get_focusable_components}}}
+               {insert_elem
+                  $list
+                  0
+                  ""}
+               $list})
+         (read_only
+            {!
+               {$this can_have_focus}}))
+      (nav_down
+         object
+         (list
+            {do
+               ($dir
+                  {$this dir})
+               ($list
+                  ())
+               {if
+                  {$dir is_a PanelDir}
+                  {set
+                     $list
+                     {$dir get_focusable_components}}}
+               {insert_elem
+                  $list
+                  0
+                  ""}
+               $list})
+         (read_only
+            {!
+               {$this can_have_focus}}))
+      (set_focus
+         script
+         (script
+            {{$this dir}
+               set_focus
+               $this})
+         (read_only
+            {!
+               {$this can_have_focus}}))
+      (enable
+         script
+         (script
+            {{$this dir}
+               enable
+               $this}))
+      (disable
+         script
+         (script
+            {{$this dir}
+               disable
+               $this})))
+   (types)
+   (select_frames 30)
+   (resources_path
+      ""))
+(UIFontImporter
+   (description
+      "Class supporting font importing.  To be included in font resource file classes.")
+   (superclasses)
+   (allowed_dirs)
+   (editor
+      (allowed_chars
+         (indent
+            (UPPER_CASE_A_Z
+               bool
+               (help
+                  "include uppercase letters"))
+            (lower_case_a_z
+               bool
+               (help
+                  "include lowercase letters"))
+            (numbers_0_9
+               bool
+               (help
+                  "include the number 0-9"))
+            (punctuation
+               bool
+               (help
+                  "include punctuation characters"))
+            (UPPER_EURO
+               bool
+               (help
+                  "include uppercase euro chars"))
+            (lower_euro
+               bool
+               (help
+                  "include lowercase euro chars"))
+            (plus
+               string
+               (help
+                  "type in extra characters to include here"))
+            (minus
+               string
+               (help
+                  "type in characters to exclude here"))))
+      (font_info
+         (indent
+            (font_name
+               string
+               (help
+                  "name of the font")
+               (read_only TRUE)
+               (refresh bitmap_save_name))
+            (pitch_and_family
+               int
+               (help
+                  "pitch and family of font - comes from font picker")
+               (read_only TRUE))
+            (font_charset
+               int
+               (help
+                  "character set for this font - comes from font picker")
+               (read_only TRUE))
+            (font_pct_size
+               float
+               (range 1.0e-3 0.75)
+               (percent TRUE)
+               (help
+                  "default font size in percent screen height")
+               (refresh bitmap_save_name font_point_size font_pixel_size))
+            (font_point_size
+               int
+               (help
+                  "the equivalent point size")
+               (refresh bitmap_save_name)
+               (read_only TRUE))
+            (font_pixel_size
+               int
+               (help
+                  "the equivalent pixel size")
+               (refresh bitmap_save_name)
+               (read_only TRUE))
+            (bold
+               bool
+               (help
+                  "bold variation?")
+               (refresh bitmap_save_name))
+            (italics
+               bool
+               (help
+                  "italic variation?")
+               (refresh bitmap_save_name))
+            (font_supersample
+               int
+               (list FONTSUPERSAMPLE_ENUM)
+               (refresh bitmap_save_name)
+               (help
+                  "our own supersampling that draws the font texture at 2 or 4x and scales down like in photoshop.  Might improve anti-aliasing at small font sizes."))
+            (font_picker
+               script
+               (script
+                  {$this show_font_picker}
+                  {milo update_open_editor $this}))
+            (bitmap_save_path
+               string
+               (help
+                  "path to save bitmap to (i.e. ui/image/)"))
+            (bitmap_save_name
+               string
+               (help
+                  "name of the bitmap file (i.e. Arial(12).BMP)"))))
+      (padding
+         (indent
+            (left
+               int
+               (help
+                  "pixels of padding on the left side of each character"))
+            (right
+               int
+               (help
+                  "pixels of padding on the left side of each character"))
+            (top
+               int
+               (help
+                  "pixels of padding on the left side of each character"))
+            (bottom
+               int
+               (help
+                  "pixels of padding on the left side of each character"))))
+      (misc
+         (indent
+            (fill_with_safe_white
+               bool
+               (help
+                  "fill texture with safe white color (235)"))))
+      (mat_variations
+         (array
+            object
+            (class Mat))
+         (help
+            "A list of materials we will expose for this font")
+         (post_sync
+            {milo invalidate_listers_and_trees}
+            {milo update_objects}))
+      (handmade_font
+         object
+         (class Font)
+         (help
+            "If you want to handmake a font texture, assign it here and the importer will no longer try to generate textures")
+         (post_sync
+            {milo invalidate_listers_and_trees}
+            {milo update_objects})
+         (no_test))
+      (generate_ng
+         script
+         (script
+            {$this generate}
+            {milo invalidate_listers_and_trees}
+            {milo update_objects}
+            {milo reload_textures})
+         (help
+            "generates the font/textures/materials for NG platform using the current import settings"))
+      (generate_og
+         script
+         (script
+            {$this generate_og}
+            {milo invalidate_listers_and_trees}
+            {milo update_objects}
+            {milo reload_textures})
+         (help
+            "generates the font/textures/materials for OG platform using the current import settings"))
+      (last_genned_ng
+         bool
+         (read_only TRUE)
+         (help
+            "was the texture for this font last genned for an NG platform?"))
+      (reference_kerning
+         object
+         (class Font)
+         (help
+            "A font which we'll transfer the kerning info from for any gen-ed fonts"))
+      (gened_fonts
+         (indent
+            (gened_fonts
+               (array
+                  object
+                  (class Font))
+               (read_only TRUE)
+               (help
+                  "the font(s) we've gen-ed for this resource file.  We will maintain a connection to these objects when you re-generate"))
+            (forget
+               script
+               (script
+                  {$this forget_gened_fonts}
+                  {milo update_open_editor $this})
+               (help
+                  "forget about our gen-ed fonts.  Next time you generate, you'll get new objects!"))
+            (highlight
+               script
+               (script
+                  {foreach_int
+                     $i
+                     0
+                     {size
+                        [gened_fonts]}
+                     {set
+                        $curFont
+                        {$this
+                           get
+                           (gened_fonts $i)}}
+                     {$curFont
+                        iterate_refs
+                        $ref
+                        {if
+                           {$ref is_a Text}
+                           {milo
+                              set_highlights
+                              ($ref)}}}})
+               (help
+                  "highlights the Text objects for all the gen-ed fonts the importer is attached to"))))
+      (open_bitmap
+         script
+         (script
+            {set
+               $execCmd
+               {sprint
+                  "cmd /c start "
+                  {$this get_bitmap_path}}}
+            {system_exec $execCmd})
+         (help
+            "opens the generated font texture with windows explorer"))
+      (p4_edit_bitmap
+         script
+         (script
+            {set
+               $execCmd
+               {sprint
+                  "p4 edit "
+                  {$this get_bitmap_path}}}
+            {system_exec $execCmd})
+         (help
+            "opens the generated font texture with windows explorer"))
+      (sync_with_resource
+         (indent
+            (resource_name
+               string
+               (list
+                  {if_else
+                     {$this get_resources_path}
+                     {file_list
+                        {sprint
+                           {$this get_resources_path}
+                           "/*.milo"}}
+                     ("")})
+               (help
+                  "You can pull in all the importer settings from another resource file by selecting it above and hitting the sync button below")
+               (no_test))
+            (sync
+               script
+               (script
+                  {milo
+                     record
+                     $this
+                     "sync UIFontImporter with resource file"}
+                  {$this sync_with_resource}
+                  {milo invalidate_listers_and_trees}
+                  {milo update_objects})
+               (help
+                  "will pull in all the importer settings from another resource file, specified by 'resource_name' above"))))))
+(UIButton
+   (description
+      "Simple button, basically just a \n   label that can be selected")
+   (superclasses UILabel)
+   (allowed_dirs PanelDir)
+   (ext but)
+   (init
+      {set
+         [resource_name]
+         "default"})
+   (types)
+   (resources_path
+      "resource/fonts/"))
+#define TEXT_ALIGNMENTS
+("kTopLeft"
+   "kTopCenter"
+   "kTopRight"
+   "kMiddleLeft"
+   "kMiddleCenter"
+   "kMiddleRight"
+   "kBottomLeft"
+   "kBottomCenter"
+   "kBottomRight")
+#define TEXT_CAPS_MODES
+("kCapsModeNone"
+   "kForceLower"
+   "kForceUpper")
+#define LABEL_FIT_TYPES
+("kFitWrap"
+   "kFitJust"
+   "kFitEllipsis")
+(UILabel
+   (description
+      "Simple label, provides localization of tokens")
+   (superclasses UIComponent)
+   (allowed_dirs PanelDir UIListDir)
+   (ext lbl)
+   (editor
+      (text_token
+         symbol
+         (help
+            "Localization token if localize is true")
+         (no_test)
+         (list
+            {$this token_list}))
+      (sync_reload_tokens
+         script
+         (script
+            {sync_reload_locale})
+         (help
+            "Perforce sync and reload locale files"))
+      (get_magnu_tokens
+         script
+         (script
+            {magnu_refresh_strings})
+         (help
+            "Query Magnu for the latest localization tokens"))
+      (add_token
+         script
+         (script
+            {add_token})
+         (help
+            "Add new token in Magnu"))
+      (icon
+         string
+         (help
+            "Single-character icon")
+         (no_test))
+      (edit_text
+         string
+         (help
+            "Milo-only preview text")
+         (no_test))
+      (text_size
+         float
+         (range 1.0e-3 5)
+         (percent TRUE)
+         (help
+            "Text size in percentage of screen height (i.e. 50% is half the screen height for the largest glyph)")
+         (no_cdb))
+      (font_mat_variation
+         symbol
+         (list
+            {$this get_material_variations})
+         (help
+            "the material variation to use, populated from those setup in the resource file.  selecting none gives you the default material."))
+      (alignment
+         int
+         (list
+            (TEXT_ALIGNMENTS))
+         (help
+            "Text alignment"))
+      (caps_mode
+         int
+         (list
+            (TEXT_CAPS_MODES))
+         (help
+            "Text case setting"))
+      (markup
+         bool
+         (help
+            "Support markup?"))
+      (leading
+         float
+         (help
+            "Space between lines"))
+      (kerning
+         float
+         (help
+            "Additional kerning applied to text object"))
+      (italics
+         float
+         (range 0 100)
+         (help
+            "Italics for text object"))
+      (fit_type
+         int
+         (list
+            (LABEL_FIT_TYPES))
+         (help
+            "How to fit text in the width/height specified"))
+      (preserve_trunc_text
+         string
+         (help
+            "Optional text to append after truncation with kFitEllipsis"))
+      (width
+         float
+         (range 0 1000)
+         (help
+            "Width of label"))
+      (height
+         float
+         (range 0 1000)
+         (help
+            "Height of label"))
+      (alpha
+         float
+         (range 0 1)
+         (help
+            "Controls transparency of label"))
+      (color_override
+         object
+         (class UIColor)
+         (help
+            "Color override for this instance"))
+      (adjust_height
+         script
+         (script
+            {$this adjust_height}
+            {if
+               {exists milo}
+               {milo update_open_editor $this}}))
+      (fixed_length
+         int
+         (range 0 1000)
+         (help
+            "Preallocated size of internal text object"))
+      (reserve_lines
+         int
+         (range 0 100)
+         (help
+            "Preallocated number of lines in internal text object"))
+      (use_highlight_mesh
+         bool
+         (help
+            "whether or not to use highlight mesh (if available)")
+         (read_only
+            {!
+               {$this has_highlight_mesh}}))
+      (alt_font_resource_name
+         string
+         (list
+            {if_else
+               {$this get_resources_path}
+               {file_list
+                  {sprint
+                     {$this get_resources_path}
+                     "/*.milo"}}
+               ("")})
+         (help
+            "path to alt font resource file for this component")
+         (no_test))
+      (open_alt_font_resource
+         script
+         (script
+            {set
+               $resourcePath
+               {sprint
+                  {file_root}
+                  "/"
+                  {$this get_resources_path}
+                  "/"
+                  [alt_font_resource_name]
+                  ".milo"}}
+            {set
+               $execCmd
+               {sprint
+                  "cmd /c start "
+                  $resourcePath}}
+            {system_exec $execCmd})
+         (help
+            "opens the current resource file for this component - will open in a new milo window"))
+      (alt_text_size
+         float
+         (range 1.0e-3 5)
+         (percent TRUE)
+         (help
+            "Text size of alternate style in percentage of screen height (i.e. 50% is half the screen height for the largest glyph)")
+         (no_cdb))
+      (alt_mat_variation
+         symbol
+         (list
+            {$this get_altmaterial_variations})
+         (help
+            "the material variation to use from the alternate font. selecting none gives you the default material."))
+      (alt_kerning
+         float
+         (help
+            "Additional kerning applied to alt text object"))
+      (alt_text_color
+         object
+         (class UIColor)
+         (help
+            "Color to use when in alt style"))
+      (alt_z_offset
+         float
+         (help
+            "Z-offset for alt text (to manually match up baselines)"))
+      (alt_italics
+         float
+         (range 0 100)
+         (help
+            "Italics for text object's alt font"))
+      (alt_alpha
+         float
+         (range 0 1)
+         (help
+            "Controls transparency of label's alt font"))
+      (alt_style_enabled
+         bool
+         (help
+            "Whether to parse <alt> tags for alt style"))
+      (validate
+         script
+         (script
+            {$this validate})
+         (helps
+            "Notifies what is wrong if anything.")))
+   (init
+      {set
+         [resource_name]
+         "default"})
+   (types)
+   (resources_path
+      "resource/fonts/"))
+(UILabelDir
+   (description
+      "Top-level resource object for UILabels")
+   (superclasses UIFontImporter RndDir)
+   (types)
+   (editor
+      (focus_anim
+         object
+         (class Anim))
+      (pulse_anim
+         object
+         (class Anim))
+      (highlight_mesh_group
+         object
+         (class Group))
+      (top_left_highlight_bone
+         object
+         (class Mesh))
+      (top_right_highlight_bone
+         object
+         (class Mesh))
+      (bottom_left_highlight_bone
+         object
+         (class Mesh))
+      (bottom_right_highlight_bone
+         object
+         (class Mesh))
+      (focused_background_group
+         object
+         (class Group))
+      (unfocused_background_group
+         object
+         (class Group))
+      (default_color
+         object
+         (class UIColor)
+         (help
+            "color to use when no other color is defined for a state"))
+      (normal_color
+         object
+         (class UIColor)
+         (help
+            "color when label is normal"))
+      (focused_color
+         object
+         (class UIColor)
+         (help
+            "color when label is focused"))
+      (disabled_color
+         object
+         (class UIColor)
+         (help
+            "color when label is disabled"))
+      (selecting_color
+         object
+         (class UIColor)
+         (help
+            "color when label is selecting"))
+      (selected_color
+         object
+         (class UIColor)
+         (help
+            "color when label is selected"))
+      (allow_edit_text
+         bool
+         (help
+            "allow non-localized text with this resource?"))))
+#define LIST_SHOWING
+("kListAlways"
+   "kListOnlyFocused"
+   "kListNever")
+(UIList
+   (description
+      "Component for displaying 1- or 2-dimensional lists of data.\n        Can be oriented horizontally or vertically, can scroll normally or\n        circularly, and can have any number of visible elements (even just\n        one, a.k.a. a spin button).")
+   (superclasses UIComponent)
+   (allowed_dirs PanelDir UIListDir)
+   (ext lst)
+   (editor
+      (display_num
+         int
+         (range 1 50)
+         (help
+            "Number of rows/columns"))
+      (grid_span
+         int
+         (range 1 50)
+         (help
+            "Number \\"
+            'across\\"'
+            for
+            a
+            'grid."'))
+      (circular
+         bool
+         (help
+            "Does the list scrolling wrap?"))
+      (scroll_time
+         float
+         (range 0 5)
+         (help
+            "Time (seconds) to scroll one step - 0 for instant scrolling"))
+      (paginate
+         bool
+         (help
+            "Allow scrolling by pages?"))
+      (select_to_scroll
+         bool
+         (help
+            "Does list need to be selected before user can scroll?"))
+      (min_display
+         int
+         (range 0 50)
+         (help
+            "How far from top of list to start scrolling"))
+      (scroll_past_min_display bool)
+      (max_display
+         int
+         (range -1 50)
+         (help
+            "How far down can the highlight travel before scoll? Use -1 for no limit"))
+      (scroll_past_max_display
+         bool
+         (help
+            "Allow selected data to move beyond max highlight?"))
+      (num_data
+         int
+         (range 1 1000)
+         (help
+            "Num data to show (only for milo)"))
+      (auto_scroll_pause
+         float
+         (range 0 100)
+         (help
+            "Time to pause when auto scroll changes directions (seconds)"))
+      (auto_scroll_send_messages
+         bool
+         (help
+            "Should this list send UIComponentScroll* messages while auto-scrolling?"))
+      (auto_scroll
+         script
+         (script
+            {$this auto_scroll}))
+      (stop_auto_scroll
+         script
+         (script
+            {$this stop_auto_scroll}))
+      (in_anim
+         object
+         (class Anim)
+         (help
+            "animation kicked off before extended entries are updated"))
+      (out_anim
+         object
+         (class Anim)
+         (help
+            "animation kicked off after extended entries are updated"))
+      (extended_label_entries
+         (array
+            object
+            (class UILabel))
+         (help
+            "labels to be filled in by list provider at runtime"))
+      (extended_mesh_entries
+         (array
+            object
+            (class Mesh))
+         (help
+            "meshes to be filled in by list provider at runtime"))
+      (extended_custom_entries
+         (array
+            object
+            (class Object))
+         (help
+            "custom objects to be filled in by list provider at runtime")))
+   (init
+      {$this set_type default})
+   (types
+      (default
+         (resource_file
+            "list.milo"))
+      (spin
+         (resource_file
+            "list_spin.milo"))
+      #ifndef _SHIP
+      (cheat
+         (resource_file
+            "list_cheat.milo"))
+      (panel_select
+         (resource_file
+            "list_panel_select.milo"))
+      (locale
+         (resource_file
+            "list_locale.milo"))
+      #endif))
+#define LIST_ORIENTATION
+("kUIListVertical"
+   "kUIListHorizontal")
+#define COMPONENT_STATES
+("kComponentNormal"
+   "kComponentFocused"
+   "kComponentDisabled"
+   "kComponentSelecting"
+   "kComponentSelected")
+(UIListDir
+   (description
+      "Top-level resource object for UILists")
+   (superclasses RndDir)
+   (types)
+   (editor
+      (orientation
+         int
+         (list
+            (LIST_ORIENTATION))
+         (help
+            "scroll direction of list"))
+      (fade_offset
+         int
+         (range 0 10)
+         (help
+            "Number of elements to fade from beginning/end of list"))
+      (element_spacing
+         float
+         (range 0 1000)
+         (help
+            "spacing between elements"))
+      (scroll_highlight_change
+         float
+         (range 0 1)
+         (help
+            "point during scroll when highlight changes"))
+      (test_mode
+         bool
+         (help
+            "draw widgets in preview mode?"))
+      (test_num_display
+         int
+         (range 1 100)
+         (help
+            "number of elements to draw"))
+      (test_num_data
+         int
+         (range 1 100)
+         (help
+            "total number of data elements"))
+      (test_scroll_time
+         float
+         (range 0 5)
+         (help
+            "test scroll time"))
+      (test_list_state
+         int
+         (list
+            (COMPONENT_STATES)))
+      (test_gap_size
+         float
+         (range 0 1000)
+         (help
+            "test gaps between elements"))
+      (test_disable_elements
+         bool
+         (help
+            "test disable every other element"))
+      (scroll_back
+         script
+         (script
+            {$this test_scroll -1}))
+      (scroll_next
+         script
+         (script
+            {$this test_scroll 1}))))
+#define LIST_WIDGET_DRAW_TYPE
+("kUIListWidgetDrawAlways"
+   "kUIListWidgetDrawOnlyFocused"
+   "kUIListWidgetDrawFocusedOrManual")
+#define UI_LIST_WIDGET_EDITOR
+((draw_order
+      float
+      (help
+         "order this widget will be drawn"))
+   (widget_draw_type
+      int
+      (list
+         (LIST_WIDGET_DRAW_TYPE))
+      (help
+         "under what conditions to draw this widget"))
+   (disabled_alpha_scale
+      float
+      (range 0 1)
+      (help
+         "scale for widget alpha when list is disabled"))
+   (default_color
+      object
+      (class UIColor)
+      (help
+         "color applied if no state specific color is set ")))
+#define UI_LIST_WIDGET_SLOT_COLORS
+((active_normal_color
+      object
+      (class UIColor)
+      (help
+         "color when element is active and list is normal"))
+   (active_focused_color
+      object
+      (class UIColor)
+      (help
+         "color when element is active and list is focused"))
+   (active_disabled_color
+      object
+      (class UIColor)
+      (help
+         "color when element is active and list is disabled"))
+   (active_selecting_color
+      object
+      (class UIColor)
+      (help
+         "color when element is active and list is selecting"))
+   (active_selected_color
+      object
+      (class UIColor)
+      (help
+         "color when element is active and list is selected")))
+#define UI_LIST_WIDGET_CORE_COLORS
+((highlight_normal_color
+      object
+      (class UIColor)
+      (help
+         "color when element is highlighted and list is normal"))
+   (highlight_focused_color
+      object
+      (class UIColor)
+      (help
+         "color when element is highlighted and list is focused"))
+   (highlight_disabled_color
+      object
+      (class UIColor)
+      (help
+         "color when element is highlighted and list is disabled"))
+   (highlight_selecting_color
+      object
+      (class UIColor)
+      (help
+         "color when element is highlighted and list is selecting"))
+   (highlight_selected_color
+      object
+      (class UIColor)
+      (help
+         "color when element is highlighted and list is selected"))
+   (inactive_normal_color
+      object
+      (class UIColor)
+      (help
+         "color when element is inactive and list is normal"))
+   (inactive_focused_color
+      object
+      (class UIColor)
+      (help
+         "color when element is inactive and list is focused"))
+   (inactive_disabled_color
+      object
+      (class UIColor)
+      (help
+         "color when element is inactive and list is disabled"))
+   (inactive_selecting_color
+      object
+      (class UIColor)
+      (help
+         "color when element is inactive and list is selecting"))
+   (inactive_selected_color
+      object
+      (class UIColor)
+      (help
+         "color when element is inactive and list is selected")))
+(UIListWidget
+   (description
+      "Base functionality for UIList widgets")
+   (allowed_dirs)
+   (types)
+   (editor UI_LIST_WIDGET_EDITOR UI_LIST_WIDGET_SLOT_COLORS UI_LIST_WIDGET_CORE_COLORS))
+#define LIST_SLOT_DRAW_TYPE
+("kUIListSlotDrawAlways"
+   "kUIListSlotDrawHighlight"
+   "kUIListSlotDrawNoHighlight")
+#define UI_LIST_SLOT_EDITOR
+((slot_draw_type
+      int
+      (list
+         (LIST_SLOT_DRAW_TYPE))
+      (help
+         "when to draw the slot"))
+   UI_LIST_WIDGET_EDITOR
+   UI_LIST_WIDGET_SLOT_COLORS
+   UI_LIST_WIDGET_CORE_COLORS)
+(UIListSlot
+   (description
+      "Base functionality for UIList slots")
+   (allowed_dirs)
+   (types)
+   (editor UI_LIST_SLOT_EDITOR))
+#define LIST_ARROW_POSITION
+("kUIListArrowBack"
+   "kUIListArrowNext")
+(UIListArrow
+   (description
+      "Arrow widget for use with UIList")
+   (ext arw)
+   (allowed_dirs UIListDir)
+   (superclasses)
+   (types)
+   (editor
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "arrow mesh to draw/transform"))
+      (scroll_anim
+         object
+         (class Anim)
+         (help
+            "animation to play on scroll"))
+      (position
+         int
+         (list
+            (LIST_ARROW_POSITION))
+         (help
+            "whether to position relative to first or last element"))
+      (show_only_scroll
+         bool
+         (help
+            "show only when list is scrollable"))
+      (on_highlight
+         bool
+         (help
+            "position arrow relative to higlight"))
+      UI_LIST_WIDGET_EDITOR
+      UI_LIST_WIDGET_CORE_COLORS))
+(UIListHighlight
+   (description
+      "Highlight widget for use with UIList")
+   (ext arw)
+   (allowed_dirs UIListDir)
+   (superclasses)
+   (types)
+   (editor
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "arrow mesh to draw/transform"))
+      UI_LIST_WIDGET_EDITOR
+      UI_LIST_WIDGET_CORE_COLORS))
+(UIListCustom
+   (description
+      "Custom slot for use with UIList")
+   (allowed_dirs UIListDir UILabelDir)
+   (superclasses)
+   (types)
+   (editor
+      (object
+         object
+         (class Object)
+         (help
+            "custom object to draw/transform")
+         (no_test))
+      UI_LIST_SLOT_EDITOR))
+(UIListLabel
+   (description
+      "Custom slot for use with UIList")
+   (allowed_dirs UIListDir UILabelDir)
+   (superclasses)
+   (types)
+   (editor
+      (label
+         object
+         (class UILabel)
+         (help
+            "label to draw/transform"))
+      UI_LIST_SLOT_EDITOR))
+(UIListMesh
+   (description
+      "Custom slot for use with UIList")
+   (allowed_dirs UIListDir UILabelDir)
+   (superclasses)
+   (types)
+   (editor
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "mesh to draw/transform"))
+      (default_mat
+         object
+         (class Mat)
+         (help
+            "default material"))
+      UI_LIST_SLOT_EDITOR))
+(UIListSubList
+   (description
+      "Custom slot for use with UIList")
+   (allowed_dirs UIListDir)
+   (superclasses)
+   (types)
+   (editor
+      (list
+         object
+         (class UIList)
+         (help
+            "sub list template"))
+      UI_LIST_SLOT_EDITOR))
+(UIColor
+   (description
+      "Just a color, used by UI components")
+   (ext color)
+   (types)
+   (editor
+      (color
+         color
+         (help
+            "color")
+         (post_sync
+            {milo update_objects}))))
+(UIPicture
+   (description
+      "A picture object with asynchronously loading texture")
+   (superclasses UIComponent)
+   (allowed_dirs RndDir)
+   (ext pic)
+   (types
+      (default
+         (tex_file
+            "image/ui_picture_keep.png")))
+   (editor
+      (tex_file
+         file
+         (help
+            "Path of texture to load"))
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "Mesh to show loaded tex on (should have Mat)"))
+      (in_anim
+         object
+         (class Anim)
+         (help
+            "animation kicked off before texture change"))
+      (out_anim
+         object
+         (class Anim)
+         (help
+            "animation kicked off after texture change"))))
+(UIProxy
+   (description
+      "A UIProxy object allows artists to position dynamically\n        loaded resources (e.g. a character) in Milo. The app will then load\n        the appropriate resources into it.")
+   (superclasses UIComponent)
+   (allowed_dirs PanelDir)
+   (init
+      {$this set_type default})
+   (editor
+      (environ
+         object
+         (class Environ)
+         (help
+            "environment to use on it")))
+   (types
+      (default
+         (file
+            "proxy.milo"))))
+(UISlider
+   (description
+      "A component with animatable whose frames correspond to a\n        range of values. The resources don't have to look like a slider;\n        they could easily be a knob, dial, etc.")
+   (superclasses UIComponent)
+   (ext sld)
+   (init
+      {$this set_type default})
+   (types
+      (default
+         (resource_file
+            "slider.milo")
+         (vertical FALSE)
+         (meshes
+            ("slider.mesh"
+               (normal
+                  "normal.mat")
+               (focused
+                  "focused.mat")
+               (disabled
+                  "disabled.mat")
+               (selected
+                  "selected.mat")))))
+   (editor
+      (select_to_scroll
+         bool
+         (help
+            "Does slider need to be selected before user can scroll?"))))
+(UITrigger
+   (description
+      "Triggers anims based on UI events (enter, exit, etc.)")
+   (superclasses EventTrigger)
+   (allowed_dirs PanelDir)
+   (ext trg)
+   (types)
+   (editor
+      (block_transition
+         bool
+         (help
+            "Block enter/exit transition during animation?"))
+      (test_trigger
+         script
+         (script
+            {$this trigger})
+         (label
+            "trigger")
+         (help
+            "Trigger the anim")))
+   (supported_events
+      (ui_enter ui_enter_forward ui_enter_back ui_exit ui_exit_forward ui_exit_back transition_complete)))
+(Screenshot
+   (description
+      "Object to draw a screensot in Milo, to help with positioning.\n      The screenshot will not be drawn or even loaded in-game.")
+   (superclasses Draw)
+   (ext ss)
+   (types)
+   (editor
+      (tex_path
+         file
+         (help
+            "File containing the screenshot to display.  This file will only be loaded in Milo, not in game."))))
+(UIGuide
+   (description
+      "a guide used to line up UI elements")
+   (ext guide)
+   (types)
+   (editor
+      (type
+         int
+         (list UIGUIDE_ENUM)
+         (help
+            "Horizontal or vertical guide?"))
+      (pos
+         float
+         (help
+            "position in proportion to screen width (if vertical) or height (if horizontal)")
+         (range 0 1))))
+(LabelShrinkWrapper
+   (description
+      "a mesh shrink wrapped to selected label")
+   (ext lsw)
+   (allowed_dirs PanelDir)
+   (init
+      {$this set_type default})
+   (types
+      (default
+         (resource_file
+            "label_shrink_wrapper.milo")
+         (topleft_bone
+            "bone_top_left.mesh")
+         (topright_bone
+            "bone_top_right.mesh")
+         (bottomleft_bone
+            "bone_bottom_left.mesh")
+         (bottomright_bone
+            "bone_bottom_right.mesh")))
+   (editor
+      (label
+         object
+         (class UILabel)
+         (help
+            "label to be shrink wrapped"))
+      (show
+         bool
+         (help
+            "Should this be shown?"))))
+(LabelNumberTicker
+   (description
+      "a ticker to control counting up or down for a given number based label")
+   (ext lnt)
+   (allowed_dirs PanelDir)
+   (types)
+   (editor
+      (label
+         object
+         (class UILabel)
+         (help
+            "label to be shrink wrapped"))
+      (wrapper_text
+         symbol
+         (help
+            "Localization token to use for wrapper (must include %s)"))
+      (desired_value
+         int
+         (help
+            "desired value"))
+      (anim_time
+         float
+         (help
+            "Time taken for number ticking animation"))
+      (anim_delay
+         float
+         (help
+            "delay before number ticking animation"))
+      (acceleration
+         float
+         (help
+            "Higher number accelerates faster, 3 is a good number."))
+      (count_up
+         script
+         (script
+            {$this count_up}))
+      (tick_trigger
+         object
+         (class EventTrigger)
+         (help
+            "Event to trigger while counting up"))
+      (tick_every
+         int
+         (help
+            "Trigger tick_trigger every time the count goes up by this much"))))

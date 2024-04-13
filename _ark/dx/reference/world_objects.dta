@@ -1,0 +1,4511 @@
+#include ../config/macros.dta
+#include crowd_audio.dta
+#define SONG_LIGHTING_CATEGORIES
+(intro verse chorus blackout_fast blackout_slow blackout_spot dischord flare_fast flare_slow frenzy harmony manual_cool manual_warm searchlights silhouettes silhouettes_spot stomp strobe_fast strobe_slow sweep loop_cool loop_warm bre)
+#define LIGHTING_CATEGORIES
+(intro_venue intro_quick win lose versechorus freeze win_bre SONG_LIGHTING_CATEGORIES)
+#define CAMSHOT_CATEGORIES
+((#include camera_cats.dta))
+#include worldbase.dta
+(Tex
+   (types
+      (sticker
+         (editor
+            (sizex
+               float
+               (help
+                  "scaling in x"))
+            (sizey
+               float
+               (help
+                  "scaling in y"))
+            (display_name
+               symbol
+               (help
+                  "display name"))
+            (palette_index
+               int
+               (help
+                  "default palette index in the colors list for this sticker"))
+            (allow_color
+               bool
+               (help
+                  "can the user apply color to this image?")))
+         (sizex 1)
+         (sizey 1)
+         (display_name '')
+         (palette_index 0)
+         (allow_color TRUE))))
+(TexRenderer
+   (types
+      (portrait
+         (editor
+            (old_dir
+               object
+               (class RndDir)
+               (help
+                  "the old object dir, to restore")
+               (read_only TRUE))
+            (slot
+               int
+               (help
+                  "the old character slot")
+               (read_only TRUE)))
+         (old_dir '')
+         (slot 0)
+         (pre_render
+            {set
+               [slot]
+               {if_else
+                  {exists closet_mgr}
+                  {closet_mgr get_user_slot}
+                  0}}
+            {set
+               [old_dir]
+               {$bandwardrobe get dir}}
+            {{$bandwardrobe
+                  get_character
+                  [slot]}
+               portrait_begin}
+            {[draw]
+               enter}
+            {[draw]
+               force_shot
+               {[draw]
+                  find
+                  portrait.shot}}
+            {[draw]
+               poll})
+         (post_render
+            {[draw]
+               enter}
+            {{$bandwardrobe
+                  get_character
+                  [slot]}
+               portrait_end}
+            {$bandwardrobe
+               set
+               dir
+               [old_dir]}))))
+(CamShot
+   (allowed_dirs PanelDir)
+   (init
+      {$this set category NORMAL})
+   (editor
+      (category
+         symbol
+         (list CAMSHOT_CATEGORIES)
+         (help
+            "Category of the shot"))))
+(EventTrigger
+   (supported_events
+      (start p0_hit p1_hit p2_hit p3_hit cam_cut excitement_boot excitement_bad excitement_okay excitement_great excitement_peak intro_start intro_end kick_drum snare_drum crash_hit post_switch_cam music_start game_lost game_won game_won_finale bre_success bonusfx spotlight_bass_on spotlight_bass_off spotlight_drums_on spotlight_drums_off spotlight_guitar_on spotlight_guitar_off spotlight_keyboard_on spotlight_keyboard_off spotlight_vocal_on spotlight_vocal_off lighting_intro lighting_win lighting_lose lighting_verse lighting_chorus lighting_blackout_fast lighting_blackout_slow lighting_blackout_spot lighting_dischord lighting_flare_fast lighting_flare_slow lighting_frenzy lighting_harmony lighting_manual_cool lighting_manual_warm lighting_searchlights lighting_silhouettes lighting_stomp lighting_strobe_fast lighting_strobe_slow lighting_sweep lighting_loop_cool lighting_loop_warm lighting_win_bre lighting_bre vignette_start vignette_end vignette_seq_start vignette_seq_end))
+   (types
+      (toggler
+         (editor
+            (disable
+               object
+               (class EventTrigger)
+               (help
+                  "disable this event trigger when I'm triggered"))
+            (enable
+               object
+               (class EventTrigger)
+               (help
+                  "enable this event trigger when I'm triggered")))
+         (disable '')
+         (enable '')
+         (reset)
+         (trigger
+            {if
+               [disable]
+               {script_task
+                  kTaskBeats
+                  (delay 1.0e-2)
+                  (script
+                     {[disable]
+                        disable})}}
+            {if
+               [enable]
+               {script_task
+                  kTaskBeats
+                  (delay 1.0e-2)
+                  (script
+                     {[enable]
+                        enable})}}))
+      (endgame_action
+         (supported_events
+            (endgame_swing_drum_0 endgame_swing_drum_1 endgame_swing_drum_2 endgame_swing_drum_3 endgame_swing_drum_4 endgame_swing_bass_0 endgame_swing_bass_1 endgame_swing_bass_2 endgame_swing_bass_3 endgame_swing_bass_4 endgame_swing_guitar_0 endgame_swing_guitar_1 endgame_swing_guitar_2 endgame_swing_guitar_3 endgame_swing_guitar_4 endgame_vocals_none endgame_vocals_low endgame_vocals_medium endgame_vocals_high)))
+      (backlight
+         (editor
+            (tex1
+               object
+               (class Tex)
+               (help
+                  "texture for first moving layer"))
+            (tex2
+               object
+               (class Tex)
+               (help
+                  "texture for second moving layer"))
+            (part_tex1
+               object
+               (class Tex)
+               (help
+                  "texture for first particle system"))
+            (part_tex2
+               object
+               (class Tex)
+               (help
+                  "texture for second particle system")))
+         (tex1 '')
+         (tex2 '')
+         (part_tex1 '')
+         (part_tex2 '')
+         (reset)
+         (trigger
+            {if
+               {exists mat02.mat}
+               {mat02.mat
+                  set
+                  diffuse_tex
+                  [tex1]}}
+            {if
+               {exists mat03.mat}
+               {mat03.mat
+                  set
+                  diffuse_tex
+                  [tex2]}}
+            {if
+               {exists part_mat02.mat}
+               {part_mat02.mat
+                  set
+                  diffuse_tex
+                  [part_tex1]}}
+            {if
+               {exists part_mat03.mat}
+               {part_mat03.mat
+                  set
+                  diffuse_tex
+                  [part_tex2]}}))
+      (hair_hider
+         (target_proxy '')
+         (editor
+            (target_proxy
+               object
+               (class TransProxy)
+               (help
+                  "Points to a transproxy pointing at the character")))
+         (trigger
+            {if
+               {&&
+                  [target_proxy]
+                  {[target_proxy]
+                     get
+                     proxy}}
+               {{[target_proxy]
+                     get
+                     proxy}
+                  hide_categories
+                  hair
+                  head
+                  earrings
+                  piercings
+                  eyebrows
+                  glasses}})
+         (reset
+            {if
+               {&&
+                  [target_proxy]
+                  {[target_proxy]
+                     get
+                     proxy}}
+               {{[target_proxy]
+                     get
+                     proxy}
+                  restore_categories}}))))
+(LightPreset
+   (init
+      {$this set category verse})
+   (editor
+      (category
+         symbol
+         (list
+            (LIGHTING_CATEGORIES))
+         (help
+            "Category of the preset")))
+   (views
+      (flags
+         ("category"
+            [category])
+         ("looping"
+            [looping])
+         ("manual"
+            [manual])
+         ("platform_only"
+            [platform_only])))
+   (types
+      (target_animator
+         (editor
+            (backlight
+               object
+               (class RndDir)
+               (help
+                  "backlight object to animate"))
+            (backlight_event
+               symbol
+               (list
+                  {do
+                     ($array
+                        {array
+                           (none)})
+                     {if
+                        [backlight]
+                        {[backlight]
+                           iterate
+                           EventTrigger
+                           $obj
+                           {push_back
+                              $array
+                              {symbol
+                                 {$obj name}}}}}
+                     {sort $array}
+                     $array})
+               (help
+                  "event trigger to fire for this keyframe"))
+            (target_1
+               (indent
+                  (target1
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base1_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base1_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base1_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base1_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add1_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add1_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add1_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add1_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (target_2
+               (indent
+                  (target2
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base2_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base2_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base2_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base2_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add2_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add2_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add2_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add2_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (target_3
+               (indent
+                  (target3
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base3_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base3_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base3_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base3_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add3_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add3_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add3_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add3_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (target_4
+               (indent
+                  (target4
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base4_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base4_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base4_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base4_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add4_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add4_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add4_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add4_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (target_5
+               (indent
+                  (target5
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base5_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base5_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base5_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base5_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add5_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add5_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add5_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add5_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (target_6
+               (indent
+                  (target6
+                     object
+                     (class Character)
+                     (help
+                        "target object to animate"))
+                  (base6_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (base6_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (base6_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (base6_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))
+                  (add6_anim
+                     symbol
+                     (list
+                        {$this get_clip_names}))
+                  (add6_amplitude
+                     float
+                     (range 0 1)
+                     (help
+                        "physical scale of animation loop"))
+                  (add6_speed
+                     float
+                     (help
+                        "speed multiplier"))
+                  (add6_phase
+                     float
+                     (range 0 1)
+                     (help
+                        "0 to 1, 0.5 would start the loop half way through"))))
+            (test
+               script
+               (script
+                  {$this start_anim})))
+         (backlight
+            {object ''})
+         (backlight_event none)
+         (target1
+            {object ''})
+         (base1_anim still)
+         (base1_amplitude 1)
+         (base1_speed 1)
+         (base1_phase 0)
+         (add1_anim still)
+         (add1_amplitude 1)
+         (add1_speed 1)
+         (add1_phase 0)
+         (target2
+            {object ''})
+         (base2_anim still)
+         (base2_amplitude 1)
+         (base2_speed 1)
+         (base2_phase 0)
+         (add2_anim still)
+         (add2_amplitude 1)
+         (add2_speed 1)
+         (add2_phase 0)
+         (target3
+            {object ''})
+         (base3_anim still)
+         (base3_amplitude 1)
+         (base3_speed 1)
+         (base3_phase 0)
+         (add3_anim still)
+         (add3_amplitude 1)
+         (add3_speed 1)
+         (add3_phase 0)
+         (target4
+            {object ''})
+         (base4_anim still)
+         (base4_amplitude 1)
+         (base4_speed 1)
+         (base4_phase 0)
+         (add4_anim still)
+         (add4_amplitude 1)
+         (add4_speed 1)
+         (add4_phase 0)
+         (target5
+            {object ''})
+         (base5_anim still)
+         (base5_amplitude 1)
+         (base5_speed 1)
+         (base5_phase 0)
+         (add5_anim still)
+         (add5_amplitude 1)
+         (add5_speed 1)
+         (add5_phase 0)
+         (target6
+            {object ''})
+         (base6_anim still)
+         (base6_amplitude 1)
+         (base6_speed 1)
+         (base6_phase 0)
+         (add6_anim still)
+         (add6_amplitude 1)
+         (add6_speed 1)
+         (add6_phase 0)
+         (get_clip_names
+            {if_else
+               [target1]
+               {[target1]
+                  get_clip_names}
+               (still)})
+         (enter
+            {if
+               [backlight]
+               {if
+                  {!=
+                     [backlight_event]
+                     none}
+                  {unless
+                     {[backlight]
+                        exists
+                        [backlight_event]}
+                     {set
+                        [backlight_event]
+                        none}
+                     {notify
+                        "invalid backlight event on "
+                        {$this name}
+                        ", clearing!"}}}})
+         (start_anim
+            {if
+               {&&
+                  [backlight]
+                  {!=
+                     [backlight_event]
+                     none}}
+               {[backlight]
+                  trigger
+                  [backlight_event]}}
+            {if
+               [target1]
+               {[target1]
+                  play_anim
+                  [base1_anim]
+                  [base1_amplitude]
+                  [base1_speed]
+                  [base1_phase]
+                  [add1_anim]
+                  [add1_amplitude]
+                  [add1_speed]
+                  [add1_phase]}}
+            {if
+               [target2]
+               {[target2]
+                  play_anim
+                  [base2_anim]
+                  [base2_amplitude]
+                  [base2_speed]
+                  [base2_phase]
+                  [add2_anim]
+                  [add2_amplitude]
+                  [add2_speed]
+                  [add2_phase]}}
+            {if
+               [target3]
+               {[target3]
+                  play_anim
+                  [base3_anim]
+                  [base3_amplitude]
+                  [base3_speed]
+                  [base3_phase]
+                  [add3_anim]
+                  [add3_amplitude]
+                  [add3_speed]
+                  [add3_phase]}}
+            {if
+               [target4]
+               {[target4]
+                  play_anim
+                  [base4_anim]
+                  [base4_amplitude]
+                  [base4_speed]
+                  [base4_phase]
+                  [add4_anim]
+                  [add4_amplitude]
+                  [add4_speed]
+                  [add4_phase]}}
+            {if
+               [target5]
+               {[target5]
+                  play_anim
+                  [base5_anim]
+                  [base5_amplitude]
+                  [base5_speed]
+                  [base5_phase]
+                  [add5_anim]
+                  [add5_amplitude]
+                  [add5_speed]
+                  [add5_phase]}}
+            {if
+               [target6]
+               {[target6]
+                  play_anim
+                  [base6_anim]
+                  [base6_amplitude]
+                  [base6_speed]
+                  [base6_phase]
+                  [add6_anim]
+                  [add6_amplitude]
+                  [add6_speed]
+                  [add6_phase]}})
+         (on_set_frame
+            {if
+               [backlight]
+               {if
+                  {exists backlight_color1.env}
+                  {[backlight]
+                     set
+                     color1
+                     {backlight_color1.env get ambient_color}}}
+               {if
+                  {exists backlight_color2.env}
+                  {[backlight]
+                     set
+                     color2
+                     {backlight_color2.env get ambient_color}}}
+               {if
+                  {exists backlight_color3.env}
+                  {[backlight]
+                     set
+                     color3
+                     {backlight_color3.env get ambient_color}}}
+               {[backlight]
+                  update}}))))
+(Object
+   (types
+      (vignette_hints
+         (player0_hint '')
+         (player1_hint '')
+         (player2_hint '')
+         (player3_hint '')
+         (no_cleanup TRUE)
+         (editor
+            (player0_hint
+               symbol
+               (list VIGNETTE_HINT_LIST)
+               (help
+                  "player0 hint, if player0 taps the mic, you set it to 'mic' to make player0 be the human (or ai) on mic.  importance1 is most important, and will get the human, in decreasing order to importance4, who will be the ai, if any"))
+            (player1_hint
+               symbol
+               (list VIGNETTE_HINT_LIST)
+               (help
+                  "player1 hint, if player1 taps the mic, you set it to 'mic' to make player1 be the human (or ai) on mic.  importance1 is most important, and will get the human, in decreasing order to importance4, who will be the ai, if any"))
+            (player2_hint
+               symbol
+               (list VIGNETTE_HINT_LIST)
+               (help
+                  "player2 hint, if player2 taps the mic, you set it to 'mic' to make player2 be the human (or ai) on mic.  importance1 is most important, and will get the human, in decreasing order to importance4, who will be the ai, if any"))
+            (player3_hint
+               symbol
+               (list VIGNETTE_HINT_LIST)
+               (help
+                  "player3 hint, if player3 taps the mic, you set it to 'mic' to make player3 be the human (or ai) on mic.  importance1 is most important, and will get the human, in decreasing order to importance4, who will be the ai, if any"))))))
+(ObjectDir
+   (types
+      (song
+         #ifdef HX_PC
+         #else
+         (change_subdir
+            ($file)
+            {if_else
+               {has_substr
+                  $file
+                  ":"}
+               {cond
+                  ({has_substr
+                        $file
+                        "/world/shared/director.milo"}
+                     "world/shared/director.milo")
+                  "stream_cache"}
+               kDataUnhandled})
+         #endif)))
+(RndDir
+   (types
+      (chars
+         VENUE_SETUP_CHARACTERS
+         (enter VENUE_SETUP_CHARACTERS_ENTER))
+      (lighting
+         VENUE_SETUP_CHARACTERS
+         (enter VENUE_SETUP_CHARACTERS_ENTER))
+      (band_name_label
+         (enter
+            {if
+               {exists game}
+               {$this
+                  iterate
+                  BandLabel
+                  $lbl
+                  {if
+                     {has_substr
+                        {$lbl name}
+                        "bandname"}
+                     {if
+                        {&&
+                           {exists tour}
+                           {tour band}}
+                        {$lbl
+                           set_localized
+                           {gamemode get band_name}}}}}
+               {if
+                  {&&
+                     {exists tour}
+                     {tour band}}
+                  {set
+                     $logopatch
+                     {gamemode get band_logo}}
+                  {unless
+                     $logopatch
+                     {if
+                        {&&
+                           {exists bandlogo_default.tex}
+                           {exists bandlogo_target.tex}}
+                        {bandlogo_target.tex
+                           iterate_refs
+                           $ref
+                           {$ref set diffuse_tex bandlogo_default.tex}}}}}}))
+      (color_passthrough
+         (editor
+            (color1 color)
+            (color2 color)
+            (color3 color)
+            (update
+               script
+               (script
+                  {$this update})))
+         (color1
+            {pack_color 1 1 1}
+            proxy_save)
+         (color2
+            {pack_color 1 1 1}
+            proxy_save)
+         (color3
+            {pack_color 1 1 1}
+            proxy_save)
+         (enter
+            {$this update})
+         (update
+            {if
+               {exists mat01.mat}
+               {mat01.mat
+                  set
+                  color
+                  [color1]}}
+            {if
+               {exists mat02.mat}
+               {mat02.mat
+                  set
+                  color
+                  [color2]}}
+            {if
+               {exists mat03.mat}
+               {mat03.mat
+                  set
+                  color
+                  [color3]}}
+            {if
+               {exists part_mat02.mat}
+               {part_mat02.mat
+                  set
+                  color
+                  [color2]}}
+            {if
+               {exists part_mat03.mat}
+               {part_mat03.mat
+                  set
+                  color
+                  [color3]}})
+         (trigger
+            ($event)
+            {handle
+               ($event trigger)}))))
+(Fur
+   (init
+      {do
+         ($ww
+            {find_obj
+               {$this dir}
+               world.wind})
+         {if
+            $ww
+            {set
+               [wind]
+               $ww}}}))
+(WorldCrowd
+   (init
+      {$this set_type band})
+   (types
+      (band
+         #include crowd.dta)))
+#define SIMULATE_BUTTONS
+((simulate
+      script
+      (script
+         {set $world_simulate 1}
+         {set $world_simulate_loop 0}
+         {$this enter})
+      (help
+         "simulate the world or not, remember to set Milo camera view to world.cam to see it properly"))
+   (unsimulate
+      script
+      (script
+         {set $world_simulate 0}
+         {set $world_simulate_loop 0}
+         {$this enter})
+      (help
+         "simulate the world or not")))
+#define VIGNETTE_ON_MILO_LOADED
+((on_milo_loaded
+      {milo
+         edit
+         $this
+         "Object Type"}
+      {set $world_simulate 0}
+      {milo
+         tool_script_string
+         "{set $world_simulate 0}"}
+      {set $world_simulate_loop 0}
+      {milo
+         tool_script_string
+         "{set $world_simulate_loop 0}"}))
+#define CREATE_VIGNETTE_TRIGGERS
+((create_triggers
+      script
+      (script
+         {unless
+            {exists
+               "vignette_start.trig"}
+            {set
+               $startTrig
+               {new EventTrigger}}
+            {$startTrig
+               set_name
+               "vignette_start.trig"
+               $this}
+            {$startTrig
+               insert
+               (trigger_events 0)
+               vignette_start}}
+         {unless
+            {exists
+               "vignette_end.trig"}
+            {set
+               $startTrig
+               {new EventTrigger}}
+            {$startTrig
+               set_name
+               "vignette_end.trig"
+               $this}
+            {$startTrig
+               insert
+               (trigger_events 0)
+               vignette_end}
+            {$startTrig
+               insert
+               (triggers_to_reset 0)
+               vignette_start.trig}}
+         {milo invalidate_listers_and_trees}
+         {milo update_objects})
+      (help
+         "This button creates start and end triggers for this vignette")))
+#define CREATE_VIGNETTE_SEQ_TRIGGERS
+((create_triggers
+      script
+      (script
+         {unless
+            {exists
+               "vignette_start.trig"}
+            {set
+               $startTrig
+               {new EventTrigger}}
+            {$startTrig
+               set_name
+               "vignette_start.trig"
+               $this}
+            {$startTrig
+               insert
+               (trigger_events 0)
+               vignette_seq_start}}
+         {unless
+            {exists
+               "vignette_end.trig"}
+            {set
+               $startTrig
+               {new EventTrigger}}
+            {$startTrig
+               set_name
+               "vignette_end.trig"
+               $this}
+            {$startTrig
+               insert
+               (trigger_events 0)
+               vignette_seq_end}
+            {$startTrig
+               insert
+               (triggers_to_reset 0)
+               vignette_start.trig}}
+         {milo invalidate_listers_and_trees}
+         {milo update_objects})
+      (help
+         "This button creates start and end triggers for this vignette")))
+#define SET_VIGNETTE_TARGET_DEFAULTS
+({$shot
+      set
+      (targets 0 to pitch)
+      0.0}
+   {$shot
+      set
+      (targets 0 to roll)
+      0.0}
+   {$shot
+      set
+      (targets 0 to yaw)
+      0.0}
+   {$shot
+      set
+      (targets 0 to x_scale)
+      1.0}
+   {$shot
+      set
+      (targets 0 to y_scale)
+      1.0}
+   {$shot
+      set
+      (targets 0 to z_scale)
+      1.0}
+   {$shot
+      set
+      (targets 0 to x)
+      0.0}
+   {$shot
+      set
+      (targets 0 to y)
+      0.0}
+   {$shot
+      set
+      (targets 0 to z)
+      0.0}
+   {$shot
+      set
+      (targets 0 teleport)
+      TRUE})
+#define WORLD_DIR_BANDLOGO_EDITOR
+((band_logo_mats
+      (array
+         object
+         (class Mat))
+      (help
+         "materials to dynamically apply the band logo to"))
+   (band_name_labels
+      (array
+         object
+         (class UILabel))
+      (help
+         "labels to dynamically apply the band name to")))
+#define WORLD_DIR_BANDLOGO_HOOKUP_SCRIPT
+((hookup_bandlogo
+      {if
+         {&&
+            {exists game}
+            {profile_mgr get_primary_profile}}
+         {set
+            $theLogoTex
+            {{profile_mgr get_primary_profile}
+               get_band_logo_tex}}
+         {if
+            $theLogoTex
+            {foreach_int
+               $i
+               0
+               {$this
+                  size
+                  (band_logo_mats)}
+               {set
+                  $logoMat
+                  {$this
+                     get
+                     (band_logo_mats $i)}}
+               {if
+                  $logoMat
+                  {$logoMat set diffuse_tex $theLogoTex}}}}})
+   (hookup_bandname
+      {if
+         {&&
+            {exists game}
+            {profile_mgr has_primary_profile}}
+         {do
+            ($primaryProfile
+               {profile_mgr get_primary_profile})
+            ($primaryProfileUser
+               {$primaryProfile get_associated_user})
+            {foreach_int
+               $i
+               0
+               {$this
+                  size
+                  (band_name_labels)}
+               {set
+                  $bandNameLabel
+                  {$this
+                     get
+                     (band_name_labels $i)}}
+               {if
+                  $bandNameLabel
+                  {$bandNameLabel set_band_name $primaryProfileUser}}}}}))
+#define SHELL_WORLD_DIR_EDITOR
+((postprocess
+      object
+      (class PostProc)
+      (help
+         "Post process object to use when this panel is on screen")
+      (post_sync
+         {$this update_postproc}))
+   (refresh_postproc
+      script
+      (script
+         {$this update_postproc})
+      (help
+         "Refresh postprocessor selection on the tool")))
+#define SHELL_WORLD_DIR
+((postprocess '')
+   (update_postproc
+      {if
+         $edit_mode
+         {if_else
+            [postprocess]
+            {[postprocess]
+               select}
+            {rnd reset_postproc}}}))
+(WorldDir
+   (types
+      (world
+         (venue arena_01)
+         (song '')
+         (editor
+            (venue
+               symbol
+               (list
+                  {file_list
+                     "world/venue/*/*/*.milo"
+                     TRUE
+                     $path
+                     {do
+                        ($v
+                           {file_get_base $path})
+                        {has_substr
+                           $path
+                           {sprint
+                              $v
+                              "/"
+                              $v
+                              ".milo"}}}})
+               (help
+                  "Venue to load, set before hitting load_song"))
+            (song
+               symbol
+               (list
+                  {if_else
+                     {exists fake_songmgr}
+                     {fake_songmgr get_song_list}
+                     ('')})
+               (inline_script
+                  "load"
+                  (script
+                     {$this load_and_play_song}
+                     {if
+                        {exists song.anim}
+                        {milo
+                           edit
+                           song.anim
+                           "PropAnim Keys"}}
+                     {if
+                        $bandwardrobe
+                        {$bandwardrobe set shot_set_play_mode FALSE}}))
+               (help
+                  "choose a song to preview"))
+            (edit_song_anim
+               script
+               (script
+                  {if_else
+                     {exists song.anim}
+                     {milo
+                        edit
+                        song.anim
+                        "PropAnim Keys"}
+                     {notify
+                        "Could not edit song.anim, no song loaded"}})
+               (help
+                  "Pop open the song.anim editor"))
+            (change_play_mode
+               script
+               (script
+                  {if_else
+                     $bandwardrobe
+                     {milo edit $bandwardrobe BandWardrobe}
+                     {notify
+                        "Can not change play_mode, no song loaded"}})
+               (help
+                  "Change the play_mode by editing bandwardrobe"))
+            (reload_dircuts
+               script
+               (script
+                  {if_else
+                     $bandwardrobe
+                     {$bandwardrobe
+                        set
+                        play_mode
+                        {$bandwardrobe get play_mode}}
+                     {notify
+                        "Could not edit bandwardobe, no venue loaded"}})
+               (help
+                  "Reloads all the directed cuts so you can preview them properly"))
+            (save_song
+               script
+               (script
+                  {$banddirector save_song})
+               (help
+                  "Save the song authoring back into its song file!"))
+            (copy_to_bg
+               script
+               (script
+                  {if_else
+                     $banddirector
+                     {$banddirector copy_cats coop_bg}
+                     {notify
+                        "Can not copy to bg, no song loaded"}})
+               (help
+                  "Copies shot_5 track to shot_bg track, remapping invalid shot categories"))
+            (copy_to_bk
+               script
+               (script
+                  {if_else
+                     $banddirector
+                     {$banddirector copy_cats coop_bk}
+                     {notify
+                        "Can not copy to bg, no song loaded"}})
+               (help
+                  "Copies shot_5 track to shot_bk track, remapping invalid shot categories"))
+            (copy_to_gk
+               script
+               (script
+                  {if_else
+                     $banddirector
+                     {$banddirector copy_cats coop_gk}
+                     {notify
+                        "Can not copy to bg, no song loaded"}})
+               (help
+                  "Copies shot_5 track to shot_gk track, remapping invalid shot categories"))
+            (toggle_camera_overlay
+               script
+               (script
+                  {rnd toggle_overlay camera})
+               (help
+                  "toggle the camera overlay, just like in game")))
+         (load_and_play_song
+            {$banddirector
+               load_venue
+               [venue]}
+            {$banddirector
+               load_song
+               {fake_songmgr
+                  get_path
+                  [song]
+                  ".milo"}
+               {fake_songmgr
+                  get_data
+                  [song]
+                  genre}
+               {fake_songmgr
+                  get_data
+                  [song]
+                  anim_tempo}
+               {fake_songmgr
+                  get_data
+                  [song]
+                  vocal_gender}
+               TRUE}
+            {do
+               ($song_obj
+                  {milo song_object})
+               {if
+                  $song_obj
+                  {$song_obj
+                     set
+                     song
+                     [song]}
+                  {milo
+                     set
+                     anim
+                     {milo song_object}}}}
+            {{{$banddirector get merger}
+                  dir}
+               enter})
+         (on_milo_loaded
+            {milo
+               edit
+               $this
+               "Object Type"})
+         (coda_success
+            {handle
+               ($this bre_success)})
+         (enter
+            {stagekit_reset}
+            {set $stagekit TRUE}
+            {if
+               {exists game}
+               {game
+                  add_sink
+                  $world
+                  ()
+                  kSinkModeExportType}}
+            {if
+               $banddirector
+               {if
+                  $edit_mode
+                  {$banddirector set world_event start}}
+               {$banddirector set world_event start}})
+         (exit
+            {stagekit_reset}
+            {set $stagekit FALSE}
+            {if
+               {exists game}
+               {game remove_sink $this}})
+         (intro_start kDataUnhandled)
+         (intro_end kDataUnhandled)
+         (intro_skip
+            {handle
+               (game intro_end)}
+            kDataUnhandled)
+         ':'
+         The
+         game
+         is
+         'over,'
+         ignore
+         parsers.
+         (game_over
+            {$this delete_free_cam}
+            kDataUnhandled)
+         (autosave FALSE)
+         (select_camera
+            {if
+               $banddirector
+               {handle
+                  ($banddirector select_camera)}})
+         (sync_objects
+            {if
+               {exists session_mgr}
+               {$this
+                  camera_random_seed
+                  {session_mgr get_net_random_seed}}})
+         (post_tool_sync
+            {$this enter}))
+      (venue
+         (editor
+            ('start crowd'
+               script
+               (help
+                  "Animates the crowd")
+               (script
+                  {$this
+                     iterate
+                     WorldCrowd
+                     $crowd
+                     {$crowd
+                        iterate_frac
+                        (1
+                           {main.drv
+                              play_group
+                              great
+                              {'|' kPlayNoBlend kPlayGraphLoop kPlayRealTime}})}}))
+            ('stop crowd'
+               script
+               (help
+                  "Stops the crowd")
+               (script
+                  {$this
+                     iterate
+                     WorldCrowd
+                     $crowd
+                     {$crowd
+                        iterate_frac
+                        (1
+                           {main.drv enter})}}))
+            WORLD_DIR_BANDLOGO_EDITOR)
+         (first_shot_ok
+            ($cat)
+            {if
+               $banddirector
+               {set
+                  $shot_ok.delta_30fps
+                  {$banddirector first_shot_ok $cat}}})
+         VENUE_SETUP_CHARACTERS
+         WORLD_OBJECT_VALIDATE
+         (setup_midi_parsers
+            {foreach
+               $parser
+               WORLD_MIDI_PARSERS
+               {handle
+                  ({elem $parser 0}
+                     add_sink
+                     $this
+                     ()
+                     {elem $parser 1})}})
+         (remove_midi_parsers
+            {foreach
+               $parser
+               WORLD_MIDI_PARSERS
+               {handle
+                  ({elem $parser 0}
+                     remove_sink
+                     $this)}})
+         (enter
+            VENUE_SETUP_CHARACTERS_ENTER
+            {$this hookup_bandlogo}
+            {$this hookup_bandname})
+         WORLD_DIR_BANDLOGO_HOOKUP_SCRIPT
+         (band_logo_mats
+            ())
+         (band_name_labels
+            ()))
+      (shell
+         SHELL_WORLD_DIR
+         (editor SHELL_WORLD_DIR_EDITOR))
+      (facetest
+         (editor)
+         (enter
+            {do
+               ($song
+                  {if_else
+                     $tool_song
+                     {$tool_song song_name}
+                     ""})
+               {if_else
+                  $song
+                  {do
+                     ($lip
+                        {$this
+                           find
+                           "lipsync_dir"})
+                     {$lip
+                        set
+                        proxy_file
+                        {sprint
+                           "songs/"
+                           $song
+                           "/lipsync.milo"}}
+                     {foreach
+                        $name
+                        (song part2 part3 part4)
+                        {do
+                           ($lipsync
+                              "")
+                           {set
+                              $lipsync
+                              {$lip
+                                 find
+                                 {sprint
+                                    $name
+                                    ".lipsync"}}}
+                           {{{object $name}
+                                 find
+                                 song.lipdrv}
+                              set
+                              lipsync
+                              $lipsync}
+                           {set
+                              $singalong
+                              {{object $name}
+                                 find
+                                 singalong.weight}}
+                           {$singalong set weight 1.0}}}}
+                  {notify
+                     "To preview lipsync: pick a song to preview in the Anim bar"}}}))
+      (closet
+         (enter
+            {if
+               $bandwardrobe
+               {$bandwardrobe
+                  enter_closet
+                  $this
+                  {if_else
+                     {exists closet_mgr}
+                     {closet_mgr get_user_slot}
+                     0}}}
+            {$this hookup_bandlogo}
+            {$this hookup_bandname})
+         WORLD_DIR_BANDLOGO_HOOKUP_SCRIPT
+         (editor WORLD_DIR_BANDLOGO_EDITOR SHELL_WORLD_DIR_EDITOR)
+         SHELL_WORLD_DIR
+         (band_logo_mats
+            ())
+         (band_name_labels
+            ()))
+      (vignette_shell
+         (scene0 '')
+         (postprocess
+            {object ''})
+         (editor
+            SIMULATE_BUTTONS
+            (scene0
+               object
+               (class WorldDir)
+               (help
+                  "the vignette scene to loop"))
+            (trigger_outro
+               script
+               (script
+                  {if_else
+                     $world_simulate
+                     {$this vignette_outro}
+                     {notify
+                        "you can only trigger an outro while simulating vignette, so hit the 'simulate' button above"}})
+               (help
+                  "trigger the outro camshot if this vignette has one"))
+            (edit_lipsync
+               script
+               (script
+                  {do
+                     ($clips
+                        {find_obj
+                           [scene0]
+                           clips})
+                     {if_else
+                        $clips
+                        {milo
+                           edit
+                           $clips
+                           "Object List"}
+                        {notify
+                           "No clips to edit"}}})
+               (help
+                  "pop open directory with lipsync objects"))
+            (save_and_preview_lipsync
+               script
+               (script
+                  {if_else
+                     [scene0]
+                     {[scene0]
+                        preview_lipsync
+                        TRUE}
+                     {notify
+                        "No scene to preview!"}})
+               (help
+                  "save and preview lipsync PropAnim changes")))
+         VIGNETTE_ON_MILO_LOADED
+         (enter
+            {if
+               {exists game}
+               {set $world_simulate TRUE}}
+            {if_else
+               $world_simulate
+               {do
+                  {if_else
+                     {exists world.cam}
+                     {set
+                        [cam]
+                        world.cam}
+                     {notify
+                        "can not find world.cam!"}}
+                  {set $in_vignette_outro FALSE}
+                  {if
+                     {== $this $world}
+                     {$this kick_scene}}}
+               {do
+                  {if
+                     [scene0]
+                     {[scene0]
+                        set
+                        showing
+                        FALSE}}}}
+            {if
+               {exists meta_performer}
+               {profile_mgr
+                  add_sink
+                  $this
+                  (primary_profile_changed_msg)}})
+         (exit
+            {handle
+               ([scene0]
+                  vignette_end)}
+            {if
+               {exists meta_performer}
+               {profile_mgr remove_sink $this primary_profile_changed_msg}})
+         (vignette_outro
+            {if
+               [scene0]
+               {set
+                  $cam
+                  {[scene0]
+                     find_shot
+                     vignette_outro}}
+               {if_else
+                  $cam
+                  {do
+                     {set $in_vignette_outro TRUE}
+                     {handle_type
+                        ([scene0]
+                           force_camera
+                           $this)}}
+                  {handle_type
+                     ($this send_outro_finished_msg)}}})
+         (send_outro_finished_msg
+            {if_else
+               {exists game}
+               {{$this get owner_panel}
+                  vignette_outro_done}
+               {do
+                  {set $in_vignette_outro FALSE}
+                  {set $world_simulate FALSE}
+                  {$this enter}}})
+         (primary_profile_changed_msg
+            {handle
+               ([scene0]
+                  hookup_bandlogo)}
+            {handle
+               ([scene0]
+                  hookup_bandname)})
+         (kick_scene
+            {if
+               [scene0]
+               {[scene0]
+                  set
+                  showing
+                  TRUE}
+               {$bandwardrobe
+                  enter_vignette
+                  [scene0]}
+               {handle
+                  ([scene0]
+                     vignette_start)}
+               {handle_type
+                  ($this next_camera)}})
+         (next_camera
+            {if_else
+               $in_vignette_outro
+               {handle_type
+                  ($this send_outro_finished_msg)}
+               {handle_type
+                  ([scene0]
+                     force_camera
+                     $this)}}))
+      (vignette_transition
+         (trans0 '')
+         (trans1 '')
+         (trans2 '')
+         (trans3 '')
+         (trans4 '')
+         (trans5 '')
+         (trans6 '')
+         (trans7 '')
+         (trans8 '')
+         (trans9 '')
+         (trans10 '')
+         (trans11 '')
+         (trans12 '')
+         (trans13 '')
+         (trans14 '')
+         (trans15 '')
+         (trans16 '')
+         (trans17 '')
+         (trans18 '')
+         (trans19 '')
+         (trans_index -1)
+         (new_index FALSE)
+         (postprocess
+            {object ''})
+         (editor
+            (simulate_and_loop
+               script
+               (script
+                  {set $world_simulate 1}
+                  {set $world_simulate_loop 1}
+                  {$this enter})
+               (help
+                  "for previewing only, this will loop the transition over and over..."))
+            SIMULATE_BUTTONS
+            CREATE_VIGNETTE_SEQ_TRIGGERS
+            (share_textures
+               script
+               (script
+                  {$this update_shared_textures})
+               (help
+                  "consolidates shared textures in all scenes into a common subdir.  You may run this multiple times if changes to your scenes have been made"))
+            (trans0
+               object
+               (class WorldDir)
+               (help
+                  "transition 0"))
+            (trans1
+               object
+               (class WorldDir)
+               (help
+                  "transition 1"))
+            (trans2
+               object
+               (class WorldDir)
+               (help
+                  "transition 2"))
+            (trans3
+               object
+               (class WorldDir)
+               (help
+                  "transition 3"))
+            (trans4
+               object
+               (class WorldDir)
+               (help
+                  "transition 4"))
+            (trans5
+               object
+               (class WorldDir)
+               (help
+                  "transition 5"))
+            (trans6
+               object
+               (class WorldDir)
+               (help
+                  "transition 6"))
+            (trans7
+               object
+               (class WorldDir)
+               (help
+                  "transition 7"))
+            (trans8
+               object
+               (class WorldDir)
+               (help
+                  "transition 8"))
+            (trans9
+               object
+               (class WorldDir)
+               (help
+                  "transition 9"))
+            (trans10
+               object
+               (class WorldDir)
+               (help
+                  "transition 10"))
+            (trans11
+               object
+               (class WorldDir)
+               (help
+                  "transition 11"))
+            (trans12
+               object
+               (class WorldDir)
+               (help
+                  "transition 12"))
+            (trans13
+               object
+               (class WorldDir)
+               (help
+                  "transition 13"))
+            (trans14
+               object
+               (class WorldDir)
+               (help
+                  "transition 14"))
+            (trans15
+               object
+               (class WorldDir)
+               (help
+                  "transition 15"))
+            (trans16
+               object
+               (class WorldDir)
+               (help
+                  "transition 16"))
+            (trans17
+               object
+               (class WorldDir)
+               (help
+                  "transition 17"))
+            (trans18
+               object
+               (class WorldDir)
+               (help
+                  "transition 18"))
+            (trans19
+               object
+               (class WorldDir)
+               (help
+                  "transition 19"))
+            (trans_index
+               int
+               (help
+                  "which one I'm on right now"))
+            (new_index
+               bool
+               (help
+                  "is a new trans_index spooled up")
+               (read_only TRUE)))
+         VIGNETTE_ON_MILO_LOADED
+         (update_shared_textures
+            {set
+               $inputFiles
+               {array 0}}
+            {foreach_int
+               $i
+               0
+               20
+               {set
+                  $propName
+                  {symbol
+                     {sprint
+                        "trans"
+                        $i}}}
+               {unless
+                  {==
+                     [$propName]
+                     ''}
+                  {set
+                     $newInputPath
+                     {[$propName]
+                        get_path_name}}
+                  {if
+                     {has_substr
+                        $newInputPath
+                        "_ao."}
+                     {search_replace
+                        $newInputPath
+                        "_ao."
+                        "."
+                        $newInputPath}}
+                  {push_back $inputFiles $newInputPath}}}
+            {print
+               "we have "
+               {size $inputFiles}
+               " input files\n"}
+            {set
+               $path
+               {$this get_path_name}}
+            {set
+               $baseName
+               {file_get_base $path}}
+            {set
+               $subdirPath
+               ""}
+            {if
+               {has_substr
+                  $path
+                  "_"}
+               {set
+                  $subdirPath
+                  {file_get_path $path}}
+               {set
+                  $subdirPath
+                  {sprint
+                     $subdirPath
+                     "/"
+                     {substr
+                        $baseName
+                        0
+                        {find_substr
+                           $baseName
+                           "_"}}
+                     "/"
+                     {substr
+                        $baseName
+                        {'+'
+                           {find_substr
+                              $baseName
+                              "_"}
+                           1}
+                        {strlen $baseName}}
+                     "/shared_textures.milo"}}
+               {print
+                  "found subdir path: "
+                  $subdirPath
+                  "\n"}}
+            {set $error FALSE}
+            {if
+               {==
+                  {strlen $subdirPath}
+                  0}
+               {notify
+                  "Error figuring out path to common texture subdir.  please tell a programmer!"}
+               {set $error TRUE}}
+            {if
+               {<
+                  {size $inputFiles}
+                  2}
+               {notify
+                  "You must have at least 2 scenes in this transition to use the texture sharing tool!"}
+               {set $error TRUE}}
+            {unless
+               $error
+               {milo find_and_share_textures $inputFiles $subdirPath}})
+         (enter
+            {if
+               {exists game}
+               {set $world_simulate TRUE}}
+            {if
+               $world_simulate
+               {if_else
+                  {exists world.cam}
+                  {set
+                     [cam]
+                     world.cam}
+                  {notify
+                     "can not find world.cam!"}}}
+            {$this
+               do_transition
+               {if_else
+                  {&&
+                     {== $this $world}
+                     $world_simulate}
+                  0
+                  -1}})
+         (get_trans
+            ($which)
+            {if_else
+               {&&
+                  {<= $which 19}
+                  {>= $which 0}}
+               {do
+                  ($prop
+                     {symbol
+                        {sprint
+                           "trans"
+                           $which}})
+                  [$prop]}
+               {object ''}})
+         (next_camera
+            {do
+               ($which
+                  {'+'
+                     [trans_index]
+                     1})
+               ($trans
+                  {$this get_trans $which})
+               ($last_trans
+                  {$this
+                     get_trans
+                     {- $which 1}})
+               {handle
+                  ($last_trans vignette_end)}
+               {if_else
+                  $trans
+                  {$this do_transition $which}
+                  {do
+                     {handle
+                        ($this vignette_seq_end)}
+                     {if_else
+                        {exists game}
+                        {ui transition_camshot_done}
+                        {do
+                           {set
+                              [trans_index]
+                              -1}
+                           {unless
+                              $world_simulate_loop
+                              {set $world_simulate FALSE}}
+                           {$this enter}}}}}})
+         (select_camera
+            {if
+               [new_index]
+               {set
+                  [new_index]
+                  FALSE}
+               {do
+                  ($which
+                     [trans_index])
+                  ($scene
+                     {$this get_trans $which})
+                  {foreach_int
+                     $i
+                     0
+                     20
+                     {do
+                        ($trans
+                           {$this get_trans $i})
+                        {if
+                           $trans
+                           {$trans set_showing FALSE}}}}
+                  {if
+                     $scene
+                     {$bandwardrobe enter_vignette $scene}
+                     {handle
+                        ($scene vignette_start)}
+                     {if
+                        {== $which 0}
+                        {handle
+                           ($this vignette_seq_start)}}
+                     {handle_type
+                        ($scene force_camera $this)}}}})
+         (do_transition
+            ($which)
+            {set
+               [trans_index]
+               $which}
+            {set
+               [new_index]
+               TRUE}))
+      (vignette_scene
+         VIGNETTE_ON_MILO_LOADED
+         (validate
+            {unless
+               {find_obj $this player_hints.obj}
+               {notify
+                  {path_name $this}
+                  "vignette_scene needs player_hints set, use the set_player_hints button"}})
+         WORLD_DIR_BANDLOGO_HOOKUP_SCRIPT
+         (vignette_start
+            {set
+               [cam]
+               world.cam}
+            {$this set_showing TRUE}
+            {set $firstVignetteCam TRUE}
+            {$this hookup_bandlogo}
+            {$this hookup_bandname}
+            kDataUnhandled)
+         (force_camera
+            ($wrld)
+            {do
+               ($cam '')
+               {if_else
+                  $in_vignette_outro
+                  {set
+                     $cam
+                     {$this find_shot vignette_outro}}
+                  {do
+                     {if
+                        $firstVignetteCam
+                        {set
+                           $cam
+                           {$this find_shot vignette_intro}}
+                        {set $firstVignetteCam FALSE}}}}
+               {unless
+                  $cam
+                  {set
+                     $cam
+                     {$this find_shot vignette}}}
+               {if_else
+                  $cam
+                  {do
+                     {if
+                        {find_elem
+                           (vignette_transition vignette_shell)
+                           {$wrld get_type}}
+                        {$cam set looping FALSE}}
+                     {$wrld force_shot $cam}}
+                  {notify
+                     {path_name $this}
+                     " scene could not find camshot!\n"}}})
+         (enter
+            {unless
+               {$this is_proxy}
+               {if_else
+                  $bandwardrobe
+                  {$bandwardrobe enter_vignette $this}
+                  {notify
+                     {path_name $this}
+                     " does not subdir vignette_chars, it must!"}}
+               {if_else
+                  $world_simulate
+                  {do
+                     {handle
+                        ($this vignette_start)}
+                     {handle_type
+                        ($this force_camera $this)}}
+                  {handle
+                     ($this vignette_end)}}})
+         (exit)
+         (add_shot_target
+            ($shot $char $grp)
+            {if
+               {&&
+                  {exists $char}
+                  $grp}
+               {set $foundIdx -1}
+               {foreach_int
+                  $i
+                  0
+                  {$shot
+                     size
+                     (targets)}
+                  {if
+                     {==
+                        {$shot
+                           get
+                           (targets $i target)}
+                        $char}
+                     {set $foundIdx $i}}}
+               {if
+                  {== $foundIdx -1}
+                  {$shot
+                     insert
+                     (targets 0)
+                     ()}
+                  {$shot
+                     set
+                     (targets 0 target)
+                     $char}
+                  SET_VIGNETTE_TARGET_DEFAULTS
+                  {$shot
+                     set
+                     (targets 0 teleport)
+                     TRUE}
+                  {$shot
+                     set
+                     (targets 0 anim_group)
+                     {$grp name}}}})
+         (auto_setup_vignette
+            {do
+               ($shot
+                  "")
+               {if_else
+                  {'||'
+                     {==
+                        {$this get_path_name}
+                        ""}
+                     {has_substr
+                        {$this get_path_name}
+                        "_ao.milo"}}
+                  {do
+                     {if_else
+                        {has_substr
+                           {$this get_path_name}
+                           "_ao.milo"}
+                        {notify
+                           "Don't run setup_vignette on _ao files! Please go to the non-AO file for this..."}
+                        {notify
+                           "This is a new file - please save it and reload in milo before running this!"}}}
+                  {do
+                     {unless
+                        {exists player0}
+                        {$this
+                           insert
+                           (subdirs 0)
+                           "world/shared/vignette_chars.milo"}}
+                     {foreach_int
+                        $i
+                        0
+                        {$this
+                           size
+                           (subdirs)}
+                        {if
+                           {==
+                              {$this
+                                 get
+                                 (subdirs $i)}
+                              "world/shared/chars.milo"}
+                           {$this
+                              remove
+                              (subdirs $i)}
+                           {$this
+                              insert
+                              (subdirs $i)
+                              "world/shared/vignette_chars.milo"}
+                           {notify
+                              "replaced subdir 'world/shared/chars.milo' with 'world/shared/vignette_chars.milo'.\nPlease save and reload this file!"}}}
+                     {set
+                        $clipsPath
+                        {sprint
+                           {file_get_path
+                              {$this get_path_name}}
+                           "/"
+                           {file_get_base
+                              {$this get_path_name}}
+                           "_clips.milo"}}
+                     {unless
+                        {exists clips}
+                        {if_else
+                           {file_exists $clipsPath}
+                           {do
+                              {set
+                                 $clipsDir
+                                 {new CharClipSet}}
+                              {$clipsDir
+                                 set_name
+                                 "clips"
+                                 $this}
+                              {$clipsDir set proxy_file $clipsPath}
+                              {milo invalidate_listers_and_trees}
+                              {milo update_objects}}
+                           {do
+                              {set
+                                 $newDir
+                                 {new CharClipSet}}
+                              {$newDir
+                                 set_name
+                                 "clips"
+                                 $this}
+                              {$newDir perforce_save $clipsPath}
+                              {print
+                                 "creating new clipset in P4: "
+                                 $clipsPath
+                                 "\n"}
+                              {$newDir set proxy_file $clipsPath}
+                              {milo invalidate_listers_and_trees}
+                              {milo update_objects}}}}
+                     {set
+                        $shot
+                        ""}
+                     {set $num_shots 0}
+                     {$this
+                        iterate_self
+                        BandCamShot
+                        $s
+                        {set $shot $s}
+                        {set
+                           $num_shots
+                           {'+' $num_shots 1}}}
+                     {if
+                        {==
+                           $shot
+                           ""}
+                        {set
+                           $shot
+                           {new BandCamShot}}
+                        {$shot
+                           set_name
+                           "BandCamShot.shot"
+                           $this}
+                        {$shot
+                           set
+                           category
+                           "vignette"}
+                        {$shot
+                           insert
+                           (keyframes 0)
+                           ()}
+                        {$shot
+                           set
+                           (keyframes 0 duration)
+                           80.0}
+                        {milo invalidate_listers_and_trees}
+                        {milo update_objects}}
+                     {set
+                        $spotDrawer
+                        ""}
+                     {$this
+                        iterate_self
+                        SpotlightDrawer
+                        $d
+                        {set $spotDrawer $d}}
+                     {unless
+                        {==
+                           $spotDrawer
+                           ""}
+                        {set
+                           [spotlight_drawer]
+                           $spotDrawer}}
+                     {set
+                        $windObj
+                        ""}
+                     {$this
+                        iterate_self
+                        Wind
+                        $w
+                        {set $windObj $w}}
+                     {if
+                        {==
+                           $windObj
+                           ""}
+                        {set
+                           $windObj
+                           {new Wind}}
+                        {$windObj
+                           set_name
+                           "Wind.wind"
+                           $this}}
+                     {set
+                        $postProc
+                        ""}
+                     {$this
+                        iterate_self
+                        PostProc
+                        $p
+                        {set $postProc $p}}
+                     {$this
+                        iterate_self
+                        BandCamShot
+                        $shot
+                        {$shot set_type band3}
+                        {if_else
+                           {==
+                              {$shot
+                                 size
+                                 (next_shots)}
+                              0}
+                           {$shot set anims_during_nextshots 0}
+                           {$shot set anims_during_nextshots 1}}
+                        {if
+                           {&&
+                              {exists clips}
+                              {==
+                                 {$shot
+                                    size
+                                    (keyframes)}
+                                 1}}
+                           {set $clipLength 80}
+                           {clips
+                              iterate_self
+                              CharClip
+                              $clip
+                              {set
+                                 $clipLength
+                                 {$clip get length_beats}}}
+                           {$shot
+                              set
+                              (keyframes 0 duration)
+                              {- $clipLength 1}}}
+                        {unless
+                           {==
+                              $postProc
+                              ""}
+                           {$shot set postprocess $postProc}}
+                        {foreach_int
+                           $i
+                           0
+                           4
+                           {set
+                              $playerName
+                              {symbol
+                                 {sprint
+                                    "player"
+                                    $i}}}
+                           {set
+                              $clipGrp
+                              {find_obj $this clips $playerName}}
+                           {if_else
+                              $clipGrp
+                              {do
+                                 {set $foundIdx -1}
+                                 {foreach_int
+                                    $i
+                                    0
+                                    {$shot
+                                       size
+                                       (hide_list)}
+                                    {if
+                                       {==
+                                          {{$shot
+                                                get
+                                                (hide_list $i)}
+                                             name}
+                                          $playerName}
+                                       {set $foundIdx $i}}}
+                                 {unless
+                                    {== $foundIdx -1}
+                                    {$shot
+                                       remove
+                                       (hide_list $foundIdx)}}
+                                 {$this add_shot_target $shot $playerName $clipGrp}}
+                              {do
+                                 {set $foundIdx -1}
+                                 {foreach_int
+                                    $i
+                                    0
+                                    {$shot
+                                       size
+                                       (targets)}
+                                    {if
+                                       {==
+                                          {$shot
+                                             get
+                                             (targets $i target)}
+                                          $playerName}
+                                       {set $foundIdx $i}
+                                       {$shot
+                                          set
+                                          (targets $foundIdx hide)
+                                          TRUE}}}
+                                 {if
+                                    {== $foundIdx -1}
+                                    {$shot
+                                       insert
+                                       (targets 0)
+                                       ()}
+                                    {$shot
+                                       set
+                                       (targets 0 target)
+                                       $playerName}
+                                    {$shot
+                                       set
+                                       (targets 0 hide)
+                                       TRUE}}}}}}}}})
+         (preview_lipsync
+            ($save)
+            {if
+               {exists clips}
+               {$bandwardrobe enter_vignette $this}
+               {if
+                  $save
+                  {clips perforce_resave}}})
+         (editor
+            SIMULATE_BUTTONS
+            CREATE_VIGNETTE_TRIGGERS
+            WORLD_DIR_BANDLOGO_EDITOR
+            (setup_vignette
+               script
+               (reflect FALSE)
+               (script
+                  {$this auto_setup_vignette})
+               (help
+                  "makes sure this milo file meets vignette requirements (sets up BandCamShot, etc.)"))
+            (extras
+               (indent
+                  (extra_to_add
+                     symbol
+                     (list
+                        {do
+                           {set
+                              $result
+                              {file_list
+                                 "world/shared/extras/*.milo"}}
+                           $result})
+                     (help
+                        "an extra you'd like like to add to the scene"))
+                  (extra_clip
+                     object
+                     (class CharClipGroup)
+                     (dir
+                        {if_else
+                           {exists clips}
+                           clips
+                           $this})
+                     (help
+                        "clip to assign to the extra you are adding"))
+                  (add_extra
+                     script
+                     (script
+                        {set $error FALSE}
+                        {if
+                           {==
+                              [extra_to_add]
+                              ""}
+                           {set $error TRUE}
+                           {notify
+                              "Please select an extra from 'extra_to_add' first!"}}
+                        {if_else
+                           {==
+                              [extra_clip]
+                              {object ''}}
+                           {do
+                              {notify
+                                 "Please select a clip group under 'extra_clip' before adding!"}
+                              {set $error TRUE}}
+                           {set
+                              $clipGroup
+                              {[extra_clip]
+                                 name}}}
+                        {$this
+                           iterate_self
+                           BandCamShot
+                           $shot
+                           {unless
+                              $error
+                              {foreach_int
+                                 $i
+                                 0
+                                 {$shot
+                                    size
+                                    (targets)}
+                                 {if
+                                    {==
+                                       {$shot
+                                          get
+                                          (targets $i anim_group)}
+                                       $clipGroup}
+                                    {notify
+                                       "Can't add because "
+                                       {$shot
+                                          get
+                                          (targets $i target)}
+                                       " is already using the clip "
+                                       $clipGroup}
+                                    {set $error TRUE}}}}}
+                        {set
+                           $extraSubdirPath
+                           {sprint
+                              "world/shared/extras/"
+                              [extra_to_add]
+                              ".milo"}}
+                        {print
+                           "extra path: "
+                           $extraSubdirPath
+                           "\n"}
+                        {unless
+                           $error
+                           {foreach_int
+                              $i
+                              0
+                              {$this
+                                 size
+                                 (subdirs)}
+                              {set
+                                 $subdir
+                                 {$this
+                                    get
+                                    (subdirs $i)}}
+                              {if
+                                 {has_substr
+                                    $subdir
+                                    {sprint
+                                       "/"
+                                       [extra_to_add]}}
+                                 {notify
+                                    "the extra "
+                                    [extra_to_add]
+                                    " has already be imported into this scene!"}
+                                 {set $error TRUE}}}}
+                        {unless
+                           $error
+                           {$this
+                              insert
+                              (subdirs 0)
+                              $extraSubdirPath}
+                           {if
+                              $bandwardrobe
+                              {$bandwardrobe enter_vignette $this}}
+                           {$this
+                              iterate_self
+                              BandCamShot
+                              $shot
+                              {$this
+                                 add_shot_target
+                                 $shot
+                                 [extra_to_add]
+                                 [extra_clip]}}
+                           {milo invalidate_listers_and_trees}
+                           {milo update_objects}
+                           {notify
+                              "success!"}})
+                     (help
+                        "bring the selected extra into the scene and hook him into all the camshots with the selected clip"))
+                  (extra_to_remove
+                     symbol
+                     (list
+                        {do
+                           {set
+                              $result
+                              {array 0}}
+                           {foreach_int
+                              $i
+                              0
+                              {$this
+                                 size
+                                 (subdirs)}
+                              {set
+                                 $subdir
+                                 {$this
+                                    get
+                                    (subdirs $i)}}
+                              {if
+                                 {has_substr
+                                    $subdir
+                                    "extras/"}
+                                 {push_back
+                                    $result
+                                    {file_get_base $subdir}}}}
+                           {insert_elem
+                              $result
+                              0
+                              ""}
+                           $result})
+                     (help
+                        "the name of the extra you'd like to remove"))
+                  (remove_extra
+                     script
+                     (script
+                        {set $error FALSE}
+                        {if
+                           {==
+                              [extra_to_remove]
+                              ""}
+                           {set $error TRUE}
+                           {notify
+                              "please select an extra under 'extra_to_remove'"}}
+                        {unless
+                           $error
+                           {$this
+                              iterate_self
+                              BandCamShot
+                              $shot
+                              {set $removeIdx -1}
+                              {foreach_int
+                                 $i
+                                 0
+                                 {$shot
+                                    size
+                                    (targets)}
+                                 {if
+                                    {==
+                                       {$shot
+                                          get
+                                          (targets $i target)}
+                                       [extra_to_remove]}
+                                    {set $removeIdx $i}}}
+                              {unless
+                                 {== $removeIdx -1}
+                                 {$shot
+                                    remove
+                                    (targets $removeIdx)}}}
+                           {set $removeIdx -1}
+                           {foreach_int
+                              $i
+                              0
+                              {$this
+                                 size
+                                 (subdirs)}
+                              {if
+                                 {has_substr
+                                    {$this
+                                       get
+                                       (subdirs $i)}
+                                    [extra_to_remove]}
+                                 {set $removeIdx $i}}}
+                           {if_else
+                              {== $removeIdx -1}
+                              {notify
+                                 "ERROR: couldn't find subdir-ed extra to remove.  tell a coder!"}
+                              {do
+                                 {$this
+                                    remove
+                                    (subdirs $removeIdx)}
+                                 {$this
+                                    set
+                                    extra_to_remove
+                                    ""}
+                                 {milo invalidate_listers_and_trees}
+                                 {milo update_objects}
+                                 {notify
+                                    "success!"}}}})
+                     (help
+                        "will remove the extra selected in 'extra_to_remove' from the scene + any camshot target"))))
+            (setup_ao
+               script
+               (reflect FALSE)
+               (script
+                  {set
+                     $log
+                     ""}
+                  {unless
+                     {==
+                        {$this get inline_subdir}
+                        kInlineAlways}
+                     {$this set inline_subdir kInlineAlways}
+                     {milo save}
+                     {set
+                        $log
+                        {sprint
+                           $log
+                           "setup inlining!\n"}}}
+                  {if_else
+                     {has_substr
+                        {$this get_path_name}
+                        "_ao.milo"}
+                     {notify
+                        "This IS the AO file, only run this on scene file itself"}
+                     {do
+                        {set
+                           $aoFile
+                           {$this get_path_name}}
+                        {search_replace
+                           $aoFile
+                           ".milo"
+                           "_ao.milo"
+                           $aoFile}
+                        {unless
+                           {file_exists $aoFile}
+                           {set
+                              $subdirPath
+                              {$this get_path_name}}
+                           {set
+                              $aoName
+                              {sprint
+                                 {file_get_base
+                                    {$this get_path_name}}
+                                 "_ao"}}
+                           {milo_recurse_pattern
+                              $dir
+                              "test/world/vignette/ao_template.milo"
+                              {with
+                                 $dir
+                                 {$this set_name $aoName $this}
+                                 {$this
+                                    insert
+                                    (subdirs 0)
+                                    $subdirPath}
+                                 {$this set cam world.cam}
+                                 {$this perforce_save $aoFile}}}
+                           {milo_recurse_pattern
+                              $dir
+                              $aoFile
+                              {with
+                                 $dir
+                                 {$this update_sphere}
+                                 {$this perforce_resave}}}
+                           {set
+                              $log
+                              {sprint
+                                 $log
+                                 "created ao file: "
+                                 $aoFile
+                                 "\n"}}}
+                        {if_else
+                           {==
+                              $log
+                              ""}
+                           {notify
+                              "AO was already setup correctly!"}
+                           {notify
+                              {sprint
+                                 "AO setup complete.  Did the following:\n"
+                                 $log}}}}})
+               (help
+                  "Sets up inlines, creates _ao file if necessary, and fixes up any top-level files still referencing the non-AO file"))
+            (reinline_ao
+               script
+               (reflect FALSE)
+               (script
+                  {if_else
+                     {has_substr
+                        {$this get_path_name}
+                        "_ao.milo"}
+                     {notify
+                        "This IS the AO file, only run this on scene file itself"}
+                     {do
+                        {set
+                           $aoFile
+                           {$this get_path_name}}
+                        {search_replace
+                           $aoFile
+                           ".milo"
+                           "_ao.milo"
+                           $aoFile}
+                        {if_else
+                           {file_exists $aoFile}
+                           {do
+                              {milo save}
+                              {set_alwaysinlined_enabled FALSE}
+                              {milo_recurse_pattern
+                                 $dir
+                                 $aoFile
+                                 {set_alwaysinlined_enabled TRUE}
+                                 {$dir perforce_resave}
+                                 {notify
+                                    "reinlined "
+                                    $aoFile
+                                    "\n AO was NOT recalculated though..."}}
+                              {set_alwaysinlined_enabled TRUE}}
+                           {notify
+                              "ao file doesn't exist yet for this scene. you can create one with the 'setup_ao' button"}}}})
+               (help
+                  "re-inlines the ao file associated with this scene"))
+            (open_ao
+               script
+               (reflect FALSE)
+               (script
+                  {if_else
+                     {has_substr
+                        {$this get_path_name}
+                        "_ao.milo"}
+                     {notify
+                        "This IS the AO file, only run this on scene file itself"}
+                     {do
+                        {set
+                           $aoFile
+                           {$this get_path_name}}
+                        {search_replace
+                           $aoFile
+                           ".milo"
+                           "_ao.milo"
+                           $aoFile}
+                        {if_else
+                           {file_exists $aoFile}
+                           {do
+                              {set
+                                 $execCmd
+                                 {sprint
+                                    "cmd /c start "
+                                    $aoFile}}
+                              {system_exec $execCmd}}
+                           {notify
+                              "ao file doesn't exist for this scene.  you can create one with the 'setup_ao' button."}}}})
+               (help
+                  "opens the ao file in a separate milo window. you can recalulate AO there..."))
+            (edit_lipsync
+               script
+               (reflect FALSE)
+               (script
+                  {if
+                     {exists clips}
+                     {milo
+                        edit
+                        clips
+                        "Object List"}})
+               (help
+                  "pop open directory with lipsync objects"))
+            (toggle_lipsync_scrubfix
+               script
+               (reflect FALSE)
+               (script
+                  {if_else
+                     {! $toggledScrubFix}
+                     {do
+                        {set $toggledScrubFix TRUE}
+                        {set $fastForwardAmt 0.0}
+                        {$this
+                           iterate_self
+                           BandCamShot
+                           $shot
+                           {foreach_int
+                              $i
+                              0
+                              {$shot
+                                 size
+                                 (targets)}
+                              {if
+                                 {!=
+                                    {$shot
+                                       get
+                                       (targets $i fast_forward)}
+                                    0.0}
+                                 {set
+                                    $fastForwardAmt
+                                    {$shot
+                                       get
+                                       (targets $i fast_forward)}}
+                                 {print
+                                    "got fast forward: "
+                                    $fastForwardAmt
+                                    "\n"}}}}
+                        {if
+                           {!= $fastForwardAmt 0.0}
+                           {set
+                              $global_animbar_frameoffset
+                              {'*' -1 $fastForwardAmt}}
+                           {milo set_anim_reset}}
+                        {notify
+                           "lipsync scrubfix is on.  Don't forget to hit me again when you're done!"}}
+                     {do
+                        {set $toggledScrubFix FALSE}
+                        {set $global_animbar_frameoffset 0.0}
+                        {notify
+                           "lipsync scrubfix is off!\n"}}})
+               (help
+                  "If lipsync scrubbing is skipping around, then toggle this button.  Its because the camshot has fastforward set on it, which adjusts timing of the camshot relative to the character animation"))
+            (save_lipsync
+               script
+               (reflect FALSE)
+               (script
+                  {$this preview_lipsync TRUE})
+               (help
+                  "save and preview lipsync PropAnim changes"))
+            (preview_lipsync
+               script
+               (reflect FALSE)
+               (script
+                  {$this preview_lipsync FALSE})
+               (help
+                  "Just preview lipsync PropAnim changes"))
+            (create_face_cams
+               script
+               (script
+                  {foreach
+                     $p
+                     (player0 player1 player2 player3)
+                     {if
+                        {exists $p}
+                        {set
+                           $tpName
+                           {sprint
+                              {$p name}
+                              "_head.tp"}}
+                        {if_else
+                           {!
+                              {exists $tpName}}
+                           {do
+                              {set
+                                 $tp
+                                 {new TransProxy}}
+                              {$tp set_name $tpName $this}
+                              {$tp set proxy $p}
+                              {$tp
+                                 set
+                                 part
+                                 "bone_head.mesh"}
+                              {set
+                                 $newCam
+                                 {new Cam}}
+                              {set
+                                 $camName
+                                 {sprint
+                                    {$p name}
+                                    "_head.cam"}}
+                              {$newCam set_name $camName $this}
+                              {$newCam set_trans_parent $tp}
+                              {$newCam set_local_pos 0 40 0}
+                              {$newCam set_local_rot 0 -90 180}
+                              {milo update_objects}}
+                           {do
+                              {set
+                                 $camName
+                                 {sprint
+                                    {$p name}
+                                    "_head.cam"}}
+                              {if
+                                 {exists $camName}
+                                 {$camName set_local_pos 0 40 0}
+                                 {$camName set_local_rot 0 -90 180}}}}}}))
+            (set_player_hints
+               script
+               (help
+                  "Set hints for which user/instrument should be assigned to each player, importance1 is MOST important, importance4 is least.  Humans are more important than AIs")
+               (script
+                  {unless
+                     {exists player_hints.obj}
+                     {do
+                        ($obj
+                           {new Object})
+                        {$obj set_name player_hints.obj $this}
+                        {$obj set_type vignette_hints}}}
+                  {milo
+                     edit
+                     player_hints.obj
+                     "Object Type"}))
+            (create_retargetting
+               script
+               (help
+                  "Create and edit (or just edit) the retargetting object")
+               (script
+                  {unless
+                     {exists BandRetargetVignette.brv}
+                     {do
+                        ($obj
+                           {new BandRetargetVignette})
+                        {$obj set_name BandRetargetVignette.brv $this}}}
+                  {milo
+                     edit
+                     BandRetargetVignette.brv
+                     "BandRetargetVignette"}))
+            (edit_eyes_propanim
+               script
+               (help
+                  "if necessary, creates a propanim to drive the eyes of the players and hooks into all the camshots.  Then opens the propanim editor...")
+               (script
+                  {if_else
+                     $bandwardrobe
+                     {do
+                        {unless
+                           {exists eye_interests.anim}
+                           {set
+                              $newPropanim
+                              {new PropAnim}}
+                           {$newPropanim
+                              set_name
+                              "eye_interests.anim"
+                              $this}
+                           {set
+                              $temp
+                              {array 0}}
+                           {set $num_frames 80}
+                           {if
+                              {exists clips}
+                              {clips
+                                 iterate_self
+                                 CharClip
+                                 $clip
+                                 {set
+                                    $num_frames
+                                    {$clip get length_beats}}}}
+                           {foreach
+                              $prop
+                              (player0_forced_focus player0_enable_blinks player0_force_blink player1_forced_focus player1_enable_blinks player1_force_blink player2_forced_focus player2_enable_blinks player2_force_blink player3_forced_focus player3_enable_blinks player3_force_blink)
+                              {set
+                                 $propArr
+                                 {array
+                                    ($prop)}}
+                              {if_else
+                                 {has_substr
+                                    {sprint $prop}
+                                    "forced_focus"}
+                                 {do
+                                    {$newPropanim add_keys $bandwardrobe $propArr kPropSymbol}
+                                    {$newPropanim
+                                       set_key_val
+                                       $bandwardrobe
+                                       $propArr
+                                       0
+                                       {symbol
+                                          ""}}
+                                    {$newPropanim
+                                       set_key_val
+                                       $bandwardrobe
+                                       $propArr
+                                       $num_frames
+                                       {symbol
+                                          ""}}}
+                                 {do
+                                    {$newPropanim add_keys $bandwardrobe $propArr kPropBool}
+                                    {$newPropanim
+                                       set_key_val
+                                       $bandwardrobe
+                                       $propArr
+                                       0
+                                       {has_substr
+                                          {sprint $prop}
+                                          "enable_blinks"}}
+                                    {$newPropanim
+                                       set_key_val
+                                       $bandwardrobe
+                                       $propArr
+                                       $num_frames
+                                       {has_substr
+                                          {sprint $prop}
+                                          "enable_blinks"}}}}}
+                           {$this
+                              iterate_self
+                              BandCamShot
+                              $shot
+                              {set $found FALSE}
+                              {foreach_int
+                                 $i
+                                 0
+                                 {$shot
+                                    size
+                                    (anims)}
+                                 {if
+                                    {==
+                                       {$shot
+                                          get
+                                          (anims $i)}
+                                       $newPropanim}
+                                    {set $found TRUE}}}
+                              {unless
+                                 $found
+                                 {$shot
+                                    insert
+                                    (anims
+                                       {$shot
+                                          size
+                                          (anims)})
+                                    $newPropanim}}}}
+                        {if
+                           {exists eye_interests.anim}
+                           {milo edit eye_interests.anim}}}
+                     {notify
+                        {path_name $this}
+                        " does not subdir vignette_chars, it must!"}})))
+         (postprocess
+            {object ''})
+         (band_logo_mats
+            ())
+         (band_name_labels
+            ())
+         (extra_to_add
+            "")
+         (extra_clip
+            {object ''})
+         (extra_to_remove
+            ""))
+      (drum_tester
+         TESTING_COMMON
+         (editor
+            TESTING_EDITOR_COMMON
+            (sit_down
+               script
+               (script
+                  {set
+                     $char
+                     {$this find BandCharacter}}
+                  {$char set_play kPlayIdleRealtime}
+                  {set
+                     $drv
+                     {$char find main.drv}}
+                  {if
+                     $drv
+                     {$drv play still}})
+               (help
+                  "Makes the drummer sit down by playing still pose"))))
+      (guitar_tester
+         TESTING_COMMON
+         (editor
+            TESTING_EDITOR_COMMON
+            (strum_and_fret
+               script
+               (help
+                  "Makes the character strum and fret so the arms aren't all wacky")
+               (script
+                  {set
+                     $char
+                     {$this find BandCharacter}}
+                  {set
+                     $strum_drv
+                     {$char find strum.dmidi}}
+                  {set
+                     $fret_drv
+                     {$char find fret.dmidi}}
+                  {if
+                     $strum_drv
+                     {$strum_drv play strum_open_01 kPlayGraphLoop}}
+                  {if
+                     $fret_drv
+                     {$fret_drv play open kPlayGraphLoop}}))
+            (fret_hi
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret20.mesh})}})
+               (help
+                  "set the fret hand high on the neck"))
+            (fret_med_hi
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret15.mesh})}})
+               (help
+                  "set the fret hand med-high on the neck"))
+            (fret_med
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret10.mesh})}})
+               (help
+                  "set the fret hand med on the neck"))
+            (fret_med_low
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret05.mesh})}})
+               (help
+                  "set the fret hand med-low on the neck"))
+            (fret_low
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret01.mesh})}})
+               (help
+                  "set the fret hand low on the neck"))))
+      (bass_tester
+         TESTING_COMMON
+         (editor
+            TESTING_EDITOR_COMMON
+            (strum_and_fret
+               script
+               (help
+                  "Makes the character strum and fret so the arms aren't all wacky")
+               (script
+                  {set
+                     $char
+                     {$this find BandCharacter}}
+                  {set
+                     $strum_drv
+                     {$char find strum.dmidi}}
+                  {set
+                     $fret_drv
+                     {$char find fret.dmidi}}
+                  {if
+                     $strum_drv
+                     {$strum_drv play strum_open_01 kPlayGraphLoop}}
+                  {if
+                     $fret_drv
+                     {$fret_drv play open kPlayGraphLoop}}))
+            (fret_hi
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret11.mesh})}})
+               (help
+                  "set the fret hand high on the neck"))
+            (fret_med_hi
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret08.mesh})}})
+               (help
+                  "set the fret hand med-high on the neck"))
+            (fret_med
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret05.mesh})}})
+               (help
+                  "set the fret hand med on the neck"))
+            (fret_med_low
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret03.mesh})}})
+               (help
+                  "set the fret hand med-low on the neck"))
+            (fret_low
+               script
+               (script
+                  {do
+                     {set
+                        $char
+                        {$this find BandCharacter}}
+                     {handle
+                        ({$char find fret.ikmidi}
+                           set
+                           cur_spot
+                           {$char find spot_neck_fret01.mesh})}})
+               (help
+                  "set the fret hand low on the neck"))))
+      (mic_tester
+         TESTING_COMMON
+         (editor TESTING_EDITOR_COMMON))
+      (keyboard_tester
+         TESTING_COMMON
+         (editor
+            (cross_hands
+               script
+               (script
+                  {do
+                     ($char
+                        {object BandCharacter})
+                     ($rhslide
+                        {$char find rh_target.ikslide})
+                     ($lhslide
+                        {$char find lh_target.ikslide})
+                     ($rhmidi
+                        {$char find right_hand.dmidi})
+                     ($lhmidi
+                        {$char find left_hand.dmidi})
+                     {if
+                        $rhslide
+                        {$rhslide set_fraction 0.0 0.0}}
+                     {if
+                        $lhslide
+                        {$lhslide set_fraction 1.0 0.0}}
+                     {if
+                        $lhmidi
+                        {$lhmidi play up}}
+                     {if
+                        $rhmidi
+                        {$rhmidi play up}}}))
+            (spread_hands
+               script
+               (script
+                  {do
+                     ($char
+                        {object BandCharacter})
+                     ($rhslide
+                        {$char find rh_target.ikslide})
+                     ($lhslide
+                        {$char find lh_target.ikslide})
+                     ($rhmidi
+                        {$char find right_hand.dmidi})
+                     ($lhmidi
+                        {$char find left_hand.dmidi})
+                     {if
+                        $rhslide
+                        {$rhslide set_fraction 1.0 0.0}}
+                     {if
+                        $lhslide
+                        {$lhslide set_fraction 0.0 0.0}}
+                     {if
+                        $lhmidi
+                        {$lhmidi play up}}
+                     {if
+                        $rhmidi
+                        {$rhmidi play up}}}))
+            TESTING_EDITOR_COMMON))
+      (closet_tester
+         (editor
+            (no_instrument
+               script
+               (script
+                  {if
+                     {exists player0}
+                     {set
+                        $p
+                        {object player0}}
+                     {$p set instrument_type none}
+                     {$p start_load FALSE}})
+               (help
+                  "resets to no instrument"))
+            (make_drummer
+               script
+               (script
+                  {if
+                     {exists player0}
+                     {set
+                        $p
+                        {object player0}}
+                     {$p set instrument_type drum}
+                     {$p start_load FALSE}
+                     {{$p find left_hand.ikhand}
+                        set
+                        hand
+                        ''}
+                     {{$p find right_hand.ikhand}
+                        set
+                        hand
+                        ''}})
+               (help
+                  "turn the character into a drummer.")))
+         (on_milo_loaded
+            {if
+               {exists player0}
+               {milo
+                  edit
+                  {object player0}
+                  "Character"}}
+            {milo
+               edit
+               $this
+               "Object Type"})
+         (enter
+            {if
+               $bandwardrobe
+               {$bandwardrobe
+                  enter_closet
+                  $this
+                  {if_else
+                     {exists closet_mgr}
+                     {closet_mgr get_user_slot}
+                     0}}}))))
+#define HIDE_DIRCUT
+((hide
+      {has_substr
+         [category]
+         "directed_"}))
+#define SHOW_DIRCUT
+((hide
+      {!
+         {has_substr
+            [category]
+            "directed_"}}))
+(BandCamShot
+   (init
+      {do
+         ($pn
+            {if_else
+               {$this dir}
+               {{$this dir}
+                  get_path_name}
+               ""})
+         {cond
+            ({has_substr
+                  $pn
+                  "/vignette/"}
+               {$this set_type band3}
+               {set
+                  [category]
+                  TEST_CAM}
+               {do
+                  ($count 0)
+                  {foreach
+                     $char
+                     (player0 player1 player2 player3)
+                     {if
+                        {exists $char}
+                        {$this add_target $char}
+                        {set
+                           [targets $count teleport]
+                           FALSE}
+                        {set
+                           [targets $count return]
+                           TRUE}
+                        {'++' $count}}}})
+            ({has_substr
+                  $pn
+                  "/world/meta/closet"}
+               {$this set_type closet}
+               {set
+                  [category]
+                  TEST_CAM})
+            ({has_substr
+                  $pn
+                  "/ui/"}
+               {set
+                  [category]
+                  TEST_CAM}
+               {eval 0})
+            ({has_substr
+                  $pn
+                  "/venue/"}
+               {$this set_type band}
+               {set
+                  [category]
+                  TEST_CAM}
+               {set
+                  [flags]
+                  {'|' kValidAll kBCSBFacingNull kBCSBCoopBG kBCSBCoopBK kBCSBCoopGK}})}})
+   (editor
+      (store
+         script
+         (script
+            {if_else
+               {&&
+                  $bandwardrobe
+                  {==
+                     {$this get_type}
+                     band}}
+               {do
+                  ($old
+                     {$bandwardrobe get shot_set_play_mode})
+                  {$bandwardrobe set shot_set_play_mode FALSE}
+                  {$this store}
+                  {$bandwardrobe set shot_set_play_mode $old}}
+               {$this store}})))
+   (types
+      (band
+         (editor
+            (flags
+               (struct
+                  (BIT_kBCSBFacingNull
+                     bool
+                     (post_sync
+                        {$this radio kBCSBFacingNull kBCSBAllFacing})
+                     (help
+                        "no facing, center facing, or behind")
+                     (refresh flags)
+                     (alias facing_null))
+                  (BIT_kBCSBFacingLeft
+                     bool
+                     (post_sync
+                        {$this radio kBCSBFacingLeft kBCSBAllFacing})
+                     (help
+                        "shot from the left")
+                     (refresh flags)
+                     (alias facing_left))
+                  (BIT_kBCSBFacingRight
+                     bool
+                     (post_sync
+                        {$this radio kBCSBFacingRight kBCSBAllFacing})
+                     (help
+                        "shot from the right")
+                     (refresh flags)
+                     (alias facing_right))
+                  (BIT_kValidMale
+                     bool
+                     (help
+                        "valid shot for male")
+                     (alias valid_male)
+                     SHOW_DIRCUT)
+                  (BIT_kValidFemale
+                     bool
+                     (help
+                        "valid shot for female")
+                     (alias valid_female)
+                     SHOW_DIRCUT)
+                  (BIT_kValidBanger
+                     bool
+                     (help
+                        "valid shot for banger")
+                     (alias valid_banger)
+                     SHOW_DIRCUT)
+                  (BIT_kValidDramatic
+                     bool
+                     (help
+                        "valid shot for dramatic")
+                     (alias valid_dramatic)
+                     SHOW_DIRCUT)
+                  (BIT_kValidRocker
+                     bool
+                     (help
+                        "valid shot for rocker")
+                     (alias valid_rocker)
+                     SHOW_DIRCUT)
+                  (BIT_kValidSpazz
+                     bool
+                     (help
+                        "valid shot for spazz")
+                     (alias valid_spazz)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBBassFocus
+                     bool
+                     (help
+                        "does this shot focus on bass")
+                     (alias bass_focus)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBDrumFocus
+                     bool
+                     (help
+                        "does this shot focus on drums")
+                     (alias drum_focus)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBGuitarFocus
+                     bool
+                     (help
+                        "does this shot focus on guitar")
+                     (alias guitar_focus)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBMicFocus
+                     bool
+                     (help
+                        "does this shot focus on vocals")
+                     (alias vocal_focus)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBKeyboardFocus
+                     bool
+                     (help
+                        "does this shot focus on keyboard")
+                     (alias keyboard_focus)
+                     SHOW_DIRCUT)
+                  (BIT_kBCSBCoopBG
+                     bool
+                     (help
+                        "valid for coop_bg")
+                     (alias valid_bg))
+                  (BIT_kBCSBCoopBK
+                     bool
+                     (help
+                        "valid for coop_bk")
+                     (alias valid_bk))
+                  (BIT_kBCSBCoopGK
+                     bool
+                     (help
+                        "valid for coop_gk")
+                     (alias valid_gk))))
+            (crowd_density
+               float
+               (range 0 1)
+               (help
+                  "density of crowd"))
+            (crowd_lod
+               int
+               (range 0 2)
+               (help
+                  "LOD of crowd texture (0 =  256x512) (1 = 128x256) (2 = 64x128)"))
+            (crowd_face_camera
+               bool
+               (help
+                  "Whether the crowd should face the camera"))
+            (crowd_anim
+               symbol
+               (list
+                  ('' bad great idle ok carry_surfer crowd_reaching crowdlove headbang realtime_idle intro_specific))
+               (help
+                  "Crowd animation to play, overrides normal excitement level"))
+            (postprocess
+               object
+               (class PostProc)
+               (help
+                  "Post process object to use for this shot"))
+            (lighting_preset
+               object
+               (class LightPreset)
+               (help
+                  "light preset to fire for this camera only, only use in special cases, lighting override must be on, goes back to normal lighting when the shot is done!"))
+            (lighting_preset_fade_in
+               float
+               (help
+                  "fade in time for the forced lighting preset"))
+            (lighting_preset_fade_out
+               float
+               (help
+                  "fade out time for the forced lighting preset"))
+            (worst
+               bool
+               (help
+                  "When using -worst_only with venuetest, only looks at these shots")))
+         (shot_ok
+            ($prev_shot)
+            {if_else
+               $banddirector
+               {$this test_delta $shot_ok.delta_30fps}
+               TRUE})
+         (start_shot
+            {if
+               $banddirector
+               {$banddirector
+                  set
+                  cam_postproc
+                  [postprocess]}
+               {unless
+                  {$banddirector get disable_picking}
+                  {if
+                     [lighting_preset]
+                     {$banddirector
+                        force_preset
+                        [lighting_preset]
+                        [lighting_preset_fade_in]}}}}
+            {if
+               $bandwardrobe
+               {$bandwardrobe start_venue_shot $this}}
+            {foreach_int
+               $idx
+               0
+               {size
+                  [crowds]}
+               {do
+                  ($crowd
+                     [crowds $idx crowd])
+                  {if
+                     $crowd
+                     {$crowd
+                        override_anim
+                        [crowd_anim]}
+                     {$crowd crowd_update}
+                     {$crowd
+                        set
+                        rotate
+                        [crowd_face_camera]}
+                     {$crowd
+                        set_fullness
+                        [crowd_density]
+                        [crowd_density]}
+                     {$crowd
+                        set
+                        lod
+                        [crowd_lod]}}}}
+            #ifndef _SHIP
+            {$this update_overlay}
+            #endif)
+         (update_overlay
+            #ifndef _SHIP
+            {rnd
+               reflect
+               camera
+               {print
+                  "BandCamShot:"
+                  {$this name}
+                  " category:"
+                  [category]
+                  "\n"
+                  "min_time:"
+                  [min_time]
+                  " max_time:"
+                  [max_time]
+                  " postprocess: "
+                  [postprocess]
+                  "\n"}}
+            #endif)
+         (play_group
+            ($char $grp $fwd $units $event)
+            {if_else
+               {'||'
+                  {==
+                     {$char get_type}
+                     extras}
+                  {==
+                     {$char get_type}
+                     crowd}}
+               {if
+                  $grp
+                  {{$char find main.drv}
+                     play_group
+                     $grp
+                     {'|' kPlayNoBlend kPlayNodeLoop}}}
+               {$char play_group $grp TRUE FALSE $fwd $units $event}})
+         (shot_over
+            {if
+               $banddirector
+               {$banddirector shot_over $this}
+               {if
+                  {exists game}
+                  {switch
+                     [category]
+                     ((LOSE WIN WIN_QUICK WIN_FINALE)
+                        {handle
+                           (game game_outro)})
+                     ((INTRO_VENUE INTRO_QUICK INTRO_MULTI)
+                        {$banddirector pick_new_shot})
+                     ((OUTRO_MULTI OUTRO)
+                        {$banddirector
+                           set_dircut
+                           [category]})}}})
+         (stop_shot
+            {if
+               $banddirector
+               {$banddirector
+                  set
+                  cam_postproc
+                  {object
+                     ""}}
+               {if
+                  [lighting_preset]
+                  {$banddirector
+                     force_preset
+                     ''
+                     [lighting_preset_fade_out]}}})
+         (teleport_char
+            ($char $ret)
+            {unless
+               {'||'
+                  {==
+                     {$char get_type}
+                     extras}
+                  {==
+                     {$char get_type}
+                     crowd}}
+               {$char cam_teleport $ret}})
+         (find_target
+            ($targ $anonymous)
+            {if_else
+               $bandwardrobe
+               {if_else
+                  $anonymous
+                  {$bandwardrobe find_target $targ}
+                  {$bandwardrobe find_target $targ $this}}
+               kDataUnhandled})
+         (list_targets
+            {do
+               ($list
+                  {object_list
+                     {$this dir}
+                     Trans
+                     TRUE})
+               {if
+                  $bandwardrobe
+                  {$bandwardrobe sort_targets $list}}
+               {foreach
+                  $p
+                  (player0 player1 player2 player3)
+                  {remove_elem $list $p}}
+               {insert_elems
+                  $list
+                  1
+                  (player_bass0 player_drum0 player_guitar0 player_vocals0 player_keyboard0)}
+               $list})
+         (list_anim_groups
+            ($targ)
+            {if_else
+               $bandwardrobe
+               {do
+                  {set
+                     $res
+                     {$bandwardrobe list_venue_anim_groups $targ $this}}
+                  {if_else
+                     {==
+                        {type $res}
+                        kDataInt}
+                     kDataUnhandled
+                     $res}}
+               kDataUnhandled})
+         (free_dircuts
+            (FREE_DIRCUTS))
+         (dircut_limits
+            (#include dircut_limits.dta))
+         (worst FALSE)
+         (postprocess
+            {object ''})
+         (crowd_density 1)
+         (crowd_lod 0)
+         (crowd_face_camera FALSE)
+         (crowd_anim '')
+         (lighting_preset
+            {object ''})
+         (lighting_preset_fade_in 0)
+         (lighting_preset_fade_out 0))
+      (band3
+         (editor
+            (postprocess
+               object
+               (class PostProc)
+               (help
+                  "Post process object to use for this shot"))
+            (crowd_density
+               float
+               (range 0 1)
+               (help
+                  "density of crowd"))
+            (crowd_lod
+               int
+               (range 0 2)
+               (help
+                  "LOD of crowd texture (0 =  256x512) (1 = 128x256) (2 = 64x128)"))
+            (crowd_face_camera
+               bool
+               (help
+                  "Whether the crowd should face the camera"))
+            (lighting_preset
+               object
+               (class LightPreset)
+               (help
+                  "light preset to fire for this camera only, only use in special cases, lighting override must be on, goes back to normal lighting when the shot is done!"))
+            (lighting_preset_fade_in
+               float
+               (help
+                  "fade in time for the forced lighting preset"))
+            (lighting_preset_fade_out
+               float
+               (help
+                  "fade out time for the forced lighting preset"))
+            (start_movie
+               object
+               (class TexMovie)
+               (help
+                  "start movie render-to-texture"))
+            (stop_movie
+               object
+               (class TexMovie)
+               (help
+                  "stop movie render-to-texture"))
+            (first
+               bool
+               (help
+                  "hack for vignettes - will prefer playing this shot first if checked")))
+         (postprocess
+            {object
+               ""})
+         (crowd_density 1)
+         (crowd_lod 0)
+         (crowd_face_camera FALSE)
+         (lighting_preset '')
+         (lighting_preset_fade_in 0)
+         (lighting_preset_fade_out 0)
+         (start_movie '')
+         (stop_movie '')
+         (first FALSE)
+         (shot_over
+            {if
+               $world_simulate
+               {if
+                  {&&
+                     $world
+                     {'||'
+                        {==
+                           [category]
+                           vignette}
+                        {==
+                           [category]
+                           vignette_intro}
+                        {==
+                           [category]
+                           vignette_outro}}}
+                  {if_else
+                     {find_elem
+                        (vignette_transition vignette_shell)
+                        {$world get_type}}
+                     {$world next_camera}
+                     {$world pick_shot vignette}}}})
+         (play_group
+            ($char $grp $fwd $units $event)
+            {if_else
+               {find_elem
+                  (extras crowd)
+                  {$char get_type}}
+               {if
+                  $grp
+                  {do
+                     ($drv
+                        {$char find main.drv})
+                     {$drv play_group $grp kPlayNoBlend}
+                     {$drv set_first_beat_offset $fwd $units $event}}}
+               {$char play_group $grp TRUE FALSE $fwd $units $event}})
+         (teleport_char
+            ($char $ret)
+            {unless
+               {'||'
+                  {==
+                     {$char get_type}
+                     extras}
+                  {==
+                     {$char get_type}
+                     crowd}}
+               {$char cam_teleport $ret}
+               {if
+                  $ret
+                  {$char
+                     set
+                     group_name
+                     ""}}})
+         (update_overlay
+            #ifndef _SHIP
+            {rnd
+               reflect
+               camera
+               {print
+                  "BandCamShot:"
+                  {$this name}
+                  " category:"
+                  [category]
+                  " postprocess: "
+                  [postprocess]
+                  "\n"}}
+            #endif)
+         (play_movie
+            ($texmovie $start)
+            {$texmovie set showing $start}
+            {$texmovie play_movie $start})
+         (start_shot
+            {if_else
+               [postprocess]
+               {do
+                  {[postprocess]
+                     select}}
+               {do
+                  {rnd reset_postproc}}}
+            #ifndef _SHIP
+            {$this update_overlay}
+            #endif
+            {if
+               [start_movie]
+               {$this
+                  play_movie
+                  [start_movie]
+                  TRUE}}
+            {foreach_int
+               $idx
+               0
+               {size
+                  [crowds]}
+               {do
+                  ($crowd
+                     [crowds $idx crowd])
+                  {if
+                     $crowd
+                     {$crowd
+                        set
+                        rotate
+                        [crowd_face_camera]}
+                     {$crowd
+                        set_fullness
+                        [crowd_density]
+                        [crowd_density]}
+                     {$crowd
+                        set
+                        lod
+                        [crowd_lod]}}}})
+         (stop_shot
+            {if
+               [stop_movie]
+               {$this
+                  play_movie
+                  [stop_movie]
+                  FALSE}}
+            {if
+               $world
+               {foreach_int
+                  $idx
+                  0
+                  {size
+                     [crowds]}
+                  {do
+                     ($crowd
+                        [crowds $idx crowd])
+                     {if
+                        $crowd
+                        {$crowd override_anim ''}}}}})
+         (list_targets
+            {do
+               ($list
+                  {object_list
+                     {$this dir}
+                     Trans
+                     TRUE})
+               {if
+                  $bandwardrobe
+                  {$bandwardrobe sort_targets $list}}
+               {foreach
+                  $p
+                  (player0 player1 player2 player3)
+                  {remove_elem $list $p}}
+               {insert_elems
+                  $list
+                  1
+                  (player0 player1 player2 player3)}
+               $list})
+         (find_target
+            ($targ $anonymous)
+            {if_else
+               $bandwardrobe
+               {$bandwardrobe find_target $targ}
+               kDataUnhandled})
+         (shot_ok
+            ($prev_shot)
+            TRUE)
+         (validate
+            {if
+               {&&
+                  [looping]
+                  {!
+                     {has_substr
+                        {path_name $this}
+                        "/vignette/shell/"}}}
+               {notify
+                  {path_name $this}
+                  " is looping vignette camera, but is not in /shell/, not allowed to loop"}}
+            {do
+               ($clips
+                  {find_obj
+                     {$this dir}
+                     clips})
+               ($limit
+                  {$this get duration})
+               {if
+                  $clips
+                  {foreach_int
+                     $i
+                     0
+                     {$this
+                        size
+                        (targets)}
+                     {do
+                        ($targ
+                           [targets $i target])
+                        {if
+                           {has_substr
+                              $targ
+                              "player"}
+                           {do
+                              ($group
+                                 {find_obj $clips $targ})
+                              {if
+                                 $group
+                                 {foreach
+                                    $clip
+                                    {$group get_array clips}
+                                    {do
+                                       ($dur
+                                          {'*'
+                                             30
+                                             {$clip get length_seconds}})
+                                       ($ff
+                                          [targets $i fast_forward])
+                                       {if_else
+                                          $ff
+                                          {if
+                                             {<
+                                                $dur
+                                                {- $limit $ff}}
+                                             {notify
+                                                {path_name $clip}
+                                                " has duration "
+                                                $dur
+                                                " shorter than "
+                                                {path_name $this}
+                                                " - fast_forward: "
+                                                {- $limit $ff}}}
+                                          {if
+                                             {< $dur $limit}
+                                             {notify
+                                                {path_name $clip}
+                                                " has duration "
+                                                $dur
+                                                " shorter than "
+                                                {path_name $this}
+                                                ": "
+                                                $limit}}}}
+                                    {if_else
+                                       [looping]
+                                       {unless
+                                          {==
+                                             {$clip get default_loop}
+                                             kPlayGraphLoop}
+                                          {notify
+                                             {path_name $clip}
+                                             " non-looping vignette clip played by looping camera "
+                                             {path_name $this}
+                                             ", make clip [default_looping] kPlayGraphLoop, or make camera non-looping"}}
+                                       {unless
+                                          {==
+                                             {$clip get default_loop}
+                                             kPlayNoLoop}
+                                          {notify
+                                             {path_name $clip}
+                                             " looping vignette clip played by non-looping camera "
+                                             {path_name $this}
+                                             ", make clip [default_looping] kPlayNoLoop, or make camera loop"}}}}}}}}}}}))
+      (closet
+         (placement_mesh
+            "")
+         (editor
+            (postprocess
+               object
+               (class PostProc)
+               (help
+                  "Post process object to use for this shot"))
+            (placement_mesh
+               string
+               (list
+                  (""
+                     "torso_front"
+                     "torso_back"
+                     "torso_L-lowerArm"
+                     "torso_L-shoulder"
+                     "torso_R-lowerArm"
+                     "torso_R-shoulder"
+                     "legs_L-back"
+                     "legs_L-front"
+                     "legs_R-back"
+                     "legs_R-front"
+                     "head_front"
+                     "head_back"))
+               (help
+                  "placement mesh suffix to use with this camera, used in clothing shop")))
+         (postprocess
+            {object
+               ""})
+         (shot_over)
+         (play_group
+            ($char $grp $fwd $units $event)
+            {$char play_group $grp TRUE FALSE $fwd $units $event})
+         (teleport_char
+            ($char $ret)
+            {$char closet_teleport}
+            {if
+               $ret
+               {$char
+                  set
+                  group_name
+                  ""}})
+         (update_overlay
+            #ifndef _SHIP
+            {rnd
+               reflect
+               camera
+               {print
+                  "BandCamShot:"
+                  {$this name}
+                  " category:"
+                  [category]
+                  "\n\n"}}
+            #endif)
+         (start_shot
+            {if
+               [postprocess]
+               {[postprocess]
+                  select}}
+            #ifndef _SHIP
+            {$this update_overlay}
+            #endif)
+         (stop_shot
+            {if
+               [postprocess]
+               {rnd reset_postproc}})
+         (shot_ok
+            ($prev_shot)
+            TRUE)
+         (find_target
+            ($targ $anonymous)
+            {if_else
+               $bandwardrobe
+               {$bandwardrobe find_target $targ}
+               kDataUnhandled})
+         (list_targets
+            {do
+               ($list
+                  {object_list
+                     {$this dir}
+                     Trans
+                     TRUE})
+               {insert_elems
+                  $list
+                  1
+                  ("closet_character")}
+               $list}))))
+(BandDirector
+   (test_singleton)
+   (types
+      (band
+         (enter
+            {if
+               $world
+               {$world
+                  add_sink
+                  $this
+                  (excitement game_won game_won_finale game_lost game_over game_outro playing_final_cam)
+                  kSinkModeType}}
+            {set $crowd.game_excitement kExcitementOkay}
+            {set $crowd.authored_excitement kExcitementIdle}
+            {set $crowd.authored_action ''}
+            {set
+               $crowd.idle_flags
+               {'|' kPlayNoBlend kPlayGraphLoop kPlayRealTime}}
+            {set
+               $crowd.play_flags
+               {'|' kPlayNoBlend kPlayGraphLoop}})
+         (exit
+            {if
+               $world
+               {$world remove_sink $this}})
+         (excitement
+            ($level)
+            {unless
+               [disabled]
+               {set
+                  [excitement]
+                  $level}
+               {set $crowd.game_excitement $level}}
+            kDataUnhandled)
+         (player_failed
+            ($inst)
+            {'++'
+               [num_players_failed]}
+            {$this
+               set_dircut
+               {switch
+                  $inst
+                  ((bass real_bass)
+                     BFTB_B_FAIL)
+                  (drum BFTB_D_FAIL)
+                  ((guitar real_guitar)
+                     BFTB_G_FAIL)
+                  (vocals BFTB_V_FAIL)
+                  ((keys real_keys)
+                     BFTB_K_FAIL)
+                  {notify
+                     "unknown player "
+                     $inst}
+                  ''}})
+         (player_saved
+            ($savior)
+            {--
+               [num_players_failed]}
+            {script_task
+               kTaskSeconds
+               (delay 0.35)
+               (script
+                  {$this
+                     set_dircut
+                     {switch
+                        $savior
+                        ((bass real_bass)
+                           BFTB_B_REVIVE)
+                        (drum BFTB_D_REVIVE)
+                        ((guitar real_guitar)
+                           BFTB_G_REVIVE)
+                        (vocals BFTB_V_REVIVE)
+                        ((keys real_keys)
+                           BFTB_K_REVIVE)
+                        {notify
+                           "bad activate inst"
+                           $inst}
+                        ''}})})
+         (set_final_shot
+            ($cat)
+            {set
+               $crowd.game_excitement
+               {if_else
+                  {== $cat LOSE}
+                  kExcitementLost
+                  kExcitementWon}}
+            {unless
+               {$this set_dircut $cat}
+               {handle
+                  (game game_outro)}})
+         (append_shot
+            ($first_cam $cat $notify)
+            {do
+               ($shot
+                  {$this set_dircut $cat})
+               {if_else
+                  $shot
+                  {$first_cam
+                     append
+                     (next_shots)
+                     $shot}
+                  {if
+                     $notify
+                     {notify
+                        "could not find "
+                        $cat
+                        " shot"}}}
+               $shot})
+         (make_win_shot
+            {do
+               ($win
+                  {$this set_dircut WIN})
+               ($shottime
+                  {elem
+                     (0 60 50 40 30 30)
+                     {beatmatch num_active_players}})
+               {if
+                  $win
+                  {$win
+                     clear
+                     (next_shots)}
+                  {$this append_shot $win WIN_PRE FALSE}
+                  {beatmatch
+                     foreach_active_player
+                     $p
+                     {do
+                        ($shot
+                           {$this
+                              append_shot
+                              $win
+                              {switch
+                                 {$p instrument}
+                                 ((bass real_bass)
+                                    WIN_BASS)
+                                 (drum WIN_DRUM)
+                                 ((guitar real_guitar)
+                                    WIN_GUITAR)
+                                 ((keys real_keys)
+                                    WIN_KEYBOARD)
+                                 (vocals WIN_VOCAL)
+                                 {notify
+                                    "hey bad instrument "
+                                    {$p instrument}}}
+                              TRUE})
+                        {if
+                           $shot
+                           {$shot
+                              set
+                              (keyframes 0 duration)
+                              $shottime}
+                           {$shot
+                              set
+                              (keyframes 0 blend)
+                              0}}}}
+                  {$this append_shot $win WIN_POST TRUE}}})
+         (playing_final_cam
+            {set
+               $crowd.play_flags
+               {'|' kPlayNoBlend kPlayGraphLoop kPlayRealTime}})
+         (game_won
+            {$this
+               set_final_shot
+               {if_else
+                  {meta_performer is_last_song}
+                  {do
+                     {$this make_win_shot}
+                     WIN}
+                  WIN_QUICK}})
+         (game_won_finale
+            {$this set_final_shot WIN_PRE_FINALE}
+            {$this launch_finale_task}
+            kDataUnhandled)
+         (launch_finale_task
+            {script_task
+               kTaskSeconds
+               (delay 1)
+               (script
+                  {do
+                     ($done TRUE)
+                     {foreach_int
+                        $i
+                        0
+                        4
+                        {do
+                           ($char
+                              {$bandwardrobe get_character $i})
+                           {if
+                              {$char is_loading}
+                              {set $done FALSE}}}}
+                     {if_else
+                        $done
+                        {$this finale_sequence}
+                        {$this launch_finale_task}}})
+               (once TRUE)})
+         (finale_sequence
+            {$this set_dircut WIN_FINALE})
+         (game_lost
+            {$this set_final_shot LOSE})
+         (game_over
+            {handle
+               ({$this get_curworld}
+                  remove_midi_parsers)}
+            {set
+               [disabled]
+               TRUE})
+         (game_outro
+            {$this
+               set_dircut
+               {if_else
+                  {'||'
+                     {meta_performer is_set_complete}
+                     {meta_performer is_last_song}}
+                  OUTRO
+                  OUTRO_MULTI}})
+         (crowd_realtime
+            {set $crowd.authored_excitement kExcitementIdle})
+         (crowd_mellow
+            {set $crowd.authored_excitement kExcitementBad})
+         (crowd_normal
+            {set $crowd.authored_excitement kExcitementOkay})
+         (crowd_intense
+            {set $crowd.authored_excitement kExcitementGreat})
+         (crowd_lighters_on
+            {set $crowd.authored_action lighters})
+         (crowd_lighters_off
+            {set $crowd.authored_action ''})
+         (crowd_horns_on
+            {set $crowd.authored_action horns})
+         (crowd_horns_off
+            {set $crowd.authored_action ''})
+         (crowd_fists_on
+            {set $crowd.authored_action fists})
+         (crowd_fists_off
+            {set $crowd.authored_action ''})
+         (get_intro_category
+            {cond
+               ({!= $cheat.intro 0}
+                  $cheat.intro)
+               ({$this is_music_video}
+                  INTRO_VENUE)
+               ({&&
+                     {exists game}
+                     {game get replay}}
+                  INTRO_QUICK)
+               ({&&
+                     {exists meta_performer}
+                     {!
+                        {meta_performer is_first_song}}}
+                  INTRO_MULTI)
+               INTRO_VENUE})
+         (pick_intro_shot
+            {$this
+               set_dircut
+               {$this get_intro_category}})
+         (allow_intro_shot
+            {set $res TRUE}
+            {if
+               {exists game}
+               {set
+                  $res
+                  {!
+                     {game resumed_no_score}}}}
+            $res)
+         (set_intro_shot
+            ($shot)
+            {if
+               {exists beatmatch}
+               {beatmatch
+                  set_intro_real_time
+                  {if_else
+                     $shot
+                     {-
+                        {$shot total_duration_seconds}}
+                     0}}})
+         (load_game_song
+            ($load)
+            {do
+               ($song
+                  {meta_performer song})
+               ($data
+                  {song_mgr get_meta_data $song})
+               {$this
+                  load_song
+                  {song_mgr
+                     song_file_path
+                     $song
+                     ".milo"}
+                  {$data genre}
+                  {$data anim_tempo}
+                  {$data vocal_gender}
+                  $load}})
+         (anim_genres
+            #include ../char/anim_genres.dta))))
+(ColorPalette
+   (description
+      "List of primary/secondary colors for OutfitConfig")
+   (allowed_dirs RndDir)
+   (types)
+   (ext pal)
+   (editor
+      (colors
+         (array
+            color
+            (help
+               "Color for materials"))
+         (post_sync
+            {palette_sync $this}))))
