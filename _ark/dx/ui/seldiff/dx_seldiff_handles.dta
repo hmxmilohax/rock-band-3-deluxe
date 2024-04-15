@@ -20,6 +20,43 @@
       {career.grp add_object play_play_text.lbl}
       {career.grp set_showing TRUE}
    )
+   (dx_play_header
+      {new BandLabel play_header.lbl}
+      {play_header.lbl set resource_name "pentatonic_outline"}
+      {play_header.lbl set_showing TRUE}
+      {play_header.lbl set_local_scale 1 1 1}
+      {play_header.lbl set_local_pos -277 0 220}
+      {play_header.lbl set text_token {sprint " "}}
+      {play_header.lbl set text_size 20}
+      {play_header.lbl set fit_type 2}
+      {play_header.lbl set alignment kTopLeft}
+      {play_header.lbl set width 500}
+      {play_header.lbl set height 40}
+      {play_header.lbl set alpha 1}
+      {play_header.lbl set color_override play_color.color}
+      {career.grp add_object play_header.lbl}
+      {career.grp set_showing TRUE}
+   )
+   (dx_play_set_count
+      {new BandLabel total.lbl}
+      {total.lbl set resource_name "pentatonic_outline"}
+      {total.lbl set_showing TRUE}
+      {total.lbl set_local_scale 1 1 1}
+      {total.lbl set_local_pos 400 0 160}
+      {total.lbl set text_token {sprintf "%i\nSongs Queued" {size $dx_playlist_array}}}
+      {total.lbl set text_size 40}
+      {total.lbl set fit_type 2}
+      {total.lbl set alignment kTopRight}
+      {total.lbl set width 500}
+      {total.lbl set height 40}
+      {total.lbl set alpha 1}
+      {total.lbl set color_override play_color.color}
+      {career.grp add_object total.lbl}
+      {career.grp set_showing TRUE}
+   )
+   (dx_update_set_count
+      {total.lbl set text_token {sprintf "%i\nSongs Queued" {size $dx_playlist_array}}}
+   )
    (lbl_maker
       ($label $x $y $align $content)
       {new BandLabel $label}
@@ -35,7 +72,7 @@
       {$label set alt_text_size 25}
       {$label set fit_type 2}
       {$label set alignment $align}
-      {$label set width 500}
+      {$label set width 600}
       {$label set height 40}
       {$label set alpha 1}
       ;{$label set color_override play_color.color}
@@ -121,6 +158,7 @@
          {foreach $entry $dx_play_a_show_active_instruments
             {if
                {||
+                  {== {{song_mgr get_meta_data $random_fem_song} is_ugc} TRUE}
                   {== {{song_mgr get_meta_data $random_fem_song} vocal_gender} male}
                   {! {{song_mgr get_meta_data $random_fem_song} has_part $entry}}
                }
@@ -595,8 +633,17 @@
       ;{{dx_play_a_show_panel find career_description.lbl} set fit_type kFitJust}
       ;{{dx_play_a_show_panel find career_description.lbl} set text_size 75}
       ;{{dx_play_a_show_panel find career_description.lbl} set reserve_lines 5}
-      {if $current_voted_song
-         {dx_play_a_show_panel update_preview_song $current_voted_song "" 0}
+      {if_else {== $dx_play_a_show_vote 5}
+         {song_preview.lbl set text_token {sprint "Options Refreshed"}}
+         {if $current_voted_song
+            {play_header.lbl set text_token {sprint "Band Vote:"}}
+            {$this update_preview_song $current_voted_song "" 0}
+            {$this dx_update_set_count}
+         }
+      }
+      {if $playintrotext
+         {set $playintrotext FALSE}
+         {play_header.lbl set text_token {sprint " "}}
       }
    )
    (calc_highest_vote
@@ -691,6 +738,8 @@
       {{dx_play_a_show_panel find inst3.lbl} set text_token {sprint {if_else {== $dx_play_a_show_vote 3} {sprint "<alt>j</alt>"} {sprint ""}} " 3. "}}
       {{dx_play_a_show_panel find inst4.lbl} set text_token {sprint {if_else {== $dx_play_a_show_vote 4} {sprint "<alt>j</alt>"} {sprint ""}} " 4. "}}
       {{dx_play_a_show_panel find inst5.lbl} set text_token {sprint {if_else {== $dx_play_a_show_vote 5} {sprint "<alt>j</alt>"} {sprint ""}} " 5. "}}
+      {play_header.lbl set text_token {sprint " "}}
+      {song_preview.lbl set text_token {sprint " "}}
       {switch $dx_play_a_show_vote
          (1
             {switch $line1eval
@@ -714,6 +763,7 @@
          )
          (5
             {$this dx_refesh_songs}
+            {song_preview.lbl set text_token {sprint "Options Refreshing"}}
          )
       }
       {set $dx_playlist_array {array $dx_playlist_array}}
@@ -721,7 +771,8 @@
          kTaskSeconds
          (name dx_send_vote)
          (delay 2)
-         (script {$this dx_play_a_show_report_vote})
+         (script 
+            {$this dx_play_a_show_report_vote})
       }
    )
    (dx_slot_voted
@@ -783,8 +834,11 @@
       }
    )
    (dx_play_a_show_report_vote
-      {if $current_voted_song
-         {$this update_preview_song $current_voted_song "" 0}
+      {if_else {== $dx_play_a_show_vote 5}
+         {song_preview.lbl set text_token {sprint "Options Refreshed"}}
+         {if $current_voted_song
+            {$this update_preview_song $current_voted_song "" 0}
+         }
       }
       {$this dx_play_a_show_info}
    )
