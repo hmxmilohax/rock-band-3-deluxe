@@ -10,7 +10,7 @@
          {play_play_text.lbl set resource_name "pentatonic_outline"}
          {play_play_text.lbl set_showing TRUE}
          {play_play_text.lbl set_local_scale 1 1 1}
-         {play_play_text.lbl set_local_pos -220 0 160}
+         {play_play_text.lbl set_local_pos -220 0 162}
          {play_play_text.lbl set text_size 40}
          {play_play_text.lbl set fit_type 2}
          {play_play_text.lbl set alignment kTopLeft}
@@ -22,6 +22,41 @@
          {career.grp set_showing TRUE}
       }
       {play_play_text.lbl set text_token {sprint "Vote on which songs to play!\nVoting ends when all players have voted!"}}
+   )
+   (dx_play_countdown
+      {if {! {exists play_countdown_text.lbl}}
+         {if {! {exists play_color.color}}
+            {new UIColor play_color.color}
+            {play_color.color set color {pack_color 1 1 1}}
+         }
+         {new BandLabel play_countdown_text.lbl}
+         {play_countdown_text.lbl set resource_name "pentatonic_outline"}
+         {play_countdown_text.lbl set_showing TRUE}
+         {play_countdown_text.lbl set_local_scale 1 1 1}
+         {play_countdown_text.lbl set_local_pos 400 0 162}
+         {play_countdown_text.lbl set text_size 20}
+         {play_countdown_text.lbl set fit_type 2}
+         {play_countdown_text.lbl set alignment kTopRight}
+         {play_countdown_text.lbl set width 150}
+         {play_countdown_text.lbl set height 40}
+         {play_countdown_text.lbl set alpha 1}
+         {play_countdown_text.lbl set color_override play_color.color}
+         {career.grp add_object play_countdown_text.lbl}
+         {career.grp set_showing TRUE}
+      }
+      {$this dx_play_countdown_set_time "Waiting" 2}
+   )
+   (dx_play_countdown_set_time
+      ($words $int)
+      {if_else $int
+         {do
+            {play_countdown_text.lbl set_showing TRUE}
+            {play_countdown_text.lbl set text_token {sprintf "%s: %i" $words $int}}
+         }
+         {do
+            {play_countdown_text.lbl set_showing FALSE}
+         }
+      }
    )
    (dx_play_header
       {if {! {exists play_header.lbl}}
@@ -49,7 +84,7 @@
          {total.lbl set resource_name "pentatonic_outline"}
          {total.lbl set_showing TRUE}
          {total.lbl set_local_scale 1 1 1}
-         {total.lbl set_local_pos 400 0 160}
+         {total.lbl set_local_pos 400 0 162}
          {total.lbl set text_size 40}
          {total.lbl set fit_type 2}
          {total.lbl set alignment kTopRight}
@@ -797,11 +832,16 @@
       {song_preview.lbl set text_token {sprint "Options Refreshing"}}
       {set $votingallowed FALSE}
       {set $current_voted_song FALSE}
+      {$this dx_play_countdown_set_time "Getting Songs" 1}
+      {if {exists dx_hold_up}
+         {delete dx_hold_up}
+      }
       {script_task
          kTaskSeconds
          (name dx_hold_up)
          (delay 1)
          (script 
+            {$this dx_play_countdown_set_time "Waiting" 0}
             {$this dx_play_a_show_info})
       }
    )
@@ -848,11 +888,36 @@
       }
       {set $dx_playlist_array {array $dx_playlist_array}}
       {set $votingallowed FALSE}
+      {if {exists dx_send_vote1}
+         {delete dx_send_vote1}
+      }
+      {if {exists dx_send_vote2}
+         {delete dx_send_vote2}
+      }
+      {if {exists dx_send_vote3}
+         {delete dx_send_vote3}
+      }
+      {$this dx_play_countdown_set_time "Submitting" 3}
       {script_task
          kTaskSeconds
-         (name dx_send_vote)
+         (name dx_send_vote1)
+         (delay 1)
+         (script 
+            {$this dx_play_countdown_set_time "Submitting" 2})
+      }
+      {script_task
+         kTaskSeconds
+         (name dx_send_vote2)
          (delay 2)
          (script 
+            {$this dx_play_countdown_set_time "Submitting" 1})
+      }
+      {script_task
+         kTaskSeconds
+         (name dx_send_vote3)
+         (delay 3)
+         (script 
+            {$this dx_play_countdown_set_time "Submitting" 0}
             {$this dx_play_a_show_report_vote})
       }
    )
@@ -903,14 +968,35 @@
          }
       }
       {if {== $dx_play_a_show_num_votes $dx_play_a_show_required_votes}
-         {if {exists dx_hold_vote}
-            {delete dx_hold_vote}
+         {if {exists dx_hold_vote1}
+            {delete dx_hold_vote1}
+         }
+         {if {exists dx_hold_vote2}
+            {delete dx_hold_vote2}
+         }
+         {if {exists dx_hold_vote3}
+            {delete dx_hold_vote3}
+         }
+         {$this dx_play_countdown_set_time "Locking in" 3}
+         {script_task
+            kTaskSeconds
+            (name dx_hold_vote1)
+            (delay 1)
+            (script {$this dx_play_countdown_set_time "Locking in" 2})
          }
          {script_task
             kTaskSeconds
-            (name dx_hold_vote)
+            (name dx_hold_vote2)
             (delay 2)
-            (script {$this calc_highest_vote})
+            (script {$this dx_play_countdown_set_time "Locking in" 1})
+         }
+         {script_task
+            kTaskSeconds
+            (name dx_hold_vote3)
+            (delay 3)
+            (script
+               {$this dx_play_countdown_set_time "Locking in" 0}
+               {$this calc_highest_vote})
          }
       }
    )
