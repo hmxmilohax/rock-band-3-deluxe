@@ -4,6 +4,29 @@
    part_difficulty_panel
    (file seldiff.milo)
    (marquee_rotation_ms 3000)
+   (dx_prep_info
+      {if {! {exists play_custom.color}}
+         {new UIColor play_custom.color}
+         {play_custom.color set color {pack_color 1 1 1}}
+      }
+      {if {! {exists play_prep_text.lbl}}
+         {new BandLabel play_prep_text.lbl}
+         {play_prep_text.lbl set resource_name "pentatonic_outline"}
+         {play_prep_text.lbl set_showing TRUE}
+         {play_prep_text.lbl set_local_scale 1 1 1}
+         {play_prep_text.lbl set_local_pos -220 0 160}
+         {play_prep_text.lbl set text_size 40}
+         {play_prep_text.lbl set fit_type 2}
+         {play_prep_text.lbl set alignment kTopLeft}
+         {play_prep_text.lbl set width 500}
+         {play_prep_text.lbl set height 40}
+         {play_prep_text.lbl set alpha 1}
+         {play_prep_text.lbl set color_override play_custom.color}
+         {career.grp add_object play_prep_text.lbl}
+      }
+      {career.grp set_showing TRUE}
+      {play_prep_text.lbl set text_token {sprint "Welcome to Play a Show!\nGrab your axe and give the crowd a great opener!"}}
+   )
    (enter
       {tour.grp set_showing FALSE}
       {career.grp set_showing FALSE}
@@ -37,7 +60,11 @@
             {career.grp set_showing TRUE})
          ({$this is_battle}
             {meta_performer update_battle_type_label battle_type.lbl}
-            {battle.grp set_showing TRUE})})
+            {battle.grp set_showing TRUE})}
+      {if $dx_prep_show_flow
+         {$this dx_prep_info}
+      }
+   )
    (update_tour_setlist_label
       ($filter $song_count)
       {setlist_label.grp set showing TRUE}
@@ -115,9 +142,21 @@
    DX_SEL_DIFF_HANDLES
    (enter
       {song_preview.lbl set_token_fmt dx_play_a_show_welcome}
+      {set $current_voted_song FALSE}
+      {career.pic set tex_file "dx/custom_textures/_additional_textures/acc_dx_hourglass_keep.png"}
+      {song_preview.lbl set_token_fmt dx_play_a_show_welcome}
       {tour.grp set_showing FALSE}
-      {career.grp set_showing FALSE}
-      {battle.grp set_showing FALSE})
+      {career.grp set_showing TRUE}
+      {battle.grp set_showing FALSE}
+      {$this dx_generate_lines_info}
+      {$this dx_play_info}
+      {$this dx_play_set_count}
+      {$this dx_play_header}
+      {if {! $gotthislabelpreview}
+         {set $gotthislabelpreview {song_preview.lbl get_local_pos_index 2}}
+      }
+      {song_preview.lbl set_local_pos_index 2 {- $gotthislabelpreview 15}}
+   )
    (update_tour_setlist_label
       ($filter $song_count)
       {setlist_label.grp set showing TRUE}
@@ -150,6 +189,7 @@
    (update_icon_art
       ($icon_art)
       {marquee.grp set_showing TRUE}
+      {career.pic set tex_file "dx/custom_textures/_additional_textures/acc_dx_hourglass_keep.png"}
       {if_else
          {!
             {==
@@ -165,6 +205,7 @@
       {marquee.grp set_showing TRUE}
       {coming_up.lbl set text_token coming_up}
       {song_preview.lbl set_song_and_artist_name_from_sym $song $index}
+      {career.pic set tex_file "dx/custom_textures/_additional_textures/acc_dx_hourglass_keep.png"}
       {if_else
          {!
             {==
@@ -183,18 +224,25 @@
 {new
    BandScreen
    dx_play_a_show_screen
-   (panels meta sv2_panel dx_play_a_show_panel)
+   (panels meta sv2_panel dx_play_a_show_panel song_select_panel)
+   (focus song_select_panel)
    (enter
+      {song_select_panel set_showing FALSE}
       {overshell add_sink $this}
-
+      {set $playintrotext TRUE}
       {if
          {session_mgr is_leader_local}
          {overshell set_song_options_required FALSE}
          {if
             {overshell in_override_flow kOverrideFlow_None}
             {overshell begin_override_flow kOverrideFlow_SongSettings}}}
-      {dx_play_a_show_panel dx_play_a_show_info}
-      {{dx_play_a_show_panel find song_preview.lbl} set_token_fmt dx_play_a_show_welcome})
+      {dx_play_a_show_panel dx_play_countdown}
+      {dx_play_a_show_panel hold_up}
+      {{dx_play_a_show_panel find song_preview.lbl} set_token_fmt dx_play_a_show_welcome}
+      {play_header.lbl set text_token {sprint " "}}
+      {set $poopie ()}
+      {resize $poopie 0}
+   )
    (exit
       {overshell remove_sink $this}
       {if
