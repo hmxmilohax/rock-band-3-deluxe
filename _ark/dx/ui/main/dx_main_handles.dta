@@ -50,7 +50,7 @@
       {$label set width 300}
       {$label set height 40}
       {$label set alpha 1}
-      {$label set color_override now_play_color.color}
+      ;{$label set color_override now_play_color.color}
       {main_menu.grp add_object $label}
    )
    (dx_now_playing
@@ -71,17 +71,45 @@
          
       }
       {if {! {exists line3.lbl}}
-         {$this lbl_maker line3.lbl 385 130 kTopRight {sprint "<alt>j</alt>playnow"}}
+         {$this lbl_maker line3.lbl 385 145 kTopRight {sprint "<alt>j</alt>playnow"}}
          {line3.lbl set alt_font_resource_name buttons}
          {line3.lbl set alt_z_offset -1}
          {line3.lbl set alt_text_size 12}
       }
       {line0.lbl set_token_fmt {sprint " "}}
       {line1.lbl set_token_fmt {sprint $metasong}}
-      {line2.lbl set_token_fmt {sprint $metaartist}}
-      {if_else {meta_performer song_id}
+      {line2.lbl set_token_fmt {sprint " "}}
+      {if_else {&& {session is_local} {meta_performer song_id}}
          {line3.lbl set_token_fmt press_to_play {sprint $metaverb}}
          {line3.lbl set_token_fmt {sprint " "}}
+      }
+      {$this dx_now_playing_anim}
+   )
+   (dx_now_playing_anim
+      {thread_task kTaskSeconds
+         (name line1_fade)
+         (script
+            {if {> {line1.lbl get_local_pos_index 2} 180}
+               {set $direction down}
+               {set $whichone {! $whichone}}
+               {if_else $whichone
+                  {line1.lbl set_token_fmt {sprint $metaartist}}
+                  {line1.lbl set_token_fmt {sprint $metasong}}
+               }
+            }
+            {if {<= {line1.lbl get_local_pos_index 2} 160}
+               {set $direction up}
+               {$task sleep 5}
+            }
+            {if {== $direction up}
+               {line1.lbl set_local_pos_index 2 {+ {line1.lbl get_local_pos_index 2} 1}}
+            }
+            {if {== $direction down}
+               {line1.lbl set_local_pos_index 2 {- {line1.lbl get_local_pos_index 2} 1}}
+            }
+            {$task sleep 0.0001}
+            {$task loop}
+         )
       }
    )
    (dx_unlock_pre_orders
