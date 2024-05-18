@@ -448,6 +448,9 @@
       ;}
    )
    (enter
+      {set $highscore_tracker ()}
+      {resize $highscore_tracker 0}
+      {push_back $highscore_tracker (fake_name_goes_here_lol faker)}
       {$this iterate UIList $l {$l set scroll_time 0}}
       {net_sync set_ui_state kNetUI_MusicLibrary}
       {set
@@ -1254,6 +1257,25 @@
                         {!
                            {music_library viewing_setlists}}}
                      {play_instr_sfx $user button_select}
+                     {if {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                        {if {> {{music_library get_highlighted_node} get_score} 0}
+                           {foreach $entry $highscore_tracker
+                              {if {!= {elem $entry 0} {{music_library get_highlighted_node} get_token}} ;check if the state isnt in the list
+                                 {set $pushtime_highscore TRUE} ;get ready to push it
+                              }
+                           }
+                           {foreach $entry $highscore_tracker
+                              {if {== {elem $entry 0} {{music_library get_highlighted_node} get_token}} ;check the list again, and if it is in the list
+                                 {set $pushtime_highscore FALSE} ;dont push it
+                              }
+                           }
+                           {if $pushtime_highscore ;if we need to push
+                              {push_back $highscore_tracker ({{music_library get_highlighted_node} get_token} {{music_library get_highlighted_node} get_score})} ;push_back a new state into the array
+                           }                  
+                           {set $highscore_tracker {array $highscore_tracker}}
+                           ;{dx_passive_messenger_symbol {sprint $highscore_tracker}}
+                        }
+                     }
                      {music_library select_highlighted_node $user}}}})
          ({&&
                {== $action kAction_Option}
@@ -1358,6 +1380,25 @@
                               $on_random}}
                         {music_library clear_setlist}
                         {music_library set_making_setlist TRUE}
+                        {if {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                           {if {> {{music_library get_highlighted_node} get_score} 0}
+                              {foreach $entry $highscore_tracker
+                                 {if {!= {elem $entry 0} {{music_library get_highlighted_node} get_token}} ;check if the state isnt in the list
+                                    {set $pushtime_highscore TRUE} ;get ready to push it
+                                 }
+                              }
+                              {foreach $entry $highscore_tracker
+                                 {if {== {elem $entry 0} {{music_library get_highlighted_node} get_token}} ;check the list again, and if it is in the list
+                                    {set $pushtime_highscore FALSE} ;dont push it
+                                 }
+                              }
+                              {if $pushtime_highscore ;if we need to push
+                                 {push_back $highscore_tracker ({{music_library get_highlighted_node} get_token} {{music_library get_highlighted_node} get_score})} ;push_back a new state into the array
+                              }                  
+                              {set $highscore_tracker {array $highscore_tracker}}
+                              ;{dx_passive_messenger_symbol {sprint $highscore_tracker}}
+                           }
+                        }
                         {music_library select_highlighted_node $user})
                      ({&&
                            $already_making_setlist
@@ -1486,7 +1527,9 @@
    (highlight_node_at_ix
       ($ix)
       {song.lst refresh}
-      {song.lst set_selected_simulate_scroll $ix})
+      {song.lst set_selected_simulate_scroll $ix}
+      
+   )
    (set_details_button_config
       ($array)
       {with
@@ -2382,7 +2425,12 @@
                   set_values
                   {$item get_review}
                   TRUE}
-               {song_review.grp set_showing TRUE}}
+               {song_review.grp set_showing TRUE}
+               {$this
+                  dx_get_highscore
+                  {profile_mgr get_primary_profile}
+               }
+            }
             {song_review.grp set_showing FALSE}}
          {if_else
             {'||'
@@ -2657,30 +2705,11 @@
                {profile_picture.mat set diffuse_tex default_profile_picture.tex}}
             {stats.grp set_showing TRUE}}
          {stats.grp set_showing FALSE}})
-   (dx_get_highscore
-      ($profile)
-      {set $dx_reported_highscore FALSE}
-      {if
-         $profile
-         {set $current_solo_highscore {{music_library get_highlighted_node} get_score}}
-      }
-   )
    (move_on_quickplay
       {ui
          sync_screen
          {music_library get_next_screen}
          0}
-      {set $single_song TRUE}
-      {if_else
-         {== {music_library setlist_size} 1}
-         {set $single_song TRUE}
-         {set $single_song FALSE}
-      }
-      {$this
-         dx_get_highscore
-         {profile_mgr get_primary_profile}
-      }
-      {set $score_to_display {sprint "current high score: " $current_solo_highscore}}
       {dx_send_leader_song_speed}
    )
    (storage_changed
