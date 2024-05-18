@@ -126,21 +126,17 @@
       {overshell set_allow_real_guitar_flow TRUE}
       {overshell update_all}
       {$this dx_main_on_enter}
-      {if {exists line1_fade}
-         {delete line1_fade}
-      }
       {set $got_meta FALSE}
       {campaign clear_current_goal})
+   #ifndef HX_WII
    (poll
       {if {&& {! $got_meta} {content_mgr refresh_done}}
          {set $got_meta TRUE}
          {$this dx_now_playing}
       }
    )
+   #endif
    (exit
-      {if {exists line1_fade}
-         {delete line1_fade}
-      }
       {platform_mgr remove_sink $this}
       #ifdef HX_WII
       {session remove_sink $this new_remote_user}
@@ -558,15 +554,32 @@
              {$this dx_check_dx}
              {$this dx_check_xeniawrites}
              #endif)
+         #ifndef HX_WII
          ({|| {== $action kAction_PageUp} {== $action kAction_PageDown}}
-            {if {&& {session is_local} {meta_performer song_id}}
-               {profile_mgr set_primary_profile_by_user $user}
-               {meta_performer set_song {symbol $metashortname}}
-               {gamemode set_mode qp_coop}
-               {ui abstract_wipe}
-               {ui goto_screen {music_library get_next_screen}}
+            {if {! {ui in_transition}}
+               {if_else {content_mgr refresh_done}
+                  {if_else {meta_performer song}
+                     {if_else {&& {session is_local} {meta_performer song_id}}
+                        {do
+                           {profile_mgr set_primary_profile_by_user $user}
+                           {meta_performer reset_songs}
+                           {meta_performer set_song {symbol $metashortname}}
+                           {gamemode set_mode qp_coop}
+                           ;{ui abstract_wipe}
+                           {if {exists line1_fade}
+                              {delete line1_fade}
+                           }
+                           {ui sync_screen {music_library get_next_screen}}
+                        }
+                        kDataUnhandled
+                     }
+                     kDataUnhandled
+                  }
+                  kDataUnhandled
+               }
             }
          )
+         #endif
          kDataUnhandled})
    (refresh_message_provider
       {message_area.lst
