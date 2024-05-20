@@ -35,49 +35,64 @@
             {if {exists author_finder}
                {delete author_finder}
             }
-            {script_task kTaskUISeconds
-               (delay [song_preview_delay])
-               (name author_finder)
-               (script
-                  {dx_author_finder_var_reset}
-                  {meta_performer set_song {{music_library get_highlighted_node} get_token}}
-                  {set $dx_song_data_processed FALSE}
-                  {preload_panel dx_load_tip_and_author_finder}
-                  {dx_song_name_year_title.lbl set_token_fmt $sourcevar}
-                  {if_else $albumvar
-                     {dx_song_name_album.lbl set_token_fmt $albumvar}
-                     {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
-                  }
-                  {if_else $authorvar
-                     ;{dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
-                     {dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
-                     {dx_song_name_album_title.lbl set_token_fmt " "}
-                  }
-                  {{song_select_panel find song_demo.lbl} set_showing FALSE}
-                  {{song_select_panel find song_demo.grp} set_local_scale 0.16 1 0.2}
-                  {{song_select_panel find song_demo.grp} set_local_pos 70 0 -120}
-                  {if_else
-                     {file_exists
-                        #ifdef HX_PS3
-                        {sprint "dx/opensource/gen/" $sourcevar ".png_ps3"}
-                        #endif
-                        #ifdef HX_WII
-                        {sprint "dx/opensource/gen/" $sourcevar ".png_wii"}
-                        #endif
-                        #ifdef HX_XBOX
-                        {sprint "dx/opensource/gen/" $sourcevar ".png_xbox"}
-                        #endif
+            {if {exists author_finder_repeat}
+               {delete author_finder_repeat}
+            }
+            {if_else {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
+               {thread_task kTaskSeconds
+                  (delay [song_preview_delay])
+                  (name author_finder)
+                  (script
+                     {dx_author_finder_var_reset}
+                     {meta_performer set_song {{music_library get_highlighted_node} get_token}}
+                     {set $dx_song_data_processed FALSE}
+                     {preload_panel dx_load_tip_and_author_finder}
+                     {dx_song_name_year_title.lbl set_token_fmt $sourcevar}
+                     {if_else $albumvar
+                        {dx_song_name_album.lbl set_token_fmt $albumvar}
+                        {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
                      }
-                     {do
-                        {{song_select_panel find song_demo.grp} set_showing TRUE}
-                        {{song_select_panel find demo.tex} set_bitmap {sprint "dx/opensource/" $sourcevar ".png"}}
+                     {if_else $authorvar
+                        ;{dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
+                        {dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
+                        {dx_song_name_album_title.lbl set_token_fmt " "}
                      }
-                     {do
-                        {{song_select_panel find song_demo.grp} set_showing TRUE}
-                        {{song_select_panel find demo.tex} set_bitmap "dx/opensource/custom.png"}
+                     {{song_select_panel find song_demo.lbl} set_showing FALSE}
+                     {{song_select_panel find song_demo.grp} set_local_scale 0.16 1 0.2}
+                     {{song_select_panel find song_demo.grp} set_local_pos 70 0 -120}
+                     {if_else
+                        {file_exists
+                           #ifdef HX_PS3
+                           {sprint "dx/opensource/gen/" $sourcevar ".png_ps3"}
+                           #endif
+                           #ifdef HX_WII
+                           {sprint "dx/opensource/gen/" $sourcevar ".png_wii"}
+                           #endif
+                           #ifdef HX_XBOX
+                           {sprint "dx/opensource/gen/" $sourcevar ".png_xbox"}
+                           #endif
+                        }
+                        {do
+                           {{song_select_panel find song_demo.grp} set_showing TRUE}
+                           {{song_select_panel find demo.tex} set_bitmap {sprint "dx/opensource/" $sourcevar ".png"}}
+                        }
+                        {do
+                           {{song_select_panel find song_demo.grp} set_showing TRUE}
+                           {{song_select_panel find demo.tex} set_bitmap "dx/opensource/custom.png"}
+                        }
                      }
-                  }
-               )
+                  )
+               }
+               {thread_task kTaskSeconds
+                  (delay [song_preview_delay])
+                  (name author_finder_repeat)
+                  (script 
+                     {if {exists author_finder}
+                        {delete author_finder}
+                     }
+                     {$this dx_authorfinder}
+                  )
+               }
             }
          }
       }
