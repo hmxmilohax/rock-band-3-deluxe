@@ -25,41 +25,43 @@
    (trainer_from_main_menu kControllerNone)
    (song_data_mounted
       {$this refresh_top})
+   (poll
+      {if {&& {== {{music_library get_highlighted_node} get_node_type} kNodeSong} $probeforfinder}
+         {if {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
+            {set $probeforfinder FALSE}
+            {$this dx_authorfinder}
+         }
+      }
+   )
    (dx_authorfinder
-      {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
-      {if {&& {! $dx_path_failed} $dx_author_finder_is_enabled {! {gamemode in_mode trainer}}}
+      {if_else {&& {! $dx_path_failed} $dx_author_finder_is_enabled {! {gamemode in_mode trainer}}}
          {do
-            {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
-            {dx_song_name_album.lbl set_token_fmt lb_waiting}
-            {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
             {if {exists author_finder}
                {delete author_finder}
             }
-            {if {exists author_finder_repeat}
-               {delete author_finder_repeat}
-            }
-            {if_else {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
-               {thread_task kTaskSeconds
-                  (delay [song_preview_delay])
-                  (name author_finder)
-                  (script
-                     {dx_author_finder_var_reset}
-                     {meta_performer set_song {{music_library get_highlighted_node} get_token}}
-                     {set $dx_song_data_processed FALSE}
-                     {preload_panel dx_load_tip_and_author_finder}
+            {thread_task kTaskSeconds
+               (delay [song_preview_delay])
+               (name author_finder)
+               (script
+                  {dx_author_finder_var_reset}
+                  {meta_performer set_song {{music_library get_highlighted_node} get_token}}
+                  {set $dx_song_data_processed FALSE}
+                  {preload_panel dx_load_tip_and_author_finder}
+                  {if_else $sourcevar
                      {dx_song_name_year_title.lbl set_token_fmt $sourcevar}
-                     {if_else $albumvar
-                        {dx_song_name_album.lbl set_token_fmt $albumvar}
-                        {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
-                     }
-                     {if_else $authorvar
-                        ;{dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
-                        {dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
-                        {dx_song_name_album_title.lbl set_token_fmt " "}
-                     }
-                     {{song_select_panel find song_demo.lbl} set_showing FALSE}
-                     {{song_select_panel find song_demo.grp} set_local_scale 0.16 1 0.2}
-                     {{song_select_panel find song_demo.grp} set_local_pos 70 0 -120}
+                     {dx_song_name_year_title.lbl set_token_fmt os_blnk}
+                  }
+                  {if_else $albumvar
+                     {dx_song_name_album.lbl set_token_fmt {sprint $albumvar}}
+                     {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
+                  }
+                  {if_else $authorvar
+                     {dx_song_name_album_title.lbl set_token_fmt {sprint $authorvar}}
+                     {dx_song_name_album_title.lbl set_token_fmt os_blnk}
+                  }
+                  {{song_select_panel find song_demo.grp} set_local_scale 0.16 1 0.2}
+                  {{song_select_panel find song_demo.grp} set_local_pos 70 0 -120}
+                  {if_else $sourcevar
                      {if_else
                         {file_exists
                            #ifdef HX_PS3
@@ -81,26 +83,17 @@
                            {{song_select_panel find demo.tex} set_bitmap "dx/opensource/custom.png"}
                         }
                      }
-                  )
-               }
-               {thread_task kTaskSeconds
-                  (delay [song_preview_delay])
-                  (name author_finder_repeat)
-                  (script 
-                     {if {exists author_finder}
-                        {delete author_finder}
-                     }
-                     {$this dx_authorfinder}
-                  )
-               }
+                     {{song_select_panel find song_demo.grp} set_showing FALSE}
+                  }
+               )
             }
          }
+         {do
+            {dx_song_name_year_title.lbl set_token_fmt os_blnk}
+            {dx_song_name_album_title.lbl set_token_fmt os_blnk}
+            {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
+         }
       }
-      {if {&& {|| $dx_path_failed {! $dx_author_finder_is_enabled}} {! {gamemode in_mode trainer}}}
-         {dx_song_name_year_title.lbl set_token_fmt os_blnk}
-         {dx_song_name_album_title.lbl set_token_fmt os_blnk}
-      }
-      kDataUnhandled
    )
    (lbl_maker
       ($label $x $y $align)
@@ -301,12 +294,25 @@
 
    )
    (dx_diff_setter
+      {set $probeforfinder TRUE}
+      {{song_select_panel find song_demo.lbl} set_showing FALSE}
+      {if_else $dx_author_finder_is_enabled
+         {do
+            {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
+            {dx_song_name_album.lbl set_token_fmt lb_waiting}
+            {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
+         }
+         {do
+            {dx_song_name_year_title.lbl set_token_fmt os_blnk}
+            {dx_song_name_album_title.lbl set_token_fmt os_blnk}
+            {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
+         }
+      }
       {dx_song_name_genre_title.lbl
          set_token_fmt
          {{music_library get_highlighted_node} genre}
       }
       {dx_song_name_genre.lbl set_song_year {{music_library get_highlighted_node} year_released} {{music_library get_highlighted_node} year_released}}
-      {$this dx_authorfinder}
       ;song_length
       {dx_song_name_length.lbl
          set_token_fmt
