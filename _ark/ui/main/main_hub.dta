@@ -126,7 +126,16 @@
       {overshell set_allow_real_guitar_flow TRUE}
       {overshell update_all}
       {$this dx_main_on_enter}
+      {set $got_meta FALSE}
       {campaign clear_current_goal})
+   #ifndef HX_WII
+   (poll
+      {if {&& {! $got_meta} {content_mgr refresh_done}}
+         {set $got_meta TRUE}
+         {$this dx_now_playing}
+      }
+   )
+   #endif
    (exit
       {platform_mgr remove_sink $this}
       #ifdef HX_WII
@@ -293,9 +302,15 @@
                   {song_select_panel set trainer_from_main_menu kControllerKeys}
                   {ui abstract_wipe}
                   {ui goto_screen song_select_enter_screen})
-               ({==
-                     {$user get_controller_type}
-                     kControllerRealGuitar}
+               (
+                  {||
+                     {== {$user get_controller_type} kControllerRealGuitar}
+                     ; dx - allow 5L guitar to enter Pro Guitar trainer for playtesting
+                     {&&
+                        {== {$user get_controller_type} kControllerGuitar}
+                        {modifier_mgr is_modifier_active mod_auto_play}
+                     }
+                  }
                   {gamemode set_mode trainer_real_guitar}
                   {input_mgr set_user $user}
                   {critical_user_listener set_critical_user $user}
@@ -539,6 +554,32 @@
              {$this dx_check_dx}
              {$this dx_check_xeniawrites}
              #endif)
+         #ifndef HX_WII
+         ({|| {== $action kAction_PageUp} {== $action kAction_PageDown}}
+            {if {! {ui in_transition}}
+               {if_else {content_mgr refresh_done}
+                  {if_else {meta_performer song}
+                     {if_else {&& {session is_local} {meta_performer song_id}}
+                        {do
+                           {profile_mgr set_primary_profile_by_user $user}
+                           {meta_performer reset_songs}
+                           {meta_performer set_song {symbol $metashortname}}
+                           {gamemode set_mode qp_coop}
+                           {ui abstract_wipe}
+                           {if {exists line1_fade}
+                              {delete line1_fade}
+                           }
+                           {ui goto_screen {music_library get_next_screen}}
+                        }
+                        kDataUnhandled
+                     }
+                     kDataUnhandled
+                  }
+                  kDataUnhandled
+               }
+            }
+         )
+         #endif
          kDataUnhandled})
    (refresh_message_provider
       {message_area.lst

@@ -1,6 +1,10 @@
 #define DX_MAIN_HANDLES
 (
    (dx_main_on_enter
+      {if_else {== $dx_vsync 0}
+         {rnd set_sync 0}
+         {rnd set_sync 1}
+      }
       {if {&& {! $dx_playing_a_show} {! $dx_prep_show_flow} {! $dx_in_show_flow}}
          {set $dx_play_a_show_active_instruments ()}
          {resize $dx_play_a_show_active_instruments 0}
@@ -25,6 +29,94 @@
             {mb_musicstore.btn set alt_style_enabled TRUE}
             {mb_musicstore.btn set alt_font_resource_name {mb_musicstore.btn get resource_name}}
          }
+      }
+   )
+   (lbl_maker
+      ($label $x $y $align $content)
+      {new BandLabel $label}
+      {$label set resource_name "pentatonic_outline"}
+      {$label set alt_style_enabled TRUE}
+      {$label set alt_font_resource_name pentatonic_outline}
+      {if {! {exists now_play_color.color}}
+         {new UIColor now_play_color.color}
+         {now_play_color.color set color {pack_color 1 1 1}}
+      }
+      {$label set markup TRUE}
+      {$label set_showing TRUE}
+      {$label set_local_scale 1 1 1}
+      {$label set_local_pos $x 0 $y}
+      {$label set set_token_fmt $content}
+      {$label set text_size 15}
+      {$label set alt_text_size 15}
+      {$label set alt_z_offset -4}
+      {$label set fit_type 2}
+      {$label set alignment $align}
+      {$label set width 300}
+      {$label set height 40}
+      {$label set alpha 1}
+      ;{$label set color_override now_play_color.color}
+      {main_menu.grp add_object $label}
+   )
+   (dx_now_playing
+      {main_menu.grp set_showing TRUE}
+      {meta_performer reset_songs}
+      {meta_performer set_song {symbol $metashortname}}
+      {if {! {exists line0.lbl}}
+         {$this lbl_maker line0.lbl 385 145 kTopRight {sprint $currentshellmusic}}
+      }
+      {if {! {exists line1.lbl}}
+         {$this lbl_maker line1.lbl 385 160 kTopRight {sprint $currentshellmusic}}
+         {line1.lbl set alt_z_offset -2}
+         {line1.lbl set alt_text_size 12}
+      }
+      {if {! {exists line2.lbl}}
+         {$this lbl_maker line2.lbl 385 145 kTopRight {sprint $currentshellmusic}}
+      }
+      {if {! {exists line3.lbl}}
+         {$this lbl_maker line3.lbl 385 145 kTopRight {sprint "<alt>j</alt>playnow"}}
+         {line3.lbl set alt_font_resource_name buttons}
+         {line3.lbl set alt_z_offset -1}
+         {line3.lbl set alt_text_size 12}
+      }
+      {line0.lbl set_token_fmt {sprint " "}}
+      {line1.lbl set_token_fmt {sprint $metasong}}
+      {line2.lbl set_token_fmt {sprint " "}}
+      {if_else {meta_performer song}
+         {if {&& {session is_local} {meta_performer song_id}}
+            {line3.lbl set_token_fmt press_to_play {sprint $metaverb}}
+         }
+         {line3.lbl set_token_fmt {sprint " "}}
+      }
+      {if {exists line1_fade}
+         {delete line1_fade}
+      }
+      {$this dx_now_playing_anim}
+   )
+   (dx_now_playing_anim
+      {thread_task kTaskSeconds
+         (name line1_fade)
+         (script
+            {if {> {line1.lbl get_local_pos_index 2} 180}
+               {set $direction down}
+               {set $whichone {! $whichone}}
+               {if_else $whichone
+                  {line1.lbl set_token_fmt {sprint $metaartist}}
+                  {line1.lbl set_token_fmt {sprint $metasong}}
+               }
+            }
+            {if {<= {line1.lbl get_local_pos_index 2} 160}
+               {set $direction up}
+               {$task sleep 5}
+            }
+            {if {== $direction up}
+               {line1.lbl set_local_pos_index 2 {+ {line1.lbl get_local_pos_index 2} 1}}
+            }
+            {if {== $direction down}
+               {line1.lbl set_local_pos_index 2 {- {line1.lbl get_local_pos_index 2} 1}}
+            }
+            {$task sleep 0.0001}
+            {$task loop}
+         )
       }
    )
    (dx_unlock_pre_orders
