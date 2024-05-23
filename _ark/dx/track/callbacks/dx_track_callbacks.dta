@@ -6,6 +6,40 @@
       {if {>= $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
          {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
       }
+      {if {&& {gamemode in_mode qp_coop} $dx_high_score_report {== $dx_num_active_instruments 1} {> $current_solo_highscore 10} {! $dx_reported_highscore}}
+         {beatmatch foreach_active_player $player
+            {if {&& {{$player get_user} is_local} {> {$player score} $current_solo_highscore}}
+               {set $dx_reported_highscore TRUE}
+               {switch {$player instrument}
+                  (guitar {set $current_inst_icon "<alt>G</alt>"})
+                  (bass {set $current_inst_icon "<alt>B</alt>"})
+                  (drum {set $current_inst_icon "<alt>D</alt>"})
+                  (keys {set $current_inst_icon "<alt>K</alt>"})
+                  (real_guitar {set $current_inst_icon "<alt>G</alt>"})
+                  (real_bass {set $current_inst_icon "<alt>B</alt>"})
+                  (real_drum {set $current_inst_icon "<alt>D</alt>"})
+                  (real_keys {set $current_inst_icon "<alt>K</alt>"})
+               }
+               ;{set $score_to_display {sprint "TEMP: you beat your solo high score of " $current_solo_highscore}}
+               {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set markdown TRUE}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set alt_style_enabled TRUE}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set alt_font_resource_name instrument_icons_small}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set alt_z_offset 0.08}
+               {set $pickadisplay {random_int 0 4}}
+               {switch $pickadisplay
+                  (1 {set $picked_display kTrackerChallengeType_Streak})
+                  (2 {set $picked_display kTrackerChallengeType_Accuracy})
+                  (3 {set $picked_display kTrackerChallengeType_Overdrive})
+                  {set $picked_display kTrackerChallengeType_Streak}
+               }
+               {{coop_track_panel find tracker_broadcast_display} set_challenge_type $picked_display}
+               {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+               {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {sprint $current_inst_icon " New Personal Best!"}}
+            }
+         }
+      }
    )
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player

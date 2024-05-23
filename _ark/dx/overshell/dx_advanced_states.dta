@@ -739,6 +739,7 @@
       ($options
          {array 0})
       {push_back $options os_debug_mode}
+      {push_back $options report_song_location}
       {push_back $options os_milo}
       {push_back $options os_logging}
       #ifdef HX_PS3
@@ -766,7 +767,7 @@
       #endif
       {push_back $options do_script}
       {push_back $options os_uptime}
-      {push_back $options generate_updates_dta}
+      
       {push_back $options os_dumproot}
       {push_back $options os_dumproot2}
       
@@ -851,6 +852,11 @@
             {dx_state_pos_tracker}
             DX_DEBUG_DATA
             {set $previous_state dxState_Debug}
+         )
+         (report_song_location
+            {if {&& {== {ui current_screen} song_select_screen} {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
+               {dx_passive_messenger_symbol {symbol {song_mgr song_file_path {{music_library get_highlighted_node} get_token} " "}}}
+            }
          )
          (generate_updates_dta
             {set $tempwrite {find_exists $syscfg missing_song_data}}
@@ -1039,7 +1045,11 @@
       (dx_drain os_dx_bot_overdrive_drain)
    }
    {if_else $dx_auto_endgame os_dx_auto_endgame_on os_dx_auto_endgame_off}
-   {if_else $dx_auto_endurance os_auto_endurance_on os_auto_endurance_off}
+   {switch $dx_auto_endurance 
+      (dx_selected os_auto_endurance_selected)
+      (dx_random os_auto_endurance_random)
+      (FALSE os_auto_endurance_off)
+   }
    {if_else $dx_bot_1 os_dx_bot_1_on os_dx_bot_1_off}
    {if_else $dx_bot_2 os_dx_bot_2_on os_dx_bot_2_off}
    {if_else $dx_bot_3 os_dx_bot_3_on os_dx_bot_3_off}
@@ -1082,10 +1092,14 @@
             {set $dx_auto_endgame {! $dx_auto_endgame}}
             {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
          )
-         ((os_auto_endurance_on os_auto_endurance_off)
-            {set $dx_auto_endurance {! $dx_auto_endurance}}
+         ((os_auto_endurance_selected os_auto_endurance_random os_auto_endurance_off)
+            {set $dx_auto_endurance {switch $dx_auto_endurance
+               (dx_selected dx_random)
+               (dx_random FALSE)
+               (FALSE dx_selected)
+            }}
             {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
-         ) 
+         )
          ((os_dx_bot_1_on os_dx_bot_1_off)
             {set $dx_bot_1 {! $dx_bot_1}}
             {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}

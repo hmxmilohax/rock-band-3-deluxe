@@ -1,7 +1,7 @@
 # add_devbuild.py
 import sys
 
-version = f"1.1.0-beta7"
+version = f"1.1.0-beta8"
 
 path = sys.argv[1]
 
