@@ -1,0 +1,126 @@
+{func dx_play_cutscene
+   ($milo $dest)
+   {set $dx_transition_cat FALSE}
+   {switch $milo
+      ((rv1_a rv2_a rv3_a rv4_a rv5_a rv6_a rv7_a)
+         {set $dx_transition_cat reward}
+      )
+      ((tv1_a tv3_a tv3_b tv3_c tv3_d tv3_e tv3_f tv4_a tv4_b tv4_c tv4_d tv4_e tv5_a tv6_a tv11_a)
+         {set $dx_transition_cat transition}
+      )
+      ((sv2_a sv3_a sv3_b sv4_a sv4_b sv4_c sv4_d sv4_e sv5_a sv7_a sv7_b sv7_c sv8_a)
+         {set $dx_transition_cat shell}
+      )
+      {set $dx_transition_cat FALSE}
+   }
+   {if $dx_transition_cat
+      {set $dx_transition_milo $milo}
+      {dx_tran_screen set dest_screen $dest}
+      {ui goto_screen dx_tran_screen}
+   }
+}
+;reward
+;rv1_a rv2_a rv3_a rv4_a rv5_a rv6_a rv7_a
+;transition
+;tv1_a tv3_a tv3_b tv3_c tv3_d tv3_e tv3_f
+;tv4_a tv4_b tv4_c tv4_d tv4_e tv5_a tv6_a tv11_a
+;shell (softlocks because never "transitions")
+;sv2_a sv3_a sv3_b sv4_a sv4_b sv4_c sv4_d
+;sv4_e sv5_a sv7_a sv7_b sv7_c sv8_a
+;{dx_play_cutscene tv11_a meta_loading_continue_screen}
+
+#define DX_TOUR_HANDLES
+(
+   {new
+      TourDescPanel
+      dx_tour_customize_panel
+      (file
+         "tour_customize.milo")
+      (focus
+         "tours.lst")
+      (initially_selected_tour '')
+      (enter
+         {tours.lst set_data (hello world)}
+      )
+      (dx_tour
+         {tours.lst set_data (hello world)}
+      )
+      (exit)
+      (SELECT_MSG
+         {ui push_screen tour_notavailable_screen})
+      (update_tourdesc_provider
+         ($provider)
+         {tours.lst set_provider $provider}
+         {tours.lst refresh}
+         {$this dx_tour})
+      (get_selected_tourdesc_index
+         {tours.lst selected_pos})
+      (get_initially_selected_tour
+         [initially_selected_tour])
+      (clear_initially_selected_tour
+         {$this set initially_selected_tour ''})}
+   {new
+      BandScreen
+      dx_tour_customize_screen
+      (panels meta sv3_panel)
+      (enter
+         {if
+            {tour progress}
+            {if
+               {{tour progress}
+                  is_tour_complete}
+               {{tour progress}
+                  update_most_stars}
+               {tour
+                  reset_tour_data
+                  {tour get_profile}}}}
+         {acc_mgr check_for_tour_goals}
+         {tour initialize_tour}
+         {if
+            {'||'
+               {!
+                  {session_mgr has_leader_user}}
+               {is_leader_local}}
+            {tour update_progress_with_career_data}})
+      (TRANSITION_COMPLETE_MSG
+         {ui goto_screen dx_tour_customize_post_screen})}
+   {new
+      BandScreen
+      dx_tour_customize_post_screen
+      (panels meta sv3_panel dx_tour_customize_panel)
+      (focus dx_tour_customize_panel)
+      (back main_hub_screen)
+   }
+)
+DX_TOUR_HANDLES
+#include tour_welcome.dta
+#include tour_quests.dta
+#include tour_challenge_results.dta
+#include tour_customize.dta
+#include tour_finished.dta
+{func
+   get_tour_screen
+   {get_tour_screen_internal TRUE}}
+{func
+   get_tour_screen_no_announcements
+   {get_tour_screen_internal FALSE}}
+{func
+   get_tour_screen_internal
+   ($allow_announcements)
+   {if_else
+      {tour progress}
+      {if_else
+         {&&
+            {{tour progress}
+               is_on_tour}
+            {!
+               {{tour progress}
+                  is_tour_complete}}}
+         {if_else
+            {&&
+               $allow_announcements
+               {tour has_announcement}}
+            {tour get_announcement}
+            tour_gigguide_init_screen}
+         tour_customize_screen}
+      tour_customize_screen}}
