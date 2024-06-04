@@ -407,9 +407,24 @@
    (file
       "song_select.milo")
    (focus song.lst)
+   (get_page_up_button
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_ShellOption
+         kAction_PageUp})
+   (get_page_down_button
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_ShellOption
+         kAction_PageDown})
    (held_buttons
       (kAction_PageUp 0.25)
       (kAction_PageDown 0.25)
+      #ifdef HX_WII (kAction_ShellOption 0.25) #endif
       (kAction_Confirm 1.5)
       (kAction_Cancel 1.5))
    (joypad
@@ -427,6 +442,14 @@
    (trainer_from_main_menu kControllerNone)
    (song_data_mounted
       {$this refresh_top})
+   (get_option_button kAction_Option)
+   (get_button_for_review
+      {if_else
+         {==
+            {$user get_controller_type}
+            kControllerVocals}
+         kAction_Right
+         kAction_Option})
    (poll
       {if {song.lst is_scrolling}
          {if {exists author_finder}
@@ -1489,7 +1512,13 @@
                      {leaderboard_instruments.lst scroll 1 $user})
                   ({details_bottom.grp showing}
                      {instruments.lst scroll 1 $user})}})
-         ({== $action kAction_Option}
+         (#ifdef HX_WII
+            {==
+               $action
+               {$this get_option_button}}
+            #else
+            {== $action kAction_Option}
+            #endif
             {$this hide_details})
          #ifdef HX_WII
          ({'||'
@@ -1773,7 +1802,13 @@
                      }
                      {music_library select_highlighted_node $user}}}})
          ({&&
+               #ifdef HX_WII
+               {==
+                  $action
+                  {$this get_option_button}}
+               #else
                {== $action kAction_Option}
+               #endif
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -1789,7 +1824,17 @@
                         {== $type kNodeSetlist}}}
                   {$this show_details $user}}})
          ({&&
+               #ifdef HX_WII
+               {'||'
+                  {'||'
+                     {==
+                        $action
+                        {$this get_option_button}}
+                     {== $action kAction_Right}}
+                  {== $action kAction_Left}}
+               #else
                {== $action kAction_ShellOption}
+               #endif
                {!
                   {song.lst is_scrolling}}}
             {do
@@ -1797,12 +1842,28 @@
                   {music_library get_highlighted_node})
                ($type
                   {$node get_node_type})
+               #ifdef HX_WII
+               ($new_score
+                  {if_else
+                     {== $action kAction_Left}
+                     {mod
+                        {-
+                           {header_review.rvw get score}
+                           1}
+                        6}
+                     {mod
+                        {'+'
+                           {header_review.rvw get score}
+                           1}
+                        6}})
+               #else
                ($new_score
                   {mod
                      {'+'
                         {header_review.rvw get score}
                         1}
                      6})
+               #endif
                {if
                   {&&
                      {!
@@ -1818,7 +1879,13 @@
                      [reviews_dirty]
                      TRUE}}})
          ({&&
+               #ifdef HX_WII
+               {==
+                  $action
+                  {$this get_page_down_button}}
+               #else
                {== $action kAction_PageDown}
+               #endif
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -1856,10 +1923,18 @@
                }
             }
          )
+         #ifndef HX_WII
          DX_SONG_LIST_LEFT_ACTION
          DX_SONG_LIST_RIGHT_ACTION
+         #endif
          ({&&
+               #ifdef HX_WII
+               {==
+                  $action
+                  {$this get_page_up_button}}
+               #else
                {== $action kAction_PageUp}
+               #endif
                {!
                   {song.lst is_scrolling}}}
             {unless
@@ -2009,8 +2084,17 @@
                      {music_library get_back_screen}
                      $user}}}})
          ({'||'
+               #ifdef HX_WII
+               {==
+                  $action
+                  {$this get_page_up_button}}
+               {==
+                  $action
+                  {$this get_page_down_button}}
+               #else
                {== $action kAction_PageUp}
                {== $action kAction_PageDown}}
+               #endif
             {unless
                {'||'
                   {ui in_transition}
