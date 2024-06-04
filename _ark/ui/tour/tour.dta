@@ -1,0 +1,361 @@
+{func dx_play_cutscene
+   ($milo $dest)
+   {set $dx_transition_cat FALSE}
+   {switch $milo
+      ((rv1_a rv2_a rv3_a rv4_a rv5_a rv6_a rv7_a)
+         {set $dx_transition_cat reward}
+      )
+      ((tv1_a tv3_a tv3_b tv3_c tv3_d tv3_e tv3_f tv4_a tv4_b tv4_c tv4_d tv4_e tv5_a tv6_a tv11_a)
+         {set $dx_transition_cat transition}
+      )
+      ((sv2_a sv3_a sv3_b sv4_a sv4_b sv4_c sv4_d sv4_e sv5_a sv7_a sv7_b sv7_c sv8_a)
+         {set $dx_transition_cat shell}
+      )
+      {set $dx_transition_cat FALSE}
+   }
+   {if $dx_transition_cat
+      {set $dx_transition_milo $milo}
+      {dx_tran_screen set dest_screen $dest}
+      {ui goto_screen dx_tran_screen}
+   }
+}
+;reward
+;rv1_a rv2_a rv3_a rv4_a rv5_a rv6_a rv7_a
+;transition
+;tv1_a tv3_a tv3_b tv3_c tv3_d tv3_e tv3_f
+;tv4_a tv4_b tv4_c tv4_d tv4_e tv5_a tv6_a tv11_a
+;shell (softlocks because never "transitions")
+;sv2_a sv3_a sv3_b sv4_a sv4_b sv4_c sv4_d
+;sv4_e sv5_a sv7_a sv7_b sv7_c sv8_a
+;{dx_play_cutscene tv11_a meta_loading_continue_screen}
+
+
+{func
+   dx_career_array_reader
+   {if {find_exists $dx_career_array career_id}
+      {set $dx_career_name_id {elem {find $dx_career_array career_id} 1}}
+   }
+   {if {find_exists $dx_career_array career_name}
+      {set $dx_career_name {elem {find $dx_career_array career_name} 1}}
+   }
+   {if {find_exists $dx_career_array num_tiers}
+      {set $dx_career_num_tiers {elem {find $dx_career_array num_tiers} 1}}
+   }
+   {if {find_exists $dx_career_array intro_movie}
+      {set $dx_career_intro_movie {elem {find $dx_career_array intro_movie} 1}}
+   }
+   {if {find_exists $dx_career_array intro_transition}
+      {set $dx_career_intro_transition {elem {find $dx_career_array intro_transition} 1}}
+   }
+   {if {find_exists $dx_career_array intro_message}
+      {set $dx_career_intro_message {elem {find $dx_career_array intro_message} 1}}
+   }
+   {set $dx_this_tier tier_1}
+   {if {find_exists $dx_career_array $dx_this_tier name}
+      {set $dx_this_tier_name {elem {find $dx_career_array $dx_this_tier name} 1}}
+   }
+   {if {find_exists $dx_career_array $dx_this_tier intro_message}
+      {set $dx_this_tier_intro_message {elem {find $dx_career_array $dx_this_tier intro_message} 1}}
+   }
+   {if {find_exists $dx_career_array $dx_this_tier transition}
+      {set $dx_this_tier_transition {elem {find $dx_career_array $dx_this_tier transition} 1}}
+   }
+   {if {find_exists $dx_career_array $dx_this_tier win_movie}
+      {set $dx_this_tier_win_movie {elem {find $dx_career_array $dx_this_tier win_movie} 1}}
+   }
+   {if {find_exists $dx_career_array $dx_this_tier songs}
+      {set $dx_this_tier_songs_array ()}
+      {resize $dx_this_tier_songs_array 0}
+      {set $dx_this_tier_songs_array_raw ()}
+      {resize $dx_this_tier_songs_array_raw 0}
+      {set $dx_this_tier_songs_array_raw_songs ()}
+      {resize  $dx_this_tier_songs_array_raw_songs 0}
+      {set $dx_this_tier_songs_array_raw {find $dx_career_array $dx_this_tier songs}}
+      {foreach $entry $dx_this_tier_songs_array_raw
+         {if {!= $entry songs}
+            {push_back $dx_this_tier_songs_array_raw_songs $entry}
+            ;{push_back $list_of_custom_careers $entry}
+         }
+      }
+   }
+}
+
+#define DX_TOUR_HANDLES
+(
+   {new
+      TourDescPanel
+      dx_tour_customize_panel
+      (file
+         "tour_customize.milo")
+      (focus
+         "tours.lst")
+      (initially_selected_tour '')
+      (enter
+         {set $careers_got FALSE}
+         {$this dx_tour}
+      )
+      (get_careers
+         {set $dx_this_tier_songs_array ()}
+         {resize $dx_this_tier_songs_array 0}
+         {set $list_of_custom_careers ()}
+         {resize $list_of_custom_careers 0}
+         {set $list_of_custom_careers_tracker ()}
+         {resize $list_of_custom_careers_tracker 0}
+         {push_back $list_of_custom_careers_tracker (none none)}
+         {set $dx_career_file_array ()}
+         {resize  $dx_career_file_array 0}
+         {set $dx_this_tier_songs_array_raw_songs ()}
+         {resize  $dx_this_tier_songs_array_raw_songs 0}
+         {set $dx_career_file_array
+            #ifdef HX_PS3
+            {file_list {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/dx_career_*.dta"}}
+            #else
+            {file_list {sprint "GAME:/dx_career_*.dta"}}
+            #endif
+         }
+         {foreach $file
+            $dx_career_file_array
+            {if
+               {file_exists
+                  #ifdef HX_PS3
+                  {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $file ".dta"}
+                  #else
+                  {sprint "GAME:/" $file ".dta"}
+                  #endif
+               }
+               {do
+                  {set $dx_career_array ()}
+                  {resize $dx_career_array 0}
+                  {set $dx_career_array
+                     {read_file 
+                        #ifdef HX_PS3
+                        {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $file ".dta"}
+                        #else
+                        {sprint "GAME:/" $file ".dta"}
+                        #endif
+                     }
+                  }
+                  {set $dx_career_array {array $dx_career_array}}
+                  {dx_career_array_reader}
+                  {push_back $list_of_custom_careers_tracker ($dx_career_name $dx_career_name_id)}
+                  {set $list_of_custom_careers_tracker {array $list_of_custom_careers_tracker}}
+                  {push_back $list_of_custom_careers $dx_career_name}
+               }
+            }
+         }
+      )
+      (dx_tour
+         {if {! $careers_got}
+            {set $careers_got TRUE}
+            {$this get_careers}
+         }
+         {if {== {size $list_of_custom_careers} 0} ;if nothing was found at all
+            {set $list_of_custom_careers ('cant find' 'careers' 'this is a bug')} ;fill the list so it doesnt crash
+         }
+         {tours.lst set_data $list_of_custom_careers}
+      )
+      (exit)
+      (SELECT_MSG
+         {set $career_find_id none}
+         {foreach $entry $list_of_custom_careers_tracker
+            {do
+               {set $test_a {sprint {$component selected_sym}}}
+               {set $test_b {sprint {symbol {elem $entry 0}}}}
+               {if {== $test_a $test_b}
+                  {set $test_c {elem $entry 1}}
+                  {if
+                     {file_exists
+                        #ifdef HX_PS3
+                        {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/dx_career_" $test_c ".dta"}
+                        #else
+                        {sprint "GAME:/dx_career_" $test_c ".dta"}
+                        #endif
+                     }
+                     {set $dx_career_array ()}
+                     {resize $dx_career_array 0}
+                     {set $dx_career_array
+                        {read_file
+                           #ifdef HX_PS3
+                           {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/dx_career_" $test_c ".dta"}
+                           #else
+                           {sprint "GAME:/dx_career_" $test_c ".dta"}
+                           #endif
+                        }
+                     }
+                     {set $dx_career_array {array $dx_career_array}}
+                     {dx_career_array_reader}
+                     {dx_play_cutscene tv3_d dx_tour_tier_screen}
+                  }
+               }
+            }
+         }
+      )
+      (update_tourdesc_provider
+         ($provider)
+         {tours.lst set_provider $provider}
+         {tours.lst refresh}
+         {$this dx_tour})
+      (get_selected_tourdesc_index
+         {tours.lst selected_pos})
+      (get_initially_selected_tour
+         [initially_selected_tour])
+      (clear_initially_selected_tour
+         {$this set initially_selected_tour ''})}
+   {new
+      BandScreen
+      dx_tour_customize_screen
+      (panels meta sv3_panel)
+      (enter
+         {if
+            {tour progress}
+            {if
+               {{tour progress}
+                  is_tour_complete}
+               {{tour progress}
+                  update_most_stars}
+               {tour
+                  reset_tour_data
+                  {tour get_profile}}}}
+         {acc_mgr check_for_tour_goals}
+         {tour initialize_tour}
+         {if
+            {'||'
+               {!
+                  {session_mgr has_leader_user}}
+               {is_leader_local}}
+            {tour update_progress_with_career_data}})
+      (TRANSITION_COMPLETE_MSG
+         {ui goto_screen dx_tour_customize_post_screen})}
+   {new
+      BandScreen
+      dx_tour_customize_post_screen
+      (panels meta sv3_panel dx_tour_customize_panel)
+      (focus dx_tour_customize_panel)
+      (back main_hub_screen)
+   }
+   {new
+      TourDescPanel
+      dx_tour_tier_panel
+      (file
+         "tour_customize.milo")
+      (focus
+         "tours.lst")
+      (initially_selected_tour '')
+      (shortname_to_song
+         ($shortname)
+         {meta_performer set_song {symbol $shortname}}
+         {if {meta_performer song_id}
+            {set $tempsongname {{song_mgr get_meta_data {meta_performer song}} title}}
+         }
+         {push_back $dx_song_finder_holder ($tempsongname $shortname)}
+         {set $dx_song_finder_holder {array $dx_song_finder_holder}}
+         {meta_performer reset_songs}
+      )
+      (dx_tour
+         {set $dx_this_tier tier_1}
+         {dx_career_array_reader}
+         {set $dx_tier_holder ()}
+         {resize $dx_tier_holder 0}
+         {set $dx_song_finder_holder ()}
+         {resize $dx_song_finder_holder 0}
+         {push_back $dx_song_finder_holder (none none)}
+         {push_back $dx_tier_holder {sprint $dx_this_tier_name}}
+         {foreach $entry $dx_this_tier_songs_array_raw_songs
+            {$this shortname_to_song $entry}
+            {push_back $dx_tier_holder $tempsongname}
+         }
+         {if {== {size $dx_this_tier_songs_array_raw_songs} 0} ;if nothing was found at all
+            {set $dx_this_tier_songs_array_raw_songs ('cant find' 'songs' 'this is a bug')} ;fill the list so it doesnt crash
+         }
+         {tours.lst set_data $dx_tier_holder}
+         {tours.lst disable_data {sprint $dx_this_tier_name}}
+         {tours.lst dim_data {sprint $dx_this_tier_name}}
+      )
+      (exit)
+      (SELECT_MSG
+         {foreach $entry $dx_song_finder_holder
+            {if {== {sprint {elem $entry 0}} {sprint {$component selected_sym}}}
+               {dx_passive_messenger_symbol {sprint "omg thats it"}}
+               {meta_performer set_song {symbol {elem $entry 1}}}
+            }
+         }
+         {if {meta_performer song_id}
+            {dx_passive_messenger_symbol {sprint "omg thats it 2"}}
+         }
+      )
+      (update_tourdesc_provider
+         ($provider)
+         {tours.lst set_provider $provider}
+         {tours.lst refresh}
+         {$this dx_tour})
+      (get_selected_tourdesc_index
+         {tours.lst selected_pos})
+      (get_initially_selected_tour
+         [initially_selected_tour])
+      (clear_initially_selected_tour
+         {$this set initially_selected_tour ''})}
+   {new
+      BandScreen
+      dx_tour_tier_screen
+      (panels meta sv3_panel)
+      (enter
+         {if
+            {tour progress}
+            {if
+               {{tour progress}
+                  is_tour_complete}
+               {{tour progress}
+                  update_most_stars}
+               {tour
+                  reset_tour_data
+                  {tour get_profile}}}}
+         {acc_mgr check_for_tour_goals}
+         {tour initialize_tour}
+         {if
+            {'||'
+               {!
+                  {session_mgr has_leader_user}}
+               {is_leader_local}}
+            {tour update_progress_with_career_data}})
+      (TRANSITION_COMPLETE_MSG
+         {ui goto_screen dx_tour_tier_post_screen})}
+   {new
+      BandScreen
+      dx_tour_tier_post_screen
+      (panels meta sv3_panel dx_tour_tier_panel)
+      (focus dx_tour_tier_panel)
+      (back dx_tour_customize_screen)
+   }
+)
+DX_TOUR_HANDLES
+#include tour_welcome.dta
+#include tour_quests.dta
+#include tour_challenge_results.dta
+#include tour_customize.dta
+#include tour_finished.dta
+{func
+   get_tour_screen
+   {get_tour_screen_internal TRUE}}
+{func
+   get_tour_screen_no_announcements
+   {get_tour_screen_internal FALSE}}
+{func
+   get_tour_screen_internal
+   ($allow_announcements)
+   {if_else
+      {tour progress}
+      {if_else
+         {&&
+            {{tour progress}
+               is_on_tour}
+            {!
+               {{tour progress}
+                  is_tour_complete}}}
+         {if_else
+            {&&
+               $allow_announcements
+               {tour has_announcement}}
+            {tour get_announcement}
+            tour_gigguide_init_screen}
+         tour_customize_screen}
+      tour_customize_screen}}

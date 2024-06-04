@@ -373,6 +373,28 @@
    )
 )
 
+(dxState_RebootThemeWarn
+   (view confirm_action)
+   (enter
+      {handle
+         ($this set_confirm_actions #ifdef RB3E reboot_theme_warning_rb3e #else reboot_theme_warning #endif (#ifdef RB3E overshell_reboot #else overshell_continue #endif overshell_cancel))
+      }
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (overshell_continue
+            {dx_settings_dta_writer}
+            #ifdef RB3E {rb3e_relaunch_game} #endif
+            {$this show_state dxState_TrackThemeLoader}
+         )
+      }
+      {$this show_state dxState_TrackThemeLoader}
+   )
+   (on_cancel
+      {$this show_state dxState_TrackThemeLoader}
+   )
+)
+
 (dxState_RebootWarn
    (view confirm_action)
    (enter
@@ -505,12 +527,29 @@
 (dxState_60FPSWarn
    (view confirm_action)
    (enter
+      DX_OS_CLOSE_MSG
       {handle
          ($this set_confirm_actions 60fps_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_continue
             {overshell update_all}
+            {set $dx_60fps {! $dx_60fps}}
+            {if $dx_60fps
+               {set $post_proc_needs_reset TRUE}
+            }
+            {dx_postfx_setter}
+            {if_else $dx_60fps
+               {do
+                  {set $dx_tracked_changed os_venuefps_60}
+                  {set $emulatefps 60}
+               }
+               {do
+                  {set $dx_tracked_changed os_venuefps_30}
+                  {set $emulatefps 30}
+               }
+            }
+            {set $in_state FALSE}
             {$this show_state dxState_Graphics}
             {ui goto_screen meta_loading_main_screen}
          )
@@ -526,12 +565,23 @@
 (dxState_HighLODWarn
    (view confirm_action)
    (enter
+      DX_OS_CLOSE_MSG
       {handle
          ($this set_confirm_actions highlod_warning (overshell_continue overshell_cancel))})
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_continue
+            {set $dx_force_lod {! $dx_force_lod}}
+            {if $dx_force_lod
+               {set $post_proc_needs_reset TRUE}
+            }
+            {dx_postfx_setter}
             {overshell update_all}
+            {set $in_state FALSE}
+            {if_else $dx_force_lod
+               {set $dx_tracked_changed os_force_high_lod_on}
+               {set $dx_tracked_changed os_force_high_lod_off}
+            }
             {$this show_state dxState_Graphics}
             {ui goto_screen meta_loading_main_screen}
          )

@@ -1258,6 +1258,18 @@
       {$this show_options}))
 (kState_GameOptions
    (view game_options)
+   (enter
+      {set $actually_show_checks TRUE}
+      {handle
+         ($this
+            update_auto_vocals_enabled
+            {modifier_mgr is_modifier_active mod_auto_vocals})}
+      {do
+         ($no_fail_enabled
+            {modifier_mgr is_modifier_active mod_no_fail_band})
+         {handle
+            ($this update_no_fail_enabled $no_fail_enabled)}}
+   )
    (update_view
       {do
          ($controller
@@ -1856,8 +1868,9 @@
       {$this on_slider_change $component $user}))
 #define DX_OPTIONS_SET_DATA
 (
-   {options_extras.lst set_data 
+   {options_audio.lst set_data 
       (
+         refresh_library
          overshell_credits
          overshell_linking_code
          #ifdef HX_XBOX overshell_audition #endif
@@ -1869,7 +1882,7 @@
    }
 )
 (kState_OptionsExtras
-   (view options_extras)
+   (view options_audio)
    (enter
       DX_OPTIONS_SET_DATA
       {if {&& {! {session is_in_game}} {session_mgr is_local}}
@@ -1894,6 +1907,12 @@
          {$component selected_sym}
          (overshell_credits
             {$this show_enter_credits})
+         (refresh_library
+            {if {! {session is_in_game}}
+               {content_mgr remove_content kDataUnhandled}
+               {content_mgr start_refresh}
+            }
+         )
          (overshell_linking_code
             {if_else
                {&&
@@ -2297,7 +2316,7 @@
       }
       DX_UPDATE_ICON
    )
-   (SCROLL_MSG
+   (poll
       DX_UPDATE_ICON
    )
    (exit
