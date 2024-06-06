@@ -62,7 +62,14 @@
             kDataUnhandled
          }
          #endif
-         {set $dx_current_checked_instrument {$player instrument}}
+         {if_else
+            {||
+               {== {{$player get_user} get_track_icon} $dx_icon_harmony_2}
+               {== {{$player get_user} get_track_icon} $dx_icon_harmony_3}
+            }
+            {set $dx_current_checked_instrument harm}
+            {set $dx_current_checked_instrument {$player instrument}}
+         }
          #ifdef RB3DX
          {if {== $dx_current_checked_instrument vocals}
             {if $dx_countdown_enabled
@@ -82,8 +89,26 @@
                }
             }
          }
+         {if {== $dx_current_checked_instrument harm}
+            {if $dx_countdown_enabled
+               {unless $delay_tracked_harm
+                  {foreach $entry $harm_note_tracker
+                     {if {== {elem $entry 0} {sprint "delay_" $current_tracked_beat_harm}}
+                        {set $tracked_beat_no_notes_start_harm {elem $entry 1}}
+                        {set $tracked_beat_no_notes_end_harm {elem $entry 2}}
+                        {set $delay_tracked_harm TRUE}
+                     }
+                  }
+               }
+               {if $delay_tracked_harm
+                  {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_harm}
+                     {dx_check_beat {- $tracked_beat_no_notes_end_harm {dx_get_current_beat}}}
+                  }
+               }
+            }
+         }
          #endif
-         {if {&& $dx_countdown_enabled {! {== $dx_current_checked_instrument vocals}}}
+         {if {&& $dx_countdown_enabled {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}}
             {switch $dx_current_checked_slot
                (0 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_0}})
                (1 {set $dx_current_search_tracker {sprint "delay_" $current_tracked_beat_1}})
@@ -170,7 +195,7 @@
                }
                {switch $dx_current_checked_instrument
                   ((guitar real_guitar)
-                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_guitar}
+                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} $tracked_beat_no_notes_start_guitar}}
                         {unless $dx_log_stopper
                            {set $dx_log_stopper TRUE}
                            {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_guitar ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_guitar}}
@@ -179,7 +204,7 @@
                      }
                   )
                   ((bass real_bass)
-                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_bass}
+                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} $tracked_beat_no_notes_start_bass}}
                         {unless $dx_log_stopper
                            {set $dx_log_stopper TRUE}
                            {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_bass ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_bass}}
@@ -188,7 +213,7 @@
                      }
                   )
                   ((keys real_keys)
-                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_keys}
+                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} $tracked_beat_no_notes_start_keys}}
                         {unless $dx_log_stopper
                            {set $dx_log_stopper TRUE}
                            {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_keys ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_keys}}
@@ -197,7 +222,7 @@
                      }
                   )
                   ((drum real_drum)
-                     {if {>= {dx_get_current_beat} $tracked_beat_no_notes_start_drum}
+                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} $tracked_beat_no_notes_start_drum}}
                         {unless $dx_log_stopper
                            {set $dx_log_stopper TRUE}
                            {dx_log_writer countdown {sprint "Current Beat: " {dx_get_current_beat} " matches " $dx_current_checked_instrument " break start: " $tracked_beat_no_notes_start_drum ", counting down to end of " $dx_current_checked_instrument " break at: " $tracked_beat_no_notes_end_drum}}

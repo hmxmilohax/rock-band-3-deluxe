@@ -4,12 +4,18 @@
          ($options
             {array 0})
          {if_else $dx_customizer
-            {push_back $options leave_customizer}
-            {push_back $options realtime_customize}
+            {do
+               {push_back $options leave_customizer}
+               {push_back $options restart_customizer}
+            }
+            {if_else {$this in_game}
+               kDataUnhandled
+               {push_back $options realtime_customize}
+            }
          }
-         {if $dx_debug
-            {push_back $options os_milo}
-         }
+         ;{if $dx_debug
+         ;   {push_back $options os_milo}
+         ;}
          {push_back $options os_fretboard}
          {push_back $options os_spotlight}
          {push_back $options os_emissive}
@@ -45,13 +51,18 @@
          {$this iterate Mesh $m {$m set_showing FALSE}}
          {choose_character.mesh set_showing TRUE}
          {unless $dx_moved_once
+            #ifdef RB3E
+            {set $list_move_down_number 0}
+            #else
+            {set $list_move_down_number 250}
+            #endif
             {if_else
                {&&
                   {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
                   {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
                }
                {$this iterate UIList $l
-                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}} ;move vocal type menu straight down
+                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} $list_move_down_number}} ;move vocal type menu straight down
                }
                {$this iterate UIList $l
                   {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
@@ -64,6 +75,9 @@
    )
    (SELECT_MSG
       {switch {$component selected_sym}
+         (restart_customizer
+            {session end_game kRestart}
+         )
          (realtime_customize
             {$this show_state dxState_CustomizerWarn}
          )
@@ -78,7 +92,7 @@
                      {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
                   }
                   {$this iterate UIList $l
-                     {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+                     {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} $list_move_down_number}}
                   }
                   {$this iterate UIList $l
                      {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
@@ -149,8 +163,11 @@
             {$this show_state dxState_DTATextureLoader})
          (os_sus 
             {set $dx_tracked_texture_loader sustains}
+            {set $dx_tracked_texture_category FALSE}
+            {set $dx_choose_char_scale_x 0.4}
+            {set $dx_choose_char_scale_y 0.15}
             {set $dx_texture_array (#include ../custom_textures/sustains/_list.dta)}
-            {$this show_state dxState_SustainSelection})
+            {$this show_state dxState_DTATextureLoader})
          (os_score_box
             {set $dx_tracked_texture_loader scoreboard_frame}
             {set $dx_tracked_texture_category score}
@@ -284,7 +301,7 @@
          {array 0})
       ;we dont actually use this but might be a good idea later to pull from a pool somehow
       {set $dx_available_textures
-         (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flames_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar)
+         (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flames_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar sustains)
       }
       ;we track if this texture is in a subfolder or not via a category
       {if_else $dx_tracked_texture_category
@@ -528,6 +545,9 @@
             {set $dx_vocal_overdrive_needs_reset TRUE}
             {set $dx_vocal_overdrive {$component selected_sym}}
             {set $dx_local_vocal_overdrive {$component selected_sym}})
+         (sustains
+            {set $dx_sustain_needs_reset TRUE}
+            {set $dx_sustain {$component selected_sym}})
       }
       ;$dx_refresh_beatmatch when set to true, will pause beatmatcher before applying the texture.
       ;otherwise, in-game customizer audio will desync and become hellish

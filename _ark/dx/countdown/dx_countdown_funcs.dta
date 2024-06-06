@@ -20,6 +20,8 @@
 ({int {/ {- $tracked_beat_no_notes_end_drum {dx_get_current_beat}} 4}})
 #define SOLO_PERCENT_VOX_INT
 ({int {/ {- $tracked_beat_no_notes_end_vocals {dx_get_current_beat}} 4}})
+#define SOLO_PERCENT_HARM_INT
+({int {/ {- $tracked_beat_no_notes_end_harm {dx_get_current_beat}} 4}})
 #define SOLO_PERCENT_KEYS_INT
 ({int {/ {- $tracked_beat_no_notes_end_keys {dx_get_current_beat}} 4}})
 #ifdef RB3DX
@@ -43,14 +45,15 @@
       ;{sprintf "Executed dx_countdown_var_reset - time: %.4fms"
          {time
             {set $current_beat FALSE} {set $startingbpm FALSE}
-            {set $dx_bpm_counter_for_countdown FALSE} {set $solo_box_up_0 FALSE} {set $solo_box_up_1 FALSE} {set $solo_box_up_2 FALSE} {set $solo_box_up_3 FALSE} {set $solo_box_up_vocals FALSE}
-            {set $delay_tracked_0 FALSE} {set $delay_tracked_1 FALSE} {set $delay_tracked_2 FALSE} {set $delay_tracked_3 FALSE} {set $delay_tracked_vocals FALSE}
-            {set $current_tracked_beat_0 FALSE} {set $current_tracked_beat_1 FALSE} {set $current_tracked_beat_2 FALSE} {set $current_tracked_beat_3 FALSE} {set $current_tracked_beat_vocals FALSE}
+            {set $dx_bpm_counter_for_countdown FALSE} {set $solo_box_up_0 FALSE} {set $solo_box_up_1 FALSE} {set $solo_box_up_2 FALSE} {set $solo_box_up_3 FALSE} {set $solo_box_up_vocals FALSE} {set $solo_box_up_harm FALSE}
+            {set $delay_tracked_0 FALSE} {set $delay_tracked_1 FALSE} {set $delay_tracked_2 FALSE} {set $delay_tracked_3 FALSE} {set $delay_tracked_vocals FALSE} {set $delay_tracked_harm FALSE}
+            {set $current_tracked_beat_0 FALSE} {set $current_tracked_beat_1 FALSE} {set $current_tracked_beat_2 FALSE} {set $current_tracked_beat_3 FALSE} {set $current_tracked_beat_vocals FALSE} {set $current_tracked_beat_harm FALSE}
             {set $tracked_beat_no_notes_start_guitar FALSE} {set $tracked_beat_no_notes_end_guitar FALSE} {set $first_guitar_gem_tracked FALSE}
             {set $tracked_beat_no_notes_start_bass FALSE} {set $tracked_beat_no_notes_end_bass FALSE} {set $first_bass_gem_tracked FALSE}
             {set $tracked_beat_no_notes_start_drum FALSE} {set $tracked_beat_no_notes_end_drum FALSE} {set $first_drum_gem_tracked FALSE}
             {set $tracked_beat_no_notes_start_keys FALSE} {set $tracked_beat_no_notes_end_keys FALSE} {set $first_keys_gem_tracked FALSE}
             {set $tracked_beat_no_notes_start_vocals FALSE} {set $tracked_beat_no_notes_end_vocals FALSE} {set $first_vocals_gem_tracked FALSE}
+            {set $tracked_beat_no_notes_start_harm FALSE} {set $tracked_beat_no_notes_end_harm FALSE} {set $first_harm_gem_tracked FALSE}
          }
       ;}
    ;}
@@ -75,6 +78,9 @@
 
             {resize $vocals_note_tracker 0} ;resize the array
             {push_back $vocals_note_tracker (none none)} ;push_back a new state into the array
+            
+            {resize $harm_note_tracker 0} ;resize the array
+            {push_back $harm_note_tracker (none none)} ;push_back a new state into the array
             {set $dx_final_note 0}
          }
    ;   }
@@ -97,8 +103,14 @@
                }
                {set $solo_box_up_vocals TRUE}
             }
+            {if {== $dx_current_checked_instrument harm}
+               {if {== {PLAYER_FEEDBACK_VOX get in_solo} FALSE}
+                  {{PLAYER_FEEDBACK_VOX find solo_start.trig} trigger}
+               }
+               {set $solo_box_up_harm TRUE}
+            }
             #endif
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {if {== {PLAYER_FEEDBACK_00 get in_solo} FALSE}
                   {{PLAYER_FEEDBACK_00 find solo_start.trig} trigger}
                }
@@ -136,8 +148,15 @@
                {set $delay_tracked_vocals FALSE}
                {set $current_tracked_beat_vocals {+ $current_tracked_beat_vocals 1}}
             }
+            {if {== $dx_current_checked_instrument harm}
+               {PLAYER_FEEDBACK_VOX set_showing TRUE}
+               {{PLAYER_FEEDBACK_VOX find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
+               {set $solo_box_up_harm FALSE}
+               {set $delay_tracked_harm FALSE}
+               {set $current_tracked_beat_harm {+ $current_tracked_beat_harm 1}}
+            }
             #endif
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {{PLAYER_FEEDBACK_00 find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
                {switch $dx_current_checked_slot
                   (0
@@ -174,12 +193,12 @@
    ;   {sprintf "Executed dx_clean_solo_box - time: %.4fms"
    ;      {time
             #ifdef RB3DX
-            {if {== $dx_current_checked_instrument vocals}
+            {if {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}
                {PLAYER_FEEDBACK_VOX set_showing TRUE}
                {{PLAYER_FEEDBACK_VOX find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
             }
             #endif
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {PLAYER_FEEDBACK_00 set_showing TRUE}
                {{PLAYER_FEEDBACK_00 find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
             }
@@ -194,7 +213,7 @@
    ;   {sprintf "Executed dx_hide_solo_box - time: %.4fms"
    ;      {time
             #ifdef RB3DX
-            {if {== $dx_current_checked_instrument vocals}
+            {if {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}
                {if {== {PLAYER_FEEDBACK_VOX get in_solo} FALSE}
                   {PLAYER_FEEDBACK_VOX set_showing TRUE}
                   {PLAYER_FEEDBACK_VOX end_solo}
@@ -206,7 +225,7 @@
                }
             }
             #endif
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {if {== {PLAYER_FEEDBACK_00 get in_solo} FALSE}
                   {PLAYER_FEEDBACK_00 set_showing TRUE}
                   {PLAYER_FEEDBACK_00 end_solo}
@@ -227,7 +246,7 @@
    ;{dx_log_writer countdown
    ;   {sprintf "Executed dx_final_percent_report - time: %.4fms"
    ;      {time
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {PLAYER_FEEDBACK_00 set_showing FALSE}
                {PLAYER_FEEDBACK_00 end_solo}
                {{PLAYER_FEEDBACK_00 find solo_end.trig} trigger}
@@ -360,8 +379,13 @@
                   {{PLAYER_FEEDBACK_VOX find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_VOX_INT} #else set_text {sprintf "%d" SOLO_PERCENT_VOX_INT} #endif}
                }
             }
+            {if {== $dx_current_checked_instrument harm}
+               {if {== {PLAYER_FEEDBACK_VOX get in_solo} FALSE}
+                  {{PLAYER_FEEDBACK_VOX find SOLO_PERCENT_LABEL} #ifdef RB3DX set_token_fmt solo_countdown {localize_separated_int SOLO_PERCENT_HARM_INT} #else set_text {sprintf "%d" SOLO_PERCENT_HARM_INT} #endif}
+               }
+            }
             #endif
-            {if {!= $dx_current_checked_instrument vocals}
+            {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                {if {== {PLAYER_FEEDBACK_00 get in_solo} FALSE}
                   {switch $dx_current_checked_instrument
                      ((guitar real_guitar)
@@ -394,7 +418,7 @@
       {script_task kTaskSeconds
          (delay 0.75)
          (script 
-            {unless {== $dx_current_checked_instrument vocals}
+            {unless {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}
                ; bring track out when countdown begins
                ; unless statements prevent track from repeatedly popping out if it's already invisible
                {switch $dx_current_checked_slot
@@ -439,8 +463,6 @@
                      {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get star_power_meter} find power_meter.grp} set showing FALSE}
                      {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find draw.grp} set showing FALSE}
                      {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find streak_meter.grp} set showing FALSE}
-                     {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find peak_state_sm_mesh.mesh} set showing FALSE}
-                     {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing FALSE}
                      {{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} find overdrive_plane.mesh} set showing FALSE}
                      {{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} find rig.grp} set_local_pos 99 99 99}
                   )
@@ -457,7 +479,7 @@
          {&& {== $dx_hide_on_countdown single} {== $dx_num_gem_tracks 1}}
          {&& {== $dx_hide_on_countdown multi} {>= $dx_num_gem_tracks 1}}
       }
-      {unless {== $dx_current_checked_instrument vocals}
+      {unless {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}
          {switch $dx_current_checked_slot
             (0 {set $track_out_0 FALSE})
             (1 {set $track_out_1 FALSE})
@@ -481,8 +503,6 @@
                {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get star_power_meter} find power_meter.grp} set showing TRUE}
                {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find draw.grp} set showing TRUE}
                {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find streak_meter.grp} set showing TRUE}
-               {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find peak_state_sm_mesh.mesh} set showing TRUE}
-               {{{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing TRUE}
                {{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} find overdrive_plane.mesh} set showing TRUE}
                {{{{get_track_panel} find {sprint "track_" $dx_current_checked_slot}} find rig.grp} set_local_pos 0 0 0}
             )
@@ -505,8 +525,11 @@
                   {if {== $dx_current_checked_instrument vocals}
                      {if $solo_box_up_vocals {dx_restore_solo_box}}
                   }
+                  {if {== $dx_current_checked_instrument harm}
+                     {if $solo_box_up_harm {dx_restore_solo_box}}
+                  }
                   #endif
-                  {if {!= $dx_current_checked_instrument vocals}
+                  {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                      {switch $dx_current_checked_slot
                         (0
                            {if $solo_box_up_0 {dx_restore_solo_box}}
@@ -532,8 +555,11 @@
                   {if {== $dx_current_checked_instrument vocals}
                      {if $solo_box_up_vocals {dx_hide_solo_box}}
                   }
+                  {if {== $dx_current_checked_instrument harm}
+                     {if $solo_box_up_harm {dx_hide_solo_box}}
+                  }
                   #endif
-                  {if {!= $dx_current_checked_instrument vocals}
+                  {if {! {|| {== $dx_current_checked_instrument vocals} {== $dx_current_checked_instrument harm}}}
                      {switch $dx_current_checked_slot
                         (0
                            {if $solo_box_up_0 {dx_hide_solo_box} {dx_restore_everything}}
