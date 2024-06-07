@@ -1,0 +1,200 @@
+{new
+   UIPanel
+   complete_panel
+   (file
+      "complete.milo")
+   (enter
+      {platform_mgr set_notify_ui_location kOSNotifyBottomCenter}
+      {$this set_focus continue.btn}
+      {net_sync enable}
+      {$this update_info}
+      {meta_performer add_sink $this})
+   (exit
+      {game clear_draw_glitch}
+      {platform_mgr set_notify_ui_location kOSNotifyTopRight}
+      {meta_performer remove_sink $this})
+   (update_info
+      {campaign.grp set showing FALSE}
+      {battle.grp set showing FALSE}
+      {if_else
+         {&&
+            {gamemode in_mode campaign}
+            {campaign has_current_goal}}
+         {do
+            {campaign.grp set showing TRUE}
+            {campaign update_endgame_info campaign_user.lbl campaign_status.lbl campaign.pic}
+            {accomplishment_panel set returning_from_launch TRUE}
+            {if
+               {acc_mgr
+                  has_completed_goal
+                  {campaign get_user}
+                  {campaign get_current_goal}}
+               {campaign clear_current_goal}}}
+         {if
+            {meta_performer has_battle}
+            {battle.grp set showing TRUE}
+            {$this populate_instarank_data}
+            {battle_name.lbl
+               set_token_fmt
+               battle_completed
+               {meta_performer get_battle_name}}
+            {battle.scr
+               set_values
+               {meta_performer get_battle_instrument_mask}
+               {meta_performer get_battle_score}}
+            {meta_performer update_battle_type_label battle_type.lbl}}})
+   (populate_instarank_data
+      {if_else
+         {meta_performer has_valid_battle_instarank_data}
+         {do
+            {meta_performer update_battle_instarank_highscore_1_label battle_highscore_1.lbl}
+            {meta_performer update_battle_instarank_highscore_2_label battle_highscore_2.lbl}
+            {do
+               ($token
+                  {{$this find battle_highscore_2.lbl}
+                     get
+                     text_token})
+               {if_else
+                  {== $token instarank_nofriend_beat}
+                  {instarank_offline.trig trigger}
+                  {instarank.trig trigger}}}
+            {if_else
+               {meta_performer has_battle_highscore}
+               {highscore.trig trigger}
+               {no_highscore.trig trigger}}}
+         {do
+            {battle_highscore_1.lbl
+               set
+               text_token
+               ""}
+            {battle_highscore_2.lbl
+               set
+               text_token
+               ""}
+            {no_highscore.trig trigger}}})
+   (instarank_done
+      {$this populate_instarank_data})
+   (SELECT_MSG
+      {switch
+         $component
+         (continue.btn
+            {ui goto_screen maybe_outro_to_meta_loading_continue_screen})})}
+{new
+   BandScreen
+   complete_screen
+   (panels GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel complete_panel)
+   (focus complete_panel)}
+{new
+   UIPanel
+   demo_complete_panel
+   (file
+      "complete_demo.milo")
+   (delete_demo_on_transition_complete FALSE)
+   (enter
+      {platform_mgr set_notify_ui_location kOSNotifyBottomCenter}
+      {$this set_focus purchase.btn}
+      {net_sync enable}
+      {$this update_button_states FALSE}
+      {set
+         [delete_demo_on_transition_complete]
+         FALSE}
+      {platform_mgr
+         add_sink
+         $this
+         (signin_changed)})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         [delete_demo_on_transition_complete]
+         {set
+            [delete_demo_on_transition_complete]
+            FALSE}
+         {deleting_content_panel
+            setup_deletion
+            {song_mgr
+               content_name_from_sym
+               {meta_performer song}}
+            FALSE}
+         {$this update_button_states TRUE}
+         {ui push_screen deleting_content_screen}})
+   (exit
+      {platform_mgr remove_sink $this}
+      {game clear_draw_glitch}
+      {platform_mgr set_notify_ui_location kOSNotifyTopRight})
+   (signin_changed
+      {$this update_button_states TRUE})
+   (update_button_states
+      ($restricted)
+      {if_else
+         $restricted
+         {do
+            {$this disable purchase.btn}
+            {$this disable delete.btn}
+            {$this disable restart.btn}}
+         {do
+            {$this enable purchase.btn}
+            {$this enable delete.btn}
+            {$this enable restart.btn}}})
+   (SELECT_MSG
+      {switch
+         $component
+         (restart.btn
+            {game send_restart_game_net_msg}
+            {game_restart}
+            {net_sync set_ui_state kNetUI_InGame})
+         (continue.btn
+            {ui goto_screen maybe_outro_to_meta_loading_continue_screen})
+         (delete.btn
+            {ui push_screen demo_confirm_delete_screen})
+         (purchase.btn
+            {if_else
+               {&&
+                  {platform_mgr is_user_signed_into_live $user}
+                  {!
+                     {platform_mgr is_user_a_guest $user}}}
+               {do
+                  {demo_purchase_panel
+                     set
+                     song
+                     {meta_performer song}}
+                  {demo_purchase_panel set user $user}
+                  {ui push_screen demo_purchase_screen}}
+               {push_basic_confirm_dialog ml_store_signin}})})}
+{new
+   BandScreen
+   demo_complete_screen
+   (panels GAME_SCREEN_PANELS_NO_TRACK demo_complete_panel)
+   (focus demo_complete_panel)}
+{new
+   UGCPurchasePanel
+   demo_purchase_panel
+   (checkout_finished
+      ($purchased)
+      {if
+         $purchased
+         {demo_complete_panel update_button_states TRUE}}
+      {ui pop_screen})
+   (checkout_failed
+      {ui goto_screen demo_purchase_failure_screen})}
+{new
+   BandScreen
+   demo_purchase_screen
+   (panels demo_purchase_panel)}
+{new
+   BandScreen
+   demo_purchase_failure_screen
+   (panels dialog_panel)
+   (enter
+      {dialog_panel set_ok demo_purchase_failure})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   demo_confirm_delete_screen
+   (panels dialog_panel)
+   (enter
+      {dialog_panel set_yesno demo_confirm_delete no.btn})
+   (SELECT_MSG
+      {if
+         {== $component yes.btn}
+         {demo_complete_panel set delete_demo_on_transition_complete TRUE}}
+      {ui pop_screen})}
