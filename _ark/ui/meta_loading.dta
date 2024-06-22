@@ -153,6 +153,7 @@
                   {$vignette_panel set_showing TRUE}
                   {$this set_focus_panel $vignette_panel}}}}})
    (enter
+      {world_panel unload}
       #ifdef HX_WII
       {if
          {'||'
@@ -549,19 +550,68 @@
             TRUE)
          {[loaded_vignette]
             check_is_loaded}}))
-#ifdef HX_WII
+{new
+   UIPanel
+   outro_vignette_loader
+   (chosen_vignette '')
+   (enter
+      {set
+         [chosen_vignette]
+         ''}
+      {if {!= $dx_forced_outro_vignette none} ;if we turned off song transitions, we cant run outro_vignette_loader or it will crash
+         {if
+            {meta_performer is_set_complete}
+            {meta_performer upload_debug_stats}
+            {set
+               [chosen_vignette]
+               {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
+            {if
+               {!=
+                  [chosen_vignette]
+                  ''}
+               {[chosen_vignette]
+                  load}}}
+         #else
+         {if
+            {!=
+               [chosen_vignette]
+               ''}
+            {[chosen_vignette]
+               load}}
+         #endif}})
+   (exit
+      {if
+         {!=
+            [chosen_vignette]
+            ''}
+         {[chosen_vignette]
+            unload}})}
 {new
    BandScreen
    maybe_outro_to_meta_loading_continue_screen
+   (enter {world_panel unload})
    (TRANSITION_COMPLETE_MSG
-      {if_else
-         {&&
-            {<
-               {random_float}
-               0.22}
-            {session_mgr is_local}}
-         {ui goto_screen outro_to_meta_loading_continue_screen}
-         {ui goto_screen meta_loading_continue_screen}})}
+      {dx_play_cutscene
+         {cond
+            ({> {size $dx_forced_outro_vignette} 0} {random_elem $dx_forced_outro_vignette})
+            ({== {meta_performer get_last_venue_class} video} {random_elem ("tv_fallback")})
+            ({== {meta_performer get_last_venue_class} festival} {random_elem ("tv4_c")})
+            ({campaign has_reached_campaign_level campaignlevel_jet} {random_elem ("tv4_d" "tv4_e")})
+            ({campaign has_reached_campaign_level campaignlevel_bus} {random_elem ("tv4_c")})
+            ({campaign has_reached_campaign_level campaignlevel_van} {random_elem ("tv4_b")})
+            (TRUE {random_elem ("tv4_a")})
+         }
+      meta_loading_continue_screen
+      }
+   )
+}
 {new
    BandScreen
    outro_to_meta_loading_continue_screen
@@ -571,7 +621,6 @@
       {transition_fallback_panel start_loading_anim})
    (TRANSITION_COMPLETE_MSG
       {ui goto_screen meta_loading_continue_screen})}
-#endif
 {new
    BandScreen
    meta_loading_continue_screen
@@ -583,7 +632,7 @@
          {gamemode get main_screen}
          {if_else
             {gamemode in_mode tour}
-            tour_quest_outro_screen
+            {get_tour_screen}
             {if_else
                {gamemode in_mode campaign}
                accomplishment_screen
