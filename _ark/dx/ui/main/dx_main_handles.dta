@@ -13,6 +13,39 @@
          {set $trackspeed_real_bass {dx_fixup_bns $trackspeed_real_bass}}
          {dx_settings_dta_writer}
       }
+      ;force change some modifiers if event mode
+      {if $dx_event_mode
+         ;force enable no fail
+         {unless {modifier_mgr is_modifier_active mod_no_fail_band}
+            {modifier_mgr toggle_modifier_enabled mod_no_fail_band}
+         }
+         ;force enable AIM
+         {unless {modifier_mgr is_modifier_active mod_auto_vocals}
+            {modifier_mgr toggle_modifier_enabled mod_auto_vocals}
+         }
+         ;force DISABLE drum navigation (people like to fuck with the drums and i know from experience)
+         ;{if {modifier_mgr is_modifier_active mod_drum_surface_navigation}
+         ;   {modifier_mgr toggle_modifier_enabled mod_drum_surface_navigation}
+         ;}
+         ;force DISABLE drum fills (we have this off by default now so)
+         {if {modifier_mgr is_modifier_active mod_drum_fills}
+            {modifier_mgr toggle_modifier_enabled mod_drum_fills}
+         }
+         ;force enable indiv track speeds
+         {unless {modifier_mgr is_modifier_active mod_independent_track_speeds}
+            {modifier_mgr toggle_modifier_enabled mod_independent_track_speeds}
+         }
+         ;force enable beginner tutorials
+         {unless {modifier_mgr is_modifier_active enable_popup_help}
+            {modifier_mgr toggle_modifier_enabled enable_popup_help}
+         }
+         {menu_buttons.grp set_local_pos -350 0 -90}
+         {if {! {exists event.lbl}}
+            {$this lbl_maker event.lbl -30 -55 kCenterLeft {sprint " "}}
+            {event.lbl set_token_fmt {sprint "Welcome to " $dx_event_name "!\n\nRock Band 3 Deluxe is a fan-made mod of Rock Band 3.\nCheck us out at rb3dx.milohax.org\nor in our Discord server at discord.gg/milohax"}}
+            {event.lbl set_local_scale 2 2 2}
+         }
+      }
       {if_else {== $dx_vsync 0}
          {rnd set_sync 0}
          {rnd set_sync 1}
@@ -90,20 +123,24 @@
       {if {! {exists line2.lbl}}
          {$this lbl_maker line2.lbl 385 145 kTopRight {sprint $currentshellmusic}}
       }
-      {if {! {exists line3.lbl}}
-         {$this lbl_maker line3.lbl 385 145 kTopRight {sprint "<alt>j</alt>playnow"}}
-         {line3.lbl set alt_font_resource_name buttons}
-         {line3.lbl set alt_z_offset -1}
-         {line3.lbl set alt_text_size 12}
+      {unless $dx_event_mode
+         {if {! {exists line3.lbl}}
+            {$this lbl_maker line3.lbl 385 145 kTopRight {sprint "<alt>j</alt>playnow"}}
+            {line3.lbl set alt_font_resource_name buttons}
+            {line3.lbl set alt_z_offset -1}
+            {line3.lbl set alt_text_size 12}
+         }
       }
       {line0.lbl set_token_fmt {sprint " "}}
       {line1.lbl set_token_fmt {sprint $metasong}}
       {line2.lbl set_token_fmt {sprint " "}}
-      {if_else {meta_performer song}
-         {if {&& {session is_local} {meta_performer song_id}}
-            {line3.lbl set_token_fmt press_to_play {sprint $metaverb}}
+      {unless $dx_event_mode
+         {if_else {meta_performer song}
+            {if {&& {session is_local} {meta_performer song_id}}
+               {line3.lbl set_token_fmt press_to_play {sprint $metaverb}}
+            }
+            {line3.lbl set_token_fmt {sprint " "}}
          }
-         {line3.lbl set_token_fmt {sprint " "}}
       }
       {if {exists line1_fade}
          {delete line1_fade}
@@ -162,36 +199,42 @@
       }
    )
    (dx_check_dx
-      {unless {file_exists DX_SETTINGS_FILE_PATH}
-         {unless $dxwelcomeseen
-            {profile_mgr set_voice_chat_volume 0}
-            {dx_log_writer info {sprint "Cannot find DX.dta"}}
-            {ui push_screen hint_dx_welcome_screen}
+      {unless $dx_event_mode
+         {unless {file_exists DX_SETTINGS_FILE_PATH}
+            {unless $dxwelcomeseen
+               {profile_mgr set_voice_chat_volume 0}
+               {dx_log_writer info {sprint "Cannot find DX.dta"}}
+               {ui push_screen hint_dx_welcome_screen}
+            }
          }
       }
    )
    (dx_check_xeniawrites
-      {unless {file_exists DX_SETTINGS_FILE_PATH}
-         {if $dxwelcomeseen
-            {unless $dx_settings_error
-               {dx_log_writer info {sprint "Cannot write DX.dta"}}
-               {ui push_screen hint_relative_writes_screen}
+      {unless $dx_event_mode
+         {unless {file_exists DX_SETTINGS_FILE_PATH}
+            {if $dxwelcomeseen
+               {unless $dx_settings_error
+                  {dx_log_writer info {sprint "Cannot write DX.dta"}}
+                  {ui push_screen hint_relative_writes_screen}
+               }
             }
          }
       }
    )
    (dx_check_birthday
-      ;($year $month $day $hour $minute $second)
-      {get_date_time $year $month $day $hour $minute $second}
-      {if
-         {&&
-            {! $dx_msg_birth}
-            ;{> $year 2023}
-            {== $month 10}
-            {== $day 25}
+      {unless $dx_event_mode
+         ;($year $month $day $hour $minute $second)
+         {get_date_time $year $month $day $hour $minute $second}
+         {if
+            {&&
+               {! $dx_msg_birth}
+               ;{> $year 2023}
+               {== $month 10}
+               {== $day 25}
+            }
+            {set $dx_msg_birth TRUE}
+            {dx_passive_messenger_symbol "Happy Birthday Shiloh!"}
          }
-         {set $dx_msg_birth TRUE}
-         {dx_passive_messenger_symbol "Happy Birthday Shiloh!"}
       }
    )
    (dx_play_a_show

@@ -75,6 +75,13 @@
       {saveload_mgr is_initial_load_done})
    DX_MAIN_HANDLES
    (enter
+      {if $dx_event_mode
+         {$this iterate BandButton $l {$this disable $l} {$l set_showing FALSE}}
+         {$this enable mb_playnow.btn} {mb_playnow.btn set_showing TRUE}
+         {mb_playnow.btn set text_token dx_freeplay}
+         {$this enable mb_career.btn} {mb_career.btn set_showing TRUE}
+         {mb_career.btn set text_token dx_play_a_show}
+      }
       {if
          [first_user]
          {profile_mgr
@@ -147,9 +154,25 @@
       {switch
          $component
          (mb_playnow.btn
-            {$this set_state kMainHubState_PlayNow})
+            {if_else $dx_event_mode
+               {do
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {net_sync set_ui_state kNetUI_WaitingChooseSong}
+                  {$this set_override kMainHubOverride_Waiting}
+               }
+               {$this set_state kMainHubState_PlayNow}
+            }
+         )
          (mb_career.btn
-            {$this set_state kMainHubState_Career})
+            {if_else $dx_event_mode
+               {do
+                  {input_mgr set_user $user}
+                  {set $stored_user $user}
+                  {$this dx_play_a_show}
+               }
+               {$this set_state kMainHubState_Career}
+            }
+         )
          (mb_trainers.btn
             {if_else
                {session_mgr is_local}
