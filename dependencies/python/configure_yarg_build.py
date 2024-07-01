@@ -89,6 +89,8 @@ def copy_yarg_rawfiles():
             return False
         if file.is_dir():
             return False
+        if file.name.endswith("_update.txt"):
+            return False
         return True
 
     files = filter(file_filter, Path("_ark", "songs").rglob("*"))
@@ -104,8 +106,9 @@ def copy_yarg_rawfiles():
         if "missing_song_data_updates.dta" in out_path.parts:
             continue
 
-        ninja.build(str(out_path), "copy", str(f))
-        output_files.append(str(out_path))
+        if not out_path.name.endswith("_update.txt"):
+            ninja.build(str(out_path), "copy", str(f))
+            output_files.append(str(out_path))
 
     # manually copy the songs dta
     ninja.build(
