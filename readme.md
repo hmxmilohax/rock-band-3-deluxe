@@ -2,24 +2,24 @@
 
 <img src="dependencies/media/header.gif" width="100%" alt="Header GIF">
 
-# Downloads and install instructions have been moved to our [brand new website](https://rb3dx.neocities.org/)!
+# Downloads and install instructions have been moved to our [brand new website](https://rb3dx.milohax.org/)!
 
 <br/> <br/>
 
 # Welcome to the *Rock Band 3 Deluxe* repository!
 
-### Below are instructions for building the game yourself.<br/>[Please visit our website if you're looking for downloads](https://rb3dx.neocities.org/).
+### Below are instructions for building the game yourself.<br/>[Please visit our website if you're looking for downloads](https://rb3dx.milohax.org/).
 
 <br/> <br/>
 
-# 📥 [Downloads](https://rb3dx.neocities.org/)
+# 📥 [Downloads](https://rb3dx.milohax.org/)
 
 </div>
 <br/> <br/>
 
 # 🔨 Building (NOT standard download and install)
 
-## NOTE: This is for *building the game*, for developers and contributors. <br/> If you're looking for downloads, [please visit our website](https://rb3dx.neocities.org/).
+## NOTE: This is for *building the game*, for developers and contributors. <br/> If you're looking for downloads, [please visit our website](https://rb3dx.milohax.org/).
 
 ### Installing Python (Required)
 

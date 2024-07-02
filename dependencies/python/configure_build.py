@@ -130,6 +130,8 @@ def ark_file_filter(file: Path):
         return False
     if (args.platform == "wii"  or args.no_updates) and file.parts[slice(2)] == ("_ark", "songs"):
         return False
+    if file.name.endswith("_update.txt"):
+        return False
 
     return True
 
@@ -197,8 +199,9 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
         case _:
             index = f.parts.index("_ark")
             out_path = Path("obj", args.platform, "ark").joinpath(*f.parts[index + 1 :])
-            ninja.build(str(out_path), "copy", str(f))
-            ark_files.append(str(out_path))
+            if not out_path.name.endswith("_update.txt"):
+                ninja.build(str(out_path), "copy", str(f))
+                ark_files.append(str(out_path))
 
 # write version info
 dta = Path("obj", args.platform, "raw", "dx", "locale", "dx_version.dta")

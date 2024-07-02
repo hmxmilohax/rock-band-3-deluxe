@@ -7,20 +7,33 @@
          {> $mp.after_delta_sec $after}}}
    {func
       is_ugc_plus
-      {&&
-         {exists meta_performer}
-         {exists song_mgr}
-         {||
+      {do
+         {set $is_ugc_plus FALSE}
+         {if
             {&&
-               {== {{song_mgr get_meta_data {meta_performer song}} version} 30} ; dx - check if a song's version is equal to 30
-               {! {file_exists {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"}}} ;if we loaded a song from on disc}
-               {! {file_exists {song_mgr song_file_path {meta_performer song} "/../../../gen/missing_song_data_updates.dtb"}}} ;if we loaded a dlc song that has an on disc update
+               {exists meta_performer}
+               {exists song_mgr}
             }
-            {&&
-               {> {{song_mgr get_meta_data {meta_performer song}} id} 5005600}
-               {< {{song_mgr get_meta_data {meta_performer song}} id} 5012250}
+            {if {== {{song_mgr get_meta_data {meta_performer song}} version} 30} ; dx - check if a song's version is equal to 30
+               {set $is_ugc_plus TRUE}
             }
-            #ifndef HX_WII {{song_mgr get_meta_data {meta_performer song}} is_ugc_plus} #endif ; vanilla check on ugc_plus source
+            {if {file_exists {sprint "songs/" {meta_performer song} "/" {meta_performer song} ".mid"}}
+               {set $is_ugc_plus FALSE}
+            }
+            {if {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+               {set $is_ugc_plus FALSE}
+            }
+            {if {>= {{song_mgr get_meta_data {meta_performer song}} id} 5005600}
+               {if {<= {{song_mgr get_meta_data {meta_performer song}} id} 5012250}
+                  {set $is_ugc_plus TRUE}
+               }
+            }
+            #ifndef HX_WII
+            {if {{song_mgr get_meta_data {meta_performer song}} is_ugc_plus}  ; vanilla check on ugc_plus source
+               {set $is_ugc_plus TRUE}
+            }
+            #endif
+            ;{dx_passive_messenger_symbol {sprint $is_ugc_plus}}
          }
       }
    }
@@ -2129,10 +2142,15 @@
                      "Hey, no fake_songmgr or song_mgr for"
                      [song_name]}
                   30}})
+         {is_ugc_plus}
          {if
             {'||'
+               {&&
+                  {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                  {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+               }
                {< $ver 30}
-               {is_ugc_plus}}
+               $is_ugc_plus}
             {new
                MidiParser
                world_crowd_parser
@@ -2180,10 +2198,11 @@
                (track_name VENUE)
                (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] FALSE}
+                     {set [enabled] TRUE}
+                  })
                (allowed_notes
                   (96 97 98 99 100 101 102 103 104 105 106 107 108 109 110))
                (midi
@@ -2229,9 +2248,18 @@
                (compress TRUE)
                (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] TRUE}
+                     {set [enabled] FALSE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] TRUE}
+                  })
                (post_procs
                   (bloom.pp bright.pp clean_trails.pp contrast_a.pp desat_blue.pp desat_posterize_trails.pp film_16mm.pp 'film_b+w.pp' film_blue_filter.pp film_contrast.pp film_contrast_blue.pp film_contrast_green.pp film_contrast_red.pp film_sepia_ink.pp film_silvertone.pp flicker_trails.pp horror_movie_special.pp photo_negative.pp photocopy.pp posterize.pp ProFilm_a.pp ProFilm_b.pp ProFilm_mirror_a.pp ProFilm_psychedelic_blue_red.pp shitty_tv.pp space_woosh.pp video.pp video_a.pp video_bw.pp video_security.pp video_trails.pp))
                (text
@@ -2266,10 +2294,18 @@
                (track_name VENUE)
                (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}}
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] FALSE}
+                     {set [enabled] TRUE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] FALSE}
+                  }
                   {set
                      [zero_length]
                      TRUE})
@@ -2298,9 +2334,18 @@
                (compress TRUE)
                (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] TRUE}
+                     {set [enabled] FALSE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] TRUE}
+                  })
                (text
                   {if
                      {&&
@@ -2321,9 +2366,18 @@
                   {set
                      [zero_length]
                      TRUE}
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] TRUE}
+                     {set [enabled] FALSE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] TRUE}
+                  })
                (text
                   {if
                      {&&
@@ -2358,10 +2412,18 @@
                   {set
                      [legacy_presets]
                      FALSE}
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] FALSE}
+                     {set [enabled] TRUE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] FALSE}
+                  })
                (term
                   {if
                      [legacy_presets]
@@ -2408,9 +2470,11 @@
                   {set
                      [start_offset]
                      0.25}
-                  {set
-                     [allow_keys]
-                     {is_ugc_plus}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [allow_keys] TRUE}
+                     {set [allow_keys] FALSE}
+                  })
                (allowed_notes
                   (37 38 39 40 41))
                (get_instrument
@@ -2509,10 +2573,18 @@
                   {set
                      $mp.last_times
                      (0 0 0 0 0 0 0 0)}
-                  {set
-                     [enabled]
-                     {!
-                        {is_ugc_plus}}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] FALSE}
+                     {set [enabled] TRUE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] FALSE}
+                  })
                (term
                   {if
                      [enabled]
@@ -2582,9 +2654,18 @@
                (track_name VENUE)
                (enabled TRUE)
                (init
-                  {set
-                     [enabled]
-                     {is_ugc_plus}})
+                  {is_ugc_plus}
+                  {if_else $is_ugc_plus
+                     {set [enabled] TRUE}
+                     {set [enabled] FALSE}
+                  }
+                  {if
+                     {&&
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+                     }
+                     {set [enabled] TRUE}
+                  })
                (term
                   {if
                      [enabled]

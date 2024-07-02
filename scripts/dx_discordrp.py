@@ -6,6 +6,8 @@ import os
 import configparser
 import logging
 from pathlib import Path
+import requests
+from datetime import datetime
 
 # Check if the system is running on macOS
 is_macos = sys.platform == "darwin"
@@ -24,26 +26,33 @@ def get_rpcs3_path():
         else:
             print_color_text(f"Invalid RPCS3 path provided.", "1;31")  # Red text
 
-def save_rpcs3_path(config_path: Path, rpcs3_path: Path):
+def save_rpcs3_path(config_path: Path, rpcs3_path: Path, xbox_console_ip: str):
     config = configparser.ConfigParser()
-    config['Paths'] = {'rpcs3_path': f'"{str(rpcs3_path)}"'}
+    config['Paths'] = {
+        'rpcs3_path': f'"{str(rpcs3_path)}"',
+        'xbox_console_ip': xbox_console_ip
+    }
     with open(config_path, 'w') as configfile:
         config.write(configfile)
 
-def load_rpcs3_path(config_path: Path):
+def load_config(config_path: Path):
     config = configparser.ConfigParser()
     config.read(config_path)
     if 'Paths' in config and 'rpcs3_path' in config['Paths']:
-        return Path(config['Paths']['rpcs3_path'].strip('"'))
+        rpcs3_path = Path(config['Paths']['rpcs3_path'].strip('"'))
+        xbox_console_ip = config['Paths'].get('xbox_console_ip', '')
+        return rpcs3_path, xbox_console_ip
     else:
-        return None
+        return None, ''
 
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('asyncio').setLevel(logging.WARNING)
 
 # List of required packages
-required_packages = ["pypresence", "json", "time", "os", "logging", "pathlib"]
+required_packages = ["pypresence", "json", "time", "os", "logging", "pathlib", "requests"]
 
 # Check if each package is installed, and if not, install it
 for package in required_packages:
@@ -61,20 +70,27 @@ for package in required_packages:
 import pypresence
 
 # Function to parse the raw input data
-def parse_raw_input(raw_input):
-    #logger.debug("Parsing raw input data...")
-    parsed_input = raw_input.replace("\\q", "\"")
-    parsed_input = parsed_input.replace("'", "'")  # Replace single quotes with double quotes
-    parsed_input = parsed_input[1:-2]  # Remove first quote and extra double quote at the end
-    #logger.debug("Raw input data parsed successfully.")
-    return parsed_input
+def parse_raw_input(raw_input, from_web=False):
+    try:
+        if isinstance(raw_input, dict):
+            # If the input is already a dictionary (from web), return it as JSON string
+            return json.dumps(raw_input)
+        start_idx = raw_input.index("{")
+        end_idx = raw_input.rindex("}") + 1
+        parsed_input = raw_input[start_idx:end_idx]
+        parsed_input = parsed_input.replace("\\q", "\"")
+        parsed_input = parsed_input.replace("'", "\"")  # Replace single quotes with double quotes
+        if from_web:
+            parsed_input = parsed_input[:-1] if parsed_input.endswith('"') else parsed_input
+        return parsed_input
+    except ValueError:
+        logger.exception("Error parsing raw input")
+        return ""
 
 # Function to load JSON data from parsed input
 def load_json(parsed_input):
-    #logger.debug("Loading JSON data...")
     try:
         data = json.loads(parsed_input)  # Parse the JSON data
-        #logger.debug("JSON data loaded successfully.")
         return data
     except json.JSONDecodeError as e:
         logger.exception("Invalid JSON data.")
@@ -86,22 +102,11 @@ def prompt_json_path(suffix):
     return json_path.strip()
 
 # Connect to Discord RPC and update rich presence
-def connect_and_update(client_id, interval, RPC, json_path, large_text=""):
+def connect_and_update(client_id, interval, RPC, json_data, large_text="", from_web=False):
     try:
-        # Read the raw input data from the stored file
-        with json_path.open('r') as file:
-            raw_input_data = file.read()
-
-        # Print the parsed raw input
-        #logger.debug("Parsed Raw Input:")
-        #logger.debug(raw_input_data)
-
         # Parse the raw input data
-        parsed_input_data = parse_raw_input(raw_input_data)
-
-        # Print the parsed JSON
-        #logger.debug("Parsed JSON:")
-        #logger.debug(parsed_input_data)
+        parsed_input_data = parse_raw_input(json_data, from_web)
+        #logger.debug(f"Parsed Input Data: {parsed_input_data}")
 
         # Load the JSON data from parsed input
         presence_data = load_json(parsed_input_data)
@@ -109,14 +114,14 @@ def connect_and_update(client_id, interval, RPC, json_path, large_text=""):
         # Check if the JSON data was loaded successfully
         if presence_data is not None:
             # Update Discord Rich Presence
-            #logger.debug(f"Presence data: {presence_data}")
             update_presence(client_id, presence_data, RPC, large_text)
         else:
             logger.error("Failed to load presence data. Check the JSON input.")
 
     except Exception as e:
         logger.exception(f"An error occurred: {str(e)}")
-# Update Discord Rich Presence
+
+# Function to update Discord Rich Presence
 def update_presence(client_id, parsed_input, RPC, large_text):
     try:
         # Perform the necessary actions based on the updated data
@@ -144,21 +149,25 @@ def update_presence(client_id, parsed_input, RPC, large_text):
             game_mode = game_mode_mapping[game_mode]
 
         # Get the current timestamp
-        current_time = int(time.time())
+        current_time = datetime.now()
 
         # Check if the 'Game mode' has changed
-        if game_mode != update_presence.previous_mode:
+        if update_presence.start_time is None:
+            # If this is the initial mode setting, just set the mode without resetting the timer
+            update_presence.initial_mode_set = True
+            update_presence.previous_mode = game_mode
+            update_presence.start_time = current_time
+            #logger.debug(f"Initial game mode set to {game_mode}.")
+        elif game_mode != update_presence.previous_mode:
             # If the mode has changed, reset the timer and update the previous mode
             update_presence.previous_mode = game_mode
             update_presence.start_time = current_time
+            update_presence.last_printed_minute = None
+            #logger.debug(f"Game mode changed to {game_mode}. Timer reset.")
 
-        # Calculate the duration in seconds
-        elapsed_time = current_time - update_presence.start_time
-
-        # Format the elapsed time into a user-friendly string
-        hours, remainder = divmod(elapsed_time, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        elapsed_time_string = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        # Calculate the elapsed time
+        elapsed_time_string = get_elapsed_time(update_presence.start_time)
+        #logger.debug(f"Elapsed time: {elapsed_time_string}")
 
         # Get the active instruments and count the number of active instruments
         active_instruments = parsed_input.get('SelectedInstruments', [])
@@ -203,10 +212,8 @@ def update_presence(client_id, parsed_input, RPC, large_text):
         if parsed_input.get('Online', '') == "true":
             game_mode = "Online " + game_mode
 
-        #logger.debug(f"Large text: {large_text}")
-
         activity = {
-            'details': f"{active_instrument_text} {game_mode} (Elapsed: {elapsed_time_string})",
+            'details': f"{active_instrument_text} {game_mode} {elapsed_time_string}",
             'state': loaded_song,
             'large_image': 'banner',
             'large_text': large_text,
@@ -216,13 +223,15 @@ def update_presence(client_id, parsed_input, RPC, large_text):
 
         # Update the presence
         RPC.update(**activity)
-        #logger.debug("Rich Presence updated.")
+
+        # Print activity details if a new minute has passed
+        current_minute = current_time.minute
+        if current_minute != update_presence.last_printed_minute:
+            print(f"Updating Presence: {loaded_song}, {active_instrument_text} {game_mode} {elapsed_time_string}")
+            update_presence.last_printed_minute = current_minute
 
     except pypresence.InvalidPipe:
         logger.error("Discord client not detected. Make sure Discord is running.")
-
-
-
 
 # Function to simplify instrument names
 def simplify_instrument_name(instrument_name):
@@ -252,7 +261,6 @@ def map_instrument_to_small_image(instrument_name):
     }
     return instrument_mapping.get(instrument_name.upper(), 'default_small_image_name')
 
-
 # Function to clean up difficulty levels
 def clean_difficulty(difficulty):
     difficulty_mapping = {
@@ -266,9 +274,43 @@ def clean_difficulty(difficulty):
     }
     return difficulty_mapping.get(difficulty, difficulty)
 
+# Function to fetch JSON data from a web address
+def fetch_json_from_web(address):
+    try:
+        response = requests.get(address)
+        if response.status_code == 200:
+            raw_data = response.text
+            sanitized_data = raw_data.replace('\\', '\\\\')
+            return json.loads(sanitized_data)
+        else:
+            logger.error(f"Failed to fetch data from {address}, status code: {response.status_code}")
+            return None
+    except requests.RequestException as e:
+        logger.error(f"Error fetching data from {address}: {str(e)}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding JSON data from {address}: {str(e)}")
+        return None
+
+# Function to get elapsed time in a user-friendly format
+def get_elapsed_time(start_time):
+    elapsed = datetime.now() - start_time
+    days, remainder = divmod(elapsed.total_seconds(), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, _ = divmod(remainder, 60)
+    
+    if days > 0:
+        return f"for {int(days)} day{'s' if days > 1 else ''}, {int(hours)} hour{'s' if hours != 1 else ''}, and {int(minutes)} minute{'s' if minutes != 1 else ''}"
+    elif hours > 0:
+        return f"for {int(hours)} hour{'s' if hours != 1 else ''} and {int(minutes)} minute{'s' if minutes != 1 else ''}"
+    else:
+        return f"for {int(minutes)} minute{'s' if minutes != 1 else ''}"
+
 # Initialize static variables
+update_presence.initial_mode_set = False
 update_presence.previous_mode = ''
-update_presence.start_time = 0
+update_presence.start_time = None  # Set to None initially
+update_presence.last_printed_minute = None
 
 def main():
     # Check if Discord is installed and running
@@ -280,20 +322,21 @@ def main():
 
     # Configurable parameters
     client_id = "1125571051607298190"
-    interval = 1  # Check for updates every 10 seconds
+    interval = 10  # Check for updates every 15 seconds
 
     config_path = Path.cwd() / 'dx_config.ini'
-    rpcs3_path = load_rpcs3_path(config_path)
+    rpcs3_path, xbox_console_ip = load_config(config_path)
 
     if rpcs3_path is None:
         rpcs3_path = get_rpcs3_path()
-        save_rpcs3_path(config_path, rpcs3_path)
+        xbox_console_ip = input("Enter the IP address of the Xbox console (leave empty if not applicable): ").strip()
+        save_rpcs3_path(config_path, rpcs3_path, xbox_console_ip)
 
     json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / f"discordrp.json"
 
     json_file = Path(json_path)
-    if not json_file.is_file():
-        logger.error(f"JSON file does not exist: {json_path}")
+    if not json_file.is_file() and not xbox_console_ip:
+        logger.error(f"JSON file does not exist: {json_path} and no Xbox console IP provided.")
         return
 
     large_text = "Rock Band 3 Deluxe"  # Default value for large_text
@@ -307,18 +350,77 @@ def main():
         logger.error("Discord client not detected. Make sure Discord is running.")
         return
 
+    json_data = None
+    from_web = False
+    if xbox_console_ip:
+        logger.debug("Attempting to connect to Xbox 360.")
+        web_address = f"http://{xbox_console_ip}:21070/jsonrpc"
+        json_data = fetch_json_from_web(web_address)
+        from_web = True
+
+    if not json_data and json_file.is_file():
+        with json_file.open('r') as file:
+            json_data = file.read()
+        from_web = False
+
+    if json_data:
+        # Parse the raw input data
+        parsed_input_data = parse_raw_input(json_data, from_web)
+
+        # Load the JSON data from parsed input
+        presence_data = load_json(parsed_input_data)
+
+        if presence_data is not None:
+            # Initial update to Discord Rich Presence
+            connect_and_update(client_id, interval, RPC, presence_data, large_text)
+        else:
+            logger.error("Failed to load presence data. Check the JSON input.")
+    else:
+        logger.error("No valid JSON data available from either web address or local file.")
+        return
+
     try:
         while True:
-            # Pass the json_path and large_text to connect_and_update function
-            connect_and_update(client_id, interval, RPC, json_path, large_text)
+            if from_web:
+                # Fetch JSON data from web address
+                json_data = fetch_json_from_web(web_address)
+                if json_data:
+                    # Parse the raw input data
+                    parsed_input_data = parse_raw_input(json_data, from_web)
+                    # Load the JSON data from parsed input
+                    presence_data = load_json(parsed_input_data)
+                    if presence_data is not None:
+                        # Update Discord Rich Presence
+                        connect_and_update(client_id, interval, RPC, presence_data, large_text)
+                    else:
+                        logger.error("Failed to load presence data. Check the JSON input.")
+            elif json_file.is_file():
+                with json_file.open('r') as file:
+                    json_data = file.read()
+
+                if json_data:
+                    # Parse the raw input data
+                    parsed_input_data = parse_raw_input(json_data, from_web)
+
+                    # Load the JSON data from parsed input
+                    presence_data = load_json(parsed_input_data)
+
+                    if presence_data is not None:
+                        # Update Discord Rich Presence
+                        connect_and_update(client_id, interval, RPC, presence_data, large_text)
+                    else:
+                        logger.error("Failed to load presence data. Check the JSON input.")
+                else:
+                    logger.error("No valid JSON data available from local file.")
+            
             # Wait for the specified interval before checking again
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        pass
-
-    # Disconnect from Discord RPC before exiting
-    RPC.close()
+        print("Disconnecting from Discord...")
+        RPC.clear()
+        RPC.close()
+        print("Disconnected. Goodbye!")
 
 if __name__ == '__main__':
     main()
