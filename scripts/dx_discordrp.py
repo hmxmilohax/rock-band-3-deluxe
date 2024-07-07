@@ -79,7 +79,7 @@ def parse_raw_input(raw_input, from_web=False):
         end_idx = raw_input.rindex("}") + 1
         parsed_input = raw_input[start_idx:end_idx]
         parsed_input = parsed_input.replace("\\q", "\"")
-        parsed_input = parsed_input.replace("'", "\"")  # Replace single quotes with double quotes
+        parsed_input = parsed_input.replace("'", "\'")
         if from_web:
             parsed_input = parsed_input[:-1] if parsed_input.endswith('"') else parsed_input
         return parsed_input
