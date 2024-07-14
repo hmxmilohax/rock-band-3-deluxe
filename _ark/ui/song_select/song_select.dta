@@ -965,7 +965,28 @@
       ;   }
       ;}
    )
+   (handle_to_task
+      {script_task kTaskSeconds
+         (name event_inactivity_backout)
+         (delay 60)
+         (script
+            ;{dx_passive_messenger_symbol "PICK A GODDAMN SONG"}
+            {ui abstract_wipe}
+            {ui goto_screen meta_loading_main_screen}
+         )
+      }
+   )
    (enter
+      {if_else {&& $dx_event_mode {! $dx_in_show_flow} {! $dx_prep_show_flow} {! $dx_playing_a_show}}
+         {if_else {exists event_inactivity_backout}
+            {do
+               {delete event_inactivity_backout}
+               {$this handle_to_task}
+            }
+            {$this handle_to_task}
+         }
+         kDataUnhandled
+      }
       {set $highscore_tracker ()}
       {resize $highscore_tracker 0}
       {push_back $highscore_tracker (fake_name_goes_here_lol faker)}
@@ -1192,6 +1213,11 @@
             [should_go_to_art_maker]
             FALSE}})
    (exit
+      ;{if $dx_event_mode
+      ;   {if {exists event_inactivity_backout}
+      ;      {delete event_inactivity_backout}
+      ;   }
+      ;}
       {set
          [details_mode]
          FALSE}
@@ -1207,6 +1233,16 @@
       {rnd set_in_game FALSE}
       #endif)
    (BUTTON_DOWN_MSG
+      {if_else {&& $dx_event_mode {! $dx_in_show_flow} {! $dx_prep_show_flow} {! $dx_playing_a_show}}
+         {if_else {exists event_inactivity_backout}
+            {do
+               {delete event_inactivity_backout}
+               {$this handle_to_task}
+            }
+            {$this handle_to_task}
+         }
+         kDataUnhandled
+      }
       {if_else
          {ui in_transition}
          TRUE
@@ -1822,7 +1858,13 @@
                      {'||'
                         {== $type kNodeSong}
                         {== $type kNodeSetlist}}}
-                  {$this show_details $user}}})
+                  {if_else $dx_event_mode
+                     kDataUnhandled
+                     {$this show_details $user}
+                  }
+               }
+            }
+         )
          ({&&
                #ifdef HX_WII
                {'||'
@@ -3035,14 +3077,16 @@
                         "")})
                (kNodeSetlist
                   "")}}
-         {set
-            $option
-            {switch
-               $type
-               ((kNodeFunction kNodeHeader kNodeSubheader kNodeStoreSong)
-                  "")
-               ((kNodeSong kNodeSetlist)
-                  details)}}
+         {unless $dx_event_mode
+            {set
+               $option
+               {switch
+                  $type
+                  ((kNodeFunction kNodeHeader kNodeSubheader kNodeStoreSong)
+                     "")
+                  ((kNodeSong kNodeSetlist)
+                     details)}}
+         }
          {cond
             ({&& $primary $secondary}
                {help.ihp
