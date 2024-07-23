@@ -1,3 +1,5 @@
+#ifndef HX_WII {if {file_exists DX_EVENT_FILE_PATH} {dx_event_dta_reader}} #endif
+
 {unless $dx_only_populate_once_holders
    {set $dx_only_populate_once_holders TRUE}
    {set $dx_current_song {array ()}}
@@ -49,11 +51,24 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_current_free_cam "Free camera: off"}
 {set $overshell_showing TRUE}
 {set $dx_forced_outro_vignette FALSE}
-{set $dx_forced_main_menu_bg FALSE}
+{if_else $dx_event_mode
+   {do
+      {set $dx_sv8_dx_vers TRUE}
+      {set $dx_forced_main_menu_bg ("sv8_a")}
+   }
+   {set $dx_forced_main_menu_bg FALSE}
+}
 {set $dx_forced_song_select_bg FALSE}
 
-{set $dx_confirm_song_count TRUE}
-{set $dx_ash_welcome_msg FALSE}
+{if_else $dx_event_mode
+   {set $dx_confirm_song_count FALSE}
+   {set $dx_confirm_song_count TRUE}
+}
+
+{if_else $dx_event_mode
+   {set $dx_ash_welcome_msg TRUE}
+   {set $dx_ash_welcome_msg FALSE}
+}
 
 {set $dx_time_remaining_on_top TRUE}
 
@@ -73,7 +88,10 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_loading_tip_var FALSE}
 {set $dx_hide_on_countdown off}
 
-{set $dx_you_rock FALSE}
+{if_else $dx_event_mode
+   {set $dx_you_rock TRUE}
+   {set $dx_you_rock FALSE}
+}
 
 {set $dx_trainer_real_guitar FALSE}
 {set $dx_trainer_real_bass FALSE}
@@ -283,9 +301,11 @@ DX_CURRENT_SONG_CLEAR
 ;sets default bre track textures.
 {set $dx_bre none}
 
-;sets default flames track textures.
-;no flames: noflm
-{set $dx_flames none}
+;sets default flares track textures.
+{set $dx_flares none}
+
+;sets default particles track textures.
+{set $dx_particles none}
 
 ;sets default vocal arrow track textures.
 {set $dx_vocal_arrow none}
@@ -368,9 +388,22 @@ DX_CURRENT_SONG_CLEAR
 
 ;set default volumes for mics
 ;0-11, default is "8"
-{set $mic_vol_1 8}
-{set $mic_vol_2 8}
-{set $mic_vol_3 8}
+{if_else $dx_event_mode
+   {do
+      {set $mic_vol_1 0}
+      {set $mic_vol_2 0}
+      {set $mic_vol_3 0}
+   }
+   {do
+      {set $mic_vol_1 8}
+      {set $mic_vol_2 8}
+      {set $mic_vol_3 8}
+   }
+}
+
+{if $dx_event_mode
+   {set $dx_character_swap TRUE}
+}
 
 ;set default colors for notes
 ;5 is overdrive (white)
@@ -461,7 +494,10 @@ DX_CURRENT_SONG_CLEAR
 
 
 ;currentsong formatting defauts
-{set $dx_song_title default}
+{if_else $dx_event_mode
+   {set $dx_song_title always}
+   {set $dx_song_title default}
+}
 {set $dx_song_title_mtv_line TRUE}
 {set $dx_artist_mtv_line TRUE}
 {set $dx_year_on_mtv TRUE}
@@ -478,6 +514,12 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_joypad_type_keys kControllerKeys}
 {set $dx_joypad_type_vocals kControllerVocals}
 {set $dx_joypad_pad_mapping joypad}
+
+;mtv overlay position for event mode
+{if $dx_event_mode
+   {set $mtvpos_0 -85}
+   {set $mtvpos_1 150}
+}
 
 ;game hud default ui positioning
 {set $scoreboardpos_0 8} {set $scoreboardpos_1 0} {set $scoreboardpos_2 -16}
@@ -515,8 +557,16 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_fctype both}
 {set $dx_streak_counter single}
 {set $dx_time_remaining down}
-{set $dx_current_intro_movie deluxe}
-{set $dx_splash_screen TRUE}
+{if_else $dx_event_mode
+   {do
+      {set $dx_current_intro_movie off}
+      {set $dx_splash_screen FALSE}
+   }
+   {do
+      {set $dx_current_intro_movie deluxe}
+      {set $dx_splash_screen TRUE}
+   }
+}
 {set $dx_seasonal_logos TRUE}
 {set $dx_season standard}
 {set $dx_additional_parts TRUE}
@@ -541,6 +591,10 @@ DX_CURRENT_SONG_CLEAR
 {dx_track_theme_dta_writer}
 {push_back $dx_tracked_track_themes default}
 #endif
+
+{if $dx_event_mode
+   {modifier_mgr toggle_modifier_enabled mod_nopause}
+}
 
 {set $dx_instrument_icons rb3}
 
@@ -574,11 +628,16 @@ DX_CURRENT_SONG_CLEAR
 }
 #endif
 
-; force vsync on after settings load if not on rpcs3, just in case
-{if {! {== $dx_detected_platform platform_rpcs3}}
-   {set $dx_vsync TRUE}
-   {rnd set_sync 1}
+{if_else {== $dx_detected_platform platform_rpcs3}
+   {do
+      {rnd set_sync $dx_vsync}
+   }
+   {do
+      {set $dx_vsync TRUE}
+      {rnd set_sync 1}
+   }
 }
+
 #ifdef HX_WII
 {set $dx_instrument_icons rb3}
 {set $dx_song_select_rings FALSE}

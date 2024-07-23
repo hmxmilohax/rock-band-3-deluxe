@@ -89,3 +89,5 @@ From here, you can make any personal modifications to the game or build it yours
 [dtab](https://github.com/mtolly/dtab) - For serializing `.dtb` script files
 
 [RB3DXBuildPkgPS3](https://github.com/InvoxiPlayGames/RB3DXBuildPkgPS3) - For building an RB3DX PKG for PS3
+
+[Wiimmfi ISO Patcher](https://wiimmfi.de/patcher/iso) - For self building an RB3DX image for wii. Binary locally in repo due to clean download restraints
