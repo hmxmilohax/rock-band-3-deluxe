@@ -2,17 +2,17 @@
 ;inside the ark
 #define SONGPATH_DISC
 (
-   {song_mgr song_file_path {meta_performer song} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
+   {sprint {song_mgr song_path {meta_performer song}} "/../songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
 )
 ;a dlc dta
 #define SONGPATH_DLC
 (
-   {song_mgr song_file_path {meta_performer song} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
+   {sprint {song_mgr song_path {meta_performer song}} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
 )
 ;on disc update
 #define SONGPATH_UPDATE
 (
-   {song_mgr song_file_path {meta_performer song} "/../../../gen/missing_song_data_updates.dtb"} ;if we loaded a dlc song that has an on disc update
+   {sprint {song_mgr song_path {meta_performer song}} "/../../../gen/missing_song_data_updates.dtb"} ;if we loaded a dlc song that has an on disc update
 )
 #define SONGPATH_RAW_DTB
 (
@@ -42,56 +42,87 @@
       {set $dx_readdtaonce TRUE}
       {set $dx_readadditionaldtaonce FALSE}
       {set $theactualpath FALSE}
-      {if_else {file_exists SONGPATH_DLC}
-         {set $theactualpath SONGPATH_DLC} ;a dlc dta
-          {if_else {&& {file_exists SONGPATH_UPDATE} {file_exists SONGPATH_RAW_DTB}}
-            {set $theactualpath SONGPATH_UPDATE} ;on disc update
-            {if_else {file_exists SONGPATH_DISC}
-               {set $theactualpath SONGPATH_DISC} ;inside the ark
-               {set $dx_path_failed TRUE}
-            }
-         }
-      }
-      {if_else $theactualpath
-         {do
-            {if_else {== $theactualpath SONGPATH_UPDATE} ;check if this is an on disc update 
-               {if_else {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
-                  {do
-                     {set $songdtareader {read_file SONGPATH_RAW_DTB}} ; read the raw dtb
-                  }
-                  {do
-                     {set $dx_path_failed TRUE} ;failure (shouldnt happen)
-                     {dx_log_writer default {sprint "Found DTA update path, but couldn't find raw dtb"}}
-                  }
-               }
-               {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
-            }
-            {dx_log_writer info {sprint "Found DTA path: " $theactualpath}}
-         }
-         {do
-            {set $dx_path_failed TRUE}
-            {dx_log_writer default {sprint "Unmapped DTA path: " {song_mgr song_file_path {meta_performer song} "/"}}}
-         }
-      }
+      ;{set $songdtareader {read_file SONGPATH_DLC}} ;load the dta into memory
+      ;{if_else {file_exists SONGPATH_DLC}
+      ;   {set $theactualpath SONGPATH_DLC} ;a dlc dta
+      ;    {if_else {&& {file_exists SONGPATH_UPDATE} {file_exists SONGPATH_RAW_DTB}}
+      ;      {set $theactualpath SONGPATH_UPDATE} ;on disc update
+      ;      {if_else {file_exists SONGPATH_DISC}
+      ;         {set $theactualpath SONGPATH_DISC} ;inside the ark
+      ;         {set $dx_path_failed TRUE}
+      ;      }
+      ;   }
+      ;}
+      ;{if_else $theactualpath
+      ;   {do
+      ;      {if_else {== $theactualpath SONGPATH_UPDATE} ;check if this is an on disc update 
+      ;         {if_else {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
+      ;            {do
+      ;               {set $songdtareader {read_file SONGPATH_RAW_DTB}} ; read the raw dtb
+      ;            }
+      ;            {do
+      ;               {set $dx_path_failed TRUE} ;failure (shouldnt happen)
+      ;               {dx_log_writer default {sprint "Found DTA update path, but couldn't find raw dtb"}}
+      ;            }
+      ;         }
+      ;         {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
+      ;      }
+      ;      {dx_log_writer info {sprint "Found DTA path: " $theactualpath}}
+      ;   }
+      ;   {do
+      ;      {set $dx_path_failed TRUE}
+      ;      {dx_log_writer default {sprint "Unmapped DTA path: " {song_mgr song_file_path {meta_performer song} "/"}}}
+      ;   }
+      ;}
    }
 )
 #define MTV_DTA_READER
 (
-   {if {&& $dx_author_finder_is_enabled {! $dx_path_failed}}
-      {if {find_exists $songdtareader {meta_performer song}}
-         {set $songdtareader
-            {find $songdtareader {meta_performer song}}
+   {if $dx_author_finder_is_enabled
+      {set $dx_path_failed FALSE}
+      {set $tempreadarray FALSE}
+      {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+      #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
+      {if {! {file_exists $filepath}}
+         {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
+         {if {has_substr $filepath BLUS30050}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
          }
+         {if {has_substr $filepath BLUS30147}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLUS30463}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {set $filepath $ps3_base_path}
       }
-      {dx_mtv_array_reader}
+      #endif
+      #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
+      {if {! {file_exists $filepath}}
+         {set $filepath {sprint {song_mgr song_path {meta_performer song}}}}
+         {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
+         {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
+         {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
+         {search_replace $filepath "_song/" "/" $filepath}
+         ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
+      }
+      #endif
+      {set $tempreadarray {read_file $filepath}}
+      {if_else $tempreadarray
+      ;{if {find_exists $songdtareader {meta_performer song}}
+         {foreach $entry $tempreadarray
+            {if {== {elem $entry 0} {symbol {meta_performer song}}}
+               {set $songdtareader {array $entry}}
+               {dx_mtv_array_reader $songdtareader}
+            }
+         }
+         {set $dx_path_failed TRUE}
+      ;}
+      }
       {set $songdtareader FALSE}
-      {if {find_exists $syscfg missing_song_data {meta_performer song}}
-         {set $songdtareader
-            {find $syscfg missing_song_data {meta_performer song}}
-         }
-      }
-      {if $songdtareader
-         {dx_mtv_array_reader}
+      {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
+         {set $songdtareader {array {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}}}
+         {dx_mtv_array_reader $songdtareader}
       }
    }
 )
@@ -125,25 +156,25 @@
          }
       }
       ;{dx_mtv_formatter {sprint "\n" {localize time_remaining} ": " $dx_timer_minutes ":" $dx_timer_seconds}}
-      {if $dx_album_mtv_line
+      {if {&& $dx_album_mtv_line $albumvar}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint $albumvar}}
             {dx_mtv_formatter {sprint "\n" $albumvar}}
          }
       }
-      {if $dx_genre_mtv_line
+      {if {&& $dx_genre_mtv_line $genrevar}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint {localize $genrevar}}}
             {dx_mtv_formatter {sprint "\n" {localize $genrevar}}}
          }
       }
-      {if $dx_sub_genre_mtv_line
+      {if {&& $dx_sub_genre_mtv_line $subgenrevar}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint {localize $subgenrevar}}}
             {dx_mtv_formatter {sprint "\n" {localize $subgenrevar}}}
          }
       }
-      {if $dx_game_origin_mtv_line
+      {if {&& $dx_game_origin_mtv_line $sourcevar}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint {localize $sourcevar}}}
             {dx_mtv_formatter {sprint "\n" {localize $sourcevar}}}
@@ -171,7 +202,7 @@
             }
          }
       }
-      {if $dx_song_key_mtv_line
+      {if {&& $dx_song_key_mtv_line $dx_song_key_var}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint {localize key_of} ": " {localize $dx_song_key_var}}}
             {dx_mtv_formatter {sprint "\n" {localize key_of} ": " {localize $dx_song_key_var}}}
