@@ -1,5 +1,327 @@
+{func dx_cook_crowd ;cook crowd rating for other funcs
+   ($crowd_rating)
+   {* 1.25 {- $crowd_rating 0.2}} ;makes it 0.0-1.0
+}
+
+{func dx_get_brutal_number_dx ;pass this routine the *cooked* crowd
+   ($cooked_crowd)
+   {- {* $cooked_crowd 126} 26} ;to increase how much we hide at max, increase the 126
+}
+
+{func dx_get_brutal_number_rb4 ;pass this routine the *cooked* crowd
+   ($cooked_crowd)
+   {do
+      ;($cooked_crowd_rating {dx_cook_crowd $crowd_rating}) ;cook the crowd
+      ($brutal_no 0) ;placeholder for brutal number
+      {cond
+         ({== $cooked_crowd 1.00} {set $brutal_no 90})
+         ({&& {< $cooked_crowd 1.00} {>= $cooked_crowd 0.833}} {set $brutal_no 80})
+         ({&& {< $cooked_crowd 0.833} {>= $cooked_crowd 0.667}} {set $brutal_no 73.333})
+         ({&& {< $cooked_crowd 0.667} {>= $cooked_crowd 0.500}} {set $brutal_no 56.667})
+         ({&& {< $cooked_crowd 0.500} {>= $cooked_crowd 0.333}} {set $brutal_no 40})
+         ({&& {< $cooked_crowd 0.333} {>= $cooked_crowd 0.167}} {set $brutal_no 15})
+         ({&& {< $cooked_crowd 0.167} {>= $cooked_crowd 0}} {set $brutal_no -26})
+         {set $brutal_no -26}
+      }
+   $brutal_no
+   }
+}
+
+{func dx_brutal_mode
+   ($unused_arg)
+   {dx_brutal_mode_rb4}
+   ;{dx_brutal_mode_jnack $unused_arg}
+}
+
 {func
-   dx_brutal_mode
+   dx_brutal_mode_dx
+   {if {modifier_mgr is_modifier_active mod_brutalmode}
+      {beatmatch foreach_active_player $player
+         {unless {== $player instrument} vocals ;don't do if player is vocals
+            {switch {{$player get_user} get_slot_num}
+               (0
+                  {set $dx_crowd_0 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_0 {dx_get_brutal_number_dx $dx_crowd_0}}
+                  {{find_obj {{get_track_panel} loaded_dir} track_0} set bottom_y $brutal_number_0}
+               )
+               (1
+                  {set $dx_crowd_1 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_1 {dx_get_brutal_number_dx $dx_crowd_1}}
+                  {{find_obj {{get_track_panel} loaded_dir} track_1} set bottom_y $brutal_number_1}
+               )
+               (2
+                  {set $dx_crowd_2 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_2 {dx_get_brutal_number_dx $dx_crowd_2}}
+                  {{find_obj {{get_track_panel} loaded_dir} track_2} set bottom_y $brutal_number_2}
+               )
+               (3
+                  {set $dx_crowd_3 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_3 {dx_get_brutal_number_dx $dx_crowd_3}}
+                  {{find_obj {{get_track_panel} loaded_dir} track_3} set bottom_y $brutal_number_3}
+               )
+            }
+         }
+      }
+   }
+}
+
+{func
+   dx_brutal_mode_rb4_new ;this tries to use {var} and {symbol} to avoid rewriting it four times...it didn't work as you see it here but I leave it to look at later and eventually replace the repetitive mess in the other function
+   {if_else {modifier_mgr is_modifier_active mod_brutalmode} ;only do if brutal mode is on
+      {beatmatch foreach_active_player $player
+         {unless {== {$player instrument} vocals} ;don't do if player is vocals
+            {do
+               ($slotvar $crowdvar $brutalvar $initvar $tracksym $labelsym $colorsym)
+               {set $slotvar {{$player get_user} get_slot_num}} ;store player slot number
+               {set $crowdvar {sprint "dx_crowd_" $slotvar}} ;build variable names
+               {set $brutalvar {sprint "brutal_number_" $slotvar}}
+               {set $initvar {sprint "dx_brutal" $slotvar "_init"}}
+               {set $tracksym {sprint "track_" $slotvar}} ;build symbol names
+               {set $labelsym {sprint "brutal " $slotvar ".lbl"}}
+               {set $colorsym {sprint "brutal" $slotvar ".color"}}
+               {set_this {find_obj {{get_track_panel} loaded_dir} {symbol $tracksym}}} ;set $this to the proper GemTrackDir
+               {set {var $crowdvar} {dx_cook_crowd {$player crowd_rating}}} ;cook the crowd
+               {set {var $brutalvar} {dx_get_brutal_number_rb4 {var $crowdvar}}} ;determine the player's brutal position
+               {$this set bottom_y {var $brutalvar}} ;set brutal position
+               {if {! {var $initvar}} ;only do this chunk if we haven't ran it before
+                  {set {var $initvar} TRUE}
+                  {if {exists {symbol $labelsym}} ;if present, delete the label
+                     {delete {symbol $labelsym}}
+                  }
+                  {if {exists {symbol $colorsym}} ;same for the color object
+                     {delete {symbol $colorsym}}
+                  }
+                  {new BandLabel {symbol $labelsym}} ;create the label
+                  {{symbol $labelsym} set resource_name "pentatonic"} ;set the font
+                  {{symbol $labelsym} set_showing TRUE} ;make it visible
+                  {{symbol $labelsym} set_local_scale 1 1 1} ;set scale
+                  {{symbol $labelsym} set_local_rot -80 0 0} ;set rotation
+                  {{symbol $labelsym} set text_size 5} ;set font size
+                  {{symbol $labelsym} set alignment kMiddleCenter} ;set font alignment
+                  {{symbol $labelsym} set width 5000} ;set textbox width
+                  {{symbol $labelsym} set height 500} ;set textbox height
+                  {{symbol $labelsym} set alpha 1} ;set text alpha
+                  {{symbol $labelsym} set kerning -0.12} ;squeeze the characters a bit closer together
+                  {new UIColor {symbol $colorsym}} ;create the color
+                  {{symbol $colorsym} set color {pack_color 1 1 1}} ;make it white
+                  {{symbol $labelsym} set color_override {symbol $colorsym}} ;
+                  {{symbol $labelsym} set_token_fmt {sprint "-----------------"}} ;set the string to a bunch of dashes
+                  {meters.grp add_object {symbol $labelsym}} ;add to meters.grp
+               }
+               {{symbol $labelsym} set_local_pos -0.175 {var $brutalvar} 0} ;apply the bottom_y value to the Y coordinate of the label
+            }
+         }
+      }
+      {beatmatch foreach_active_player $player ;do this if brutal mode is off
+         {unless {== {$player instrument} vocals} ;don't do if player is vocals
+            {do
+               ($slotvar $tracksym $labelsym $colorsym)
+               {set $slotvar {{$player get_user} get_slot_num}} ;store player slot number
+               {set $tracksym {symbol {sprintf "track_%d" $slotvar}}} ;build symbol names
+               {set $labelsym {symbol {sprintf "brutal%d.lbl" $slotvar}}}
+               {set $colorsym {symbol {sprintf "brutal%d.color" $slotvar}}}
+               {set_this {find_obj {{get_track_panel} loaded_dir} $tracksym}} ;set $this to the proper GemTrackDir
+               {if {exists {symbol $labelsym}} ;if present, delete the label
+                  {{symbol $labelsym} set_showing FALSE}
+                  {delete {symbol $labelsym}}
+               }
+               {if {exists {symbol $colorsym}} ;same for the color object
+                  {delete {symbol $colorsym}}
+               }
+            }
+         }
+      }
+   }
+}
+
+{func
+   dx_brutal_mode_rb4 ;this one does each slot individually and thus takes a lot more repetition
+   {if_else {modifier_mgr is_modifier_active mod_brutalmode}
+      {beatmatch foreach_active_player $player
+         {unless {== {$player instrument} vocals}
+            {switch {{$player get_user} get_slot_num}
+               (0
+                  {set $dx_crowd_0 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_0 {dx_get_brutal_number_rb4 $dx_crowd_0}}
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_0}}
+                  {$this set bottom_y $brutal_number_0}
+                  {if {! $dx_brutal0_init}
+                     {set $dx_brutal0_init TRUE}
+                     {if {exists brutal0.lbl}
+                        {delete brutal0.lbl}
+                     }
+                     {if {exists brutal0.color}
+                        {delete brutal0.color}
+                     }
+                     {new BandLabel brutal0.lbl}
+                     {brutal0.lbl set resource_name "pentatonic"}
+                     {brutal0.lbl set_showing TRUE}
+                     {brutal0.lbl set_local_scale 1 1 1}
+                     {brutal0.lbl set_local_rot -80 0 0}
+                     {brutal0.lbl set text_size 5}
+                     {brutal0.lbl set alignment kMiddleCenter}
+                     {brutal0.lbl set width 5000}
+                     {brutal0.lbl set height 500}
+                     {brutal0.lbl set alpha 1}
+                     {brutal0.lbl set kerning -0.12}
+                     {new UIColor brutal0.color}
+                     {brutal0.color set color {pack_color 1 1 1}}
+                     {brutal0.lbl set color_override brutal0.color}
+                     {brutal0.lbl set_token_fmt {sprint "-----------------"}}
+                     {meters.grp add_object brutal0.lbl}
+                  }
+                  {brutal0.lbl set_local_pos -0.175 $brutal_number_0 0}
+               )
+               (1
+                  {set $dx_crowd_1 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_1 {dx_get_brutal_number_rb4 $dx_crowd_1}}
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_1}}
+                  {$this set bottom_y $brutal_number_1}
+                  {if {! $dx_brutal1_init}
+                     {set $dx_brutal1_init TRUE}
+                     {if {exists brutal1.lbl}
+                        {delete brutal1.lbl}
+                     }
+                     {if {exists brutal1.color}
+                        {delete brutal1.color}
+                     }
+                     {new BandLabel brutal1.lbl}
+                     {brutal1.lbl set resource_name "pentatonic"}
+                     {brutal1.lbl set_showing TRUE}
+                     {brutal1.lbl set_local_scale 1 1 1}
+                     {brutal1.lbl set_local_rot -80 0 0}
+                     {brutal1.lbl set text_size 5}
+                     {brutal1.lbl set alignment kMiddleCenter}
+                     {brutal1.lbl set width 5000}
+                     {brutal1.lbl set height 500}
+                     {brutal1.lbl set alpha 1}
+                     {brutal1.lbl set kerning -0.12}
+                     {new UIColor brutal1.color}
+                     {brutal1.color set color {pack_color 1 1 1}}
+                     {brutal1.lbl set color_override brutal1.color}
+                     {brutal1.lbl set_token_fmt {sprint "-----------------"}}
+                     {meters.grp add_object brutal1.lbl}
+                  }
+                  {brutal1.lbl set_local_pos -0.175 $brutal_number_1 0}
+               )
+               (2
+                  {set $dx_crowd_2 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_2 {dx_get_brutal_number_rb4 $dx_crowd_2}}
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_2}}
+                  {$this set bottom_y $brutal_number_2}
+                  {if {! $dx_brutal2_init}
+                     {set $dx_brutal2_init TRUE}
+                     {if {exists brutal2.lbl}
+                        {delete brutal2.lbl}
+                     }
+                     {if {exists brutal2.color}
+                        {delete brutal2.color}
+                     }
+                     {new BandLabel brutal2.lbl}
+                     {brutal2.lbl set resource_name "pentatonic"}
+                     {brutal2.lbl set_showing TRUE}
+                     {brutal2.lbl set_local_scale 1 1 1}
+                     {brutal2.lbl set_local_rot -80 0 0}
+                     {brutal2.lbl set text_size 5}
+                     {brutal2.lbl set alignment kMiddleCenter}
+                     {brutal2.lbl set width 5000}
+                     {brutal2.lbl set height 500}
+                     {brutal2.lbl set alpha 1}
+                     {brutal2.lbl set kerning -0.12}
+                     {new UIColor brutal2.color}
+                     {brutal2.color set color {pack_color 1 1 1}}
+                     {brutal2.lbl set color_override brutal2.color}
+                     {brutal2.lbl set_token_fmt {sprint "-----------------"}}
+                     {meters.grp add_object brutal2.lbl}
+                  }
+                  {brutal2.lbl set_local_pos -0.175 $brutal_number_2 0}
+               )
+               (3
+                  {set $dx_crowd_3 {dx_cook_crowd {$player crowd_rating}}}
+                  {set $brutal_number_3 {dx_get_brutal_number_rb4 $dx_crowd_3}}
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_3}}
+                  {$this set bottom_y $brutal_number_3}
+                  {if {! $dx_brutal3_init}
+                     {set $dx_brutal3_init TRUE}
+                     {if {exists brutal3.lbl}
+                        {delete brutal3.lbl}
+                     }
+                     {if {exists brutal3.color}
+                        {delete brutal3.color}
+                     }
+                     {new BandLabel brutal3.lbl}
+                     {brutal3.lbl set resource_name "pentatonic"}
+                     {brutal3.lbl set_showing TRUE}
+                     {brutal3.lbl set_local_scale 1 1 1}
+                     {brutal3.lbl set_local_rot -80 0 0}
+                     {brutal3.lbl set text_size 5}
+                     {brutal3.lbl set alignment kMiddleCenter}
+                     {brutal3.lbl set width 5000}
+                     {brutal3.lbl set height 500}
+                     {brutal3.lbl set alpha 1}
+                     {brutal3.lbl set kerning -0.12}
+                     {new UIColor brutal3.color}
+                     {brutal3.color set color {pack_color 1 1 1}}
+                     {brutal3.lbl set color_override brutal3.color}
+                     {brutal3.lbl set_token_fmt {sprint "-----------------"}}
+                     {meters.grp add_object brutal3.lbl}
+                  }
+                  {brutal3.lbl set_local_pos -0.175 $brutal_number_3 0}
+               )
+            }
+         }
+      }
+      {beatmatch foreach_active_player $player
+         {unless {== {$player instrument} vocals}
+            {switch {{$player get_user} get_slot_num}
+               (0
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_0}}
+                  {if {exists brutal0.lbl}
+                     {delete brutal0.lbl}
+                  }
+                  {if {exists brutal0.color}
+                     {delete brutal0.color}
+                  }
+                  {set $dx_brutal0_init FALSE} ;forgot to unset this when disabled
+               )
+               (1
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_1}}
+                  {if {exists brutal1.lbl}
+                     {delete brutal1.lbl}
+                  }
+                  {if {exists brutal1.color}
+                     {delete brutal1.color}
+                  }
+                  {set $dx_brutal1_init FALSE}
+               )
+               (2
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_2}}
+                  {if {exists brutal2.lbl}
+                     {delete brutal2.lbl}
+                  }
+                  {if {exists brutal2.color}
+                     {delete brutal2.color}
+                  }
+                  {set $dx_brutal2_init FALSE}
+               )
+               (3
+                  {set_this {find_obj {{get_track_panel} loaded_dir} track_3}}
+                  {if {exists brutal3.lbl}
+                     {delete brutal3.lbl}
+                  }
+                  {if {exists brutal3.color}
+                     {delete brutal3.color}
+                  }
+                  {set $dx_brutal3_init FALSE}
+               )
+            }
+         }
+      }
+   }
+}
+
+{func
+   dx_brutal_mode_jnack
    ($miss_or_hit)
    {if {modifier_mgr is_modifier_active mod_brutalmode}
       {beatmatch foreach_active_player $player
