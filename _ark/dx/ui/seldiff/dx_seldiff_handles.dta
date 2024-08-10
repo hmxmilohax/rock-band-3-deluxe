@@ -495,10 +495,12 @@
       {line2.lbl set alt_font_resource_name pentatonic_outline}
       {line3.lbl set alt_font_resource_name pentatonic_outline}
       {line4.lbl set alt_font_resource_name pentatonic_outline}
+      {line5.lbl set alt_font_resource_name pentatonic_outline}
       {line1.lbl set alt_italics 0.1}
       {line2.lbl set alt_italics 0.1}
       {line3.lbl set alt_italics 0.1}
       {line4.lbl set alt_italics 0.1}
+      {line5.lbl set alt_italics 0.1}
       {{dx_play_a_show_panel find career_description.lbl} set_showing FALSE}
       {{dx_play_a_show_panel find inst1.lbl} set_token_fmt {sprint "1 . "}}
       {{dx_play_a_show_panel find inst2.lbl} set_token_fmt {sprint "2. "}}
@@ -581,6 +583,28 @@
          }
       }
    )
+   (dx_check_for_inst_artist
+      {if {! $play_a_show_found_artist_part}
+         {set $play_a_show_found_artist_part TRUE}
+         {foreach $entry $dx_play_a_show_active_instruments
+            {if {! {{song_mgr get_meta_data $random_artist_song} has_part $entry}}
+               {set $play_a_show_found_artist_part FALSE}
+               {set $random_artist_song {song_select_panel pick_a_song}}
+            }
+         }
+      }
+   )
+   (dx_check_for_inst_diff
+      {if {! $play_a_show_found_diff_part}
+         {set $play_a_show_found_diff_part TRUE}
+         {foreach $entry $dx_play_a_show_active_instruments
+            {if {! {{song_mgr get_meta_data $random_diff_song} has_part $entry}}
+               {set $play_a_show_found_diff_part FALSE}
+               {set $random_diff_song {song_select_panel pick_a_song}}
+            }
+         }
+      }
+   )
    (dx_check_for_inst_ugc
       {if {! $play_a_show_found_ugc_part}
          {set $play_a_show_found_ugc_part TRUE}
@@ -604,6 +628,8 @@
       {set $play_a_show_found_song_part FALSE}
       {set $play_a_show_found_tempo_part FALSE}
       {set $play_a_show_found_album_part FALSE}
+      {set $play_a_show_found_artist_part FALSE}
+      {set $play_a_show_found_diff_part FALSE}
       {set $play_a_show_found_ugc_part FALSE}
       {if {session_mgr is_local}
          ;start the flow with a random songs
@@ -617,6 +643,8 @@
          {set $random_song {song_select_panel pick_a_song}}
          {set $random_tempo_song {song_select_panel pick_a_song}}
          {set $random_album_song {song_select_panel pick_a_song}}
+         {set $random_artist_song {song_select_panel pick_a_song}}
+         {set $random_diff_song {song_select_panel pick_a_song}}
          {set $random_ugc_song {song_select_panel pick_a_song}}
          ;run checks on the songs x num of times
          {foreach $entry $numtimes
@@ -625,6 +653,8 @@
             {$this dx_check_for_inst_length}
             {$this dx_check_for_inst_song}
             {$this dx_check_for_inst_tempo}
+            {$this dx_check_for_inst_artist}
+            {$this dx_check_for_inst_diff}
             {$this dx_check_for_inst_album}
             {$this dx_check_for_inst_ugc}
          }
@@ -632,14 +662,26 @@
          {{song_select_panel find song.lst} set_selected_simulate_scroll 1}
 
          ;populate found metadata
-         {set $random_genre {{song_mgr get_meta_data $random_genre_song} genre}}
+         {set $random_genre FALSE}
+         {set $random_subgenre FALSE}
+         {song_select_panel dx_authorpoll $random_genre_song}
+         {set $random_genre $genrevar}
+         {set $random_subgenre $subgenrevar}
          {set $random_year {int {{song_mgr get_meta_data $random_year_song} year_released}}}
          {set $random_length {{song_mgr get_meta_data $random_length_song} length_ms}}
          {set $random_song_title {{song_mgr get_meta_data $random_song} title}}
          {set $random_tempo {{song_mgr get_meta_data $random_tempo_song} anim_tempo}}
+         {set $random_diff FALSE}
+         {song_select_panel dx_authorpoll $random_diff_song}
+         {set $random_diff $bandrankvar}
+         {set $random_artist FALSE}
+         {song_select_panel dx_authorpoll $random_artist_song}
+         {set $random_artist $artistvar}
          {set $random_album FALSE}
+         {set $random_arist_album FALSE}
          {song_select_panel dx_authorpoll $random_album_song}
          {set $random_album $albumvar}
+         {set $random_arist_album $artistvar}
          {set $random_ugc_source FALSE}
          {set $random_ugc_author FALSE}
          {song_select_panel dx_authorpoll $random_ugc_song}
@@ -656,7 +698,16 @@
                ({! $play_a_show_found_genre_part}
                   {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
                )
-               {set $dx_play_a_show_line {sprintf {localize play_a_show_genre} {localize $random_genre}}}
+               {if_else $random_genre
+                  {if_else $random_subgenre
+                     {switch $random_subgenre
+                        (subgenre_other {set $dx_play_a_show_line {sprintf {localize play_a_show_genre} {localize $random_genre}}})
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_genre} {localize $random_subgenre}}}
+                     }
+                     {set $dx_play_a_show_line {sprintf {localize play_a_show_genre} {localize $random_genre}}}
+                  }
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_genre} {localize unknown}}}
+               }
             }
          )
          (year
@@ -664,7 +715,58 @@
                ({! $play_a_show_found_year_part}
                   {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
                )
-               {set $dx_play_a_show_line {sprintf {localize play_a_show_year} $random_year}}
+               {set $year_rng {random_int 1 4}}
+               {if_else {|| {== $year_rng 1} {== $year_rng 3}}
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_year} $random_year}}
+                  {switch $random_year
+                     ((1910 1911 1912 1913 1914 1915 1916 1917 1918 1919)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 1910}}
+                     )
+                     ((1920 1921 1922 1923 1924 1925 1926 1927 1928 1929)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 1920}}
+                     )
+                     ((1930 1931 1932 1933 1934 1935 1936 1937 1938 1939)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 1930}}
+                     )
+                     ((1940 1941 1942 1943 1944 1945 1946 1947 1948 1949)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 1940}}
+                     )
+                     ((1950 1951 1952 1953 1954 1955 1956 1957 1958 1959)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 50}}
+                     )
+                     ((1960 1961 1962 1963 1964 1965 1966 1967 1968 1969)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 60}}
+                     )
+                     ((1970 1971 1972 1973 1974 1975 1976 1977 1978 1979)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 70}}
+                     )
+                     ((1980 1981 1982 1983 1984 1985 1986 1987 1988 1989)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 80}}
+                     )
+                     ((1990 1991 1992 1993 1994 1995 1996 1997 1998 1999)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 90}}
+                     )
+                     ((2000 2001 2002 2003 2004 2005 2006 2007 2008 2009)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2000}}
+                     )
+                     ((2010 2011 2012 2013 2014 2015 2016 2017 2018 2019)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2010}}
+                     )
+                     ((2020 2021 2022 2023 2024 2025 2026 2027 2028 2029)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2020}}
+                     )
+                     ((2030 2031 2032 2033 2034 2035 2036 2037 2038 2039)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2030}}
+                     )
+                     ((2040 2041 2042 2043 2044 2045 2046 2047 2048 2049)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2040}}
+                     )
+                     ((2050 2051 2052 2053 2054 2055 2056 2057 2058 2059)
+                        {set $dx_play_a_show_line {sprintf {localize play_a_show_year_decade} 2050}}
+                     )
+                     {set $dx_play_a_show_line {sprintf {localize play_a_show_year} $random_year}}
+                  }
+               }
             }
          )
          (length
@@ -717,8 +819,39 @@
                   {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
                )
                {if_else $random_album
-                  {set $dx_play_a_show_line {sprintf {localize play_a_show_album} $random_album}}
-                  {set $dx_play_a_show_line {sprintf {localize play_a_show_album} {localize unknown}}}
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_album} $random_album $random_arist_album}}
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_album} {localize unknown} {localize unknown}}}
+               }
+            }
+         )
+         (artist
+            {cond
+               ({! $play_a_show_found_artist_part}
+                  {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
+               )
+               {if_else $random_artist
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_artist} $random_artist}}
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_artist} {localize unknown}}}
+               }
+            }
+         )
+         (diff
+            {cond
+               ({! $play_a_show_found_diff_part}
+                  {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
+               )
+               {if_else $random_diff
+                  {switch $random_diff
+                     (0 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}})
+                     (1 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier2}}})
+                     (2 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier3}}})
+                     (3 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier4}}})
+                     (4 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier6}}})
+                     (5 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier8}}})
+                     (6 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier9}}})
+                     {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize unknown}}}
+                  }
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}}
                }
             }
          )
@@ -727,7 +860,7 @@
                ({! $play_a_show_found_ugc_part}
                   {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
                )
-               {if_else {&& {== $random_ugc_source ugc_plus} $random_ugc_author}
+               {if_else {&& $random_ugc_author {!= $random_ugc_author "Harmonix"} {!= $random_ugc_author "Harmonix, Rhythm Authors"} {!= $random_ugc_author "Neversoft"}}
                   {set $dx_play_a_show_line {sprintf {localize play_a_show_author} $random_ugc_author}}
                   {if_else $random_ugc_source
                      {set $dx_play_a_show_line {sprintf {localize play_a_show_source} {localize $random_ugc_source}}}
@@ -746,7 +879,7 @@
       }
    )
    (dx_pick_a_show
-      {set $availarray (genre year ugc song album length year song genre album ugc genre length song year album ugc year genre tempo album length song)}
+      {set $availarray (genre year ugc song album artist diff length)}
       {set $avail2array ()}
       {set $avail3array ()}
       {set $avail4array ()}
@@ -813,7 +946,7 @@
          {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
          {{dx_play_a_show_panel find song_preview.lbl} set_token_fmt dx_play_a_show_welcome}
       }
-      {if_else {== $dx_play_a_show_vote 5}
+      {if_else {== $dx_play_a_show_vote 6}
          {do
             {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
             {song_preview.lbl set text_token {localize play_a_show_refreshed}}
@@ -938,6 +1071,12 @@
       (album
          {$this store_voted_song $random_album_song}
       )
+      (artist
+         {$this store_voted_song $random_artist_song}
+      )
+      (diff
+         {$this store_voted_song $random_diff_song}
+      )
       (ugc
          {$this store_voted_song $random_ugc_song}
       )
@@ -998,7 +1137,7 @@
       {script_task kTaskSeconds (name dx_send_vote3) (delay 3)
          (script
             {$this dx_play_countdown_set_time {localize play_a_show_submitting} 0}
-            {unless {== $dx_play_a_show_vote 5} {synth play career_rankup.cue}}
+            {synth play career_rankup.cue}
             {$this dx_play_a_show_info}
          )
       }
