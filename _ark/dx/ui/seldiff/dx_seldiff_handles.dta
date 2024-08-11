@@ -414,10 +414,19 @@
       }
    )
    (dx_update_set_count
-      {switch {size $dx_playlist_array}
-         (0 {total.lbl set text_token {sprint " "}})
-         (1 {total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_count} {size $dx_playlist_array}}})
-         {total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_counts} {size $dx_playlist_array}}}
+      {if {session_mgr is_leader_local}
+         {switch {size $dx_playlist_array}
+            (0 {total.lbl set text_token {sprint " "}})
+            (1 {total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_count} {size $dx_playlist_array}}})
+            {total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_counts} {size $dx_playlist_array}}}
+         }
+      }
+      {if {&& {! {session_mgr is_local}} {session_mgr is_leader_local}}
+         {switch {size $dx_playlist_array}
+            (0 {session send_msg_to_all {'`' (total.lbl set text_token {sprint " "}) kNetReliable}})
+            (1 {session send_msg_to_all {'`' (total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_count} {size {',' $dx_playlist_array}}}) kNetReliable}})
+            {session send_msg_to_all {'`' (total.lbl set text_token {sprintf {localize dx_play_a_show_setlist_counts} {size {',' $dx_playlist_array}}}) kNetReliable}}
+         }
       }
    )
    (lbl_maker
@@ -631,7 +640,7 @@
       {set $play_a_show_found_artist_part FALSE}
       {set $play_a_show_found_diff_part FALSE}
       {set $play_a_show_found_ugc_part FALSE}
-      {if {session_mgr is_local}
+      {if {session_mgr is_leader_local}
          ;start the flow with a random songs
          {set $num {random_int 0 {{song_select_panel find song.lst} num_data}}}
          {song_select_panel highlight_node_at_ix $num}
@@ -689,6 +698,55 @@
          {set $random_ugc_source $sourcevar}
          {set $random_ugc_author $authorvar}
       }
+   )
+   #define DX_SONG_PRINTER
+   (
+      (genre
+         {push_back $scorechasewritingarray {sprint $random_genre_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (year
+         {push_back $scorechasewritingarray {sprint $random_year_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (length
+         {push_back $scorechasewritingarray {sprint $random_length_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (song
+         {push_back $scorechasewritingarray {sprint $random_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (tempo
+         {push_back $scorechasewritingarray {sprint $random_tempo_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (album
+         {push_back $scorechasewritingarray {sprint $random_album_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (artist
+         {push_back $scorechasewritingarray {sprint $random_artist_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (diff
+         {push_back $scorechasewritingarray {sprint $random_diff_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+      (ugc
+         {push_back $scorechasewritingarray {sprint $random_ugc_song}}
+         {set $scorechasewritingarray {array $scorechasewritingarray}}
+      )
+   )
+   (print_song_option_data
+      {set $scorechasewritingarray ()}
+      {resize $scorechasewritingarray 0}
+      {switch $line1eval DX_SONG_PRINTER}
+      {switch $line2eval DX_SONG_PRINTER}
+      {switch $line3eval DX_SONG_PRINTER}
+      {switch $line4eval DX_SONG_PRINTER}
+      {switch $line5eval DX_SONG_PRINTER}
+      {write_file "GD:/dev_hdd0/game/BLUS30463/USRDIR/showoptions.dta" $scorechasewritingarray}
    )
    (set_line
       ($lineeval $line)
@@ -843,12 +901,12 @@
                {if_else $random_diff
                   {switch $random_diff
                      (0 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}})
-                     (1 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier2}}})
+                     (1 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier2}}})
                      (2 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier3}}})
                      (3 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier4}}})
                      (4 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier6}}})
                      (5 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier8}}})
-                     (6 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier9}}})
+                     (6 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier9}}})
                      {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize unknown}}}
                   }
                   {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}}
@@ -876,6 +934,12 @@
       {if_else {== $lineeval song}
          {{dx_play_a_show_panel find {sprint "line" $line ".lbl"}} set_song_and_artist_name_from_sym $random_song 0}
          {{dx_play_a_show_panel find {sprint "line" $line ".lbl"}} set_token_fmt {sprint $dx_play_a_show_line}}
+      }
+      {if {session_mgr is_leader_local}
+         {if_else {== $lineeval song}
+            {session send_msg_to_all {'`' ({dx_play_a_show_panel find {sprint "line" {',' $line} ".lbl"}} set_song_and_artist_name_from_sym {',' $random_song} 0) kNetReliable}}
+            {session send_msg_to_all {'`' ({dx_play_a_show_panel find {sprint "line" {',' $line} ".lbl"}} set_token_fmt {sprint {',' $dx_play_a_show_line}}) kNetReliable}}
+         }
       }
    )
    (dx_pick_a_show
@@ -922,24 +986,7 @@
       {$this set_line $line3eval 3}
       {$this set_line $line4eval 4}
       {$this set_line $line5eval 5}
-      {unless {session_mgr is_local}
-         {if {is_leader_local}
-            {session send_msg_to_all
-               {'`' 
-                  (
-                     {do
-                        {$this set_line {',' $line1eval} 1}
-                        {$this set_line {',' $line2eval} 2}
-                        {$this set_line {',' $line3eval} 3}
-                        {$this set_line {',' $line4eval} 4}
-                        {$this set_line {',' $line5eval} 5}
-                     }
-                  )
-                  kNetReliable
-               }
-            }
-         }
-      }
+      {$this print_song_option_data}
    )
    (handle_album_art
       {if {! $current_voted_song}
@@ -984,13 +1031,13 @@
       {set $slot2_vote FALSE}
       {set $slot3_vote FALSE}
       {set $slot4_vote FALSE}
-      
-      {$this dx_refesh_songs}
-      {$this dx_pick_a_show}
-      {$this handle_album_art}
-      {$this dx_update_set_count}
-      {$this format_vote vote}
-      
+      {if {session_mgr is_leader_local}
+         {$this dx_refesh_songs}
+         {$this dx_pick_a_show}
+         {$this dx_update_set_count}
+         {$this format_vote vote}
+         {$this handle_album_art}
+      }
       {if $playintrotext
          {set $playintrotext FALSE}
          {play_header.lbl set text_token {sprint " "}}
@@ -1082,7 +1129,9 @@
       )
    )
    (hold_up
-      {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
+      {if {session_mgr is_leader_local}
+         {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
+      }
       {song_preview.lbl set text_token {localize play_a_show_refreshing}}
       {set $votingallowed FALSE}
       {set $current_voted_song FALSE}
@@ -1091,13 +1140,17 @@
       {if {exists dx_hold_up}
          {delete dx_hold_up}
       }
-      {script_task
-         kTaskSeconds
-         (name dx_hold_up)
-         (delay 1)
-         (script 
-            {$this dx_play_countdown_set_time {localize play_a_show_waiting} 0}
-            {$this dx_play_a_show_info})
+      {if {session_mgr is_leader_local}
+         {script_task
+            kTaskSeconds
+            (name dx_hold_up)
+            (delay 1)
+            (script 
+               {$this dx_play_countdown_set_time {localize play_a_show_waiting} 0}
+               {$this dx_play_a_show_info}
+               {session send_msg_to_all {'`' ($this dx_play_countdown_set_time {localize play_a_show_waiting} 0) kNetReliable}}
+            )
+         }
       }
    )
    (dx_play_a_show_send_voted
