@@ -283,13 +283,13 @@ def fetch_json_from_web(address):
             sanitized_data = raw_data.replace('\\', '\\\\')
             return json.loads(sanitized_data)
         else:
-            logger.error(f"Failed to fetch data from {address}, status code: {response.status_code}")
+            print(f"Failed to fetch data from {address}, status code: {response.status_code}", flush=True)
             return None
     except requests.RequestException as e:
-        logger.error(f"Error fetching data from {address}: {str(e)}")
+        print(f"Error fetching data from {address}: {str(e)}", flush=True)
         return None
     except json.JSONDecodeError as e:
-        logger.error(f"Error decoding JSON data from {address}: {str(e)}")
+        print(f"Error decoding JSON data from {address}: {str(e)}", flush=True)
         return None
 
 # Function to get elapsed time in a user-friendly format
@@ -417,10 +417,10 @@ def main():
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        print("Disconnecting from Discord...")
+        print("Disconnecting from Discord...", flush=True)
         RPC.clear()
         RPC.close()
-        print("Disconnected. Goodbye!")
+        print("Disconnected. Goodbye!", flush=True)
 
 if __name__ == '__main__':
     main()
