@@ -80,53 +80,64 @@
 (
    {if $dx_author_finder_is_enabled
       {set $dx_path_failed FALSE}
-      {set $tempreadarray FALSE}
+      {set $tempreadarray ()}
+      {resize $tempreadarray 0}
+      {set $songdtareader ()}
+      {resize $songdtareader 0}
       {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
-      #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
-      {if {! {file_exists $filepath}}
-         {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
-         {if {has_substr $filepath BLUS30050}
-            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
-         }
-         {if {has_substr $filepath BLUS30147}
-            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
-         }
-         {if {has_substr $filepath BLUS30463}
-            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
-         }
-         {set $filepath $ps3_base_path}
-      }
-      #endif
-      #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
-      {if {! {file_exists $filepath}}
-         {set $filepath {sprint {song_mgr song_path {meta_performer song}}}}
-         {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
-         {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
-         {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
-         {search_replace $filepath "_song/" "/" $filepath}
-         ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
-      }
-      #endif
-      {if_else {file_exists $filepath}
-         {set $tempreadarray {read_file $filepath}}
+      {if {! {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}}
          {set $dx_path_failed TRUE}
       }
-      {if_else $tempreadarray
-      ;{if {find_exists $songdtareader {meta_performer song}}
-         {foreach $entry $tempreadarray
-            {if {== {elem $entry 0} {symbol {meta_performer song}}}
-               {set $songdtareader {array $entry}}
-               {dx_mtv_array_reader $songdtareader}
+      {if {! $dx_path_failed}
+         #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
+         {if {! {file_exists $filepath}}
+            {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
+            {if {has_substr $filepath BLUS30050}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLUS30147}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLUS30463}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if_else {file_exists $ps3_base_path}
+               {set $filepath $ps3_base_path}
+               {set $dx_path_failed TRUE}
             }
          }
-         {set $dx_path_failed TRUE}
-      ;}
-      }
-      {set $songdtareader FALSE}
-      {if {! $dx_path_failed}
-         {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
-            {set $songdtareader {array {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}}}
-            {dx_mtv_array_reader $songdtareader}
+         #endif
+         #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
+         {if {! {file_exists $filepath}}
+            {set $filepath {sprint {song_mgr song_path {meta_performer song}}}}
+            {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
+            {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
+            {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
+            {search_replace $filepath "_song/" "/" $filepath}
+            ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
+         }
+         #endif
+         ;{if_else {file_exists $filepath}
+         ;   {set $tempreadarray {read_file $filepath}}
+         ;   {set $dx_path_failed TRUE}
+         ;}
+         ;{set $tempreadarray {array $tempreadarray}}
+         {if_else {! $dx_path_failed}
+            {foreach $entry {read_file $filepath}
+               {if {== {elem $entry 0} {symbol {meta_performer song}}}
+                  {set $songdtareader {array $entry}}
+                  {dx_mtv_array_reader $songdtareader}
+               }
+            }
+            {set $dx_path_failed TRUE}
+         }
+         {set $songdtareader ()}
+         {resize $songdtareader 0}
+         {if {! $dx_path_failed}
+            {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
+               {set $songdtareader {array {find $syscfg missing_song_data {symbol {meta_performer song}}}}}
+               {dx_mtv_array_reader $songdtareader}
+            }
          }
       }
    }
