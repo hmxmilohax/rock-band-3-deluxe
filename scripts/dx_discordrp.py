@@ -74,7 +74,45 @@ def setup_lastfm_network(lastfm_config):
         #logger.warning("Last.fm configuration is incomplete or missing. Scrobbling will be disabled.")
         return None
 
-def scrobble_track(network, artist, title, timestamp):
+def load_or_create_scrobble_data(file_path):
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            logger.error("Error loading scrobble data. Starting fresh.")
+            return {}
+    else:
+        # Create the file if it doesn't exist
+        with open(file_path, 'w') as file:
+            json.dump({}, file)
+        return {}
+
+def save_scrobble_data(file_path, scrobble_data):
+    with open(file_path, 'w') as file:
+        json.dump(scrobble_data, file, indent=4)
+
+def scrobble_track(network, artist, title, timestamp, scrobble_file):
+    scrobble_data = load_or_create_scrobble_data(scrobble_file)
+    key = f"{artist} - {title}"
+
+    if key in scrobble_data:
+        entry = scrobble_data[key]
+        entry['count'] += 1
+        entry['last_scrobbled'] = timestamp
+        entry['scrobble_times'].append(timestamp)
+    else:
+        scrobble_data[key] = {
+            'artist': artist,
+            'title': title,
+            'first_scrobbled': timestamp,
+            'last_scrobbled': timestamp,
+            'count': 1,
+            'scrobble_times': [timestamp]  # Store each scrobble time
+        }
+
+    save_scrobble_data(scrobble_file, scrobble_data)
+
     if network is not None:
         try:
             network.scrobble(artist=artist, title=title, timestamp=timestamp)
@@ -192,7 +230,7 @@ def update_presence(client_id, parsed_input, RPC, network, large_text):
             # Scrobble the song to Last.fm if it's a new song or after a "no song loaded" state
             if scrobble_song and scrobble_artist and (scrobble_song != last_scrobbled_song or scrobble_artist != last_scrobbled_artist):
                 if network is not None:
-                    scrobble_track(network, scrobble_artist, scrobble_song, timestamp)
+                    scrobble_track(network, scrobble_artist, scrobble_song, timestamp, 'dx_playdata.json')
                     last_scrobbled_song = scrobble_song
                     last_scrobbled_artist = scrobble_artist
 
