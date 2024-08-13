@@ -92,9 +92,29 @@ def save_scrobble_data(file_path, scrobble_data):
     with open(file_path, 'w') as file:
         json.dump(scrobble_data, file, indent=4)
 
-def scrobble_track(network, artist, title, timestamp, scrobble_file, additional_data):
+def scrobble_track(network, artist, title, timestamp, scrobble_file, additional_data, active_instrument_name=None):
     scrobble_data = load_or_create_scrobble_data(scrobble_file)
     key = f"{artist} - {title}"
+    instrument_text = {
+        'GUITAR': 'Guitar',
+        'REAL_GUITAR': 'Pro Guitar',
+        'KEYS': 'Keys',
+        'DRUMS': 'Drums',
+        'REAL_KEYS': 'Pro Keys',
+        'REAL_BASS': 'Pro Bass',
+        'BASS': 'Bass',
+        'VOCALS': 'Vocals'
+    }
+    # Increment the count for the active instrument in the JSON if it's a solo performance
+    if active_instrument_name:
+        instrument_key = active_instrument_name
+        if 'instrument_counts' not in scrobble_data:
+            scrobble_data['instrument_counts'] = {instrument: 0 for instrument in instrument_text.values()}
+        
+        if instrument_key in scrobble_data['instrument_counts']:
+            scrobble_data['instrument_counts'][instrument_key] += 1
+        else:
+            scrobble_data['instrument_counts'][instrument_key] = 1
 
     if key in scrobble_data:
         entry = scrobble_data[key]
@@ -221,28 +241,6 @@ def update_presence(client_id, parsed_input, RPC, network, large_text):
         artist = parsed_input.get('Artist', 'Unknown Artist')
         timestamp = int(time.time())
 
-        # Scrobble the song to Last.fm
-        if loaded_song == 'No song loaded':
-            last_scrobbled_song = None
-            last_scrobbled_artist = None
-        else:
-            # Scrobble the song to Last.fm if it's a new song or after a "no song loaded" state
-            if scrobble_song and scrobble_artist and (scrobble_song != last_scrobbled_song or scrobble_artist != last_scrobbled_artist):
-                if network is not None:
-                    additional_data = {
-                        'Songname': parsed_input.get('Songname', ''),
-                        'Artist': parsed_input.get('Artist', ''),
-                        'Year': parsed_input.get('Year', ''),
-                        'Album': parsed_input.get('Album', ''),
-                        'Genre': parsed_input.get('Genre', ''),
-                        'Subgenre': parsed_input.get('Subgenre', ''),
-                        'Source': parsed_input.get('Source', ''),
-                        'Author': parsed_input.get('Author', '')
-                    }
-                    scrobble_track(network, scrobble_artist, scrobble_song, timestamp, 'dx_playdata.json', additional_data)
-                    last_scrobbled_song = scrobble_song
-                    last_scrobbled_artist = scrobble_artist
-
         # Map 'Game mode' values to better verbiage
         game_mode = parsed_input.get('Game mode', '')
         game_mode_mapping = {
@@ -320,6 +318,34 @@ def update_presence(client_id, parsed_input, RPC, network, large_text):
                     break
             else:
                 active_instrument_text = ""
+
+        # Scrobble the song to Last.fm
+        if loaded_song == 'No song loaded':
+            last_scrobbled_song = None
+            last_scrobbled_artist = None
+        else:
+            # Scrobble the song to Last.fm if it's a new song or after a "no song loaded" state
+            if scrobble_song and scrobble_artist and (scrobble_song != last_scrobbled_song or scrobble_artist != last_scrobbled_artist):
+                if network is not None:
+                    additional_data = {
+                        'Songname': parsed_input.get('Songname', ''),
+                        'Artist': parsed_input.get('Artist', ''),
+                        'Year': parsed_input.get('Year', ''),
+                        'Album': parsed_input.get('Album', ''),
+                        'Genre': parsed_input.get('Genre', ''),
+                        'Subgenre': parsed_input.get('Subgenre', ''),
+                        'Source': parsed_input.get('Source', ''),
+                        'Author': parsed_input.get('Author', '')
+                    }
+                    # Pass the active instrument name if it's a solo performance
+                    active_instrument_name = None
+                    if "Solo" in active_instrument_text:
+                        active_instrument_name = simplify_instrument_name(instrument_name)
+
+                    scrobble_track(network, scrobble_artist, scrobble_song, timestamp, 'dx_playdata.json', additional_data, active_instrument_name)
+                    last_scrobbled_song = scrobble_song
+                    last_scrobbled_artist = scrobble_artist
+
 
         if parsed_input.get('Online', '') == "true":
             game_mode = "Online " + game_mode
