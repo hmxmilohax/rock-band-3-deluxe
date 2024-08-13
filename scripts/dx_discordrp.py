@@ -103,8 +103,8 @@ def scrobble_track(network, artist, title, timestamp, scrobble_file, additional_
         entry['scrobble_times'].append(timestamp)
     else:
         scrobble_data[key] = {
-            'artist': artist,
-            'title': title,
+            'artist': additional_data.get('Artist', ''),
+            'title': additional_data.get('Songname', ''),
             'first_scrobbled': timestamp,
             'last_scrobbled': timestamp,
             'count': 1,
@@ -216,18 +216,10 @@ def update_presence(client_id, parsed_input, RPC, network, large_text):
         scrobble_song = None
         scrobble_artist = None
         loaded_song = parsed_input.get('Loaded Song', 'No song loaded')
+        scrobble_song = parsed_input.get('Songname', '')
+        scrobble_artist = parsed_input.get('Artist', '')
         artist = parsed_input.get('Artist', 'Unknown Artist')
         timestamp = int(time.time())
-
-        if loaded_song and ' - ' in loaded_song:
-            song_parts = loaded_song.split(' - ')
-            if len(song_parts) > 1:
-                scrobble_song = song_parts[0].strip()
-                scrobble_artist = song_parts[1].strip()
-
-                # Trim out the year if present at the end of the artist string
-                if ',' in scrobble_artist:
-                    scrobble_artist = scrobble_artist.split(',')[0].strip()
 
         # Scrobble the song to Last.fm
         if loaded_song == 'No song loaded':
