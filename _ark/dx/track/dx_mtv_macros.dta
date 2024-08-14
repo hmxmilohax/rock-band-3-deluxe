@@ -2,12 +2,12 @@
 ;inside the ark
 #define SONGPATH_DISC
 (
-   {sprint {song_mgr song_path {meta_performer song}} "/../songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
+   {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
 )
 ;a dlc dta
 #define SONGPATH_DLC
 (
-   {sprint {song_mgr song_path {meta_performer song}} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
+   {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
 )
 ;on disc update
 #define SONGPATH_UPDATE
@@ -38,21 +38,11 @@
 #define MTV_DTA_PREPPER
 (
    {dx_log_writer default {sprint "Attempting to read loaded song DTA."}}
-   {unless $dx_readdtaonce
-      {set $dx_readdtaonce TRUE}
-      {set $dx_readadditionaldtaonce FALSE}
-      {set $theactualpath FALSE}
+   ;{unless $dx_readdtaonce
+   ;   {set $dx_readdtaonce TRUE}
+   ;   {set $dx_readadditionaldtaonce FALSE}
+   ;   {set $theactualpath FALSE}
       ;{set $songdtareader {read_file SONGPATH_DLC}} ;load the dta into memory
-      ;{if_else {file_exists SONGPATH_DLC}
-      ;   {set $theactualpath SONGPATH_DLC} ;a dlc dta
-      ;    {if_else {&& {file_exists SONGPATH_UPDATE} {file_exists SONGPATH_RAW_DTB}}
-      ;      {set $theactualpath SONGPATH_UPDATE} ;on disc update
-      ;      {if_else {file_exists SONGPATH_DISC}
-      ;         {set $theactualpath SONGPATH_DISC} ;inside the ark
-      ;         {set $dx_path_failed TRUE}
-      ;      }
-      ;   }
-      ;}
       ;{if_else $theactualpath
       ;   {do
       ;      {if_else {== $theactualpath SONGPATH_UPDATE} ;check if this is an on disc update 
@@ -74,7 +64,7 @@
       ;      {dx_log_writer default {sprint "Unmapped DTA path: " {song_mgr song_file_path {meta_performer song} "/"}}}
       ;   }
       ;}
-   }
+   ;}
 )
 #define MTV_DTA_READER
 (
@@ -88,9 +78,16 @@
       {if {! {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}}
          {set $dx_path_failed TRUE}
       }
+      {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+         {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}} ;a dlc dta
+          {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"}}
+            {set $filepath "songs/songs.dta"} ;on disc
+            {set $dx_path_failed TRUE}
+         }
+      }
       {if {! $dx_path_failed}
          #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
-         {if {! {file_exists $filepath}}
+         {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
             {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
             {if {has_substr $filepath BLUS30050}
                {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
@@ -108,8 +105,8 @@
          }
          #endif
          #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
-         {if {! {file_exists $filepath}}
-            {set $filepath {sprint {song_mgr song_path {meta_performer song}}}}
+         {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+            {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}}}}
             {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
             {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
             {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
@@ -121,12 +118,18 @@
          ;   {set $tempreadarray {read_file $filepath}}
          ;   {set $dx_path_failed TRUE}
          ;}
+         {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {file_exists $filepath}} #endif
+            {set $tempreadarray {read_file $filepath}}
+            {set $dx_path_failed TRUE}
+         }
          ;{set $tempreadarray {array $tempreadarray}}
-         {if_else {! $dx_path_failed}
-            {foreach $entry {read_file $filepath}
+         {if_else {> {size $tempreadarray} 0}
+            {foreach $entry $tempreadarray
                {if {== {elem $entry 0} {symbol {meta_performer song}}}
-                  {set $songdtareader {array $entry}}
-                  {dx_mtv_array_reader $songdtareader}
+                  {set $songdtareader $entry}
+                  {if {> {size $songdtareader} 0}
+                     {dx_mtv_array_reader $songdtareader}
+                  }
                }
             }
             {set $dx_path_failed TRUE}
@@ -136,7 +139,9 @@
          {if {! $dx_path_failed}
             {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
                {set $songdtareader {array {find $syscfg missing_song_data {symbol {meta_performer song}}}}}
-               {dx_mtv_array_reader $songdtareader}
+               {if {> {size $songdtareader} 0}
+                  {dx_mtv_array_reader $songdtareader}
+               }
             }
          }
       }
@@ -165,7 +170,7 @@
             }
          }
       }
-      {if $dx_section_mtv_line
+      {if {&& $dx_current_section $dx_section_mtv_line}
          {if_else {== $dx_mtv_elements 0}
             {dx_mtv_formatter {sprint {localize section} ": " $dx_current_section}}
             {dx_mtv_formatter {sprint "\n" {localize section} ": " $dx_current_section}}
@@ -196,26 +201,20 @@
             {dx_mtv_formatter {sprint "\n" {localize $sourcevar}}}
          }
       }
-      {if $dx_author_mtv_line
-         {if $authorvar
-            {if_else {== $dx_mtv_elements 0}
-               {dx_mtv_formatter {sprint {localize author} ": " $authorvar}}
-               {dx_mtv_formatter {sprint "\n" {localize author} ": " $authorvar}}
-            }
+      {if {&& $dx_author_mtv_line $authorvar}
+         {if_else {== $dx_mtv_elements 0}
+            {dx_mtv_formatter {sprint {localize author} ": " $authorvar}}
+            {dx_mtv_formatter {sprint "\n" {localize author} ": " $authorvar}}
          }
       }
       {if {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
-         {if $dx_author_mtv_line
-            {if $stringsauthorvar
-               {dx_mtv_formatter {sprint ", " {localize strings_author} ": " $stringsauthorvar}}
-            }
+         {if {&& $dx_author_mtv_line $stringsauthorvar}
+            {dx_mtv_formatter {sprint ", " {localize strings_author} ": " $stringsauthorvar}}
          }
       }
       {if {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
-         {if $dx_author_mtv_line
-            {if $keysauthorvar
-               {dx_mtv_formatter {sprint ", " {localize keys_author} ": " $keysauthorvar}}
-            }
+         {if {&& $dx_author_mtv_line $keysauthorvar}
+            {dx_mtv_formatter {sprint ", " {localize keys_author} ": " $keysauthorvar}}
          }
       }
       {if {&& $dx_song_key_mtv_line $dx_song_key_var}
@@ -227,7 +226,7 @@
       {artist.lbl set fixed_length 1000}
       {artist.lbl set leading 0.9}
       {switch $dx_mtv_elements
-         (0 {artist.lbl set height 100} {artist.lbl set_token_fmt {sprint " "}}) ;I dont know a better way to do this but we check how many elements are chosen by the user and fetch each of the elements from the created array manually depending on how many
+         (0 {artist.lbl set height 100}) ;I dont know a better way to do this but we check how many elements are chosen by the user and fetch each of the elements from the created array manually depending on how many
          (1 {artist.lbl set height 200} {artist.lbl set_token_fmt {sprint {elem $dx_mtv_holder 0}}})
          (2 {artist.lbl set height 300} {artist.lbl set_token_fmt {sprint {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1}}})
          (3 {artist.lbl set height 400} {artist.lbl set_token_fmt {sprint {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2}}})
@@ -290,9 +289,6 @@
    }
    {unless $dx_hmxcheckedonce
       {set $dx_hmxcheckedonce TRUE}
-      {if {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
-         {set $authorvar "Harmonix"} ;good a time as any
-      }
       #ifndef HX_XBOX
       DX_CURRENT_SONG_TXT_WRITER
       DX_CURRENT_SONG_JSON_WRITER
