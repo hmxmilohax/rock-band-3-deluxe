@@ -75,6 +75,13 @@
       {saveload_mgr is_initial_load_done})
    DX_MAIN_HANDLES
    (enter
+      {if $dx_event_mode
+         {$this iterate BandButton $l {$this disable $l} {$l set_showing FALSE}}
+         {$this enable mb_playnow.btn} {mb_playnow.btn set_showing TRUE}
+         {mb_playnow.btn set text_token dx_freeplay}
+         {$this enable mb_career.btn} {mb_career.btn set_showing TRUE}
+         {mb_career.btn set text_token dx_play_a_show}
+      }
       {if
          [first_user]
          {profile_mgr
@@ -147,9 +154,25 @@
       {switch
          $component
          (mb_playnow.btn
-            {$this set_state kMainHubState_PlayNow})
+            {if_else $dx_event_mode
+               {do
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {net_sync set_ui_state kNetUI_WaitingChooseSong}
+                  {$this set_override kMainHubOverride_Waiting}
+               }
+               {$this set_state kMainHubState_PlayNow}
+            }
+         )
          (mb_career.btn
-            {$this set_state kMainHubState_Career})
+            {if_else $dx_event_mode
+               {do
+                  {input_mgr set_user $user}
+                  {set $stored_user $user}
+                  {$this dx_play_a_show}
+               }
+               {$this set_state kMainHubState_Career}
+            }
+         )
          (mb_trainers.btn
             {if_else
                {session_mgr is_local}
@@ -220,7 +243,18 @@
          (mb_musicstore.btn
             {input_mgr set_user $user}
             {set $stored_user $user}
-            {$this dx_play_a_show})
+            {if_else {session is_local}
+               {$this dx_play_a_show}
+               {do
+                  {if {is_leader_local}
+                     {$this dx_play_a_show}
+                  }
+                  ;{session send_msg_to_all {'`' (set $dx_playing_a_show TRUE) kNetReliable}}
+                  ;{session send_msg_to_all {'`' (main_hub_panel dx_play_a_show) kNetReliable}}
+                  ;{session send_msg_to_all {'`' (set $dx_playing_a_show TRUE) kNetReliable}}
+               }
+            }
+         )
          (pn_quickplay.btn
             {$this set_state kMainHubState_Quickplay})
          (pn_tour.btn
@@ -470,6 +504,22 @@
       {net_sync set_ui_state kNetUI_MainMenu}
       {$this set_override kMainHubOverride_None})
    (BUTTON_DOWN_MSG
+      {if $dx_event_mode
+         {if_else
+            {== $action kAction_Up}
+            {do
+               {event_button_desc.lbl set_token_fmt {sprint {localize dx_freeplay_desc}}}
+            }
+            kDataUnhandled
+         }
+         {if_else
+            {== $action kAction_Down}
+            {do
+               {event_button_desc.lbl set_token_fmt {sprint {localize dx_play_a_show_desc}}}
+            }
+            kDataUnhandled
+         }
+      }
       {cond
          ({$this in_waiting_lock}
             TRUE)

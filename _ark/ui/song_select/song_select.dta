@@ -457,13 +457,22 @@
          }
       }
       {if {&& {! {song.lst is_scrolling}} {== {{music_library get_highlighted_node} get_node_type} kNodeSong} $probeforfinder}
-         {if {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
+         {if {|| {file_exists {sprint {song_mgr song_path {{music_library get_highlighted_node} get_token}} "/../../gen/songs.dtb"}} {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}}
             {set $probeforfinder FALSE}
             {$this dx_authorfinder}
          }
       }
    )
+   (dx_authorpoll
+      ($shortname)
+      {dx_author_finder_var_reset}
+      {meta_performer set_song {symbol $shortname}}
+      {set $dx_song_data_processed FALSE}
+      {preload_panel dx_load_tip_and_author_finder}
+   )
    (dx_authorfinder
+      {set $dx_song_data_processed FALSE}
+      {set $dx_path_failed FALSE}
       {if_else {&& {! $dx_path_failed} $dx_author_finder_is_enabled {! {gamemode in_mode trainer}}}
          {do
             {if {exists author_finder}
@@ -481,7 +490,7 @@
                      DX_SOURCE_SWITCH
                   }
                   {if_else $sourcevar
-                     {dx_song_name_year_title.lbl set_token_fmt $sourcevar}
+                     {dx_song_name_year_title.lbl set_token_fmt {localize $sourcevar}}
                      {dx_song_name_year_title.lbl set_token_fmt os_blnk}
                   }
                   {if_else $albumvar
@@ -691,7 +700,10 @@
       {dx_song_name_album.lbl set alt_font_resource_name pentatonic_outline}
       {dx_song_name_album.lbl set text_size 13}
       {dx_song_name_album.lbl set alt_text_size 13}
-      {dx_song_name_album_title.lbl set_token_fmt $sourcevar}
+      {if_else $sourcevar
+         {dx_song_name_album_title.lbl set_token_fmt {localize $sourcevar}}
+         {dx_song_name_album_title.lbl set_token_fmt os_blnk}
+      }
       {dx_song_name_album_title.lbl set text_size 13}
       {dx_song_name_album_title.lbl set alt_text_size 13}
       {dx_song_name_album.lbl set width 200}
@@ -727,7 +739,6 @@
 
    )
    (dx_diff_setter
-      {set $probeforfinder TRUE}
       {{song_select_panel find song_demo.lbl} set_showing FALSE}
       {if_else $dx_author_finder_is_enabled
          {do
@@ -965,7 +976,28 @@
       ;   }
       ;}
    )
+   (handle_to_task
+      {script_task kTaskSeconds
+         (name event_inactivity_backout)
+         (delay 60)
+         (script
+            ;{dx_passive_messenger_symbol "PICK A GODDAMN SONG"}
+            {ui abstract_wipe}
+            {ui goto_screen meta_loading_main_screen}
+         )
+      }
+   )
    (enter
+      {if_else {&& $dx_event_mode {! $dx_in_show_flow} {! $dx_prep_show_flow} {! $dx_playing_a_show}}
+         {if_else {exists event_inactivity_backout}
+            {do
+               {delete event_inactivity_backout}
+               {$this handle_to_task}
+            }
+            {$this handle_to_task}
+         }
+         kDataUnhandled
+      }
       {set $highscore_tracker ()}
       {resize $highscore_tracker 0}
       {push_back $highscore_tracker (fake_name_goes_here_lol faker)}
@@ -1027,152 +1059,42 @@
       }
       {$this refresh_selected_song}
    )
+   #define DX_PLAY_SET_SONG
+   (
+      {do
+         {set $poopie ()}
+         {resize $poopie 0}
+         {push_back $poopie {{music_library get_highlighted_node} get_token}}
+         {set $poopie {array $poopie}}
+         {set $picked_song {elem $poopie 0}}
+         {song.lst refresh}
+         {set $num {random_int 0 {song.lst num_data}}}
+         {song.lst set_selected_simulate_scroll $num}
+         {set $dx_song_picked TRUE}
+      }
+   )
+   #define DX_PLAY_ROLL_SONG
+   (
+      {do
+         {song.lst refresh}
+         {set $num {random_int 0 {song.lst num_data}}}
+         {song.lst set_selected_simulate_scroll $num}
+      }
+   )
    (pick_a_song
-      ;{song.lst set_scroll_user $stored_user}
-      ;it does it 3 times if its not a song before falling back to an rb3 song
-      ;i know it sucks, im tired
-      {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-         {do
-            {set $poopie ()}
-            {resize $poopie 0}
-            {push_back $poopie {{music_library get_highlighted_node} get_token}}
-            {set $poopie {array $poopie}}
-            {set $picked_song {elem $poopie 0}}
-            {song.lst refresh}
-            {set $num {random_int 0 {song.lst num_data}}}
-            {song.lst set_selected_simulate_scroll $num}
-            $picked_song
-         }
-         {do
-            {song.lst refresh}
-            {set $num {random_int 0 {song.lst num_data}}}
-            {song.lst set_selected_simulate_scroll $num}
-            {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-               {do
-                  {set $poopie ()}
-                  {resize $poopie 0}
-                  {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                  {set $poopie {array $poopie}}
-                  {set $picked_song {elem $poopie 0}}
-                  {song.lst refresh}
-                  {set $num {random_int 0 {song.lst num_data}}}
-                  {song.lst set_selected_simulate_scroll $num}
-                  $picked_song
-               }
-               {do
-                  {song.lst refresh}
-                  {set $num {random_int 0 {song.lst num_data}}}
-                  {song.lst set_selected_simulate_scroll $num}
-                  {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                     {do
-                        {set $poopie ()}
-                        {resize $poopie 0}
-                        {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                        {set $poopie {array $poopie}}
-                        {set $picked_song {elem $poopie 0}}
-                        {song.lst refresh}
-                        {set $num {random_int 0 {song.lst num_data}}}
-                        {song.lst set_selected_simulate_scroll $num}
-                        $picked_song
-                     }
-                     {do
-                        {song.lst refresh}
-                        {set $num {random_int 0 {song.lst num_data}}}
-                        {song.lst set_selected_simulate_scroll $num}
-                        {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                           {do
-                              {set $poopie ()}
-                              {resize $poopie 0}
-                              {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                              {set $poopie {array $poopie}}
-                              {set $picked_song {elem $poopie 0}}
-                              {song.lst refresh}
-                              {set $num {random_int 0 {song.lst num_data}}}
-                              {song.lst set_selected_simulate_scroll $num}
-                              $picked_song
-                           }
-                           {do
-                              {song.lst refresh}
-                              {set $num {random_int 0 {song.lst num_data}}}
-                              {song.lst set_selected_simulate_scroll $num}
-                              {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                                 {do
-                                    {set $poopie ()}
-                                    {resize $poopie 0}
-                                    {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                                    {set $poopie {array $poopie}}
-                                    {set $picked_song {elem $poopie 0}}
-                                    {song.lst refresh}
-                                    {set $num {random_int 0 {song.lst num_data}}}
-                                    {song.lst set_selected_simulate_scroll $num}
-                                    $picked_song
-                                 }
-                                 {do
-                                    {song.lst refresh}
-                                    {set $num {random_int 0 {song.lst num_data}}}
-                                    {song.lst set_selected_simulate_scroll $num}
-                                    {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                                       {do
-                                          {set $poopie ()}
-                                          {resize $poopie 0}
-                                          {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                                          {set $poopie {array $poopie}}
-                                          {set $picked_song {elem $poopie 0}}
-                                          {song.lst refresh}
-                                          {set $num {random_int 0 {song.lst num_data}}}
-                                          {song.lst set_selected_simulate_scroll $num}
-                                          $picked_song
-                                       }
-                                       {do
-                                          {song.lst refresh}
-                                          {set $num {random_int 0 {song.lst num_data}}}
-                                          {song.lst set_selected_simulate_scroll $num}
-                                          {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                                             {do
-                                                {set $poopie ()}
-                                                {resize $poopie 0}
-                                                {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                                                {set $poopie {array $poopie}}
-                                                {set $picked_song {elem $poopie 0}}
-                                                {song.lst refresh}
-                                                {set $num {random_int 0 {song.lst num_data}}}
-                                                {song.lst set_selected_simulate_scroll $num}
-                                                $picked_song
-                                             }
-                                             {do
-                                                {song.lst refresh}
-                                                {set $num {random_int 0 {song.lst num_data}}}
-                                                {song.lst set_selected_simulate_scroll $num}
-                                                {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                                                   {do
-                                                      {set $poopie ()}
-                                                      {resize $poopie 0}
-                                                      {push_back $poopie {{music_library get_highlighted_node} get_token}}
-                                                      {set $poopie {array $poopie}}
-                                                      {set $picked_song {elem $poopie 0}}
-                                                      {song.lst refresh}
-                                                      {set $num {random_int 0 {song.lst num_data}}}
-                                                      {song.lst set_selected_simulate_scroll $num}
-                                                      $picked_song
-                                                   }
-                                                   {do
-                                                      {set $picked_song {random_elem $rb3_songlist}}
-                                                      $picked_song
-                                                   }
-                                                }
-                                             }
-                                          }
-                                       }
-                                    }
-                                 }
-                              }
-                           }
-                        }
-                     }
-                  }
-               }
+      {do
+         {set $num_tries 8}
+         {set $dx_song_picked FALSE}
+         {foreach_int $i 0 $num_tries
+            {if_else {&& {! $dx_song_picked} {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
+               DX_PLAY_SET_SONG
+               DX_PLAY_ROLL_SONG
+            }
+            {if {&& {== $num_tries $i} {! $dx_song_picked}}
+               {set $picked_song {random_elem $rb3_songlist}}
             }
          }
+         $picked_song
       }
    )
    (TRANSITION_COMPLETE_MSG
@@ -1192,6 +1114,11 @@
             [should_go_to_art_maker]
             FALSE}})
    (exit
+      ;{if $dx_event_mode
+      ;   {if {exists event_inactivity_backout}
+      ;      {delete event_inactivity_backout}
+      ;   }
+      ;}
       {set
          [details_mode]
          FALSE}
@@ -1207,6 +1134,16 @@
       {rnd set_in_game FALSE}
       #endif)
    (BUTTON_DOWN_MSG
+      {if_else {&& $dx_event_mode {! $dx_in_show_flow} {! $dx_prep_show_flow} {! $dx_playing_a_show}}
+         {if_else {exists event_inactivity_backout}
+            {do
+               {delete event_inactivity_backout}
+               {$this handle_to_task}
+            }
+            {$this handle_to_task}
+         }
+         kDataUnhandled
+      }
       {if_else
          {ui in_transition}
          TRUE
@@ -1822,7 +1759,13 @@
                      {'||'
                         {== $type kNodeSong}
                         {== $type kNodeSetlist}}}
-                  {$this show_details $user}}})
+                  {if_else $dx_event_mode
+                     kDataUnhandled
+                     {$this show_details $user}
+                  }
+               }
+            }
+         )
          ({&&
                #ifdef HX_WII
                {'||'
@@ -2108,6 +2051,7 @@
       {if {exists author_finder}
          {delete author_finder}
       }
+      {set $probeforfinder TRUE}
       {cond
          ({&&
                {== $component song.lst}
@@ -2795,19 +2739,21 @@
             {header_left.grp set_showing TRUE}
             {header_goals.grp set_showing FALSE}
             {header_tour.grp set_showing FALSE}
-            {if_else
-               {music_library viewing_setlists}
-               {music_library.lbl set text_token setlist_browser}
+            {if_else {modifier_mgr is_modifier_active mod_brutalmode}
+               {music_library.lbl set text_token mod_brutalmode}
                {if_else
-                  {music_library get_making_setlist}
-                  {music_library.lbl
-                     set
-                     text_token
-                     {music_library get_making_setlist_token}}
-                  {music_library.lbl
-                     set
-                     text_token
-                     {music_library get_title_token}}}})})
+                  {music_library viewing_setlists}
+                  {music_library.lbl set text_token setlist_browser}
+                  {if_else
+                     {music_library get_making_setlist}
+                     {music_library.lbl
+                        set
+                        text_token
+                        {music_library get_making_setlist_token}}
+                     {music_library.lbl
+                        set
+                        text_token
+                        {music_library get_title_token}}}}})})
    (on_change_setlist_mode
       {if_else
          {music_library get_making_setlist}
@@ -2816,7 +2762,15 @@
             {header_setlist.trg trigger}}
          {do
             {setlist_hide.trg trigger}
-            {header_normal.trg trigger}}}
+            {if_else {modifier_mgr is_modifier_active mod_brutalmode}
+               {do
+                  {music_library.lbl set text_token mod_brutalmode}
+                  {header_setlist.trg trigger}
+               }
+               {header_normal.trg trigger}
+            }
+         }
+      }
       {$this refresh_screen_header})
    (refresh_top
       {do
@@ -3035,14 +2989,16 @@
                         "")})
                (kNodeSetlist
                   "")}}
-         {set
-            $option
-            {switch
-               $type
-               ((kNodeFunction kNodeHeader kNodeSubheader kNodeStoreSong)
-                  "")
-               ((kNodeSong kNodeSetlist)
-                  details)}}
+         {unless $dx_event_mode
+            {set
+               $option
+               {switch
+                  $type
+                  ((kNodeFunction kNodeHeader kNodeSubheader kNodeStoreSong)
+                     "")
+                  ((kNodeSong kNodeSetlist)
+                     details)}}
+         }
          {cond
             ({&& $primary $secondary}
                {help.ihp
@@ -3325,7 +3281,14 @@
             {if_else
                {music_library get_making_setlist}
                {setlist_show.trg trigger}
-               {header_normal.trg trigger}}
+               {if_else {modifier_mgr is_modifier_active mod_brutalmode}
+                  {do
+                     {music_library.lbl set text_token mod_brutalmode}
+                     {header_setlist.trg trigger}
+                  }
+                  {header_normal.trg trigger}
+               }
+            }
             {$this refresh_screen_header}}}
       {sort_wait.grp set_showing $waiting}
       {set

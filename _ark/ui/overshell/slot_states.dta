@@ -118,17 +118,24 @@
          {$this show_options}
          {$this attempt_remove_user}})
    (BUTTON_DOWN_MSG
-      {if_else
-         {== $action kAction_Option}
-         {do
-            ($index
-               {chars.lst selected_pos})
-            {if
-               {$this can_edit_character $index}
-               {$this
-                  show_char_edit
-                  {chars.lst selected_pos}}}}
-         kDataUnhandled}))
+      {if_else $dx_event_mode
+         ;disallow character deletion in event mode
+         kDataUnhandled
+         {if_else
+            {== $action kAction_Option}
+            {do
+               ($index
+                  {chars.lst selected_pos})
+               {if
+                  {$this can_edit_character $index}
+                  {$this
+                     show_char_edit
+                     {chars.lst selected_pos}}}}
+            kDataUnhandled
+         }
+      }
+   )
+)
 (kState_ChooseCharDenial
    (view confirm_action)
    (update_view
@@ -832,10 +839,7 @@
             (overshell_online_options
                {set $dx_is_in_chat FALSE}
                {$this show_online_options})
-            (go_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
-               {set $dx_is_in_chat FALSE}
-               {$this show_online_options})
-            (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
+            (go_overshell_online_options ; dx - allow entering the online options state when gocentral is connected
                {set $dx_is_in_chat FALSE}
                {$this show_online_options})
             (live_overshell_online_options ; dx - allow entering the online options state when live is connected
@@ -849,9 +853,6 @@
             (go_overshell_register_online ; dx - allow entering the online options state when gocentral is connected
                {set $dx_is_in_chat FALSE}
                {$this show_online_options})
-            (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
-               {set $dx_is_in_chat FALSE}
-               {$this show_online_options})
             (live_overshell_register_online ; dx - allow entering the online options state when live is connected
                {set $dx_is_in_chat FALSE}
                {$this show_online_options})
@@ -863,6 +864,8 @@
                {$this show_online_options})
             (overshell_game_options
                {$this show_game_options})
+            (os_event_options
+               {ui push_screen dx_EventModeWelcome_screen})
             (overshell_leave
                {$this attempt_remove_user})
             (overshell_dx_bot_settings
@@ -963,11 +966,23 @@
             }
             {if_else {&& $dx_online_temp {is_leader_local}}
                {if_else $dx_playing_a_show
-                  {ui goto_screen meta_loading_main_screen}
+                  {do
+                     {set $dx_in_show_flow TRUE}
+                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE) kNetReliable}}
+                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies) kNetReliable}}
+                     {meta_performer set_song antibodies}
+                     {ui sync_screen meta_loading_continue_screen 0}
+                  }
                   {ui sync_screen meta_loading_continue_screen 0}
                }
                {if_else $dx_playing_a_show
-                  {ui goto_screen meta_loading_main_screen}
+                  {do
+                     {set $dx_in_show_flow TRUE}
+                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE) kNetReliable}}
+                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies) kNetReliable}}
+                     {meta_performer set_song antibodies}
+                     {ui sync_screen meta_loading_continue_screen 0}
+                  }
                   {do
                      {ui_event_mgr trigger_event quit_early}
                      {$this leave_options}
@@ -1354,9 +1369,6 @@
          (go_overshell_register_online ; dx - allow entering the online options state when gocentral is connected
             {set $dx_is_in_chat FALSE}
             {$this show_online_options})
-         (ash_overshell_register_online ; dx - allow entering the online options state when ashcentral is connected
-            {set $dx_is_in_chat FALSE}
-            {$this show_online_options})
          (live_overshell_register_online ; dx - allow entering the online options state when live is connected
             {set $dx_is_in_chat FALSE}
             {$this show_online_options})
@@ -1367,9 +1379,6 @@
             {set $dx_is_in_chat FALSE}
             {$this show_online_options})
          (go_overshell_online_options ; dx - allow entering the online options state when gocentral is connected
-            {set $dx_is_in_chat FALSE}
-            {$this show_online_options})
-         (ash_overshell_online_options ; dx - allow entering the online options state when ashcentral is connected
             {set $dx_is_in_chat FALSE}
             {$this show_online_options})
          (live_overshell_online_options ; dx - allow entering the online options state when live is connected
@@ -1453,7 +1462,11 @@
       {switch
          {$component selected_sym}
          (overshell_calibration
-            {$this show_enter_calibration})
+            {if_else {&& {$this in_game} {session_mgr is_local}}
+               {$this show_state dxState_CalibrationInGame} ; dx - enter custom in-game calibration tool when in-game and offline
+               {$this show_enter_calibration} ; dx - vanilla behavior
+            }
+         )
          (overshell_dolby
             {profile_mgr
                set_dolby
@@ -1886,7 +1899,7 @@
    {options_audio.lst set_data 
       (
          refresh_library
-         overshell_credits
+         {if_else {== {ui current_screen} song_select_screen} report_song_location overshell_credits}
          overshell_linking_code
          #ifdef HX_XBOX overshell_audition #endif
          {if_else {modifier_mgr is_modifier_active mod_auto_play}
@@ -1904,7 +1917,7 @@
          {options_audio.lst set_type overshell_menu_ingame}
          {options_audio.lst set_type overshell_menu}
        }
-      {if {&& {! {session is_in_game}} {session_mgr is_local}}
+      {if {&& {!= {ui current_screen} song_select_screen} {! {session is_in_game}} {session_mgr is_local}}
          {set $dx_choose_char_scale_x 0.4}
          {set $dx_choose_char_scale_y 0.4}
          {game_options.grp add_object choose_character.mesh}
@@ -1930,6 +1943,11 @@
             {if {! {session is_in_game}}
                {content_mgr remove_content kDataUnhandled}
                {content_mgr start_refresh}
+            }
+         )
+         (report_song_location
+            {if {&& {== {ui current_screen} song_select_screen} {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
+               {dx_passive_messenger_symbol {symbol {song_mgr song_file_path {{music_library get_highlighted_node} get_token} " "}}}
             }
          )
          (overshell_linking_code
@@ -1982,7 +2000,7 @@
       }
    )
    (exit
-      {if {&& {! {session is_in_game}} {session_mgr is_local}}
+      {if {&& {!= {ui current_screen} song_select_screen} {! {session is_in_game}} {session_mgr is_local}}
          {restore_choose_char_size_pos}
       }
       {game_options.grp remove_object choose_character.mesh}
@@ -2285,7 +2303,7 @@
 (kState_ChoosePart
    (view
       {if_else $dx_in_show_flow
-         options_audio
+         game_options
          {switch
             {{$this get_user}
                get_controller_type}
@@ -2305,9 +2323,22 @@
       DX_UPDATE_ICON)
    (update_view
       {if $dx_in_show_flow
-         {options_audio.lst set_type overshell_menu}
-         {options_audio.lst restart_highlight_matanim}
-         {options_audio.lst refresh}
+         {if {! $moved_items}
+            {set $moved_items TRUE}
+            {set $actually_show_checks FALSE}
+            {handle
+               ($this
+                  update_auto_vocals_enabled
+                  {modifier_mgr is_modifier_active mod_auto_vocals})}
+            {do
+               ($no_fail_enabled
+                  {modifier_mgr is_modifier_active mod_no_fail_band})
+               {handle
+                  ($this update_no_fail_enabled $no_fail_enabled)}}
+         }
+         {game_options.lst set_type overshell_menu}
+         {game_options.lst restart_highlight_matanim}
+         {game_options.lst refresh}
       }
       {choose_part.lst restart_highlight_matanim}
       {choose_part.lst refresh}
@@ -2315,7 +2346,7 @@
    )
    (enter
       {if $dx_in_show_flow
-         {options_audio.lst set_data (play_one play_two play_three play_four play_five play_show)}
+         {game_options.lst set_data (play_one play_two play_three play_four play_five play_six play_show)}
          {set $dx_play_a_show_required_votes {+ $dx_play_a_show_required_votes 1}}
       }
       {if {! $dx_in_show_flow}
@@ -2333,7 +2364,7 @@
    (SELECT_MSG
       {if $dx_in_show_flow
          {if $votingallowed
-            {switch {options_audio.lst selected_sym}
+            {switch {game_options.lst selected_sym}
                (play_one
                   {set $dx_play_a_show_vote 1}
                   {play_instr_sfx $user button_select}
@@ -2352,6 +2383,10 @@
                )
                (play_five
                   {set $dx_play_a_show_vote 5}
+                  {play_instr_sfx $user button_select}
+               )
+               (play_six
+                  {set $dx_play_a_show_vote 6}
                   {play_instr_sfx $user button_select}
                )
                (play_show
@@ -2375,6 +2410,7 @@
                      (3 {set $slot1_vote 3})
                      (4 {set $slot1_vote 4})
                      (5 {set $slot1_vote 5})
+                     (6 {set $slot1_vote 6})
                   }
                )
                (1
@@ -2387,6 +2423,7 @@
                      (3 {set $slot2_vote 3})
                      (4 {set $slot2_vote 4})
                      (5 {set $slot2_vote 5})
+                     (6 {set $slot2_vote 6})
                   }
                )
                (2
@@ -2399,6 +2436,7 @@
                      (3 {set $slot3_vote 3})
                      (4 {set $slot3_vote 4})
                      (5 {set $slot3_vote 5})
+                     (6 {set $slot3_vote 6})
                   }
                )
                (3
@@ -2411,6 +2449,7 @@
                      (3 {set $slot4_vote 3})
                      (4 {set $slot4_vote 4})
                      (5 {set $slot4_vote 5})
+                     (6 {set $slot4_vote 6})
                   }
                )
             }
@@ -2629,8 +2668,6 @@
       {choose_part.lst refresh}
       {TOGGLE_LEFTY_FLIP_AND_STATIC_VOCALS})
    (on_cancel
-      {set $dx_play_a_show_active_instruments ()}
-      {resize $dx_play_a_show_active_instruments 0}
       {if_else $dx_in_show_flow
          {do
             {$this show_state kState_ConfirmPlayaShowExit}
@@ -2657,6 +2694,9 @@
             {set $dx_in_show_flow FALSE}
             {set $dx_prep_show_flow FALSE}
             {set $dx_playing_a_show FALSE}
+            {set $dx_play_a_show_active_instruments ()}
+            {resize $dx_play_a_show_active_instruments 0}
+            {set $moved_items FALSE}
             {overshell end_override_flow kOverrideFlow_SongSettings TRUE}
             {$this leave_options}
             {ui sync_screen meta_loading_main_screen 0})
@@ -3325,6 +3365,9 @@
    (view confirm_action)
    (choose_char_flow TRUE)
    (enter
+      {if $dx_event_mode
+         {$this show_chars}
+      }
       {handle
          ($this
             set_confirm_actions

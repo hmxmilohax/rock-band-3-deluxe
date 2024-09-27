@@ -273,7 +273,7 @@
       {push_back $options {if_else $dx_whammy_fx os_whammy_fx_on os_whammy_fx_off}}
       {push_back $options {if_else $dx_instrument_fx os_audio_instsfx_on os_audio_instsfx_off}}
       {push_back $options {if_else $dx_jurgen_sound os_jurgen_sound_on os_jurgen_sound_off}}
-      {push_back $options os_cyclefx}
+      {push_back $options {switch $dx_test_guitar_fx (0 os_cyclefx_wah) (1 os_cyclefx_flanger) (2 os_cyclefx_delay) (3 os_cyclefx_chorus) (4 os_cyclefx_none)}}
       {push_back $options os_toggle_synth}
       ;{push_back $options {if_else $dx_nice_sound os_nice_sound_on os_nice_sound_off}}
       ;-----func----------state name------message
@@ -354,8 +354,19 @@
             DX_AUDIO_SFX_DATA
             {set $previous_state dxState_AudioSFX}
          )
-         (os_cyclefx
-            {cycle_guitar_fx}
+         ((os_cyclefx_wah os_cyclefx_flanger os_cyclefx_delay os_cyclefx_chorus os_cyclefx_none)
+            {++ $dx_test_guitar_fx} ;unrolling the cycle_guitar_fx function to track it separately from the real variable
+            {if {== $dx_test_guitar_fx 5} {set $dx_test_guitar_fx 0}}
+            ;{dx_passive_messenger_symbol {sprintf "Guitar FX set to %s" {elem (wah flanger delay chorus none) $dx_test_guitar_fx}}}
+            {set $test_guitar_fx $dx_test_guitar_fx}
+            {handle (beatmatch foreach_active_player $p {handle ($p update_guitar_fx)})}
+            {switch $dx_test_guitar_fx
+               (0 {set $dx_tracked_changed os_cyclefx_wah})
+               (1 {set $dx_tracked_changed os_cyclefx_flanger})
+               (2 {set $dx_tracked_changed os_cyclefx_delay})
+               (3 {set $dx_tracked_changed os_cyclefx_chorus})
+               (4 {set $dx_tracked_changed os_cyclefx_none})
+            }
             {dx_state_pos_tracker}
             DX_AUDIO_SFX_DATA
             {set $previous_state dxState_AudioSFX}
@@ -494,7 +505,7 @@
    )
    (on_cancel
       {dx_track_angle_var_reset}
-      {$this show_state dxState_TextureMenu}
+      {$this show_state dxState_InGameHUD}
    )
 )
 
@@ -515,5 +526,127 @@
    )
    (SELECT_MSG
       {$this show_state dxState_AngleMenu}
+   )
+)
+
+#define DX_CALIBRATION_INGAME_MENU
+(
+   {options_audio.lst set_data
+      (
+         {sprintf {localize os_calibrate_video} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}}
+         {sprintf {localize os_calibrate_audio} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}
+         overshell_calibration
+      )
+   }
+)
+
+(dxState_CalibrationInGame
+   (view options_audio)
+   (enter
+      DX_CALIBRATION_INGAME_MENU
+      {$this iterate Mesh $m {$m set_showing FALSE}}
+      {$this iterate UIList $l
+         {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
+         {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+      }
+      {set $dx_in_calibration TRUE} ;force game to unpause
+   )
+   (SELECT_MSG
+      {switch {options_audio.lst selected_data}
+         (0
+            {set $dx_calibration_mode video}
+            {$this show_state dxState_CalibrationInGameSetting}
+         )
+         (1
+            {set $dx_calibration_mode audio}
+            {$this show_state dxState_CalibrationInGameSetting}
+         )
+         (2
+            {$this show_enter_calibration} ;enter vanilla calibration screen
+         )
+      }
+   )
+   (on_cancel
+      {set $dx_in_calibration FALSE} ;re-pause the game after leaving
+      {$this show_options_av_settings}
+   )
+   (exit
+      {$this iterate Mesh $m {$m set_showing TRUE}}
+      {$this iterate UIList $l
+         {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+         {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+      }
+   )
+)
+
+#define DX_CALIBRATION_INGAME_MENU_SETTING
+(
+   {options_audio.lst set_data
+      (
+         {if_else {== $dx_calibration_mode video} {sprintf {localize os_calibrate_video_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}} os_blnk}
+         {if_else {== $dx_calibration_mode audio} {sprintf {localize os_calibrate_audio_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}} os_blnk}
+         os_exit_cal_one ;message telling user to press start to exit
+         os_exit_cal_two
+      )
+   }
+)
+
+(dxState_CalibrationInGameSetting
+   (view options_audio)
+   (enter
+      DX_CALIBRATION_INGAME_MENU_SETTING
+      {$this iterate Mesh $m {$m set_showing FALSE}}
+      {$this iterate UIList $l
+         {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
+         {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+      }
+   )
+   (BUTTON_DOWN_MSG
+      {switch $action
+         ((kAction_Left kAction_Right)
+            ;grab current calibration number
+            {set $i
+               {switch $dx_calibration_mode
+                  (video {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}})
+                  (audio {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}})
+                  0
+               }
+            }
+            ;add -1 or +1 when pressing left/right dpad
+            {set $i
+               {switch $action
+                  (kAction_Left {- $i 1})
+                  (kAction_Right {+ $i 1})
+               }
+            }
+            ;limit calibration from -300 to 300
+            {if {> $i 300} {set $i 300}}
+            {if {< $i -300} {set $i -300}}
+            ;set new calibration number
+            {switch $dx_calibration_mode
+               (video {profile_mgr set_excess_video_lag $i})
+               (audio {profile_mgr set_excess_audio_lag $i})
+               kDataUnhandled
+            }
+            DX_CALIBRATION_INGAME_MENU_SETTING
+            {unless {beatmatch is_invalid_score}
+               {beatmatch set_invalid_score TRUE}
+               {foreach_int $i 0 4 ;super jank way of setting score to 0 and disabling scoring
+                  {cheat_toggle_difficulty}
+               }
+            }
+         )
+         ;pressing start will exit menu to allow user to continue playing with normal frets while calibrating
+         (kAction_Start
+            {$this show_state dxState_CalibrationInGame}
+         )
+      }
+   )
+   (exit
+      {$this iterate Mesh $m {$m set_showing TRUE}}
+      {$this iterate UIList $l
+         {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+         {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+      }
    )
 )

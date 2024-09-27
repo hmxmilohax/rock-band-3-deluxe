@@ -1,9 +1,12 @@
+#ifndef HX_WII {if {file_exists DX_EVENT_FILE_PATH} {dx_event_dta_reader}} #endif
+
 {unless $dx_only_populate_once_holders
    {set $dx_only_populate_once_holders TRUE}
    {set $dx_current_song {array ()}}
    {set $dx_mtv_holder {array ()}}
    {set $dx_state_tracker {array ()}}
 }
+
 #ifndef HX_WII
 ;needs font on wii
 {set $dx_song_select_rings TRUE}
@@ -12,7 +15,6 @@
 {set $dx_high_score_report TRUE}
 {set $highscore_tracker ()}
 {resize $highscore_tracker 0}
-{set $dx_vsync TRUE}
 #ifdef _SHIP
 DX_LOG_CLEAR
 DX_JSON_CLEAR
@@ -49,14 +51,27 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_current_free_cam "Free camera: off"}
 {set $overshell_showing TRUE}
 {set $dx_forced_outro_vignette FALSE}
-{set $dx_forced_main_menu_bg FALSE}
+{if_else $dx_event_mode
+   {do
+      {set $dx_sv8_dx_vers TRUE}
+      {set $dx_forced_main_menu_bg ("sv8_a")}
+   }
+   {set $dx_forced_main_menu_bg FALSE}
+}
 {set $dx_forced_song_select_bg FALSE}
 
-{set $dx_confirm_song_count TRUE}
-{set $dx_ash_welcome_msg FALSE}
+{if_else $dx_event_mode
+   {set $dx_confirm_song_count FALSE}
+   {set $dx_confirm_song_count TRUE}
+}
 
 {set $dx_time_remaining_on_top TRUE}
 
+{set $dx_brutal_initialized 0} ;tracks how many beats from the beginning of the song we have ran the brutal mode script to overdo setting it
+{set $dx_brutal0_init FALSE}
+{set $dx_brutal1_init FALSE}
+{set $dx_brutal2_init FALSE}
+{set $dx_brutal3_init FALSE}
 {set $brutal_number_0 -26}
 {set $brutal_number_1 -26}
 {set $brutal_number_2 -26}
@@ -73,7 +88,10 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_loading_tip_var FALSE}
 {set $dx_hide_on_countdown off}
 
-{set $dx_you_rock FALSE}
+{if_else $dx_event_mode
+   {set $dx_you_rock TRUE}
+   {set $dx_you_rock FALSE}
+}
 
 {set $dx_trainer_real_guitar FALSE}
 {set $dx_trainer_real_bass FALSE}
@@ -151,14 +169,18 @@ DX_CURRENT_SONG_CLEAR
 ;#ifdef HX_PS3
 ;   {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/boot_time.dta"} {array $dx_boot_time}}
 ;#endif
-   
 
-#ifndef HX_WII
-;author finder setup
-{unless $dx_ps3hw
-   {set $dx_author_finder_is_enabled TRUE}
+{if_else {== $dx_detected_platform platform_rpcs3}
+   {set $dx_vsync FALSE}
+   {set $dx_vsync TRUE}
 }
-#endif
+
+;#ifndef HX_WII
+;author finder setup
+;{unless $dx_ps3hw
+   {set $dx_author_finder_is_enabled TRUE}
+;}
+;#endif
 #ifdef HX_PS3
 {unless $dx_ps3hw
    {set $dx_song_delay TRUE}
@@ -166,12 +188,21 @@ DX_CURRENT_SONG_CLEAR
 #endif
 
 ;set mtv vars, trainer doesn't like these empty on boot
-{set $artistvar "No Artist Found"}
-{set $yearvar "No Year Found"}
-{set $albumvar "No Album Found"}
-{set $genrevar "No Genre Found"}
-{set $subgenrevar "No Sub Genre Found"}
-{set $sourcevar "No Source Found"}
+;{set $artistvar "No Artist Found"}
+;{set $yearvar "No Year Found"}
+;{set $albumvar "No Album Found"}
+;{set $genrevar "No Genre Found"}
+;{set $subgenrevar "No Sub Genre Found"}
+;{set $sourcevar "No Source Found"}
+;{set $namevar "No Name Found"}
+;{set $dx_loading_tip_var "No Song Key Found"}
+;{set $mastervar "No Song Key Found"}
+;{set $authorvar "No Song Key Found"}
+;{set $stringsauthorvar "No Song Key Found"}
+;{set $keysauthorvar "No Song Key Found"}
+;{set $dx_vocal_tonic_note_var "No Song Key Found"}
+;{set $dx_song_tonality_var "No Song Key Found"}
+;{set $dx_song_key_var "No Song Key Found"}
 
 {set $dx_player_icons TRUE}
 
@@ -283,9 +314,11 @@ DX_CURRENT_SONG_CLEAR
 ;sets default bre track textures.
 {set $dx_bre none}
 
-;sets default flames track textures.
-;no flames: noflm
-{set $dx_flames none}
+;sets default flares track textures.
+{set $dx_flares none}
+
+;sets default particles track textures.
+{set $dx_particles none}
 
 ;sets default vocal arrow track textures.
 {set $dx_vocal_arrow none}
@@ -344,19 +377,10 @@ DX_CURRENT_SONG_CLEAR
 
 
 ;set default pp
-#ifdef HX_PS3
-{if_else $dx_ps3hw
-   {do
-	  {set $emulatefps 30}
-   }
-   {do
-	  {set $emulatefps 60}
-     {set $dx_force_lod TRUE}
-   }
+{if {== $dx_detected_platform platform_rpcs3}
+   {set $dx_force_lod TRUE}
 }
-#else
 {set $emulatefps 30}
-#endif
 
 ;animated texture name. must have ran "enable_animation.bat" first. current animated gems are
 ;rb4
@@ -368,9 +392,22 @@ DX_CURRENT_SONG_CLEAR
 
 ;set default volumes for mics
 ;0-11, default is "8"
-{set $mic_vol_1 8}
-{set $mic_vol_2 8}
-{set $mic_vol_3 8}
+{if_else $dx_event_mode
+   {do
+      {set $mic_vol_1 0}
+      {set $mic_vol_2 0}
+      {set $mic_vol_3 0}
+   }
+   {do
+      {set $mic_vol_1 8}
+      {set $mic_vol_2 8}
+      {set $mic_vol_3 8}
+   }
+}
+
+{if $dx_event_mode
+   {set $dx_character_swap TRUE}
+}
 
 ;set default colors for notes
 ;5 is overdrive (white)
@@ -461,7 +498,10 @@ DX_CURRENT_SONG_CLEAR
 
 
 ;currentsong formatting defauts
-{set $dx_song_title default}
+{if_else $dx_event_mode
+   {set $dx_song_title always}
+   {set $dx_song_title default}
+}
 {set $dx_song_title_mtv_line TRUE}
 {set $dx_artist_mtv_line TRUE}
 {set $dx_year_on_mtv TRUE}
@@ -479,6 +519,12 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_joypad_type_vocals kControllerVocals}
 {set $dx_joypad_pad_mapping joypad}
 
+;mtv overlay position for event mode
+{if $dx_event_mode
+   {set $mtvpos_0 -85}
+   {set $mtvpos_1 150}
+}
+
 ;game hud default ui positioning
 {set $scoreboardpos_0 8} {set $scoreboardpos_1 0} {set $scoreboardpos_2 -16}
 {set $star_displaypos_0 0} {set $star_displaypos_1 0} {set $star_displaypos_2 0}
@@ -492,16 +538,7 @@ DX_CURRENT_SONG_CLEAR
 
 ;default pp
 {set $dx_noise 0}
-
-#ifdef HX_PS3
-{if_else $dx_ps3hw
-	{set $dx_motion_blur 1}
-	{set $dx_motion_blur 0}
-}
-#else
 {set $dx_motion_blur 1}
-#endif
-
 {set $dx_camera_blur 1}
 {set $dx_camera_shake 1}
 
@@ -515,8 +552,16 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_fctype both}
 {set $dx_streak_counter single}
 {set $dx_time_remaining down}
-{set $dx_current_intro_movie deluxe}
-{set $dx_splash_screen TRUE}
+{if_else $dx_event_mode
+   {do
+      {set $dx_current_intro_movie off}
+      {set $dx_splash_screen FALSE}
+   }
+   {do
+      {set $dx_current_intro_movie deluxe}
+      {set $dx_splash_screen TRUE}
+   }
+}
 {set $dx_seasonal_logos TRUE}
 {set $dx_season standard}
 {set $dx_additional_parts TRUE}
@@ -533,6 +578,16 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_overdrive_drum_shading FALSE}
 {set $dx_overdrive_keys_shading FALSE}
 
+;quick chat settings
+{set $dx_chat_preset_0 "Hello!"}
+{set $dx_chat_preset_1 "Restart the song"}
+{set $dx_chat_preset_2 "What a save!"}
+{set $dx_chat_preset_3 "Activate!"}
+{set $dx_chat_preset_4 "Have you tried practice mode?"}
+{set $dx_chat_preset_5 "I choked."}
+{set $dx_chat_preset_6 "Be right back!"}
+{set $dx_chat_preset_7 "Gotta go!"}
+
 ; Mic deploy sensitivity
 {set $dx_mic_deploy_sens 0.3}
 #ifdef _SHIP
@@ -541,6 +596,10 @@ DX_CURRENT_SONG_CLEAR
 {dx_track_theme_dta_writer}
 {push_back $dx_tracked_track_themes default}
 #endif
+
+{if $dx_event_mode
+   {modifier_mgr toggle_modifier_enabled mod_nopause}
+}
 
 {set $dx_instrument_icons rb3}
 
@@ -574,16 +633,21 @@ DX_CURRENT_SONG_CLEAR
 }
 #endif
 
-; force vsync on after settings load if not on rpcs3, just in case
-{if {! {== $dx_detected_platform platform_rpcs3}}
-   {set $dx_vsync TRUE}
-   {rnd set_sync 1}
+{if_else {== $dx_detected_platform platform_rpcs3}
+   {do
+      {rnd set_sync $dx_vsync}
+   }
+   {do
+      {set $dx_vsync TRUE}
+      {rnd set_sync 1}
+   }
 }
+
 #ifdef HX_WII
 {set $dx_instrument_icons rb3}
 {set $dx_song_select_rings FALSE}
 {set $dx_diff_popups FALSE}
-{set $dx_author_finder_is_enabled FALSE}
+;{set $dx_author_finder_is_enabled FALSE}
 {set $dx_force_lod FALSE}
 #endif
 
@@ -630,9 +694,9 @@ DX_CURRENT_SONG_CLEAR
 }
 
 ;for safety
-{if $dx_ps3hw
-   {set $dx_author_finder_is_enabled FALSE}
-}
+;{if $dx_ps3hw
+;   {set $dx_author_finder_is_enabled FALSE}
+;}
 {set $dx_forced_outro_vignette ()}
 {resize $dx_forced_outro_vignette 0}
 
@@ -649,16 +713,6 @@ DX_CURRENT_SONG_CLEAR
    (both {set $dx_fc_ring TRUE} {set $dx_fc_glow TRUE})
    (off {set $dx_fc_ring FALSE} {set $dx_fc_glow FALSE})
 }
-
-;quick chat settings
-{set $dx_chat_preset_0 "Hello!"}
-{set $dx_chat_preset_1 "Restart the song"}
-{set $dx_chat_preset_2 "What a save!"}
-{set $dx_chat_preset_3 "Activate!"}
-{set $dx_chat_preset_4 "Have you tried practice mode?"}
-{set $dx_chat_preset_5 "I choked."}
-{set $dx_chat_preset_6 "Be right back!"}
-{set $dx_chat_preset_7 "Gotta go!"}
 
 ;developer settings below do not modify
 {set $screensaver TRUE}
@@ -677,6 +731,7 @@ DX_CURRENT_SONG_CLEAR
    }
 }
 
+{set $dx_in_calibration FALSE}
 
 {set $dx_no_message_sound FALSE}
 {set $dx_menu_message ""}

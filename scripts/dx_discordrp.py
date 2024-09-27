@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 import requests
 from datetime import datetime
+import pylast
 
 # Check if the system is running on macOS
 is_macos = sys.platform == "darwin"
@@ -38,18 +39,126 @@ def save_rpcs3_path(config_path: Path, rpcs3_path: Path, xbox_console_ip: str):
 def load_config(config_path: Path):
     config = configparser.ConfigParser()
     config.read(config_path)
+
+    rpcs3_path = None
+    xbox_console_ip = ''
+    lastfm_config = None
+
     if 'Paths' in config and 'rpcs3_path' in config['Paths']:
         rpcs3_path = Path(config['Paths']['rpcs3_path'].strip('"'))
         xbox_console_ip = config['Paths'].get('xbox_console_ip', '')
-        return rpcs3_path, xbox_console_ip
-    else:
-        return None, ''
 
+    if 'LastFM' in config:
+        lastfm_config = {
+            'API_KEY': config['LastFM'].get('api_key', None),
+            'API_SECRET': config['LastFM'].get('api_secret', None),
+            'USERNAME': config['LastFM'].get('username', None),
+            'PASSWORD_HASH': pylast.md5(config['LastFM'].get('password', ''))
+        }
+
+        # If any of the required fields are missing, set lastfm_config to None
+        if not all(lastfm_config.values()):
+            lastfm_config = None
+
+    return rpcs3_path, xbox_console_ip, lastfm_config
+
+def setup_lastfm_network(lastfm_config):
+    if lastfm_config and all(key in lastfm_config for key in ['API_KEY', 'API_SECRET', 'USERNAME', 'PASSWORD_HASH']):
+        return pylast.LastFMNetwork(
+            api_key=lastfm_config['API_KEY'],
+            api_secret=lastfm_config['API_SECRET'],
+            username=lastfm_config['USERNAME'],
+            password_hash=lastfm_config['PASSWORD_HASH'],
+        )
+    else:
+        #logger.warning("Last.fm configuration is incomplete or missing. Scrobbling will be disabled.")
+        return None
+
+def load_or_create_scrobble_data(file_path):
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            logger.error("Error loading scrobble data. Starting fresh.")
+            return {}
+    else:
+        # Create the file if it doesn't exist
+        with open(file_path, 'w') as file:
+            json.dump({}, file)
+        return {}
+
+def save_scrobble_data(file_path, scrobble_data):
+    with open(file_path, 'w') as file:
+        json.dump(scrobble_data, file, indent=4)
+
+def scrobble_track(network, artist, title, timestamp, scrobble_file, additional_data, active_instrument_name=None):
+    scrobble_data = load_or_create_scrobble_data(scrobble_file)
+    key = f"{artist} - {title}"
+    instrument_text = {
+        'GUITAR': 'Guitar',
+        'REAL_GUITAR': 'Pro Guitar',
+        'KEYS': 'Keys',
+        'DRUMS': 'Drums',
+        'REAL_KEYS': 'Pro Keys',
+        'REAL_BASS': 'Pro Bass',
+        'BASS': 'Bass',
+        'VOCALS': 'Vocals'
+    }
+    # Increment the count for the active instrument in the JSON if it's a solo performance
+    if active_instrument_name:
+        instrument_key = active_instrument_name
+        if 'instrument_counts' not in scrobble_data:
+            scrobble_data['instrument_counts'] = {instrument: 0 for instrument in instrument_text.values()}
+        
+        if instrument_key in scrobble_data['instrument_counts']:
+            scrobble_data['instrument_counts'][instrument_key] += 1
+        else:
+            scrobble_data['instrument_counts'][instrument_key] = 1
+
+    if key in scrobble_data:
+        entry = scrobble_data[key]
+        entry['count'] += 1
+        entry['last_scrobbled'] = timestamp
+        entry['scrobble_times'].append(timestamp)
+    else:
+        scrobble_data[key] = {
+            'artist': additional_data.get('Artist', ''),
+            'title': additional_data.get('Songname', ''),
+            'first_scrobbled': timestamp,
+            'last_scrobbled': timestamp,
+            'count': 1,
+            'scrobble_times': [timestamp],
+            'songname': additional_data.get('Songname', ''),
+            'year': additional_data.get('Year', ''),
+            'album': additional_data.get('Album', ''),
+            'genre': additional_data.get('Genre', ''),
+            'subgenre': additional_data.get('Subgenre', ''),
+            'source': additional_data.get('Source', ''),
+            'author': additional_data.get('Author', '')
+        }
+
+    save_scrobble_data(scrobble_file, scrobble_data)
+
+    if network is not None:
+        try:
+            network.scrobble(artist=artist, title=title, timestamp=timestamp)
+            logger.info(f"Scrobbled: {artist} - {title} ({timestamp})")
+        except pylast.WSError as e:
+            logger.error(f"Scrobble error: {e}")
+    else:
+        logger.debug("Scrobbling is disabled due to incomplete Last.fm configuration.")
+
+last_scrobbled_song = None
+last_scrobbled_artist = None
 # Set up logging configuration
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s] %(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 logging.getLogger('asyncio').setLevel(logging.WARNING)
+logging.getLogger('pylast').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+logging.getLogger('httpx').setLevel(logging.WARNING)
 
 # List of required packages
 required_packages = ["pypresence", "json", "time", "os", "logging", "pathlib", "requests"]
@@ -79,7 +188,7 @@ def parse_raw_input(raw_input, from_web=False):
         end_idx = raw_input.rindex("}") + 1
         parsed_input = raw_input[start_idx:end_idx]
         parsed_input = parsed_input.replace("\\q", "\"")
-        parsed_input = parsed_input.replace("'", "\"")  # Replace single quotes with double quotes
+        parsed_input = parsed_input.replace("'", "\'")
         if from_web:
             parsed_input = parsed_input[:-1] if parsed_input.endswith('"') else parsed_input
         return parsed_input
@@ -102,7 +211,7 @@ def prompt_json_path(suffix):
     return json_path.strip()
 
 # Connect to Discord RPC and update rich presence
-def connect_and_update(client_id, interval, RPC, json_data, large_text="", from_web=False):
+def connect_and_update(client_id, interval, RPC, json_data, network, large_text="", from_web=False):
     try:
         # Parse the raw input data
         parsed_input_data = parse_raw_input(json_data, from_web)
@@ -114,21 +223,23 @@ def connect_and_update(client_id, interval, RPC, json_data, large_text="", from_
         # Check if the JSON data was loaded successfully
         if presence_data is not None:
             # Update Discord Rich Presence
-            update_presence(client_id, presence_data, RPC, large_text)
+            update_presence(client_id, presence_data, RPC, network, large_text)
         else:
             logger.error("Failed to load presence data. Check the JSON input.")
-
     except Exception as e:
         logger.exception(f"An error occurred: {str(e)}")
 
 # Function to update Discord Rich Presence
-def update_presence(client_id, parsed_input, RPC, large_text):
+def update_presence(client_id, parsed_input, RPC, network, large_text):
     try:
-        # Perform the necessary actions based on the updated data
-        # ...
-
-        # Set default values if 'Loaded Song' is empty or missing
+        global last_scrobbled_song, last_scrobbled_artist
+        scrobble_song = None
+        scrobble_artist = None
         loaded_song = parsed_input.get('Loaded Song', 'No song loaded')
+        scrobble_song = parsed_input.get('Songname', '')
+        scrobble_artist = parsed_input.get('Artist', '')
+        artist = parsed_input.get('Artist', 'Unknown Artist')
+        timestamp = int(time.time())
 
         # Map 'Game mode' values to better verbiage
         game_mode = parsed_input.get('Game mode', '')
@@ -167,7 +278,6 @@ def update_presence(client_id, parsed_input, RPC, large_text):
 
         # Calculate the elapsed time
         elapsed_time_string = get_elapsed_time(update_presence.start_time)
-        #logger.debug(f"Elapsed time: {elapsed_time_string}")
 
         # Get the active instruments and count the number of active instruments
         active_instruments = parsed_input.get('SelectedInstruments', [])
@@ -208,7 +318,35 @@ def update_presence(client_id, parsed_input, RPC, large_text):
                     break
             else:
                 active_instrument_text = ""
-                
+
+        # Scrobble the song to Last.fm
+        if loaded_song == 'No song loaded':
+            last_scrobbled_song = None
+            last_scrobbled_artist = None
+        else:
+            # Scrobble the song to Last.fm if it's a new song or after a "no song loaded" state
+            if scrobble_song and scrobble_artist and (scrobble_song != last_scrobbled_song or scrobble_artist != last_scrobbled_artist):
+                if network is not None:
+                    additional_data = {
+                        'Songname': parsed_input.get('Songname', ''),
+                        'Artist': parsed_input.get('Artist', ''),
+                        'Year': parsed_input.get('Year', ''),
+                        'Album': parsed_input.get('Album', ''),
+                        'Genre': parsed_input.get('Genre', ''),
+                        'Subgenre': parsed_input.get('Subgenre', ''),
+                        'Source': parsed_input.get('Source', ''),
+                        'Author': parsed_input.get('Author', '')
+                    }
+                    # Pass the active instrument name if it's a solo performance
+                    active_instrument_name = None
+                    if "Solo" in active_instrument_text:
+                        active_instrument_name = simplify_instrument_name(instrument_name)
+
+                    scrobble_track(network, scrobble_artist, scrobble_song, timestamp, 'dx_playdata.json', additional_data, active_instrument_name)
+                    last_scrobbled_song = scrobble_song
+                    last_scrobbled_artist = scrobble_artist
+
+
         if parsed_input.get('Online', '') == "true":
             game_mode = "Online " + game_mode
 
@@ -283,13 +421,13 @@ def fetch_json_from_web(address):
             sanitized_data = raw_data.replace('\\', '\\\\')
             return json.loads(sanitized_data)
         else:
-            logger.error(f"Failed to fetch data from {address}, status code: {response.status_code}")
+            print(f"Failed to fetch data from {address}, status code: {response.status_code}", flush=True)
             return None
     except requests.RequestException as e:
-        logger.error(f"Error fetching data from {address}: {str(e)}")
+        print(f"Error fetching data from {address}: {str(e)}", flush=True)
         return None
     except json.JSONDecodeError as e:
-        logger.error(f"Error decoding JSON data from {address}: {str(e)}")
+        print(f"Error decoding JSON data from {address}: {str(e)}", flush=True)
         return None
 
 # Function to get elapsed time in a user-friendly format
@@ -325,12 +463,14 @@ def main():
     interval = 10  # Check for updates every 15 seconds
 
     config_path = Path.cwd() / 'dx_config.ini'
-    rpcs3_path, xbox_console_ip = load_config(config_path)
+    rpcs3_path, xbox_console_ip, lastfm_config = load_config(config_path)
 
     if rpcs3_path is None:
         rpcs3_path = get_rpcs3_path()
         xbox_console_ip = input("Enter the IP address of the Xbox console (leave empty if not applicable): ").strip()
         save_rpcs3_path(config_path, rpcs3_path, xbox_console_ip)
+
+    network = setup_lastfm_network(lastfm_config)
 
     json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / f"discordrp.json"
 
@@ -372,7 +512,7 @@ def main():
 
         if presence_data is not None:
             # Initial update to Discord Rich Presence
-            connect_and_update(client_id, interval, RPC, presence_data, large_text)
+            connect_and_update(client_id, interval, RPC, presence_data, network, large_text)
         else:
             logger.error("Failed to load presence data. Check the JSON input.")
     else:
@@ -391,7 +531,7 @@ def main():
                     presence_data = load_json(parsed_input_data)
                     if presence_data is not None:
                         # Update Discord Rich Presence
-                        connect_and_update(client_id, interval, RPC, presence_data, large_text)
+                        connect_and_update(client_id, interval, RPC, presence_data, network, large_text)
                     else:
                         logger.error("Failed to load presence data. Check the JSON input.")
             elif json_file.is_file():
@@ -407,7 +547,7 @@ def main():
 
                     if presence_data is not None:
                         # Update Discord Rich Presence
-                        connect_and_update(client_id, interval, RPC, presence_data, large_text)
+                        connect_and_update(client_id, interval, RPC, presence_data, network, large_text)
                     else:
                         logger.error("Failed to load presence data. Check the JSON input.")
                 else:
@@ -417,10 +557,10 @@ def main():
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        print("Disconnecting from Discord...")
+        print("Disconnecting from Discord...", flush=True)
         RPC.clear()
         RPC.close()
-        print("Disconnected. Goodbye!")
+        print("Disconnected. Goodbye!", flush=True)
 
 if __name__ == '__main__':
     main()

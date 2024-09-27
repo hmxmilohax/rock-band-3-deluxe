@@ -26,7 +26,7 @@
             }
             {push_back $options os_controller}
          }
-         {if $dx_debug
+         {if {|| $dx_debug $dx_event_mode}
             {push_back $options os_debug}
          }
          ;-----func----------state name---------message
@@ -572,12 +572,7 @@
       }
       {push_back $options {if_else $dx_splash_screen os_splash_on os_splash_off}}
       {push_back $options {if_else $dx_confirm_song_count os_confirm_songcount_on os_confirm_songcount_off}}
-      {if {== $dx_connected_server ashcentral}
-         {push_back $options {if_else $dx_ash_welcome_msg os_ash_welcome_msg_off os_ash_welcome_msg_on}} ;this one is backwards to account for vanilla
-      }
       #ifdef RB3E
-      ;{push_back $options {if_else $dx_ash_welcome_msg os_ash_welcome_msg_off os_ash_welcome_msg_on}} ;put it here too because ashcentral doesnt send this var to xbox
-      ;update: it does now
       {switch $dx_connected_server
          (none {push_back $options os_server_online})
          (live {push_back $options os_server_live})
@@ -709,16 +704,6 @@
             DX_FUNCTIONAL_OPTIONS_DATA
             {set $previous_state dxState_FunctionalOptions}
          )
-         ((os_ash_welcome_msg_on os_ash_welcome_msg_off)
-            {set $dx_ash_welcome_msg {! $dx_ash_welcome_msg}}
-            {if_else $dx_ash_welcome_msg
-               {set $dx_tracked_changed os_ash_welcome_msg_off}
-               {set $dx_tracked_changed os_ash_welcome_msg_on}
-            }
-            {dx_state_pos_tracker}
-            DX_FUNCTIONAL_OPTIONS_DATA
-            {set $previous_state dxState_FunctionalOptions}
-         )
       }
       {set $in_state FALSE}
       DX_FUNCTIONAL_OPTIONS_DATA
@@ -739,7 +724,6 @@
       ($options
          {array 0})
       {push_back $options os_debug_mode}
-      {push_back $options report_song_location}
       {push_back $options os_milo}
       {push_back $options os_logging}
       #ifdef HX_PS3
@@ -852,11 +836,6 @@
             {dx_state_pos_tracker}
             DX_DEBUG_DATA
             {set $previous_state dxState_Debug}
-         )
-         (report_song_location
-            {if {&& {== {ui current_screen} song_select_screen} {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
-               {dx_passive_messenger_symbol {symbol {song_mgr song_file_path {{music_library get_highlighted_node} get_token} " "}}}
-            }
          )
          (generate_updates_dta
             {set $tempwrite {find_exists $syscfg missing_song_data}}
