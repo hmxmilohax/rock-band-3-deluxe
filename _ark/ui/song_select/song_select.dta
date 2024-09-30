@@ -424,7 +424,7 @@
    (held_buttons
       (kAction_PageUp 0.25)
       (kAction_PageDown 0.25)
-      #ifdef HX_WII (kAction_ShellOption 0.25) #endif
+      (kAction_ShellOption 0.25)
       (kAction_Confirm 1.5)
       (kAction_Cancel 1.5))
    (joypad
@@ -451,6 +451,21 @@
          kAction_Right
          kAction_Option})
    (poll
+      {if {|| $dx_in_show_flow {! $dx_more_info_toggle}}
+         {if {song.lst is_scrolling}
+            {if {exists author_finder}
+               {delete author_finder}
+            }
+         }
+         {if {&& {! {song.lst is_scrolling}} {== {{music_library get_highlighted_node} get_node_type} kNodeSong} $probeforfinder}
+            {if {|| {file_exists {sprint {song_mgr song_path {{music_library get_highlighted_node} get_token}} "/../../gen/songs.dtb"}} {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}}
+               {set $probeforfinder FALSE}
+               {$this dx_authorfinder}
+            }
+         }
+      }
+   )
+   (dx_more_info_load
       {if {song.lst is_scrolling}
          {if {exists author_finder}
             {delete author_finder}
@@ -698,6 +713,7 @@
          {$this lbl_maker dx_song_name_album_title.lbl 275 -32 kMiddleCenter}
       }
       {dx_song_name_album.lbl set alt_font_resource_name pentatonic_outline}
+      {dx_song_name_album_title.lbl set alt_font_resource_name buttons}
       {dx_song_name_album.lbl set text_size 13}
       {dx_song_name_album.lbl set alt_text_size 13}
       {if_else $sourcevar
@@ -741,10 +757,17 @@
    (dx_diff_setter
       {{song_select_panel find song_demo.lbl} set_showing FALSE}
       {if_else $dx_author_finder_is_enabled
-         {do
-            {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
-            {dx_song_name_album.lbl set_token_fmt lb_waiting}
-            {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
+         {if_else $dx_more_info_toggle
+            {do
+               {dx_song_name_album_title.lbl set_token_fmt press_to_load_meta}
+               {dx_song_name_album.lbl set_album_name {music_library get_highlighted_node}}
+               {dx_song_name_year_title.lbl set_token_fmt os_blnk}
+            }
+            {do
+               {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
+               {dx_song_name_album.lbl set_token_fmt lb_waiting}
+               {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
+            }
          }
          {do
             {dx_song_name_year_title.lbl set_token_fmt os_blnk}
@@ -1926,6 +1949,10 @@
    (main_mode_button_held
       ($user $raw_button $action $pad_num)
       {cond
+         ({&& {== $action kAction_ShellOption} $dx_more_info_toggle}
+            {set $probeforfinder TRUE}
+            {$this dx_more_info_load}
+         )
          ({== $action kAction_Confirm}
             {unless
                {'||'
