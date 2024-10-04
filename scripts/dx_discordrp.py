@@ -656,7 +656,7 @@ def update_presence(client_id, parsed_input, RPC, network, large_text):
                     instrument_name = simplify_instrument_name(instrument_name)
                     instrument_difficulty = clean_difficulty(instrument_difficulty)
                     active_instrument_small_text = f"{instrument_name}, {instrument_difficulty}"
-                    active_instrument_small_image = map_instrument_to_small_image(instrument_name)
+                    active_instrument_small_image = map_instrument_to_small_image(instrument.get('instrument', ''))
                     active_instrument_name = instrument_name  # Assign active_instrument_name here
                     break
         else:
