@@ -27,12 +27,14 @@ def get_rpcs3_data_path():
     while True:
         if default_data_path and default_data_path.exists():
             print(f"Default RPCS3 data directory detected: {default_data_path}")
+            print(f"RPCS3 Directory must contain 'dev_hdd0' folder.\nWhere Rock Band 3 Deluxe is installed in /dev_hdd0/game/BLUS30463/.")
             rpcs3_data_path_str = input(f"Enter the path for RPCS3 data directory (leave empty to use default): ").strip()
             if not rpcs3_data_path_str:
                 rpcs3_data_path = default_data_path
             else:
                 rpcs3_data_path = Path(rpcs3_data_path_str)
         else:
+            print(f"RPCS3 Directory must contain 'dev_hdd0' folder.\nWhere Rock Band 3 Deluxe is installed in /dev_hdd0/game/BLUS30463/.")
             rpcs3_data_path_str = input("Enter the path for RPCS3 base directory (e.g. C:\\games\\rpcs3): ").strip()
             rpcs3_data_path = Path(rpcs3_data_path_str)
 
@@ -732,7 +734,7 @@ def display_current_status(presence_data, debug_mode, network, should_clear_scre
     song_author = presence_data.get('Author', '')
 
     # Display current status
-    print("Current Status:")
+    print("Current Status (You must keep this window open):")
 
     print(f"  Game Mode: {game_mode}")
 
