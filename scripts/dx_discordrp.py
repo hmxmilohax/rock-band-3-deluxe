@@ -14,39 +14,51 @@ import re
 import argparse
 import pypresence
 
-# Check if the system is running on macOS
-is_macos = sys.platform == "darwin"
+def get_rpcs3_data_path():
+    if sys.platform == 'darwin':
+        default_data_path = Path.home() / "Library/Application Support/rpcs3"
+    elif sys.platform == 'win32':
+        default_data_path = None  # User needs to input the path
+    elif sys.platform.startswith('linux'):
+        default_data_path = Path.home() / ".config/rpcs3"
+    else:
+        default_data_path = None
 
-def get_rpcs3_path():
     while True:
-        rpcs3_path_str = input("Enter the path for RPCS3 (e.g., C:\\games\\rpcs3): ")
-        if rpcs3_path_str.strip():
-            rpcs3_path = Path(rpcs3_path_str)
-            if not rpcs3_path.is_dir():
-                print("Invalid RPCS3 path provided.")
-                continue  # Prompt again for valid input
-            return rpcs3_path
+        if default_data_path and default_data_path.exists():
+            print(f"Default RPCS3 data directory detected: {default_data_path}")
+            rpcs3_data_path_str = input(f"Enter the path for RPCS3 data directory (leave empty to use default): ").strip()
+            if not rpcs3_data_path_str:
+                rpcs3_data_path = default_data_path
+            else:
+                rpcs3_data_path = Path(rpcs3_data_path_str)
         else:
-            print("Invalid RPCS3 path provided.")
+            rpcs3_data_path_str = input("Enter the path for RPCS3 base directory (e.g. C:\\games\\rpcs3): ").strip()
+            rpcs3_data_path = Path(rpcs3_data_path_str)
 
-def save_config(config_path: Path, rpcs3_path, xbox_console_ip, never_setup_rpcs3=False, never_setup_xbox=False, lastfm_config=None, never_setup_lastfm=False):
+        if rpcs3_data_path.exists() and rpcs3_data_path.is_dir():
+            return rpcs3_data_path
+        else:
+            print("Invalid RPCS3 data directory path provided.")
+
+def save_config(config_path: Path, rpcs3_data_path, xbox_console_ip, never_setup_rpcs3=False, never_setup_xbox=False, lastfm_config=None, never_setup_lastfm=False):
     config = configparser.ConfigParser()
     if config_path.exists():
         config.read(config_path)
-    
+
     # Save Paths
     if 'Paths' not in config:
         config['Paths'] = {}
-    config['Paths']['rpcs3_path'] = str(rpcs3_path) if rpcs3_path else ''
+    config['Paths']['rpcs3_data_path'] = str(rpcs3_data_path) if rpcs3_data_path else ''
     config['Paths']['xbox_console_ip'] = xbox_console_ip
-    
+
     # Save Settings for "Never" flags
     if 'Settings' not in config:
         config['Settings'] = {}
     config['Settings']['never_setup_rpcs3'] = str(never_setup_rpcs3)
     config['Settings']['never_setup_xbox'] = str(never_setup_xbox)
     config['Settings']['never_setup_lastfm'] = str(never_setup_lastfm)
-    
+
     # Save LastFM
     if lastfm_config:
         if 'LastFM' not in config:
@@ -55,7 +67,7 @@ def save_config(config_path: Path, rpcs3_path, xbox_console_ip, never_setup_rpcs
         config['LastFM']['api_secret'] = lastfm_config.get('API_SECRET', '')
         config['LastFM']['username'] = lastfm_config.get('USERNAME', '')
         config['LastFM']['password_hash'] = lastfm_config.get('PASSWORD_HASH', '')
-    
+
     with config_path.open('w') as configfile:
         config.write(configfile)
 
@@ -67,8 +79,8 @@ def load_config(config_path: Path):
         # Configuration file doesn't exist
         # Return default values
         return None, '', False, False, None, False  # Added never_setup_lastfm
-    
-    rpcs3_path = None
+
+    rpcs3_data_path = None
     xbox_console_ip = ''
     lastfm_config = None
     never_setup_rpcs3 = False
@@ -77,9 +89,9 @@ def load_config(config_path: Path):
 
     # Read Paths
     if 'Paths' in config:
-        rpcs3_path_str = config['Paths'].get('rpcs3_path', '').strip('"')
-        if rpcs3_path_str:
-            rpcs3_path = Path(rpcs3_path_str)
+        rpcs3_data_path_str = config['Paths'].get('rpcs3_data_path', '').strip('"')
+        if rpcs3_data_path_str:
+            rpcs3_data_path = Path(rpcs3_data_path_str)
         xbox_console_ip = config['Paths'].get('xbox_console_ip', '').strip()
 
     # Read Settings for "Never" flags
@@ -103,7 +115,7 @@ def load_config(config_path: Path):
                 'PASSWORD_HASH': password_hash
             }
 
-    return rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
+    return rpcs3_data_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
 
 def setup_lastfm_network(lastfm_config):
     if lastfm_config and all(key in lastfm_config for key in ['API_KEY', 'API_SECRET', 'USERNAME', 'PASSWORD_HASH']):
@@ -121,7 +133,7 @@ def setup_lastfm_config():
     print("You also need a Last.fm API key and secret.")
     print("You can learn how to create one here - https://www.last.fm/api/authentication")
     print("Please enter your Last.fm API key and secret.")
-    
+
     while True:
         api_key = input("API Key: ").strip()
         api_secret = input("API Secret: ").strip()
@@ -205,7 +217,7 @@ def scrobble_track(network, artist, title, timestamp, scrobble_file, additional_
         instrument_key = active_instrument_name
         if 'instrument_counts' not in scrobble_data:
             scrobble_data['instrument_counts'] = {instrument: 0 for instrument in instrument_text.values()}
-        
+
         if instrument_key in scrobble_data['instrument_counts']:
             scrobble_data['instrument_counts'][instrument_key] += 1
         else:
@@ -787,14 +799,14 @@ def main():
     idle_timeout = 900  # 15 minutes
 
     config_path = Path.cwd() / 'dx_config.ini'
-    rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm = load_config(config_path)
+    rpcs3_data_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm = load_config(config_path)
 
     # Function to prompt setup with "Never" option
     def prompt_setup():
-        nonlocal rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
+        nonlocal rpcs3_data_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
 
         while True:
-            print("\nNo RPCS3 path or Xbox console IP configured.")
+            print("\nNo RPCS3 data path or Xbox console IP configured.")
             print("Please select your setup:")
             print("1. Set up RPCS3")
             print("2. Set up Xbox")
@@ -802,51 +814,45 @@ def main():
             choice = input("Enter the number corresponding to your setup (1-3): ").strip()
 
             if choice == '1':
-                rpcs3 = get_rpcs3_path()
-                if rpcs3:
-                    rpcs3_path = rpcs3
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+                rpcs3_data_path = get_rpcs3_data_path()
+                save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
                 return
             elif choice == '2':
                 xbox_console_ip_input = input("Enter the IP address of the Xbox console: ").strip()
                 if xbox_console_ip_input:
                     xbox_console_ip = xbox_console_ip_input
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+                save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
                 return
             elif choice == '3':
-                rpcs3 = get_rpcs3_path()
-                if rpcs3:
-                    rpcs3_path = rpcs3
+                rpcs3_data_path = get_rpcs3_data_path()
                 xbox_console_ip_input = input("Enter the IP address of the Xbox console: ").strip()
                 if xbox_console_ip_input:
                     xbox_console_ip = xbox_console_ip_input
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+                save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
                 return
             else:
                 print("Invalid choice. Please try again.")
 
     # Initial setup prompts based on existing configurations and "never" flags
-    while (not rpcs3_path and not xbox_console_ip) and not (never_setup_rpcs3 and never_setup_xbox):
+    while (not rpcs3_data_path and not xbox_console_ip) and not (never_setup_rpcs3 and never_setup_xbox):
         prompt_setup()
 
     # Check if only one is missing and prompt accordingly, considering "never" flags
-    if not rpcs3_path and not never_setup_rpcs3:
-        print("\nRPCS3 path not configured.")
+    if not rpcs3_data_path and not never_setup_rpcs3:
+        print("\nRPCS3 data path not configured.")
         print("Do you want to set it up now?")
         print("1. Yes")
         print("2. Not Now")
         print("3. Never")
         choice = input("Enter your choice (1-3): ").strip()
         if choice == '1':
-            rpcs3 = get_rpcs3_path()
-            if rpcs3:
-                rpcs3_path = rpcs3
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            rpcs3_data_path = get_rpcs3_data_path()
+            save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
         elif choice == '2':
             pass
         elif choice == '3':
             never_setup_rpcs3 = True
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
             print("RPCS3 setup will not be prompted again.")
         else:
             print("Invalid choice. Please try again.")
@@ -860,18 +866,18 @@ def main():
         choice = input("Enter your choice (1-3): ").strip()
         if choice == '1':
             xbox_console_ip = input("Enter the IP address of the Xbox console: ").strip()
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
         elif choice == '2':
             pass
         elif choice == '3':
             never_setup_xbox = True
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
             print("Xbox setup will not be prompted again.")
         else:
             print("Invalid choice. Please try again.")
 
     # Save the updated configuration
-    save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+    save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
 
     # Check Last.fm configuration
     if not lastfm_config and not never_setup_lastfm:
@@ -887,7 +893,7 @@ def main():
                 lastfm_config = setup_lastfm_config()
                 if lastfm_config:
                     # Save the configuration
-                    save_config(config_path, rpcs3_path or '', xbox_console_ip or '',
+                    save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '',
                                 never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
                     break  # Exit the loop since setup is complete
                 else:
@@ -901,7 +907,7 @@ def main():
             elif choice == '3':
                 # Do not ask again
                 never_setup_lastfm = True
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '',
+                save_config(config_path, rpcs3_data_path or '', xbox_console_ip or '',
                             never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
                 print("Last.fm setup will not be prompted again.")
                 break
@@ -929,7 +935,7 @@ def main():
         last_json_content = None
         xbox_connection_error_displayed = False
         screen_clear_delay_counter = 0  # Initialize the screen clear delay counter
-    
+
         while True:
             current_time = time.time()
             data_changed = False
@@ -966,8 +972,8 @@ def main():
                         pass
 
                     # Xbox data not available, fall back to RPCS3 if configured
-                    if rpcs3_path and not never_setup_rpcs3:
-                        json_path = Path(rpcs3_path) / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
+                    if rpcs3_data_path and not never_setup_rpcs3:
+                        json_path = rpcs3_data_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
                         json_file = Path(json_path)
                         if json_file.is_file():
                             with json_file.open('r', encoding='utf-8') as file:
@@ -977,8 +983,8 @@ def main():
                                 from_web = False
             else:
                 # Xbox not configured or opted out, try RPCS3
-                if rpcs3_path and not never_setup_rpcs3:
-                    json_path = Path(rpcs3_path) / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
+                if rpcs3_data_path and not never_setup_rpcs3:
+                    json_path = rpcs3_data_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
                     json_file = Path(json_path)
                     if json_file.is_file():
                         with json_file.open('r', encoding='utf-8') as file:
