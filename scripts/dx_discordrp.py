@@ -13,14 +13,27 @@ import pylast
 import re
 import argparse
 import pypresence
+import platform
 
 def get_rpcs3_data_path():
-    if sys.platform == 'darwin':
+    os_system = platform.system()
+    default_data_path = None
+
+    if os_system == 'Darwin':  # macOS
         default_data_path = Path.home() / "Library/Application Support/rpcs3"
-    elif sys.platform == 'win32':
-        default_data_path = None  # User needs to input the path
-    elif sys.platform.startswith('linux'):
-        default_data_path = Path.home() / ".config/rpcs3"
+    elif os_system == 'Windows':
+        default_data_path = None
+    elif os_system == 'Linux':
+        default_data_paths = [
+            Path.home() / ".config/rpcs3",
+            Path.home() / ".rpcs3",
+            Path("/usr/share/rpcs3"),
+            Path("/usr/local/share/rpcs3")
+        ]
+        for path in default_data_paths:
+            if path.exists():
+                default_data_path = path
+                break
     else:
         default_data_path = None
 
