@@ -430,12 +430,51 @@
             {dx_custom_texture_setter overdrive_bar od_bar_long player_meter_long.tex $dx_overdrive_bar}
          }
 
-         {if $dx_keyboard_needs_reset ;check if a new texture is queued
-            {dx_custom_texture_setter keyboard keyboard_lanes track_lanes_keyboard.tex $dx_keyboard}
-            {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex $dx_keyboard}
-            {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex $dx_keyboard}
-            {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex $dx_keyboard}
-            {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex $dx_keyboard}
+         {if_else {&& $dx_song_key_var {modifier_mgr is_modifier_active mod_highlight_key}}
+            {do
+               {set $key_map $dx_song_key_var}
+               ; if minor key, set highway to relative major
+               {if {has_substr {sprint $dx_song_key_var} _minor}
+                  {set $key_map
+                     {switch $dx_song_key_var
+                        (a_minor c_major)
+                        (a_sharp_minor c_sharp_major)
+                        (b_minor d_major)
+                        (c_minor d_sharp_major)
+                        (c_sharp_minor e_major)
+                        (d_minor f_major)
+                        (d_sharp_minor f_sharp_major)
+                        (e_minor g_major)
+                        (f_minor g_sharp_major)
+                        (f_sharp_minor a_major)
+                        (g_minor a_sharp_major)
+                        (g_sharp_minor b_major)
+                     }
+                  }
+               }
+               ; revert back to default keyboard textures to match
+               {if {! {|| {== $dx_keyboard "rock band 3"} {== $dx_keyboard none} $dx_last_song_has_tonic}}
+                  {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex "rock band 3"}
+                  {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex "rock band 3"}
+                  {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex "rock band 3"}
+                  {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex "rock band 3"}
+               }
+               ; sets keyboard lanes depending on key of song
+               {beatmatch foreach_active_player $player
+                  {if {== {$player instrument} real_keys}
+                     {{DX_FIND_LANED_TRACK find track_lanes_keyboard.tex} set_bitmap {sprint "dx/custom_textures/_additional_textures/pk_song_key/" $key_map ".png"}}
+                  }
+               }
+               {set $dx_last_song_has_tonic TRUE} ; indicate that we have already reverted back to default textures
+            }
+            {if {|| $dx_keyboard_needs_reset $dx_last_song_has_tonic} ;check if a new texture is queued
+               {dx_custom_texture_setter keyboard keyboard_lanes track_lanes_keyboard.tex $dx_keyboard}
+               {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex $dx_keyboard}
+               {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex $dx_keyboard}
+               {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex $dx_keyboard}
+               {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex $dx_keyboard}
+               {set $dx_last_song_has_tonic FALSE} ; indicate that we have already reverted back to a custom texture
+            }
          }
 
          {if $dx_vocal_highway_needs_reset ;check if a new texture is queued
