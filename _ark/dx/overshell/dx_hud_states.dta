@@ -163,12 +163,7 @@
       }
       #endif
 
-      {switch $dx_highway_text
-         (off {push_back $options os_highway_text_off})
-         (overdrive {push_back $options os_highway_text_overdrive})
-         (streaks {push_back $options os_highway_text_streaks})
-         (username {push_back $options os_highway_text_username})
-      }
+      {push_back $options os_highway_text}
 
       {push_back $options os_trackconfig}
 
@@ -218,35 +213,8 @@
          (os_popups
             {$this show_state dxState_TrackPopups}
          )
-         ((os_highway_text_off os_highway_text_overdrive os_highway_text_streaks os_highway_text_username)
-            {set $dx_highway_text
-               {switch $dx_highway_text
-                  (off overdrive)
-                  (overdrive streaks)
-                  (streaks username)
-                  (username off)
-               }
-            }
-            {switch $dx_highway_text
-               (overdrive {set $dx_tracked_changed os_highway_text_overdrive})
-               (streaks {set $dx_tracked_changed os_highway_text_streaks})
-               (username {set $dx_tracked_changed os_highway_text_username})
-               (off {set $dx_tracked_changed os_highway_text_off})
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
-            {if {$this in_game}
-               {coop_track_panel dx_set_failed_pos}
-               {switch $dx_highway_text
-                  (username {dx_show_track_username})
-                  (overdrive {dx_show_user_overdrive})
-                  ;needs player call and i cannot be bothered
-                  ;will update on next note hit
-                  ;(streaks {dx_indv_note_streak})
-                  kDataUnhandled
-               }
-            }
+         (os_highway_text
+            {$this show_state dxState_TrackHighwayText}
          )
          ((os_force_remote_vox_on os_force_remote_vox_off)
             {set $dx_force_remote_vox {! $dx_force_remote_vox}}
@@ -1259,5 +1227,564 @@
    )
    (on_cancel
       {$this show_state dxState_InGameHUD}
+   )
+)
+
+#define DX_HIGHWAY_TEXT_ELEMENTS_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options 
+         {if_else
+            {&&
+               {! $dx_highway_username_text}
+               {! $dx_highway_overdrive_text}
+               {! $dx_highway_streak_text}
+            }
+            os_all_on
+            os_all_off
+         }
+      }
+      {push_back $options os_highway_username}
+      {push_back $options os_highway_overdrive}
+      {push_back $options os_highway_streak}
+      {dx_state_setup dxState_TrackHighwayText TRUE}
+   }
+)
+(dxState_TrackHighwayText
+   (view
+      DX_HIGHWAY_TEXT_ELEMENTS_DATA
+      {overshell_view_chooser}
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         (os_all_on
+            {set $dx_highway_username_text TRUE}
+            {set $dx_highway_overdrive_text TRUE}
+            {set $dx_highway_streak_text TRUE}
+            {set $dx_tracked_changed os_all_off}
+            {if {$this in_game}
+               {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b TRUE}
+               {dx_show_track_username}
+               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b TRUE}
+               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+            }
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayText}
+         )
+         (os_all_off
+            {set $dx_highway_username_text FALSE}
+            {set $dx_highway_overdrive_text FALSE}
+            {set $dx_highway_streak_text FALSE}
+            {set $dx_tracked_changed os_all_on}
+            {if {$this in_game}
+               {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b TRUE}
+               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b TRUE}
+               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+            }
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayText}
+         )
+         (os_highway_username
+            {$this show_state dxState_TrackHighwayUsername}
+         )
+         (os_highway_overdrive
+            {$this show_state dxState_TrackHighwayOverdrive}
+         )
+         (os_highway_streak
+            {$this show_state dxState_TrackHighwayStreak}
+         )
+      }
+      {set $in_state FALSE}
+      DX_HIGHWAY_TEXT_ELEMENTS_DATA
+      {set $previous_state dxState_TrackHighwayText}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_TrackHUD}
+   )
+)
+
+
+#define DX_HIGHWAY_USERNAME_TEXT_ELEMENTS_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options {if_else $dx_highway_username_text os_highway_username_on os_highway_username_off}}
+      {push_back $options os_pos}
+      {push_back $options os_col}
+      {push_back $options os_text_options}
+      {dx_state_setup dxState_TrackHighwayUsername TRUE}
+   }
+)
+(dxState_TrackHighwayUsername
+   (view
+      DX_HIGHWAY_USERNAME_TEXT_ELEMENTS_DATA
+      {overshell_view_chooser}
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         ((os_highway_username_on os_highway_username_off)
+            {set $dx_highway_username_text {! $dx_highway_username_text}}
+            {if_else $dx_highway_username_text
+               {set $dx_tracked_changed os_highway_username_on}
+               {set $dx_tracked_changed os_highway_username_off}
+            }
+            {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b TRUE}
+            {if $dx_highway_username_text {dx_show_track_username}}
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_USERNAME_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayUsername}
+         )
+         (os_pos
+            {set $dx_set_ui_pos_tracked_ui highway_username_text}
+            {$this show_state dxState_PositionRemapper}
+         )
+         (os_col
+            {set $dx_set_ui_rgb_tracked_ui highway_username_text}
+            {$this show_state dxState_rgbcolormenu}
+         )
+         (os_text_options
+            {set $dx_set_ui_label_tracked_ui highway_username_text}
+            {$this show_state dxState_LabelOptions}
+         )
+      }
+      {set $in_state FALSE}
+      DX_HIGHWAY_USERNAME_TEXT_ELEMENTS_DATA
+      {set $previous_state dxState_TrackHighwayUsername}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_TrackHighwayText}
+   )
+)
+
+#define DX_HIGHWAY_OVERDRIVE_TEXT_ELEMENTS_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options {if_else $dx_highway_overdrive_text os_highway_overdrive_on os_highway_overdrive_off}}
+      {push_back $options os_pos}
+      {push_back $options os_col}
+      {push_back $options os_text_options}
+      {dx_state_setup dxState_TrackHighwayOverdrive TRUE}
+   }
+)
+(dxState_TrackHighwayOverdrive
+   (view
+      DX_HIGHWAY_OVERDRIVE_TEXT_ELEMENTS_DATA
+      {overshell_view_chooser}
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         ((os_highway_overdrive_on os_highway_overdrive_off)
+            {set $dx_highway_overdrive_text {! $dx_highway_overdrive_text}}
+            {if_else $dx_highway_overdrive_text
+               {set $dx_tracked_changed os_highway_overdrive_on}
+               {set $dx_tracked_changed os_highway_overdrive_off}
+            }
+            {if {$this in_game}
+               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b TRUE}
+            }
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_OVERDRIVE_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayOverdrive}
+         )
+         (os_pos
+            {set $dx_set_ui_pos_tracked_ui highway_overdrive_text}
+            {$this show_state dxState_PositionRemapper}
+         )
+         (os_col
+            {set $dx_set_ui_rgb_tracked_ui highway_overdrive_text}
+            {$this show_state dxState_rgbcolormenu}
+         )
+         (os_text_options
+            {set $dx_set_ui_label_tracked_ui highway_overdrive_text}
+            {$this show_state dxState_LabelOptions}
+         )
+      }
+      {set $in_state FALSE}
+      DX_HIGHWAY_OVERDRIVE_TEXT_ELEMENTS_DATA
+      {set $previous_state dxState_TrackHighwayOverdrive}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_TrackHighwayText}
+   )
+)
+
+#define DX_HIGHWAY_STREAK_TEXT_ELEMENTS_DATA
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options {if_else $dx_highway_streak_text os_highway_streak_on os_highway_streak_off}}
+      {push_back $options {if_else $dx_highway_streak_text_gh3_delay os_highway_streak_gh3_delay_on os_highway_streak_gh3_delay_off}}
+      {push_back $options os_pos}
+      {push_back $options os_col}
+      {push_back $options os_text_options}
+      {dx_state_setup dxState_TrackHighwayStreak TRUE}
+   }
+)
+(dxState_TrackHighwayStreak
+   (view
+      DX_HIGHWAY_STREAK_TEXT_ELEMENTS_DATA
+      {overshell_view_chooser}
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         ((os_highway_streak_on os_highway_streak_off)
+            {set $dx_highway_streak_text {! $dx_highway_streak_text}}
+            {if_else $dx_highway_streak_text
+               {set $dx_tracked_changed os_highway_streak_on}
+               {set $dx_tracked_changed os_highway_streak_off}
+            }
+            {if {$this in_game}
+               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+            }
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_STREAK_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayStreak}
+         )
+         ((os_highway_streak_gh3_delay_on os_highway_streak_gh3_delay_off)
+            {set $dx_highway_streak_text_gh3_delay {! $dx_highway_streak_text_gh3_delay}}
+            {if_else $dx_highway_streak_text_gh3_delay
+               {set $dx_tracked_changed os_highway_streak_gh3_delay_on}
+               {set $dx_tracked_changed os_highway_streak_gh3_delay_off}
+            }
+            {if {$this in_game}
+               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+            }
+            {dx_state_pos_tracker}
+            DX_HIGHWAY_STREAK_TEXT_ELEMENTS_DATA
+            {set $previous_state dxState_TrackHighwayStreak}
+         )
+         (os_pos
+            {set $dx_set_ui_pos_tracked_ui highway_streak_text}
+            {$this show_state dxState_PositionRemapper}
+         )
+         (os_col
+            {set $dx_set_ui_rgb_tracked_ui highway_streak_text}
+            {$this show_state dxState_rgbcolormenu}
+         )
+         (os_text_options
+            {set $dx_set_ui_label_tracked_ui highway_streak_text}
+            {$this show_state dxState_LabelOptions}
+         )
+      }
+      {set $in_state FALSE}
+      DX_HIGHWAY_STREAK_TEXT_ELEMENTS_DATA
+      {set $previous_state dxState_TrackHighwayStreak}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_TrackHighwayText}
+   )
+)
+
+
+#define DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
+(
+   {switch $dx_set_ui_label_tracked_ui
+      (highway_overdrive_text
+         {set $dx_set_ui_text_size $dx_highway_overdrive_text_size}
+         {set $dx_set_ui_text_font $dx_highway_overdrive_text_font}
+         {set $dx_set_ui_text_alignment $dx_highway_overdrive_text_alignment}
+         {set $dx_set_ui_text_kerning $dx_highway_overdrive_text_kerning}
+      )
+      (highway_streak_text
+         {set $dx_set_ui_text_size $dx_highway_streak_text_size}
+         {set $dx_set_ui_text_font $dx_highway_streak_text_font}
+         {set $dx_set_ui_text_alignment $dx_highway_streak_text_alignment}
+         {set $dx_set_ui_text_kerning $dx_highway_streak_text_kerning}
+      )
+      (highway_username_text
+         {set $dx_set_ui_text_size $dx_highway_username_text_size}
+         {set $dx_set_ui_text_font $dx_highway_username_text_font}
+         {set $dx_set_ui_text_alignment $dx_highway_username_text_alignment}
+         {set $dx_set_ui_text_kerning $dx_highway_username_text_kerning}
+      )
+      kDataUnhandled
+   }
+)
+
+#define DX_RESET_LABEL
+(
+   {switch $dx_set_ui_label_tracked_ui
+      (highway_overdrive_text
+         {set $dx_set_ui_text_size 1}
+         {set $dx_set_ui_text_font pentatonic_outline}
+         {set $dx_set_ui_text_alignment kMiddleCenter}
+         {set $dx_set_ui_text_kerning 0}
+      )
+      (highway_streak_text
+         {set $dx_set_ui_text_size 1.5}
+         {set $dx_set_ui_text_font pentatonic_outline}
+         {set $dx_set_ui_text_alignment kMiddleLeft}
+         {set $dx_set_ui_text_kerning 0}
+      )
+      (highway_username_text
+         {set $dx_set_ui_text_size 2}
+         {set $dx_set_ui_text_font pentatonic_outline}
+         {set $dx_set_ui_text_alignment kMiddleCenter}
+         {set $dx_set_ui_text_kerning 0}
+      )
+   }
+)
+
+#define DX_APPLY_LABEL
+(
+   {switch $dx_set_ui_label_tracked_ui
+      (highway_overdrive_text
+         {set $dx_highway_overdrive_text_size $dx_set_ui_text_size}
+         {set $dx_highway_overdrive_text_font $dx_set_ui_text_font}
+         {set $dx_highway_overdrive_text_alignment $dx_set_ui_text_alignment}
+         {set $dx_highway_overdrive_text_kerning $dx_set_ui_text_kerning}
+         {if {$this in_game}
+            {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b TRUE}
+         }
+      )
+      (highway_streak_text
+         {set $dx_highway_streak_text_size $dx_set_ui_text_size}
+         {set $dx_highway_streak_text_font $dx_set_ui_text_font}
+         {set $dx_highway_streak_text_alignment $dx_set_ui_text_alignment}
+         {set $dx_highway_streak_text_kerning $dx_set_ui_text_kerning}
+         {if {$this in_game}
+            {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+         }
+      )
+      (highway_username_text
+         {set $dx_highway_username_text_size $dx_set_ui_text_size}
+         {set $dx_highway_username_text_font $dx_set_ui_text_font}
+         {set $dx_highway_username_text_alignment $dx_set_ui_text_alignment}
+         {set $dx_highway_username_text_kerning $dx_set_ui_text_kerning}
+         {if {$this in_game}
+            {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b TRUE}
+            {dx_show_track_username}
+         }
+      )
+      kDataUnhandled
+   }
+)
+
+#define DX_LABEL_OPTIONS_DATA
+(
+   {options_audio.lst set_data
+      (
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_reset}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "interval_" $dx_pos_remapper_array_number}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprint {localize os_font_size} ": " $dx_set_ui_text_size}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprint {localize os_kerning}  ": " $dx_set_ui_text_kerning}}
+         {sprint os_font $dx_set_ui_text_font}        
+      )
+   }
+)
+(dxState_LabelOptions
+   (view
+      options_audio
+   )
+   (enter
+      {set $dx_pos_interval_list (0.01 0.1 0.5 1 5 10 50 100)}
+      {set $dx_pos_remapper_array_number 3}
+      {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {if_else {$this in_game}
+         {options_audio.lst set_type overshell_menu_ingame}
+         {options_audio.lst set_type overshell_menu}
+      }
+      {set $dx_font_array (default gangly hamilton monospace_numbers_shadow pentatonic pentatonic_bold pentatonic_boldsmall pentatonic_display pentatonic_outline pentatonic_regularcond pentatonic_regularsmall pentatonic_mononumerals rats relay_black stainless stainless_ext_blk stainless_ext_reg)}
+      {set $dx_font_array_size {size $dx_font_array}}
+      {set $dx_font_array_number 0}
+      {options_audio.lst restart_highlight_matanim}
+      {options_audio.lst refresh}
+      DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
+      DX_LABEL_OPTIONS_DATA
+   )
+   (BUTTON_DOWN_MSG
+      {if_else
+         $dx_list_item_selected
+         {switch
+            $action
+            ((kAction_Confirm kAction_Cancel)
+               {if {!= {options_audio.lst selected_data} 0}
+                  {set $dx_list_item_selected FALSE}
+                  DX_LABEL_OPTIONS_DATA
+               }
+            )
+            ((kAction_Down kAction_Up)
+               {switch {options_audio.lst selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_pos_remapper_array_number 0})
+                           (kAction_Up {< $dx_pos_remapper_array_number 7})
+                        }
+                        {set $dx_pos_remapper_array_number
+                           {switch $action
+                              (kAction_Down {- $dx_pos_remapper_array_number 1})
+                              (kAction_Up {+ $dx_pos_remapper_array_number 1})
+                           }
+                        }
+                        {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}}
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  (2
+                     {set $dx_set_ui_text_size
+                        {switch $action
+                           (kAction_Down {- $dx_set_ui_text_size $dx_pos_current_interval})
+                           (kAction_Up {+ $dx_set_ui_text_size $dx_pos_current_interval})
+                        }
+                     }
+                     {set $dx_list_pos 2}
+                  )
+                  (3
+                     {set $dx_set_ui_text_kerning
+                        {switch $action
+                           (kAction_Down {- $dx_set_ui_text_kerning $dx_pos_current_interval})
+                           (kAction_Up {+ $dx_set_ui_text_kerning $dx_pos_current_interval})
+                        }
+                     }
+                     {set $dx_list_pos 3}
+                  )
+                  (4
+                     {if
+                        {switch $action
+                           (kAction_Down {> $dx_font_array_number 0})
+                           (kAction_Up {< $dx_font_array_number {- $dx_font_array_size 1}})
+                        }
+                        {set $dx_font_array_number
+                           {switch $action
+                              (kAction_Down {- $dx_font_array_number 1})
+                              (kAction_Up {+ $dx_font_array_number 1})
+                           }
+                        }
+                        {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  kDataUnhandled
+               }
+               DX_APPLY_LABEL
+               DX_LABEL_OPTIONS_DATA
+            )
+            kDataUnhandled
+         }
+         {switch
+            $action
+            (kAction_Confirm
+               {if {== {options_audio.lst selected_data} 0} ;if we click reset
+                  {do
+                     DX_RESET_LABEL
+                     DX_APPLY_LABEL
+                     DX_LABEL_OPTIONS_DATA
+                  }
+               }
+               {if {!= {options_audio.lst selected_data} 0}
+                  {set $dx_list_item_selected TRUE}
+                  {set $dx_list_pos {options_audio.lst selected_data}}
+                  DX_LABEL_OPTIONS_DATA
+               }
+            )
+            ((kAction_Left kAction_Right)
+               {switch {options_audio.lst selected_data}
+                  (1
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_pos_remapper_array_number 0})
+                           (kAction_Right {< $dx_pos_remapper_array_number 7})
+                        }
+                        {set $dx_pos_remapper_array_number
+                           {switch $action
+                              (kAction_Left {- $dx_pos_remapper_array_number 1})
+                              (kAction_Right {+ $dx_pos_remapper_array_number 1})
+                           }
+                        }
+                        {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}}
+                     }
+                     {set $dx_list_pos 1}
+                  )
+                  (2
+                     {set $dx_set_ui_text_size
+                        {switch $action
+                           (kAction_Left {- $dx_set_ui_text_size $dx_pos_current_interval})
+                           (kAction_Right {+ $dx_set_ui_text_size $dx_pos_current_interval})
+                        }
+                     }
+                     {set $dx_list_pos 2}
+                  )
+                  (3
+                     {set $dx_set_ui_text_kerning
+                        {switch $action
+                           (kAction_Left {- $dx_set_ui_text_kerning $dx_pos_current_interval})
+                           (kAction_Right {+ $dx_set_ui_text_kerning $dx_pos_current_interval})
+                        }
+                     }
+                     {set $dx_list_pos 3}
+                  )
+                  (4
+                     {if
+                        {switch $action
+                           (kAction_Left {> $dx_font_array_number 0})
+                           (kAction_Right {< $dx_font_array_number {- $dx_font_array_size 1}})
+                        }
+                        {set $dx_font_array_number
+                           {switch $action
+                              (kAction_Left {- $dx_font_array_number 1})
+                              (kAction_Right {+ $dx_font_array_number 1})
+                           }
+                        }
+                        {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  kDataUnhandled
+               }
+               DX_APPLY_LABEL
+               DX_LABEL_OPTIONS_DATA
+            )
+            kDataUnhandled
+         }
+      }
+   )
+   (exit 
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {switch $dx_set_ui_label_tracked_ui
+         (highway_overdrive_text {$this show_state dxState_TrackHighwayOverdrive})
+         (highway_username_text {$this show_state dxState_TrackHighwayUsername})
+         (highway_streak_text {$this show_state dxState_TrackHighwayStreak})
+      }
    )
 )
