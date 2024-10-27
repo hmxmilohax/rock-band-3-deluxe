@@ -134,55 +134,6 @@
          #endif
       }
    )
-   (dx_set_failed_pos
-      {if_else {== $dx_highway_text off}
-         {do ;resets the failed label back to the default position if not utilizing dx highway text
-            {foreach_int $i 0 4
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_pos 0 0 0}
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_scale_index 0 1}
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_scale_index 2 1}
-               {{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} reset}
-            }
-         }
-         {do ;sets the highway text label based on the current angle of the tracks
-            {set $temp_angle
-               {if_else 
-                  {&& 
-                     $dx_use_multiangle 
-                     {|| 
-                        $dx_allow_lower_angle
-                        {> $dx_multiangle $dx_num_gem_tracks}
-                     }
-                  }
-                  $dx_multiangle
-                  $dx_num_gem_tracks
-               }
-            }
-            {set $dx_failed_lbl_y_pos 1}
-            {set $dx_failed_lbl_y_pos
-               {cond 
-                  ({== $temp_angle 4.00} -3.4)
-                  ({>= $temp_angle 3.80} -3.3) ({>= $temp_angle 3.60} -3.2) ({>= $temp_angle 3.40} -3.1) ({>= $temp_angle 3.20} -3) ({>= $temp_angle 3.00} -2.9)
-                  ({>= $temp_angle 2.80} -2.75) ({>= $temp_angle 2.60} -2.6) ({>= $temp_angle 2.40} -2.5) ({>= $temp_angle 2.20} -2.4) ({>= $temp_angle 2.00} -2.2)
-                  ({>= $temp_angle 1.80} -2.15) ({>= $temp_angle 1.60} -2) ({>= $temp_angle 1.40} -1.9) ({>= $temp_angle 1.20} -1.85) ({>= $temp_angle 1.00} -1.8)
-               }
-            }
-            {set $failed_font_size ;adjusts font size of the highway text depending on what information it is currently displaying
-               {switch $dx_highway_text
-                  (streaks 0.75)
-                  (username 0.5)
-                  (overdrive 0.5)
-               }
-            }
-            {foreach_int $i 0 4
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_pos 0 0 $dx_failed_lbl_y_pos}
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_scale_index 0 $failed_font_size}
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set_local_scale_index 2 $failed_font_size}
-               {{{{find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}} find failed_feedback} find failed.lbl} set fixed_length 50} ;allows longer text to be displayed
-            }
-         }
-      }
-   )
    (dx_force_remote_vox
       {if_else {session_mgr is_local}
          {beatmatch foreach_active_player $player
@@ -219,12 +170,20 @@
       }
    )
    (dx_track_panel_enter
+      {$this set dx_is_nohud {modifier_mgr is_modifier_active mod_nohud}}
       {if {|| {! {gamemode in_mode trainer} {! {gamemode in_mode campaign}}}} ;position objects based on user preference
          {$this dx_set_scoreboard_pos}
          {$this dx_set_solo_box_pos}
          {$this dx_set_star_display_pos}
          {$this dx_force_remote_vox}
-         {$this dx_set_failed_pos}
+         ; reset highway texts and hide them
+         {beatmatch foreach_active_player $player
+            {unless {== {$player instrument} vocals}
+               {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b TRUE}
+               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b TRUE}
+               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b TRUE}
+            }
+         }
       }
       {dx_add_player_sinks} ;add in fc/streak tracking callbacks to players
       #ifndef HX_WII

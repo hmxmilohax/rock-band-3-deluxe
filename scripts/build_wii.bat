@@ -3,7 +3,7 @@ cd "%~dp0"
 set "dolphin_path="
 set "base_dol_path="
 set "debug_dol_path="
-set "config_file=dx_config.ini"
+set "config_file=dx_build_config.ini"
 
 for /f "tokens=1,* delims== " %%A in (%config_file%) do (
     if "%%A"=="dolphin_path" set "dolphin_path=%%~B"
