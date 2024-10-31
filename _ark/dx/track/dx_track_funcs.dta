@@ -1,5 +1,3 @@
-#define DX_FIND_LANED_TRACK ;must be used inside {beatmatch foreach_active_player $player ...} to get player number 
-({find_obj {{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}}})
 {func
    dx_track_theme_name
    ($dx_dta_name)
@@ -148,64 +146,25 @@
                   {! {gamemode in_mode trainer}}
                }
                {dx_toggle_fail_feedback}
+               {dx_game_hud_label dx_hud_label_band_streak $dx_hud_band_streak_text_size $dx_hud_band_streak_text_font $dx_hud_band_streak_text_alignment $dx_hud_band_streak_text_kerning $dx_hud_band_streak_text_x $dx_hud_band_streak_text_z $dx_hud_band_streak_text_y $dx_hud_band_streak_text_r $dx_hud_band_streak_text_g $dx_hud_band_streak_text_b TRUE}
                {{coop_track_panel find scoreboard} set_showing $dx_score_meter_visibility}
-               {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_type kBandTrackerDisplayType_Text}
-               {if {gamemode in_mode campaign}
-                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_style kBandTrackerDisplayStyle_Campaign}
-               }
-               {if {gamemode in_mode tour}
-                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_display_style kBandTrackerDisplayStyle_Tour}
-               }
-               {if {&& {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
-                  {{{coop_track_panel find scoreboard} find tracker_band_display} set_challenge_type kTrackerChallengeType_Streak}
-                  {if
-                     {||
-                        {|| {== $dx_time_remaining down} {== $dx_time_remaining up}}
-                        {&& {== $dx_streak_counter single} {== $dx_num_active_instruments 1}}
-                        {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
-                     }
-                     ;{{{coop_track_panel find scoreboard} find tracker_band_display} find sb_bg.mesh set_showing TRUE} ;ensure that it is visible at a base level
-                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_challenge_type kTrackerChallengeType_Streak} ;set tracker type to streak
-                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_showing 1} ;ensure that it is visible at a base level
-                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_local_pos_index 2 {+ {{{coop_track_panel find scoreboard} find tracker_band_display} get_local_pos_index 2} 1.35}} ;move it up a bit
-                     {{{coop_track_panel find scoreboard} find tracker_band_display} show os_blnk} ;fire the tracker's show trigger, defaulting it to os_blnk string
-                     {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state TRUE} ;fire the tracker's show trigger, defaulting it to os_blnk string
-                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_int 0 TRUE} ;set the value to 0 to start
-                  }
-                  {if_else {== $dx_streak_counter off}
-                     {do
-                        {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
-                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
-                     }
-                     {if_else
-                        {||
-                           {&& {== $dx_streak_counter single} {== $dx_num_active_instruments 1}}
-                           {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
-                        }
-                        {do
-                           {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-                           {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-                        }
-                        {do
-                           {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
-                           {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
-                        }
-                     }
-                  }
-                  {dx_mtv_time_remaining_handler} ;this will set up a script to run itself every half a second
-               }
-               {dx_reset_time_remaining_position}
-            }
-            ;reset "bass groove" text
-            {beatmatch foreach_active_player $player
-               {unless {== {$player instrument} vocals}
-                  {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt bass_streak}
-               }
             }
          }
    ;   }
    ;}
+}
+{func
+   dx_bassgroove_reset
+   {if {exists beatmatch}
+      {beatmatch foreach_active_player $player
+         {unless {== {$player instrument} vocals}
+            {if {find_exists DX_GEMTRACKDIR}
+               {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+               {bass_super_streak.lbl set_token_fmt bass_streak}
+            }
+         }
+      }
+   }
 }
 {func
    dx_reset_time_remaining_position
@@ -259,8 +218,11 @@
    {if $dx_fc_glow
       {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
          {unless {== {$player instrument} vocals}
-            {{{DX_FIND_LANED_TRACK find streak_meter} find peak_state.trig} trigger}
-            {{{DX_FIND_LANED_TRACK find streak_meter} find star_deploy.trig} trigger}
+            {if {find_exists DX_GEMTRACKDIR}
+               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+               {peak_state.trig trigger}
+               {star_deploy.trig trigger}
+            }
          }
       }
    }
@@ -270,7 +232,10 @@
    ($player $instrument)
    {unless {== {$player instrument} vocals}
       {if {== {$player instrument} $instrument}
-         {{{DX_FIND_LANED_TRACK find player_feedback} find super_streak_end.trig} trigger}
+         {if {find_exists DX_GEMTRACKDIR}
+            {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+            {super_streak_end.trig trigger}
+         }
       }
    }
 }
@@ -291,41 +256,74 @@
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {unless {== {$player instrument} vocals}
             {if {== {$player instrument} $instrument}
-               {{{DX_FIND_LANED_TRACK find player_feedback} find super_streak_start.trig} trigger}
-               {switch $instrument
-                  (bass
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_bass}
-                  )
-                  (real_guitar
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_real_guitar}
-                  )
-                  (real_bass
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_real_bass}
-                  )
-                  (keys
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_keys}
-                  )
-                  (real_keys
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_real_keys}
-                  )
-                  (guitar
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_guitar}
-                  )
-                  (drum
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_drum}
-                  )
-                  (real_drum
-                     {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_note_streak $num_gems_combo_real_drum}
-                  )
-               }
-               {script_task
-                  kTaskBeats
-                  (delay $dx_streak_timer)
-                  (script {dx_note_streak_remover $player $instrument})
+               {if {find_obj DX_GEMTRACKDIR player_feedback}
+                  {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+                  {super_streak_start.trig trigger}
+                  {switch $instrument
+                     (bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_bass})
+                     (real_guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_guitar})
+                     (real_bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_bass})
+                     (keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_keys})
+                     (real_keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_keys})
+                     (guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_guitar})
+                     (drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_drum})
+                     (real_drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_drum})
+                  }
+                  {script_task
+                     kTaskBeats
+                     (delay $dx_streak_timer)
+                     (script {dx_note_streak_remover $player $instrument})
+                  }
                }
             }
          }
       }
+   }
+}
+{func
+   dx_poll_inst_info
+   ($instrument)
+   {switch $instrument
+      (guitar
+         {set $polled_gems_miss $num_gems_miss_guitar}
+         {set $polled_gems_pass $num_gems_pass_guitar}
+         {set $polled_gems_combo $num_gems_combo_guitar}
+      )
+      (bass
+         {set $polled_gems_miss $num_gems_miss_bass}
+         {set $polled_gems_pass $num_gems_pass_bass}
+         {set $polled_gems_combo $num_gems_combo_bass}
+      )
+      (real_guitar
+         {set $polled_gems_miss $num_gems_miss_real_guitar}
+         {set $polled_gems_pass $num_gems_pass_real_guitar}
+         {set $polled_gems_combo $num_gems_combo_real_guitar}
+      )
+      (real_bass
+         {set $polled_gems_miss $num_gems_miss_real_bass}
+         {set $polled_gems_pass $num_gems_pass_real_bass}
+         {set $polled_gems_combo $num_gems_combo_real_bass}
+      )
+      (keys
+         {set $polled_gems_miss $num_gems_miss_keys}
+         {set $polled_gems_pass $num_gems_pass_keys}
+         {set $polled_gems_combo $num_gems_combo_keys}
+      )
+      (real_keys
+         {set $polled_gems_miss $num_gems_miss_real_keys}
+         {set $polled_gems_pass $num_gems_pass_real_keys}
+         {set $polled_gems_combo $num_gems_combo_real_keys}
+      )
+      (drum
+         {set $polled_gems_miss $num_gems_miss_drum}
+         {set $polled_gems_pass $num_gems_pass_drum}
+         {set $polled_gems_combo $num_gems_combo_drum}
+      )
+      (real_drum
+         {set $polled_gems_miss $num_gems_miss_real_drum}
+         {set $polled_gems_pass $num_gems_pass_real_drum}
+         {set $polled_gems_combo $num_gems_combo_real_drum}
+      )
    }
 }
 ; displays the streak of each individual instrument at the bottom of each track
@@ -333,92 +331,18 @@
    dx_indv_note_streak
    ($instrument)
    {if $dx_highway_streak_text
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {unless {== {$player instrument} vocals}
-            {if {== {$player instrument} $instrument}
-               {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-               {switch $instrument ;switch based off the currently loaded instrument
-                  (guitar
-                     {if_else {== {+ $num_gems_miss_guitar $num_gems_pass_guitar} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_guitar {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_guitar}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (bass
-                     {if_else {== {+ $num_gems_miss_bass $num_gems_pass_bass} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_bass {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_bass}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (real_guitar
-                     {if_else {== {+ $num_gems_miss_real_guitar $num_gems_pass_real_guitar} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_real_guitar {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_real_guitar}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (real_bass
-                     {if_else {== {+ $num_gems_miss_real_bass $num_gems_pass_real_bass} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_real_bass {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_real_bass}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (keys
-                     {if_else {== {+ $num_gems_miss_keys $num_gems_pass_keys} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_keys {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_keys}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (real_keys
-                     {if_else {== {+ $num_gems_miss_real_keys $num_gems_pass_real_keys} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_real_keys {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_real_keys}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (drum
-                     {if_else {== {+ $num_gems_miss_drum $num_gems_pass_drum} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_drum {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_drum}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-                  (real_drum
-                     {if_else {== {+ $num_gems_miss_real_drum $num_gems_pass_real_drum} 0}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y 1 0.75 0.25 FALSE}
-                        {dx_track_label dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_x $dx_highway_streak_text_y $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
-                     }
-                     {if_else {> $num_gems_combo_real_drum {if_else $dx_highway_streak_text_gh3_delay 24 0}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_indv_combo $num_gems_combo_real_drum}}
-                        {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
-                     }
-                  )
-               }
+      {beatmatch foreach_active_player $player
+         {if {&& {== {$player instrument} $instrument} {find_exists DX_GEMTRACKDIR}}
+            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+            {set $track_label_inst {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}}
+            {dx_poll_inst_info $instrument}
+            {if_else {== {+ $polled_gems_miss $polled_gems_pass} 0}
+               {dx_track_label_streak dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
+               {dx_track_label_streak dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
+            }
+            {if_else {> $polled_gems_combo {if_else $dx_highway_streak_text_gh3_delay 24 0}}
+               {$track_label_inst set_token_fmt dx_indv_combo $polled_gems_combo}
+               {$track_label_inst set_token_fmt os_blnk}
             }
          }
       }
@@ -445,9 +369,10 @@
             {set $dx_current_player_name_sanitized $dx_name}
 
             {dx_track_label dx_track_label_username $dx_highway_username_text_size $dx_highway_username_text_font $dx_highway_username_text_alignment $dx_highway_username_text_kerning $dx_highway_username_text_x $dx_highway_username_text_y $dx_highway_username_text_r $dx_highway_username_text_g $dx_highway_username_text_b FALSE}
+            {dx_track_label_instrument dx_track_label_instrument {$player instrument} FALSE}
             {if_else $dx_current_player_name_sanitized
-               {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt {sprint $dx_current_player_name_sanitized}}}
-               {{{DX_FIND_LANED_TRACK find {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
+               {{{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt {sprint $dx_current_player_name_sanitized}}}
+               {{{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}}
             }
          }
       }
@@ -456,17 +381,20 @@
 ; whether not to darken the highway of remote players
 {func
    dx_dim_remote_players
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {unless {== {$player instrument} vocals}
+   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+      {unless {== {$player instrument} vocals}
+         {if {find_exists DX_GEMTRACKDIR}
+            {set_this {find_obj DX_GEMTRACKDIR}}
             {if_else {{$player get_user} is_local}
-               {{DX_FIND_LANED_TRACK find network_local.trig} trigger}
+               {network_local.trig trigger}
                {if_else $dx_dim_remote_players
-                  {{DX_FIND_LANED_TRACK find network_remote.trig} trigger}
-                  {{DX_FIND_LANED_TRACK find network_local.trig} trigger}
+                  {network_remote.trig trigger}
+                  {network_local.trig trigger}
                }
             }
          }
       }
+   }
 }
 ; shows the current overdrive of each player at the bottom of their respective highways
 {func
@@ -475,12 +403,12 @@
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {unless {== {$player instrument} vocals}
             {if_else {|| {$player is_deploying} {>= {$player band_energy} 0.50}}
-               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y 1 0.75 0.25 FALSE}
+               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
                {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b FALSE}
             }
             {if_else {>= {$player band_energy} 0.01}
-               {{DX_FIND_LANED_TRACK find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_overdrive_report {* {$player band_energy} 100}}
-               {{DX_FIND_LANED_TRACK find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}
+               {{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_overdrive_report {* {$player band_energy} 100}}
+               {{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}
             }
          }
       }
@@ -541,9 +469,10 @@
          }
          {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
             {unless {== {$player instrument} vocals}
-               {if {== {$player instrument} $instrument}
-                  {{{DX_FIND_LANED_TRACK find player_feedback} find super_streak_start.trig} trigger}
-                  {{{DX_FIND_LANED_TRACK find player_feedback} find bass_super_streak.lbl} set_token_fmt dx_overdrive_ready}
+               {if {&& {find_exists DX_GEMTRACKDIR} {== {$player instrument} $instrument}}
+                  {set_this {{find_obj DX_GEMTRACKDIR} find player_feedback}}
+                  {super_streak_start.trig trigger}
+                  {bass_super_streak.lbl set_token_fmt dx_overdrive_ready}
                   {script_task
                      kTaskBeats
                      (delay $dx_streak_timer)
@@ -1063,9 +992,9 @@
    {if {&& {session is_in_game} $dx_track_config_changed}
       {beatmatch foreach_active_player $player
          {unless {== {$player instrument} vocals}
-            {DX_FIND_LANED_TRACK set_pitch $dx_pitch}
-            {DX_FIND_LANED_TRACK set_fov $dx_fov}
-            {DX_FIND_LANED_TRACK set_cam_pos $dx_x_pos $dx_y_pos $dx_z_pos}
+            {{find_obj DX_GEMTRACKDIR} set_pitch $dx_pitch}
+            {{find_obj DX_GEMTRACKDIR} set_fov $dx_fov}
+            {{find_obj DX_GEMTRACKDIR} set_cam_pos $dx_x_pos $dx_y_pos $dx_z_pos}
          }
       }
    }
@@ -1154,16 +1083,16 @@
    {beatmatch foreach_active_player $player
       {unless {== {$player instrument} vocals}
          ;make sure to show the correct rails if the same slot was on a different instrument last song
-         {{DX_FIND_LANED_TRACK find guitar_draw.grp} set showing {|| {== {$player instrument} guitar} {== {$player instrument} bass} {== {$player instrument} keys}}}
-         {{DX_FIND_LANED_TRACK find drum_draw.grp} set showing {|| {== {$player instrument} drum} {== {$player instrument} real_drum}}}
-         {{DX_FIND_LANED_TRACK find keyboard_draw.grp} set showing {== {$player instrument} real_keys}}
-         {{{DX_FIND_LANED_TRACK get star_power_meter} find power_meter.grp} set showing TRUE}
-         {{{DX_FIND_LANED_TRACK get streak_meter} find draw.grp} set showing TRUE}
-         {{{DX_FIND_LANED_TRACK get streak_meter} find streak_meter.grp} set showing TRUE}
-         {{{DX_FIND_LANED_TRACK get streak_meter} find peak_state_sm_mesh.mesh} set showing TRUE}
-         {{{DX_FIND_LANED_TRACK get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing TRUE}
-         {{DX_FIND_LANED_TRACK find overdrive_plane.mesh} set showing TRUE}
-         {{DX_FIND_LANED_TRACK find rig.grp} set_local_pos 0 0 0}
+         {{{find_obj DX_GEMTRACKDIR} find guitar_draw.grp} set showing {|| {== {$player instrument} guitar} {== {$player instrument} bass} {== {$player instrument} keys}}}
+         {{{find_obj DX_GEMTRACKDIR} find drum_draw.grp} set showing {|| {== {$player instrument} drum} {== {$player instrument} real_drum}}}
+         {{{find_obj DX_GEMTRACKDIR} find keyboard_draw.grp} set showing {== {$player instrument} real_keys}}
+         {{{{find_obj DX_GEMTRACKDIR} get star_power_meter} find power_meter.grp} set showing TRUE}
+         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find draw.grp} set showing TRUE}
+         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find streak_meter.grp} set showing TRUE}
+         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find peak_state_sm_mesh.mesh} set showing TRUE}
+         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing TRUE}
+         {{{find_obj DX_GEMTRACKDIR} find overdrive_plane.mesh} set showing TRUE}
+         {{{find_obj DX_GEMTRACKDIR} find rig.grp} set_local_pos 0 0 0}
       }
    }
 }

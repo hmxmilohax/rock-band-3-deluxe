@@ -1,6 +1,6 @@
 {new Object fc_callback ;the main callback for all instruments
    (hit ;when a note is hit
-      {if {|| {! {gamemode in_mode trainer} {! {gamemode in_mode campaign}}}}
+      {if {! {gamemode in_mode trainer}}
          {coop_track_panel dx_set_star_display_pos}
       }
       {if {>= $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
@@ -54,34 +54,9 @@
             (real_drum {unless {! $real_drum_firstnote} MISS_CATCHER})
          }
       }
-      {if {&& {! {gamemode in_mode trainer} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}}
-         {beatmatch foreach_active_player $player ;iterate through each player to check for first note before clearing tracker success state
-            {switch {$player instrument}
-               (bass {if {&& $bass_firstnote {! $bass_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (real_guitar {if {&& $real_guitar_firstnote {! $real_guitar_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (real_bass {if {&& $real_bass_firstnote {! $real_bass_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (keys {if {&& $keys_firstnote {! $keys_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (real_keys {if {&& $real_keys_firstnote {! $real_keys_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (guitar {if {&& $guitar_firstnote {! $guitar_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (drum {if {&& $drum_firstnote {! $drum_finalnote}}  {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-               (real_drum {if {&& $real_drum_firstnote {! $real_drum_finalnote}} {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}})
-            }
-         }
-      }
    )
    (pass ;when a note is passed (ignored)
       MISS_CATCHER ;logic to remove the fc indicator upon miss/pass
-      {if {&& {! {gamemode in_mode trainer} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}}
-         {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state FALSE}
-      }
-   )
-   (check_fc
-      {if {== {'+' [num_gems_pass] [num_gems_miss]} 0} ;check that if we add our notes passed and notes missed together, it still equals 0 (fc)
-         {set $fc TRUE} ;tell the logic that we are still fc'ing
-         {if {&& {! {gamemode in_mode trainer} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}}
-            {{{coop_track_panel find scoreboard} find tracker_band_display} set_success_state TRUE}
-         }
-      }
    )
    (check_missed
       {if {> {'+' [num_gems_miss] [num_gems_pass]} 0} ;check that if we add our notes passed and notes missed together, it is any number higher than 0 (non fc)
@@ -871,12 +846,9 @@
       }
    )
    (update_streak
-      {if {&& {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
+      {if {! {gamemode in_mode trainer}}
          {if {== $dx_streak_counter off}
-            {do
-               {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
-               {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
-            }
+            {dx_game_hud_label dx_hud_label_band_streak $dx_hud_band_streak_text_size $dx_hud_band_streak_text_font $dx_hud_band_streak_text_alignment $dx_hud_band_streak_text_kerning $dx_hud_band_streak_text_x $dx_hud_band_streak_text_z $dx_hud_band_streak_text_y $dx_hud_band_streak_text_r $dx_hud_band_streak_text_g $dx_hud_band_streak_text_b TRUE}
          }
          {if
             {||
@@ -884,14 +856,26 @@
                {&& {== $dx_streak_counter multi} {> $dx_num_active_instruments 0}}
             }
             {do
-               ($dx_tracker_band_display {{coop_track_panel find scoreboard} find tracker_band_display})
                {$this fetch_all_streaks}
-               {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-               {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-               ;{$dx_tracker_band_display set_showing TRUE}
-               ;{{$dx_tracker_band_display find tg_main_text_top.lbl} set_token_fmt os_blnk}
-               {{$dx_tracker_band_display find tg_main_text_middle.lbl} set_int $dx_streak TRUE}
-               {{$dx_tracker_band_display find tg_main_text_bottom.lbl} set_token_fmt os_blnk}
+               {if_else {> $dx_streak 0}
+                  ;{{{coop_track_panel find scoreboard} find dx_hud_label_band_streak.lbl} set_int $dx_streak TRUE}
+                  {{{coop_track_panel find scoreboard} find dx_hud_label_band_streak.lbl} set_token_fmt os_blnk}
+                  {{{coop_track_panel find scoreboard} find dx_hud_label_band_streak.lbl} set_token_fmt os_blnk}
+               }
+               {if_else
+                  {&&
+                     {== {'+' $num_gems_miss_guitar $num_gems_pass_guitar} 0}
+                     {== {'+' $num_gems_miss_bass $num_gems_pass_bass} 0}
+                     {== {'+' $num_gems_miss_drum $num_gems_pass_drum} 0}
+                     {== {'+' $num_gems_miss_keys $num_gems_pass_keys} 0}
+                     {== {'+' $num_gems_miss_real_guitar $num_gems_pass_real_guitar} 0}
+                     {== {'+' $num_gems_miss_real_bass $num_gems_pass_real_bass} 0}
+                     {== {'+' $num_gems_miss_real_drum $num_gems_pass_real_drum} 0}
+                     {== {'+' $num_gems_miss_real_keys $num_gems_pass_real_keys} 0}
+                  }
+                  {{{coop_track_panel find scoreboard} find dx_hud_label_band_streak.color} set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
+                  {{{coop_track_panel find scoreboard} find dx_hud_label_band_streak.color} set color {pack_color $dx_hud_band_streak_text_r $dx_hud_band_streak_text_g $dx_hud_band_streak_text_b}}
+               }
             }
          }
       }
