@@ -439,3 +439,37 @@
       }
    }
 }
+{func dx_check_for_high_score
+   ($enabled)
+   {if $enabled
+      {cond
+         ($dx_reported_highscore kDataUnhandled) ;do nothing if highscore has been seen or no highscore
+         ({|| {> $dx_num_active_instruments 1} {< $current_solo_highscore 10}} kDataUnhandled) ;do nothing if multiplayer or a low highscore
+         ({gamemode in_mode qp_coop} ;only run in single player quickplay
+            {beatmatch foreach_active_player $player
+               {if {&& {{$player get_user} is_local} {> {$player score} $current_solo_highscore}}
+                  {set $dx_reported_highscore TRUE}
+                  {set_this {coop_track_panel find tracker_broadcast_display}}
+                  {$this set_showing TRUE}
+                  {band_message.lbl set_showing TRUE}
+                  {band_message.lbl set markdown TRUE}
+                  {band_message.lbl set alt_style_enabled TRUE}
+                  {band_message.lbl set alt_font_resource_name instrument_icons_small}
+                  {band_message.lbl set alt_z_offset 0.08}
+                  {set $pickadisplay {random_int 0 4}}
+                  {switch $pickadisplay
+                     (1 {set $picked_display kTrackerChallengeType_Streak})
+                     (2 {set $picked_display kTrackerChallengeType_Accuracy})
+                     (3 {set $picked_display kTrackerChallengeType_Overdrive})
+                     {set $picked_display kTrackerChallengeType_Streak}
+                  }
+                  {$this set_challenge_type $picked_display}
+                  {$this set_display_type kBroadcastTrackerDisplay_BandMessage}
+                  {$this show_brief_band_message {sprint {localize {sprint "inst_icon_" {$player instrument}}} {localize dx_highscore_best}}}
+               }
+            }
+         )
+         kDataUnhandled
+      }
+   }
+}
