@@ -241,6 +241,64 @@
    #endif
    {set $dx_current_player_name_sanitized $name}
 }
+{func
+   dx_get_localized_diff
+   ($instrument)
+   {localize
+      {sprint
+         "dx_diff_" 
+         {switch $instrument
+            (guitar $guitarrankvar)
+            (bass $bassrankvar)
+            (drum $drumrankvar)
+            (keys $keysrankvar)
+            (real_guitar $real_guitarrankvar)
+            (real_bass $real_bassrankvar)
+            (real_drum $drumrankvar)
+            (real_keys $real_keysrankvar)
+         }
+      }
+   }
+}
+{func
+   dx_set_player_names
+   ($enabled)
+   {if $enabled
+      {beatmatch foreach_active_player $player
+         {if {!= {$player instrument} vocals}
+            {dx_sanitize_player_name {get_user_name_from_player $player}}
+            (cond
+               ({gamemode in_mode trainer} kDataUnhandled) ;do nothing in training mode
+               ({&& {! $dx_path_failed} $dx_author_finder_is_enabled}
+                  ;set up yarg diff rings on player intro icon
+                  {set_this {find_obj DX_GEMTRACKDIR player_intro}}
+                  {player_name.lbl set alt_style_enabled TRUE}
+                  {player_name.lbl set alt_font_resource_name instruments_icons_rings}
+                  {player_name.lbl set markup TRUE}
+                  {player_name.lbl set width 100}
+                  {player_name.lbl set height 100}
+                  {player_name.lbl set alt_text_size 3.3}
+                  {player_name.lbl set alt_z_offset 0}
+                  {if {! $got_playericon_pos}
+                     {set $got_playericon_pos TRUE}
+                     {set $player_icon_pos {icon.lbl get_local_pos_index 0}}
+                  }
+                  {icon.lbl set_local_pos_index 0 {+ $player_icon_pos 0.01}}
+                  {player_name.lbl set_token_fmt
+                     {sprint
+                        $dx_current_player_name_sanitized
+                        "\n\n"
+                        {dx_get_localized_diff {$player instrument}}
+                     }
+                  }
+               )
+               ;dont put rings at all
+               {player_name.lbl set_token_fmt stringify $dx_current_player_name_sanitized}
+            )
+         }
+      }
+   }
+}
 ; shows the username of each player at the bottom of their respective highways
 {func
    dx_show_track_username
