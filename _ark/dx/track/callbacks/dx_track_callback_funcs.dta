@@ -19,6 +19,200 @@
    }
 }
 
+{func
+   dx_store_note_hit_info
+   ($instrument $num_gems_hit $num_gems_combo $num_gems_pass $num_gems_miss)
+   {switch $instrument
+      (guitar
+         {set $num_gems_hit_guitar $num_gems_hit}
+         {set $num_gems_combo_guitar $num_gems_combo}
+         {set $num_gems_pass_guitar $num_gems_pass}
+         {set $num_gems_miss_guitar $num_gems_miss}
+      )
+      (bass
+         {set $num_gems_hit_bass $num_gems_hit}
+         {set $num_gems_combo_bass $num_gems_combo}
+         {set $num_gems_pass_bass $num_gems_pass}
+         {set $num_gems_miss_bass $num_gems_miss}
+      )
+      (drum
+         {set $num_gems_hit_drum $num_gems_hit}
+         {set $num_gems_combo_drum $num_gems_combo}
+         {set $num_gems_pass_drum $num_gems_pass}
+         {set $num_gems_miss_drum $num_gems_miss}
+      )
+      (keys
+         {set $num_gems_hit_keys $num_gems_hit}
+         {set $num_gems_combo_keys $num_gems_combo}
+         {set $num_gems_pass_keys $num_gems_pass}
+         {set $num_gems_miss_keys $num_gems_miss}
+      )
+      (real_guitar
+         {set $num_gems_hit_real_guitar $num_gems_hit}
+         {set $num_gems_combo_real_guitar $num_gems_combo}
+         {set $num_gems_pass_real_guitar $num_gems_pass}
+         {set $num_gems_miss_real_guitar $num_gems_miss}
+      )
+      (real_bass
+         {set $num_gems_hit_real_bass $num_gems_hit}
+         {set $num_gems_combo_real_bass $num_gems_combo}
+         {set $num_gems_pass_real_bass $num_gems_pass}
+         {set $num_gems_miss_real_bass $num_gems_miss}
+      )
+      (real_drum
+         {set $num_gems_hit_real_drum $num_gems_hit}
+         {set $num_gems_combo_real_drum $num_gems_combo}
+         {set $num_gems_pass_real_drum $num_gems_pass}
+         {set $num_gems_miss_real_drum $num_gems_miss}
+      )
+      (real_keys
+         {set $num_gems_hit_real_keys $num_gems_hit}
+         {set $num_gems_combo_real_keys $num_gems_combo}
+         {set $num_gems_pass_real_keys $num_gems_pass}
+         {set $num_gems_miss_real_keys $num_gems_miss}
+      )
+   }
+}
+
+{func
+   dx_adjust_streak_popup_interval
+   ($instrument $num_gems_combo)
+   {set $interval {if_else {>= $num_gems_combo 50} 100 50}} ;adjust interval higher or lower based on combo
+   {switch $instrument ;specify interval to the specific instrument
+      (guitar {set $dx_streak_interval_guitar $interval})
+      (bass {set $dx_streak_interval_bass $interval})
+      (drum {set $dx_streak_interval_drum $interval})
+      (keys {set $dx_streak_interval_keys $interval})
+      (real_guitar {set $dx_streak_interval_real_guitar $interval})
+      (real_bass {set $dx_streak_interval_real_bass $interval})
+      (real_drum {set $dx_streak_interval_real_drum $interval})
+      (real_keys {set $dx_streak_interval_real_keys $interval})
+   }
+   $interval ;return interval
+}
+{func
+   dx_note_streak_popup
+   ($instrument $num_gems_combo)
+   {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
+   {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
+   {cond
+      ({< $dx_bpm 100} {set $dx_streak_timer 3})
+      ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
+      ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
+      ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
+      ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
+      ({> $dx_bpm 340} {set $dx_streak_timer 18})
+   }
+   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+      {unless {== {$player instrument} vocals}
+         {if {== {$player instrument} $instrument}
+            {if {find_obj DX_GEMTRACKDIR player_feedback}
+               {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+               {super_streak_start.trig trigger}
+               {switch $instrument
+                  (bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_bass})
+                  (real_guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_guitar})
+                  (real_bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_bass})
+                  (keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_keys})
+                  (real_keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_keys})
+                  (guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_guitar})
+                  (drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_drum})
+                  (real_drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_drum})
+               }
+               {script_task
+                  kTaskBeats
+                  (delay $dx_streak_timer)
+                  (script {dx_note_streak_remover $player $instrument})
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_check_for_streak_popup
+   ($enabled $instrument $num_gems_combo)
+   {if {&& $enabled {! {gamemode in_mode trainer}}}
+      {if {== {mod $num_gems_combo {dx_adjust_streak_popup_interval $instrument $num_gems_combo}} 0}
+         {dx_note_streak_popup $instrument $num_gems_combo}
+      }
+   }
+}
+{func
+   dx_fc_glow_enabler
+   ($enabled $instrument $num_gems_pass $num_gems_miss)
+   {if $enabled
+      {if {== {'+' $num_gems_pass $num_gems_miss} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {if {== {$player instrument} $instrument}
+               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+               {star_deploy.trig trigger}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_fc_glow_disabler
+   ($enabled $instrument $num_gems_pass $num_gems_miss $missed_once)
+   {if $enabled
+      {if {> {'+' $num_gems_pass $num_gems_miss} 0}
+         {beatmatch foreach_active_player $player
+            {if {== {$player instrument} $instrument}
+               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+               {if {! $missed_once}
+                  {end_streak.trig trigger}
+               }
+               {star_deploy_stop.trig trigger}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_track_this_missed
+   ($instrument)
+   {switch $instrument
+      (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE}})
+      (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE}})
+      (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE}})
+      (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE}})
+      (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE}})
+      (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE}})
+      (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE}})
+      (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE}})
+   }
+}
+{func
+   dx_miss_fc_remover
+   ($instrument)
+   {unless {coop_track_panel get dx_is_nohud} ; this could break if someone were to disable performance mode mid song
+      {set_this coop_track_panel}
+      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+         {if {== {$player instrument} $instrument}
+            {dx_track_this_missed $instrument}
+            {fcframe.tex iterate_refs $ref {$ref set diffuse_tex multframe.tex}} ;remove the FC ring and replace it with the normal ring (the player just missed)
+         }
+      }
+   }
+}
+{func
+   dx_perfection_resetter
+   ($enabled)
+   {if {&& {session_mgr is_local} $enabled}
+      {script_task kTaskSeconds (delay 0.5)
+         (script
+            {if_else {gamemode in_mode trainer}
+               {{gamemode get game_panel} restart_section}
+               {do
+                  {dx_countdown_var_reset}
+                  {session end_game kRestart}
+               }
+            }
+         )
+      }
+   }
+}
 {func dx_track_label
    ($name $size $font $alignment $kerning $x $y $r $g $b $reset)
    {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}}}}
