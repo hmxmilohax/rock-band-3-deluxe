@@ -36,406 +36,62 @@
    (num_gems_miss 0) ;default setup state and storage for note counters
    (num_gems_pass 0) ;default setup state and storage for note counters
 }
-{new Object fc_guitar_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups guitar [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text guitar}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $guitar_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+{func dx_create_instrument_callback
+   ($instrument)
+   {if {exists {sprint "fc_" $instrument "_callback"}} ;delete the object and recreate it if already exists
+      {delete {sprint "fc_" $instrument "_callback"}}
+   }
+   {new Object {sprint "fc_" $instrument "_callback"}
+      (track_instrument none)
+      (hit ;when a note is hit
+         {$this first_note}
+         {$this check_fc} ;run the logic to check if we are in an fc or not
+         {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
+         {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
+         {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_check_for_streak_popup $dx_note_streak_popups [track_instrument] [num_gems_combo]}
+         {dx_indv_note_streak $dx_highway_streak_text [track_instrument]}
+      )
+      (miss ;when a note is missed (overstrum)
+         {if {dx_check_first_note [track_instrument]}
+            {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
+            {set [num_gems_combo] 0} ;reset the notes comboed counter
+            {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+            {$this check_missed} ;run the logic to check our current misses
+            {dx_indv_note_streak $dx_highway_streak_text [track_instrument]}
+         }
+      )
+      (pass ;when a note is passed (ignored)
+         {$this first_note}
+         {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
          {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text guitar}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text guitar}
-   )
-   (first_note
-      {if {! $guitar_firstnote} {set $guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $guitar_milosong} {set $guitar_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow guitar [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow guitar [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_bass_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups bass [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text bass}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $bass_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_acceleration_mode 0}
+         {dx_indv_note_streak $dx_highway_streak_text [track_instrument]}
+      )
+      (first_note
+         {if {! {dx_check_first_note [track_instrument]}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
+            {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
+            {dx_set_first_note [track_instrument]}
+         }
+      )
+      (check_fc
          {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text bass}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text bass}
-   )
-   (first_note
-      {if {! $bass_firstnote} {set $bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $bass_milosong} {set $bass_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow bass [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow bass [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
+         {dx_fc_glow_enabler $dx_fc_glow [track_instrument] [num_gems_pass] [num_gems_miss]}
+      )
+      (check_missed
+         {dx_fc_glow_disabler $dx_fc_glow [track_instrument] [num_gems_pass] [num_gems_miss] [missed_once]}
+         {set [missed_once] TRUE}
+      )
+      (missed_once FALSE)
+      (num_gems_hit 0) ;default setup state and storage for note counters
+      (num_gems_combo 0) ;default setup state and storage for note counters
+      (num_gems_miss 0) ;default setup state and storage for note counters
+      (num_gems_pass 0) ;default setup state and storage for note counters
+   }
+   {{sprint "fc_" $instrument "_callback"} set track_instrument $instrument} ;finally, apply the correct instrument to the object
 }
-
-{new Object fc_drum_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups drum [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text drum}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $drum_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text drum}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text drum}
-   )
-   (first_note
-      {if {! $drum_firstnote} {set $drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $drum_milosong} {set $drum_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow drum [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow drum [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_keys_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups keys [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text keys}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $keys_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text keys}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text keys}
-   )
-   (first_note
-      {if {! $keys_firstnote} {set $keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $keys_milosong} {set $keys_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow keys [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow keys [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_real_guitar_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info real_guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups real_guitar [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text real_guitar}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $real_guitar_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info real_guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text real_guitar}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info real_guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text real_guitar}
-   )
-   (first_note
-      {if {! $real_guitar_firstnote} {set $real_guitar_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $real_guitar_milosong} {set $real_guitar_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info real_guitar [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow real_guitar [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow real_guitar [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_real_bass_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info real_bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups real_bass [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text real_bass}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $real_bass_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info real_bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text real_bass}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info real_bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text real_bass}
-   )
-   (first_note
-      {if {! $real_bass_firstnote} {set $real_bass_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $real_bass_milosong} {set $real_bass_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info real_bass [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow real_bass [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow real_bass [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_real_drum_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info real_drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups real_drum [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text real_drum}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $real_drum_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info real_drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text real_drum}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info real_drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text real_drum}
-   )
-   (first_note
-      {if {! $real_drum_firstnote} {set $real_drum_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $real_drum_milosong} {set $real_drum_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info real_drum [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow real_drum [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow real_drum [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
-{new Object fc_real_keys_callback
-   (hit ;when a note is hit
-      {$this first_note}
-      {$this check_fc} ;run the logic to check if we are in an fc or not
-      {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
-      {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-      {dx_store_note_hit_info real_keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {dx_check_for_streak_popup $dx_note_streak_popups real_keys [num_gems_combo]}
-      {dx_indv_note_streak $dx_highway_streak_text real_keys}
-   )
-   (miss ;when a note is missed (overstrum)
-      {unless {! $real_keys_firstnote}
-         {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
-         {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info real_keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {$this check_missed} ;run the logic to check our current misses
-         {dx_indv_note_streak $dx_highway_streak_text real_keys}
-      }
-   )
-   (pass ;when a note is passed (ignored)
-      {$this first_note}
-      {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
-      {set [num_gems_combo] 0} ;reset the notes comboed counter
-      {dx_store_note_hit_info real_keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_acceleration_mode 0}
-      {dx_indv_note_streak $dx_highway_streak_text real_keys}
-   )
-   (first_note
-      {if {! $real_keys_firstnote} {set $real_keys_firstnote TRUE}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
-      {if {! $real_keys_milosong} {set $real_keys_milosong TRUE} ;milosong is another tracker to indicate we are at the beginning of a song. reset our counters if so
-         {set [num_gems_hit] 0} {set [num_gems_miss] 0} {set [num_gems_pass] 0} {set [num_gems_combo] 0} {set [missed_once] FALSE}
-         {dx_store_note_hit_info real_keys [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-      }
-   )
-   (check_fc
-      {$this check_missed} ;run the logic to check our current misses
-      {dx_fc_glow_enabler $dx_fc_glow real_keys [num_gems_pass] [num_gems_miss]}
-   )
-   (check_missed
-      {dx_fc_glow_disabler $dx_fc_glow real_keys [num_gems_pass] [num_gems_miss] [missed_once]}
-      {set [missed_once] TRUE}
-   )
-   (missed_once FALSE)
-   (num_gems_hit 0) ;default setup state and storage for note counters
-   (num_gems_combo 0) ;default setup state and storage for note counters
-   (num_gems_miss 0) ;default setup state and storage for note counters
-   (num_gems_pass 0) ;default setup state and storage for note counters
-}
-
 {new Object dx_streak_callback
    (hit {$this update_streak})
    (miss {$this update_streak})
