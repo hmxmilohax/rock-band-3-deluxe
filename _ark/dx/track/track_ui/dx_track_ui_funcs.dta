@@ -20,20 +20,7 @@
       }
    }
 }
-{func
-   dx_set_song_progress
-   {beatmatch foreach_active_player $player
-      {unless {== {$player instrument} vocals}
-         {if $dx_mtvup
-            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-            {set $curr_ms {beatmatch get_song_ms}}
-            {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}}
-            {set $percent_complete {/ $curr_ms $total_ms}}
-            {tour_meter_wipe.anim set_frame $percent_complete}
-         }
-      }
-   }
-}
+
 {func
    dx_vanilla_track_text_reset
    ;resets things like bass groove text and points text for cleanup
@@ -45,18 +32,6 @@
       }
       {if {== {$player instrument} vocals}
          {{PLAYER_FEEDBACK_VOX find points.lbl} set_token_fmt dx_points}
-      }
-   }
-}
-{func
-   dx_track_fc_reset
-   {if $dx_fc_glow
-      {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
-         {unless {== {$player instrument} vocals}
-            {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
-            {peak_state.trig trigger}
-            {star_deploy.trig trigger}
-         }
       }
    }
 }
@@ -156,92 +131,6 @@
       }
    }
 }
-; shows the current overdrive of each player at the bottom of their respective highways
-{func
-   dx_show_user_overdrive
-   {if $dx_highway_overdrive_text
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {unless {== {$player instrument} vocals}
-            {if_else {|| {$player is_deploying} {>= {$player band_energy} 0.50}}
-               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
-               {dx_track_label dx_track_label_overdrive $dx_highway_overdrive_text_size $dx_highway_overdrive_text_font $dx_highway_overdrive_text_alignment $dx_highway_overdrive_text_kerning $dx_highway_overdrive_text_x $dx_highway_overdrive_text_y $dx_highway_overdrive_text_r $dx_highway_overdrive_text_g $dx_highway_overdrive_text_b FALSE}
-            }
-            {if_else {>= {$player band_energy} 0.01}
-               {{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt dx_overdrive_report {* {$player band_energy} 100}}
-               {{{find_obj DX_GEMTRACKDIR} find {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} set_token_fmt os_blnk}
-            }
-         }
-      }
-   }
-}
-; prep od ready popup
-{func
-   dx_calc_overdrive
-   ($instrument)
-   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-      {unless {== {$player instrument} vocals}
-         {if {== {$player instrument} $instrument}
-            ;fire popup once and then gate firing again until drained
-            {if {>= {$player band_energy} 0.5}
-               {switch $instrument
-                  (bass {unless $dx_stop_bass_od {dx_od_ready_popup $instrument}} {set $dx_stop_bass_od TRUE})
-                  (real_bass {unless $dx_stop_real_bass_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_bass_od TRUE})
-                  (guitar {unless $dx_stop_guitar_od {dx_od_ready_popup $instrument}} {set $dx_stop_guitar_od TRUE})
-                  (real_guitar {unless $dx_stop_real_guitar_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_guitar_od TRUE})
-                  (drum {unless $dx_stop_drum_od {dx_od_ready_popup $instrument}} {set $dx_stop_drum_od TRUE})
-                  (real_drum {unless $dx_stop_real_drum_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_drum_od TRUE})
-                  (keys {unless $dx_stop_keys_od {dx_od_ready_popup $instrument}} {set $dx_stop_keys_od TRUE})
-                  (real_keys {unless $dx_stop_real_keys_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_keys_od TRUE})
-               }
-            }
-            ;once we are drained, allow popups to fire again when ready
-            {if {<= {$player band_energy} 0.01}
-               {switch $instrument
-                  (bass {set $dx_stop_bass_od FALSE})
-                  (real_bass {set $dx_stop_real_bass_od FALSE})
-                  (guitar {set $dx_stop_guitar_od FALSE})
-                  (real_guitar {set $dx_stop_real_guitar_od FALSE})
-                  (drum {set $dx_stop_drum_od FALSE})
-                  (real_drum {set $dx_stop_real_drum_od FALSE})
-                  (keys {set $dx_stop_keys_od FALSE})
-                  (real_keys {set $dx_stop_real_keys_od FALSE})
-               }
-            }
-         }
-      }
-   }
-}
-; shows an "overdrive ready!" popup when od is ready
-{func
-   dx_od_ready_popup
-   ($instrument)
-   {if {&& $dx_od_ready_popups {! {gamemode in_mode trainer}}}
-      {do
-         {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
-         {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
-         {cond
-            ({< $dx_bpm 100} {set $dx_streak_timer 3})
-            ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
-            ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
-            ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
-            ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
-            ({> $dx_bpm 340} {set $dx_streak_timer 18})
-         }
-         {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-            {if {&& {!= {$player instrument} vocals} {== {$player instrument} $instrument}}
-               {set_this {{find_obj DX_GEMTRACKDIR} find player_feedback}}
-               {super_streak_start.trig trigger}
-               {bass_super_streak.lbl set_token_fmt dx_overdrive_ready}
-               {script_task
-                  kTaskBeats
-                  (delay $dx_streak_timer)
-                  (script {dx_note_streak_remover $player $instrument})
-               }
-            }
-         }
-      }
-   }
-}
 {func
    dx_set_solo_box_pos
    {unless {&& {! $solo_boxpos_0} {! $solo_boxpos_1} {! $solo_boxpos_2}}
@@ -250,127 +139,6 @@
             {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
          }
       }
-   }
-}
-{func
-   dx_fc_glow_enabler
-   ($enabled $instrument $num_gems_pass $num_gems_miss)
-   {if $enabled
-      {if {== {'+' $num_gems_pass $num_gems_miss} 0}
-         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
-            {if {== {$player instrument} $instrument}
-               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
-               {star_deploy.trig trigger}
-            }
-         }
-      }
-   }
-}
-{func
-   dx_check_first_miss
-   ($instrument)
-   {set $this_missed_once
-      {switch $instrument
-          (guitar $guitar_missed_once)
-          (bass $bass_missed_once)
-          (drum $drum_missed_once)
-          (keys $keys_missed_once)
-          (real_guitar $real_guitar_missed_once)
-          (real_bass $real_bass_missed_once)
-          (real_drum $real_drum_missed_once)
-          (real_keys $real_keys_missed_once)
-      }
-   }
-   $this_missed_once
-}
-{func
-   dx_set_first_miss
-   ($instrument)
-   {switch $instrument
-       (guitar {set $guitar_missed_once TRUE})
-       (bass {set $bass_missed_once TRUE})
-       (drum {set $drum_missed_once TRUE})
-       (keys {set $keys_missed_once TRUE})
-       (real_guitar {set $real_guitar_missed_once TRUE})
-       (real_bass {set $real_bass_missed_once TRUE})
-       (real_drum {set $real_drum_missed_once TRUE})
-       (real_keys {set $real_keys_missed_once TRUE})
-   }
-}
-{func
-   dx_fc_glow_disabler
-   ($enabled $instrument $num_gems_pass $num_gems_miss)
-   {if $enabled
-      {if {> {'+' $num_gems_pass $num_gems_miss} 0}
-         {beatmatch foreach_active_player $player
-            {if {== {$player instrument} $instrument}
-               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
-               {if {! {dx_check_first_miss $instrument}}
-                  {dx_set_first_miss $instrument}
-                  {end_streak.trig trigger}
-               }
-               {star_deploy_stop.trig trigger}
-            }
-         }
-      }
-   }
-}
-{func
-   dx_track_this_missed
-   ($instrument)
-   {switch $instrument
-      (bass {if {! $bass_caughtmissed} {set $bass_caughtmissed TRUE}})
-      (real_guitar {if {! $real_guitar_caughtmissed} {set $real_guitar_caughtmissed TRUE}})
-      (real_bass {if {! $real_bass_caughtmissed} {set $real_bass_caughtmissed TRUE}})
-      (keys {if {! $keys_caughtmissed} {set $keys_caughtmissed TRUE}})
-      (real_keys {if {! $real_keys_caughtmissed} {set $real_keys_caughtmissed TRUE}})
-      (guitar {if {! $guitar_caughtmissed} {set $guitar_caughtmissed TRUE}})
-      (drum {if {! $drum_caughtmissed} {set $drum_caughtmissed TRUE}})
-      (real_drum {if {! $real_drum_caughtmissed} {set $real_drum_caughtmissed TRUE}})
-   }
-}
-{func
-   dx_miss_fc_remover
-   ($instrument)
-   {unless {coop_track_panel get dx_is_nohud} ; this could break if someone were to disable performance mode mid song
-      {set_this coop_track_panel}
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {if {== {$player instrument} $instrument}
-            {dx_track_this_missed $instrument}
-            {fcframe.tex iterate_refs $ref {$ref set diffuse_tex multframe.tex}} ;remove the FC ring and replace it with the normal ring (the player just missed)
-         }
-      }
-   }
-}
-{func
-   dx_check_first_note
-   ($instrument)
-   {set $this_first_note
-      {switch $instrument
-          (guitar $guitar_firstnote)
-          (bass $bass_firstnote)
-          (drum $drum_firstnote)
-          (keys $keys_firstnote)
-          (real_guitar $real_guitar_firstnote)
-          (real_bass $real_bass_firstnote)
-          (real_drum $real_drum_firstnote)
-          (real_keys $real_keys_firstnote)
-      }
-   }
-   $this_first_note
-}
-{func
-   dx_set_first_note
-   ($instrument)
-   {switch $instrument
-       (guitar {set $guitar_firstnote TRUE})
-       (bass {set $bass_firstnote TRUE})
-       (drum {set $drum_firstnote TRUE})
-       (keys {set $keys_firstnote TRUE})
-       (real_guitar {set $real_guitar_firstnote TRUE})
-       (real_bass {set $real_bass_firstnote TRUE})
-       (real_drum {set $real_drum_firstnote TRUE})
-       (real_keys {set $real_keys_firstnote TRUE})
    }
 }
 {func dx_track_label
@@ -411,40 +179,4 @@
    }
    {$thiscolor set color {pack_color $r $g $b}}
    {$thislabel set_local_pos $x 0 $y}
-}
-{func dx_game_hud_label
-   ($name $size $font $alignment $kerning $x $z $y $r $g $b $reset)
-   {set_this {coop_track_panel find scoreboard}}
-   {set $thislabel {sprint $name ".lbl"}}
-   {set $thiscolor {sprint $name ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
-      }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
-   }
-   {if {! {exists $thislabel}}
-      {new BandLabel $thislabel}
-      {$thislabel set resource_name $font}
-      {$thislabel set_showing TRUE}
-      {$thislabel set_local_scale 1 1 1}
-      {$thislabel set_local_rot 0 0 0}
-      {$thislabel set text_size $size}
-      {$thislabel set alignment $alignment}
-      {$thislabel set width 500}
-      {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {$thislabel set kerning $kerning}
-      {numbers.grp add_object $thislabel}
-      {numbers.grp set_showing TRUE}
-      {$thislabel set_token_fmt os_blnk}
-   }
-   {if {! {exists $thiscolor}}
-      {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
-   }
-   {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x $z $y}
 }

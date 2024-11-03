@@ -1,0 +1,57 @@
+{func
+   dx_fc_glow_enabler
+   ($enabled $instrument $num_gems_pass $num_gems_miss)
+   {if $enabled
+      {if {== {'+' $num_gems_pass $num_gems_miss} 0}
+         {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+            {if {== {$player instrument} $instrument}
+               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+               {star_deploy.trig trigger}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_fc_glow_disabler
+   ($enabled $instrument $num_gems_pass $num_gems_miss)
+   {if $enabled
+      {if {> {'+' $num_gems_pass $num_gems_miss} 0}
+         {beatmatch foreach_active_player $player
+            {if {== {$player instrument} $instrument}
+               {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+               {if {! {dx_check_first_miss $instrument}}
+                  {dx_set_first_miss $instrument}
+                  {end_streak.trig trigger}
+               }
+               {star_deploy_stop.trig trigger}
+            }
+         }
+      }
+   }
+}
+{func
+   dx_miss_fc_remover
+   ($instrument)
+   {unless {coop_track_panel get dx_is_nohud} ; this could break if someone were to disable performance mode mid song
+      {set_this coop_track_panel}
+      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+         {if {== {$player instrument} $instrument}
+            {dx_track_this_missed $instrument}
+            {fcframe.tex iterate_refs $ref {$ref set diffuse_tex multframe.tex}} ;remove the FC ring and replace it with the normal ring (the player just missed)
+         }
+      }
+   }
+}
+{func
+   dx_track_fc_reset
+   {if $dx_fc_glow
+      {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
+         {unless {== {$player instrument} vocals}
+            {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+            {peak_state.trig trigger}
+            {star_deploy.trig trigger}
+         }
+      }
+   }
+}
