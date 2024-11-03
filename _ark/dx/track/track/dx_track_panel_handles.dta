@@ -1,24 +1,5 @@
 #define DX_TRACK_PANEL_HANDLES
 (
-   (dx_set_scoreboard_pos
-      {{{coop_track_panel find scoreboard} find scoreboard.grp} set_local_pos $scoreboardpos_0 $scoreboardpos_1 $scoreboardpos_2}
-   )
-   (dx_set_star_display_pos
-      {if {gamemode in_mode qp_coop}
-         {unless {&& {! $star_displaypos_0} {! $star_displaypos_1} {! $star_displaypos_2}}
-            {{{{coop_track_panel find scoreboard} find star_display} find stars.grp} set_local_pos $star_displaypos_0 $star_displaypos_1 $star_displaypos_2}
-         }
-      }
-   )
-   (dx_set_solo_box_pos
-      {unless {&& {! $solo_boxpos_0} {! $solo_boxpos_1} {! $solo_boxpos_2}}
-         {beatmatch foreach_active_player $player
-            {unless {== {$player instrument} vocals}
-               {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
-            }
-         }
-      }
-   )
    (dx_track_panel_exit ;this is really stupid but debug found out that the textures need to be put back to origin, deleted, and remade per enter
       {unless {$this get dx_is_nohud}
          {{coop_track_panel find fcframe.tex} iterate_refs $ref {$ref set diffuse_tex streak_meter_plate.tex}} ;apply the fc texture to the ring material
@@ -118,33 +99,12 @@
          }
       }
    )
-   (dx_track_panel_extended_ui
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {unless {== {$player instrument} vocals}
-            {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}} band_power_meter}}
-            {tour_configure_challenge.anim set_frame 1}
-            {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-            {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}} ;grab current song length in ms
-            {set $percent_complete {/ $curr_ms $total_ms}}
-            {tour_meter_wipe.anim set_frame $percent_complete}
-            ;{tour_meter_wipe.anim animate (period 20) (dest 1)}
-            {tour_show.trig trigger}
-            ;{streak_meter_bg.mesh set_showing FALSE}
-            ;{streak_meter_glass.mesh set_showing FALSE}
-            {tour_flag_1.mesh set_showing FALSE}
-            {tour_flag_2.mesh set_showing FALSE}
-            {tour_flag_3.mesh set_showing FALSE}
-            {tour_flag_rays.mesh set_showing FALSE}
-            {tour_fx.mesh set_showing FALSE}
-         }
-      }
-   )
    (dx_track_panel_enter
       {$this set dx_is_nohud {modifier_mgr is_modifier_active mod_nohud}}
       {if {|| {! {gamemode in_mode trainer} {! {gamemode in_mode campaign}}}} ;position objects based on user preference
-         {$this dx_set_scoreboard_pos}
-         {$this dx_set_solo_box_pos}
-         {$this dx_set_star_display_pos}
+         {dx_set_scoreboard_pos}
+         {dx_set_solo_box_pos}
+         {dx_set_star_display_pos}
          {$this dx_force_remote_vox}
          ; reset texts and hide them
          {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
@@ -173,27 +133,15 @@
    (dx_track_panel_on_extend
       {if {! {gamemode in_mode trainer}}
          {dx_track_streak_reset}
-         {dx_bassgroove_reset}
+         {dx_vanilla_track_text_reset}
          {dx_set_song_speed}
          {dx_toggle_fail_feedback}
-         {beatmatch foreach_active_player $player
-            {unless {== {$player instrument} vocals}
-               {{{find_obj DX_GEMTRACKDIR} find player_feedback} set_showing TRUE}
-               {if_else {modifier_mgr is_modifier_active mod_brutalmode}
-                  {dx_brutal_mode {modifier_mgr is_modifier_active mod_brutalmode}} ;call it now to reset the values, even if bottom_y doesn't stick, the beat handler will set it once the first time it runs
-                  {{find_obj DX_GEMTRACKDIR} set bottom_y -26}
-               }
-               {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
-            }
-            {if {== {$player instrument} vocals}
-               {{PLAYER_FEEDBACK_VOX find points.lbl} #ifdef RB3DX set_token_fmt dx_points #else set_localized dx_points #endif}
-            }
-         }
+         {dx_brutal_mode_setup {modifier_mgr is_modifier_active mod_brutalmode}}
          {dx_track_configurer}
          {dx_track_fc_reset}
          {dx_show_track_username}
          {dx_dim_remote_players}
-         {$this dx_track_panel_extended_ui}
+         {dx_track_panel_extended_ui}
          {if {! {modifier_mgr is_modifier_active mod_brutalmode}} ;brutal mode relies on crowd meter accuracy
             {if {== $dx_crowd_meter_state dx_disabled} {adjust_crowd_rating 1}} ;max out crowd meter when it's disabled for crowd audio
          }

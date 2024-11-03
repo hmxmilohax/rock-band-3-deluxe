@@ -1,0 +1,183 @@
+; displays the streak of each individual instrument at the bottom of each track
+{func
+   dx_indv_note_streak
+   ($enabled $instrument)
+   {if $enabled
+      {beatmatch foreach_active_player $player
+         {if {== {$player instrument} $instrument}
+            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+            {set $track_label_inst {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}}
+            {dx_poll_inst_info $instrument}
+            {if_else {== {+ $polled_gems_miss $polled_gems_pass} 0}
+               {dx_track_label_streak dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
+               {dx_track_label_streak dx_track_label_streak $dx_highway_streak_text_size $dx_highway_streak_text_font $dx_highway_streak_text_alignment $dx_highway_streak_text_kerning $dx_highway_streak_text_r $dx_highway_streak_text_g $dx_highway_streak_text_b FALSE}
+            }
+            {if_else {> $polled_gems_combo {if_else $dx_highway_streak_text_gh3_delay 24 0}}
+               {$track_label_inst set_token_fmt dx_indv_combo $polled_gems_combo}
+               {$track_label_inst set_token_fmt os_blnk}
+            }
+         }
+      }
+   }
+}
+{func dx_track_label_streak
+   ($name $size $font $alignment $kerning $r $g $b $reset)
+   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}} band_power_meter}}
+   {set $thislabel {sprint $name {{$player get_user} get_slot_num} ".lbl"}}
+   {set $thiscolor {sprint $name {{$player get_user} get_slot_num} ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name $font}
+      {$thislabel set alt_font_resource_name instruments_icons}
+      {$thislabel set markup TRUE}
+      {$thislabel set alt_text_size 3.3}
+      {$thislabel set alt_z_offset 0}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set text_size 1}
+      {$thislabel set alignment kMiddleCenter}
+      {$thislabel set width 500}
+      {$thislabel set height 500}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning $kerning}
+      {tour_flag.grp add_object $thislabel}
+      ;{$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color $r $g $b}}
+}
+
+;gh style note streak text popups above the track
+{func
+   dx_note_streak_popup
+   ($instrument $num_gems_combo)
+   {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
+   {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
+   {cond
+      ({< $dx_bpm 100} {set $dx_streak_timer 3})
+      ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
+      ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
+      ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
+      ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
+      ({> $dx_bpm 340} {set $dx_streak_timer 18})
+   }
+   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
+      {unless {== {$player instrument} vocals}
+         {if {== {$player instrument} $instrument}
+            {if {find_obj DX_GEMTRACKDIR player_feedback}
+               {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+               {super_streak_start.trig trigger}
+               {switch $instrument
+                  (bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_bass})
+                  (real_guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_guitar})
+                  (real_bass {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_bass})
+                  (keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_keys})
+                  (real_keys {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_keys})
+                  (guitar {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_guitar})
+                  (drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_drum})
+                  (real_drum {bass_super_streak.lbl set_token_fmt dx_note_streak $num_gems_combo_real_drum})
+               }
+               {script_task
+                  kTaskBeats
+                  (delay $dx_streak_timer)
+                  (script {dx_note_streak_remover $player $instrument})
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   dx_check_for_streak_popup
+   ($enabled $instrument $num_gems_combo)
+   {if {&& $enabled {! {gamemode in_mode trainer}}}
+      {if {== {mod $num_gems_combo {dx_adjust_streak_popup_interval $instrument $num_gems_combo}} 0}
+         {dx_note_streak_popup $instrument $num_gems_combo}
+      }
+   }
+}
+{func
+   dx_adjust_streak_popup_interval
+   ($instrument $num_gems_combo)
+   {set $interval {if_else {>= $num_gems_combo 50} 100 50}} ;adjust interval higher or lower based on combo
+   {switch $instrument ;specify interval to the specific instrument
+      (guitar {set $dx_streak_interval_guitar $interval})
+      (bass {set $dx_streak_interval_bass $interval})
+      (drum {set $dx_streak_interval_drum $interval})
+      (keys {set $dx_streak_interval_keys $interval})
+      (real_guitar {set $dx_streak_interval_real_guitar $interval})
+      (real_bass {set $dx_streak_interval_real_bass $interval})
+      (real_drum {set $dx_streak_interval_real_drum $interval})
+      (real_keys {set $dx_streak_interval_real_keys $interval})
+   }
+   $interval ;return interval
+}
+{func
+   dx_note_streak_remover
+   ($player $instrument)
+   {unless {== {$player instrument} vocals}
+      {if {== {$player instrument} $instrument}
+         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+         {super_streak_end.trig trigger}
+      }
+   }
+}
+
+{func
+   dx_poll_inst_info
+   ($instrument)
+   {switch $instrument
+      (guitar
+         {set $polled_gems_miss $num_gems_miss_guitar}
+         {set $polled_gems_pass $num_gems_pass_guitar}
+         {set $polled_gems_combo $num_gems_combo_guitar}
+      )
+      (bass
+         {set $polled_gems_miss $num_gems_miss_bass}
+         {set $polled_gems_pass $num_gems_pass_bass}
+         {set $polled_gems_combo $num_gems_combo_bass}
+      )
+      (real_guitar
+         {set $polled_gems_miss $num_gems_miss_real_guitar}
+         {set $polled_gems_pass $num_gems_pass_real_guitar}
+         {set $polled_gems_combo $num_gems_combo_real_guitar}
+      )
+      (real_bass
+         {set $polled_gems_miss $num_gems_miss_real_bass}
+         {set $polled_gems_pass $num_gems_pass_real_bass}
+         {set $polled_gems_combo $num_gems_combo_real_bass}
+      )
+      (keys
+         {set $polled_gems_miss $num_gems_miss_keys}
+         {set $polled_gems_pass $num_gems_pass_keys}
+         {set $polled_gems_combo $num_gems_combo_keys}
+      )
+      (real_keys
+         {set $polled_gems_miss $num_gems_miss_real_keys}
+         {set $polled_gems_pass $num_gems_pass_real_keys}
+         {set $polled_gems_combo $num_gems_combo_real_keys}
+      )
+      (drum
+         {set $polled_gems_miss $num_gems_miss_drum}
+         {set $polled_gems_pass $num_gems_pass_drum}
+         {set $polled_gems_combo $num_gems_combo_drum}
+      )
+      (real_drum
+         {set $polled_gems_miss $num_gems_miss_real_drum}
+         {set $polled_gems_pass $num_gems_pass_real_drum}
+         {set $polled_gems_combo $num_gems_combo_real_drum}
+      )
+   }
+}
