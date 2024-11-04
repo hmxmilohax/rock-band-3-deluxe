@@ -1,17 +1,18 @@
-{func
-   dx_set_scoreboard_pos
-   {if {gamemode in_mode qp_coop}
-      {{{coop_track_panel find scoreboard} find scoreboard.grp} set_local_pos $scoreboardpos_0 $scoreboardpos_1 $scoreboardpos_2}
-   }
-}
-{func
-   dx_set_star_display_pos
-   {if {gamemode in_mode qp_coop}
-      {unless {&& {! $star_displaypos_0} {! $star_displaypos_1} {! $star_displaypos_2}}
-         {{{{coop_track_panel find scoreboard} find star_display} find stars.grp} set_local_pos $star_displaypos_0 $star_displaypos_1 $star_displaypos_2}
-      }
-   }
-}
+;we dont do this anymore because of all the time remaining junk
+;{func
+;   dx_set_scoreboard_pos
+;   {if {gamemode in_mode qp_coop}
+;      {{{coop_track_panel find scoreboard} find scoreboard.grp} set_local_pos $scoreboardpos_0 $scoreboardpos_1 $scoreboardpos_2}
+;   }
+;}
+;{func
+;   dx_set_star_display_pos
+;   {if {gamemode in_mode qp_coop}
+;      {unless {&& {! $star_displaypos_0} {! $star_displaypos_1} {! $star_displaypos_2}}
+;         {{{{coop_track_panel find scoreboard} find star_display} find stars.grp} set_local_pos $star_displaypos_0 $star_displaypos_1 $star_displaypos_2}
+;      }
+;   }
+;}
 {func dx_game_hud_label
    ($name $size $font $alignment $kerning $x $z $y $r $g $b $reset)
    {set_this {coop_track_panel find scoreboard}}
@@ -48,51 +49,271 @@
    {$thiscolor set color {pack_color $r $g $b}}
    {$thislabel set_local_pos $x $z $y}
 }
-;old time remaining stuff
+{func dx_song_progress_label
+   ($name $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name pentatonic}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 0.1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set text_size 3}
+      {$thislabel set fit_type kFitJust}
+      {$thislabel set alignment kMiddleLeft}
+      {$thislabel set width 50}
+      {$thislabel set height 50}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning -0.1645}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color $dx_hud_time_bar_r $dx_hud_time_bar_g $dx_hud_time_bar_b}}
+   {$thislabel set_local_pos 75.5 230 64}
+}
 {func
-   dx_reset_time_remaining_position
-   {unless $dx_fetched_time_remaining_pos ;gate this block to run once
-      {set $dx_fetched_time_remaining_pos TRUE}
-      {set $dx_stored_time_remaining_pos {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2}} ;store the base position
-      {set $dx_song_label_scale_x {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_scale_index 0}}
-      {set $dx_song_label_scale_y {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_scale_index 2}}
-   }
-   {if {|| {== $dx_time_remaining down} {== $dx_time_remaining up}}
-      {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-      #ifdef HX_WII ;the label is too big on wii so we shrink it
-      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_scale_index 0 {- $dx_song_label_scale_x 0.50}}
-      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_scale_index 2 {- $dx_song_label_scale_y 0.50}}
-      #endif
+   dx_fix_new_song_progress_pos
+   {if {&& $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
       {cond
-         ({&& {|| $dx_active_vocals {! $dx_time_remaining_on_top}} {== $dx_streak_counter single} {> $dx_num_active_instruments 1}} ;handle this stupid case specifically
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 1.4}}
+         ({&& $dx_song_progress_bar $vocal_track_out {! $dx_time_remaining_on_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 16.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 3.5}
          )
-         ({&& {! $dx_time_remaining_on_top} {|| {== $dx_streak_counter single} {== $dx_streak_counter multi}}} ;if vocals are active, move the label to the bottom again because it looks bad on top
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
+         ({&& $dx_song_progress_bar $vocal_track_out $dx_time_remaining_on_top}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 16.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 3.5}
          )
-         ({&& {|| {== $dx_streak_counter single} {== $dx_streak_counter multi}} $dx_active_vocals} ;if vocals are active, move the label to the bottom again because it looks bad on top
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
+         ({&& $dx_song_progress_bar {! $vocal_track_out} $dx_time_remaining_on_top}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 64}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 19}
          )
-         ({&& {! $dx_time_remaining_on_top} {== $dx_streak_counter off}} ;if vocals are active, move the label to the bottom but slightly up to account for missing streak
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 1.4}}
+         ({&& $dx_song_progress_bar {! $vocal_track_out} {! $dx_time_remaining_on_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 42}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 10.8}
          )
-         ({&& {== $dx_streak_counter off} $dx_active_vocals} ;if vocals are active, move the label to the bottom but slightly up to account for missing streak
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 1.4}}
+         ({&& {! $dx_song_progress_bar} $vocal_track_out {! $dx_time_remaining_on_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 16.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 4.5}
          )
-         ({&& $dx_time_remaining_on_top {! $dx_active_vocals}} ;if we need to move the label to the top
-            {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 {+ $dx_stored_time_remaining_pos 4.66}} ;move it up
+         ({&& {! $dx_song_progress_bar} $vocal_track_out $dx_time_remaining_on_top}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 16.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 4.5}
+         )
+         ({&& {! $dx_song_progress_bar} {! $vocal_track_out} $dx_time_remaining_on_top}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 64}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 18}
+         )
+         ({&& {! $dx_song_progress_bar} {! $vocal_track_out} {! $dx_time_remaining_on_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.5 230 42}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 11.8}
          )
       }
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 0.5}}
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
    }
-   {if {|| {== $dx_streak_counter off} {&& {== $dx_streak_counter single} {> $dx_num_active_instruments 1}}}
-      {do
-         {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
-         {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
+}
+{func
+   dx_new_set_song_progress
+   ($enabled)
+   {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {dx_song_progress_label.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_needle.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back_border.lbl set_token_fmt os_blnk}
+   }
+   {if {&& $enabled $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {set $curr_beat {dx_get_current_beat}}
+      {set $total_beat $dx_final_note}
+      {if {>= $curr_beat 1}
+         {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
+         {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
+         {set $outbar FALSE}
+         {set $out_needle FALSE}
+         {set $addchar "|"}
+         {foreach_int $i 1 $this_checked_complete
+            {if {< $i {- $this_checked_complete 2}}
+               {if_else $outbar
+                  {set $outbar {sprint $outbar $addchar}}
+                  {set $outbar $addchar}
+               }
+            }
+         }
+         {if_else $outbar
+            {do
+               {set $out_needle {sprint $outbar "||"}}
+               {dx_song_progress_label.lbl set text_token {sprint $outbar}}
+               {dx_song_progress_label_needle.lbl set text_token {sprint $out_needle}}
+            }
+            {do
+               {dx_song_progress_label.lbl set_token_fmt os_blnk}
+               {dx_song_progress_label_needle.lbl set text_token "||"}
+               {set $out_needle " "}
+            }
+         }
+         {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
+         {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
+         {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
+         {dx_song_progress_label_back_border.color set color {pack_color 0.20 0.28 0.50}}
+         {dx_song_progress_label_back_border.lbl set text_size 4}
+         {dx_song_progress_label_back_border.lbl set kerning -0.1808}
+         ;200
+         {dx_song_progress_label_back.lbl set_token_fmt
+            {sprint
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+            }
+         }
+         {dx_song_progress_label_back_border.lbl set_token_fmt
+            {sprint
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+            }
+         }
       }
    }
-   {if {|| {gamemode in_mode tour} {gamemode in_mode campaign}}
-      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_local_pos_index 2 $dx_stored_time_remaining_pos}
-      {set $dx_current_time_remaining_pos {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} get_local_pos_index 2}}
-   }
+}
+{func
+   dx_mtv_time_remaining_handler ;using length_ms from song_mgr and dx_ms_to_time_str func
+   ;{dx_log_writer beatmatch {sprint "func: dx_mtv_time_remaining_handler"}}
+   ;{dx_log_writer beatmatch
+   ;   {sprintf "Executed dx_mtv_time_remaining_handler - time: %.4fms"
+   ;      {time
+            {if {&& $dx_mtvup {exists beatmatch} {! {gamemode in_mode trainer}}}
+               {switch $dx_time_remaining
+                  (off 
+                     {do
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.1336) ;in approximately 8 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (down
+                     {do
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {beat_to_seconds {int {* {+ $dx_final_note 1} 1000}}}} ;grab current song length in ms
+                        {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
+                        {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                        {if {!= $timer_str $total_str}
+                           {switch $dx_disp_total_time ;check whether total time should be displayed
+                              (TRUE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" $brutal_number_0 $brutal_number_1 $brutal_number_2 $brutal_number_3 $dx_crowd_0 $dx_crowd_1 $dx_crowd_2 $dx_crowd_3}} ;temp brutal debug
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                 }
+                              )
+                              (FALSE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                 }
+                              )
+                           }
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (up
+                     {do
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {beat_to_seconds {int {* {+ $dx_final_note 1} 1000}}}} ;grab current song length in ms
+                        ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
+                        {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                        {if {!= $timer_str $total_str}
+                           {switch $dx_disp_total_time ;check whether total time should be displayed
+                              (TRUE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                 }
+                              )
+                              (FALSE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                 }
+                              )
+                           }
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  {do
+                     {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else}
+                     {script_task
+                        kTaskUISeconds
+                        (delay 0.1336) ;in approximately 8 frames, call this function again
+                        (script {dx_mtv_time_remaining_handler})
+                     }
+                  }
+
+               }
+                  ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+            }
+   ;      }
+   ;   }
+   ;}
 }
