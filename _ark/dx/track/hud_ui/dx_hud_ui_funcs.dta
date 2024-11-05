@@ -172,6 +172,18 @@
    $outarray
 }
 {func
+   dx_get_final_note
+   {beatmatch foreach_active_player $player
+      {switch {$player instrument}
+         ((real_guitar guitar) {set $out_end $dx_final_note_guitar})
+         ((real_bass bass) {set $out_end $dx_final_note_bass})
+         ((real_drum drum) {set $out_end $dx_final_note_drum})
+         ((real_keys keys) {set $out_end $dx_final_note_keys})
+      }
+   }
+   $out_end
+}
+{func
    dx_new_set_song_progress
    ($enabled)
    {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
@@ -184,7 +196,9 @@
    {if {&& $enabled $dx_mtvup {! {gamemode in_mode trainer}}}
       {set_this {coop_track_panel find scoreboard}}
       {set $curr_beat {dx_get_current_beat}}
-      {set $total_beat $dx_final_note}
+      {set $total_beat $dx_end_of_song}
+      {set $this_final_note {* {/ {dx_get_final_note} $total_beat} 100}}
+      {set $this_checked_final_note {int {* $this_final_note 2}}}
       {if {>= $curr_beat 1}
          {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
          {if {> $this_percent_complete 100}
@@ -198,24 +212,27 @@
          {set $addspace "<alt>.</alt>"}
          {set $this_highest_start 0}
          {set $this_highest_end 0}
+         ;progress bar
          {foreach_int $i 0 $this_checked_complete ;check every number from 0-200 (100% with 200 ticks)
             {if {< $i {- $this_checked_complete 2}} ;don't check the final two numbers
                {if_else $outbar ;make sure the bar has a string to sprint with
                   {do
                      {set $out_needle {sprint $outbar $addspace}} ;set the needle to our current position
                      {foreach $entry {dx_get_this_countdown_array} ;check every entry in the guitar note tracker array
-                        {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
-                           {do
-                              {if_else {== {elem $entry 1} 0}
-                                 {set $this_percent_start 0} ;set this current break to 0 without any math bits
-                                 {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                        {if {has_substr {elem $entry 0} "delay_"}
+                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
+                              {do
+                                 {if_else {== {elem $entry 1} 0}
+                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                 }
+                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
                               }
-                              {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                              {set $this_set FALSE} ;do nothing
                            }
-                           {set $this_set FALSE} ;do nothing
                         }
                      }
-                     {if_else {&& {>= $i $this_percent_start} {<= $i $this_percent_end}} ;if we within our current break in and out points
+                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}} ;if we within our current break in and out points
                         {set $outbar {sprint $outbar $addspace}} ;add a space
                         {set $outbar {sprint $outbar $addchar}} ;add a character if we are not in a break
                      }
@@ -224,27 +241,35 @@
                }
             }
          }
+         ;progress bar backer
          {foreach_int $i 0 200
-            {if_else $out_backer
-               {do
-                  {foreach $entry {dx_get_this_countdown_array}
-                     {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
-                        {do
-                           {if_else {== {elem $entry 1} 0}
-                              {set $this_percent_start 0} ;set this current break to 0 without any math bits
-                              {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+            {if_else {>= $i 198}
+               {if {&& {!= $i 199} {!= $i 200}}
+                  {set $out_backer {sprint $out_backer $addchar $addchar}} ;ensure the last line is always a char
+               }
+               {if_else $out_backer
+                  {do
+                     {foreach $entry {dx_get_this_countdown_array}
+                        {if {has_substr {elem $entry 0} "delay_"}
+                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
+                              {do
+                                 {if_else {== {elem $entry 1} 0}
+                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                 }
+                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                              }
+                              {set $this_set FALSE}
                            }
-                           {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
                         }
-                        {set $this_set FALSE}
+                     }
+                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
+                        {set $out_backer {sprint $out_backer $addspace}}
+                        {set $out_backer {sprint $out_backer $addchar}}
                      }
                   }
-                  {if_else {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}
-                     {set $out_backer {sprint $out_backer $addspace}}
-                     {set $out_backer {sprint $out_backer $addchar}}
-                  }
+                  {set $out_backer $addchar}
                }
-               {set $out_backer $addchar}
             }
          }
          {if_else $outbar
@@ -304,7 +329,7 @@
                   (down
                      {do
                         {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_final_note} 1} 1000}}} ;grab current song length in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
                         {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
                         {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
                         {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
@@ -338,7 +363,7 @@
                   (up
                      {do
                         {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_final_note} 1} 1000}}} ;grab current song length in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
                         ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
                         {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
                         {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
