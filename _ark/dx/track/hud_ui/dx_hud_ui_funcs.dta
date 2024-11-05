@@ -49,6 +49,49 @@
    {$thiscolor set color {pack_color $r $g $b}}
    {$thislabel set_local_pos $x $z $y}
 }
+{func dx_song_progress_instrument_label
+   ($name $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   ;do not change these so help me god
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name pentatonic}
+      {$thislabel set alt_font_resource_name instruments_icons}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set markup TRUE}
+      {$thislabel set text_size 3}
+      {$thislabel set alt_text_size 5}
+      {$thislabel set alt_z_offset 0.55}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 0.1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set fit_type kFitJust}
+      {$thislabel set alignment kMiddleLeft}
+      {$thislabel set width 50}
+      {$thislabel set height 50}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning -0.1645}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color 1 1 1}}
+   {$thislabel set_local_pos 70.5 230 64}
+}
 {func dx_song_progress_label
    ($name $reset)
    {set_this {coop_track_panel find scoreboard}}
@@ -62,13 +105,19 @@
          {delete $thiscolor}
       }
    }
+   ;do not change these so help me god
    {if {! {exists $thislabel}}
       {new BandLabel $thislabel}
       {$thislabel set resource_name pentatonic}
+      {$thislabel set alt_font_resource_name pentatonic}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set markup TRUE}
+      {$thislabel set text_size 3}
+      {$thislabel set alt_text_size 2.8}
+      {$thislabel set alt_z_offset 0.55}
       {$thislabel set_showing TRUE}
       {$thislabel set_local_scale 0.1 1 1}
       {$thislabel set_local_rot 0 0 0}
-      {$thislabel set text_size 3}
       {$thislabel set fit_type kFitJust}
       {$thislabel set alignment kMiddleLeft}
       {$thislabel set width 50}
@@ -140,6 +189,19 @@
             {set $dx_hud_time_remaining_text_y 11.8}
          )
       }
+      {dx_song_progress_instrument_label.lbl set_token_fmt
+         {switch $progress_bar_inst
+            ((guitar real_guitar) inst_icon_guitar)
+            ((bass real_bass) inst_icon_bass)
+            ((drum real_drum) inst_icon_drum)
+            ((keys real_keys) inst_icon_keys)
+            (vocals inst_icon_vocals)
+            (harm inst_icon_harm)
+         }
+      }
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 5.5}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 2 {+ {dx_song_progress_label.lbl get_local_pos_index 2} 0.25}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 0.5}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
@@ -149,6 +211,125 @@
       {dx_song_progress_label_back.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
       {dx_song_progress_label_back.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
       {dx_song_progress_label_back.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+   }
+}
+{func
+   dx_get_this_countdown_array
+   {set $outarray ()}
+   {resize $outarray 0}
+   {set $this_local_player_count 0}
+   {beatmatch foreach_active_player $player
+      {if {{$player get_user} is_local} ;only track local player
+         {switch {$player instrument}
+            ((real_guitar guitar) {set $size1 {size $guitar_note_tracker}} {set $outarray $guitar_note_tracker} {set $progress_bar_inst guitar})
+            ((real_bass bass) {set $size2 {size $bass_note_tracker}} {set $outarray $bass_note_tracker} {set $progress_bar_inst bass})
+            ((real_drum drum) {set $size3 {size $drum_note_tracker}} {set $outarray $drum_note_tracker} {set $progress_bar_inst drum})
+            ((real_keys keys) {set $size4 {size $keys_note_tracker}} {set $outarray $keys_note_tracker} {set $progress_bar_inst keys})
+            (vocals {set $size5 {size $vocals_note_tracker}} {set $outarray $vocals_note_tracker} {set $progress_bar_inst vocals})
+            ;(harm {set $size6 {size $harm_note_tracker}} {set $outarray $harm_note_tracker} {set $progress_bar_inst harm})
+         }
+         {set $this_local_player_count {+ $this_local_player_count 1}}
+         {if {> $this_local_player_count 1}
+            ;this is really fucking bad but its 3am and i dont care
+            {if {&& {> $size1 $size2} {> $size1 $size3} {> $size1 $size4} {> $size1 $size5} {> $size1 $size6}}
+               {set $outarray $guitar_note_tracker}
+               {set $progress_bar_inst guitar}
+            }
+            {if {&& {> $size2 $size1} {> $size2 $size3} {> $size2 $size4} {> $size2 $size5} {> $size2 $size6}}
+               {set $outarray $bass_note_tracker}
+               {set $progress_bar_inst bass}
+            }
+            {if {&& {> $size3 $size1} {> $size3 $size2} {> $size3 $size4} {> $size3 $size5} {> $size3 $size6}}
+               {set $outarray $drum_note_tracker}
+               {set $progress_bar_inst drum}
+            }
+            {if {&& {> $size4 $size1} {> $size4 $size2} {> $size4 $size3} {> $size4 $size5} {> $size4 $size6}}
+               {set $outarray $keys_note_tracker}
+               {set $progress_bar_inst keys}
+            }
+            {if {&& {> $size5 $size1} {> $size5 $size2} {> $size5 $size3} {> $size5 $size4} {> $size5 $size6}}
+               {set $outarray $vocals_note_tracker}
+               {set $progress_bar_inst vocals}
+            }
+            ;{if {&& {> $size6 $size1} {> $size6 $size2} {> $size6 $size3} {> $size6 $size4} {> $size6 $size5}}
+            ;   {set $outarray $harm_note_tracker}
+            ;   {set $progress_bar_inst harm}
+            ;}
+         }
+      }
+   }
+   $outarray
+}
+{func
+   dx_get_final_note
+   {beatmatch foreach_active_player $player
+      {switch {$player instrument}
+         ((real_guitar guitar) {set $out_end $dx_final_note_guitar})
+         ((real_bass bass) {set $out_end $dx_final_note_bass})
+         ((real_drum drum) {set $out_end $dx_final_note_drum})
+         ((real_keys keys) {set $out_end $dx_final_note_keys})
+      }
+   }
+   $out_end
+}
+{func
+   dx_new_set_song_progress_backer
+   ($enabled)
+   {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {dx_song_progress_label.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_needle.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back_border.lbl set_token_fmt os_blnk}
+   }
+   {if {&& $enabled $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {set $curr_beat {dx_get_current_beat}}
+      {set $total_beat $dx_end_of_song}
+      {set $this_final_note {* {/ {dx_get_final_note} $total_beat} 100}}
+      {set $this_checked_final_note {int {* $this_final_note 2}}}
+      {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
+      {if {> $this_percent_complete 100}
+         {set $this_percent_complete 100}
+      }
+      {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
+      {set $out_backer FALSE}
+      {set $addchar "|"}
+      {set $addspace "<alt>.</alt>"}
+      ;progress bar backer
+      {foreach_int $i 0 200
+         {if_else {>= $i 198}
+            {if {&& {!= $i 199} {!= $i 200}}
+               {set $out_backer {sprint $out_backer $addchar $addchar}} ;ensure the last line is always a char
+            }
+            {if_else $out_backer
+               {if_else {> {size {dx_get_this_countdown_array}} 1}
+                  {do ;if we find breaks in the current countdown tracker
+                     {foreach $entry {dx_get_this_countdown_array}
+                        {if {has_substr {elem $entry 0} "delay_"}
+                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
+                              {do
+                                 {if_else {== {elem $entry 1} 0}
+                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                 }
+                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                              }
+                              {set $this_set FALSE}
+                           }
+                        }
+                     }
+                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
+                        {set $out_backer {sprint $out_backer $addspace}}
+                        {set $out_backer {sprint $out_backer $addchar}}
+                     }
+                  }
+                  {set $out_backer {sprint $out_backer $addchar}}
+               }
+               {set $out_backer $addchar}
+            }
+         }
+      }
    }
 }
 {func
@@ -164,24 +345,59 @@
    {if {&& $enabled $dx_mtvup {! {gamemode in_mode trainer}}}
       {set_this {coop_track_panel find scoreboard}}
       {set $curr_beat {dx_get_current_beat}}
-      {set $total_beat $dx_final_note}
+      {set $total_beat $dx_end_of_song}
+      {set $this_final_note {* {/ {dx_get_final_note} $total_beat} 100}}
+      {set $this_checked_final_note {int {* $this_final_note 2}}}
       {if {>= $curr_beat 1}
          {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
+         {if {> $this_percent_complete 100}
+            {set $this_percent_complete 100}
+         }
          {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
          {set $outbar FALSE}
          {set $out_needle FALSE}
          {set $addchar "|"}
-         {foreach_int $i 1 $this_checked_complete
-            {if {< $i {- $this_checked_complete 2}}
-               {if_else $outbar
-                  {set $outbar {sprint $outbar $addchar}}
-                  {set $outbar $addchar}
+         {set $addspace "<alt>.</alt>"}
+         ;progress bar
+         {foreach_int $i 0 $this_checked_complete ;check every number from 0-200 (100% with 200 ticks)
+            {if {< $i {- $this_checked_complete 2}} ;don't check the final two numbers
+               {if_else $outbar ;make sure the bar has a string to sprint with
+                  {do
+                     {set $out_needle {sprint $outbar $addspace}} ;set the needle to our current position
+                     {if_else {> {size {dx_get_this_countdown_array}} 1}
+                        {do ;if we find breaks in the current countdown tracker
+                           {foreach $entry {dx_get_this_countdown_array} ;check every entry in the guitar note tracker array
+                              {if {has_substr {elem $entry 0} "delay_"}
+                                 {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
+                                    {do
+                                       {if_else {== {elem $entry 1} 0}
+                                          {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                          {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                       }
+                                       {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                                    }
+                                    {set $this_set FALSE} ;do nothing
+                                 }
+                              }
+                           }
+                           {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}} ;if we within our current break in and out points
+                              {set $outbar {sprint $outbar $addspace}} ;add a space
+                              {set $outbar {sprint $outbar $addchar}} ;add a character if we are not in a break
+                           }
+                        }
+                        {set $outbar {sprint $outbar $addchar}}
+                     }
+                  }
+                  {do
+                     {set $outbar $addchar} ;create the first character for the bar
+                     {set $out_needle $addchar} ;create the first character for the needle
+                  }
                }
             }
          }
          {if_else $outbar
             {do
-               {set $out_needle {sprint $outbar "||"}}
+               {set $out_needle {sprint $out_needle "||"}}
                {dx_song_progress_label.lbl set text_token {sprint $outbar}}
                {dx_song_progress_label_needle.lbl set text_token {sprint $out_needle}}
             }
@@ -191,21 +407,19 @@
                {set $out_needle " "}
             }
          }
-         {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
-         {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
+         {dx_song_progress_label_back.lbl set text_token {sprint $out_backer}}
          {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
+         {dx_song_progress_label_back.lbl set alt_text_color dx_song_progress_label_back.color}
+         {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
+         {dx_song_progress_label_needle.lbl set alt_text_color dx_song_progress_label_needle.color}
+         {dx_song_progress_label.lbl set alt_text_color dx_song_progress_label.color}
+         {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
          {dx_song_progress_label_back_border.color set color {pack_color 0.20 0.28 0.50}}
+         {dx_song_progress_label_back_border.lbl set alt_text_color dx_song_progress_label_back_border.color}
          {dx_song_progress_label_back_border.lbl set text_size 4}
          {dx_song_progress_label_back_border.lbl set kerning -0.1808}
+         {dx_song_progress_label_back_border.lbl set alt_text_color dx_song_progress_label_back_border.color}
          ;200
-         {dx_song_progress_label_back.lbl set_token_fmt
-            {sprint
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-            }
-         }
          {dx_song_progress_label_back_border.lbl set_token_fmt
             {sprint
                {localize song_progress_backer}
@@ -238,7 +452,7 @@
                   (down
                      {do
                         {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_final_note} 1} 1000}}} ;grab current song length in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
                         {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
                         {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
                         {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
@@ -250,7 +464,8 @@
                               (TRUE
                                  {if_else $dx_time_remain_dbg
                                     {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" $brutal_number_0 $brutal_number_1 $brutal_number_2 $brutal_number_3 $dx_crowd_0 $dx_crowd_1 $dx_crowd_2 $dx_crowd_3}} ;temp brutal debug
-                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {dx_time_remaining_both $timer_str $total_str}} ;don't include debug line
+                                    ;{{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
                                  }
                               )
                               (FALSE
@@ -271,7 +486,7 @@
                   (up
                      {do
                         {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_final_note} 1} 1000}}} ;grab current song length in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
                         ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
                         {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
                         {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
