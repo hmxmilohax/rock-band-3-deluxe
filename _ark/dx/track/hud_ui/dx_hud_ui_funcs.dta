@@ -218,23 +218,28 @@
                {if_else $outbar ;make sure the bar has a string to sprint with
                   {do
                      {set $out_needle {sprint $outbar $addspace}} ;set the needle to our current position
-                     {foreach $entry {dx_get_this_countdown_array} ;check every entry in the guitar note tracker array
-                        {if {has_substr {elem $entry 0} "delay_"}
-                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
-                              {do
-                                 {if_else {== {elem $entry 1} 0}
-                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
-                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                     {if_else {> {size {dx_get_this_countdown_array}} 1}
+                        {do ;if we find breaks in the current countdown tracker
+                           {foreach $entry {dx_get_this_countdown_array} ;check every entry in the guitar note tracker array
+                              {if {has_substr {elem $entry 0} "delay_"}
+                                 {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
+                                    {do
+                                       {if_else {== {elem $entry 1} 0}
+                                          {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                          {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                       }
+                                       {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                                    }
+                                    {set $this_set FALSE} ;do nothing
                                  }
-                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
                               }
-                              {set $this_set FALSE} ;do nothing
+                           }
+                           {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}} ;if we within our current break in and out points
+                              {set $outbar {sprint $outbar $addspace}} ;add a space
+                              {set $outbar {sprint $outbar $addchar}} ;add a character if we are not in a break
                            }
                         }
-                     }
-                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}} ;if we within our current break in and out points
-                        {set $outbar {sprint $outbar $addspace}} ;add a space
-                        {set $outbar {sprint $outbar $addchar}} ;add a character if we are not in a break
+                        {set $outbar {sprint $outbar $addchar}}
                      }
                   }
                   {set $outbar $addchar} ;create the first character for the bar
@@ -248,25 +253,28 @@
                   {set $out_backer {sprint $out_backer $addchar $addchar}} ;ensure the last line is always a char
                }
                {if_else $out_backer
-                  {do
-                     {foreach $entry {dx_get_this_countdown_array}
-                        {if {has_substr {elem $entry 0} "delay_"}
-                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
-                              {do
-                                 {if_else {== {elem $entry 1} 0}
-                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
-                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                  {if_else {> {size {dx_get_this_countdown_array}} 1}
+                     {do ;if we find breaks in the current countdown tracker
+                        {foreach $entry {dx_get_this_countdown_array}
+                           {if {has_substr {elem $entry 0} "delay_"}
+                              {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
+                                 {do
+                                    {if_else {== {elem $entry 1} 0}
+                                       {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                       {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                    }
+                                    {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
                                  }
-                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                                 {set $this_set FALSE}
                               }
-                              {set $this_set FALSE}
                            }
                         }
+                        {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
+                           {set $out_backer {sprint $out_backer $addspace}}
+                           {set $out_backer {sprint $out_backer $addchar}}
+                        }
                      }
-                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
-                        {set $out_backer {sprint $out_backer $addspace}}
-                        {set $out_backer {sprint $out_backer $addchar}}
-                     }
+                     {set $out_backer {sprint $out_backer $addchar}}
                   }
                   {set $out_backer $addchar}
                }
