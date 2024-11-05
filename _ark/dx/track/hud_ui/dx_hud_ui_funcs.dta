@@ -158,6 +158,20 @@
    }
 }
 {func
+   dx_get_this_countdown_array
+   {set $outarray ()}
+   {resize $outarray 0}
+   {beatmatch foreach_active_player $player
+      {switch {$player instrument}
+         ((real_guitar guitar) {set $outarray $guitar_note_tracker})
+         ((real_bass bass) {set $outarray $bass_note_tracker})
+         ((real_drum drum) {set $outarray $drum_note_tracker})
+         ((real_keys keys) {set $outarray $keys_note_tracker})
+      }
+   }
+   $outarray
+}
+{func
    dx_new_set_song_progress
    ($enabled)
    {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
@@ -173,6 +187,9 @@
       {set $total_beat $dx_final_note}
       {if {>= $curr_beat 1}
          {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
+         {if {> $this_percent_complete 100}
+            {set $this_percent_complete 100}
+         }
          {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
          {set $outbar FALSE}
          {set $out_needle FALSE}
@@ -181,13 +198,12 @@
          {set $addspace "<alt>.</alt>"}
          {set $this_highest_start 0}
          {set $this_highest_end 0}
-         {set $this_size {size $guitar_note_tracker}}
          {foreach_int $i 0 $this_checked_complete ;check every number from 0-200 (100% with 200 ticks)
             {if {< $i {- $this_checked_complete 2}} ;don't check the final two numbers
                {if_else $outbar ;make sure the bar has a string to sprint with
                   {do
                      {set $out_needle {sprint $outbar $addspace}} ;set the needle to our current position
-                     {foreach $entry $guitar_note_tracker ;check every entry in the guitar note tracker array
+                     {foreach $entry {dx_get_this_countdown_array} ;check every entry in the guitar note tracker array
                         {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
                            {do
                               {if_else {== {elem $entry 1} 0}
@@ -211,7 +227,7 @@
          {foreach_int $i 0 200
             {if_else $out_backer
                {do
-                  {foreach $entry $guitar_note_tracker
+                  {foreach $entry {dx_get_this_countdown_array}
                      {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
                         {do
                            {if_else {== {elem $entry 1} 0}
