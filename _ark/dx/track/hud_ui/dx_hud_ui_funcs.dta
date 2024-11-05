@@ -179,31 +179,53 @@
          {set $out_backer FALSE}
          {set $addchar "|"}
          {set $addspace "<alt>.</alt>"}
-         {foreach_int $i 1 $this_checked_complete
-            {if {< $i {- $this_checked_complete 2}}
-               {if_else $outbar
+         {set $this_highest_start 0}
+         {set $this_highest_end 0}
+         {foreach_int $i 0 $this_checked_complete ;check every number from 0-200 (100% with 200 ticks)
+            {if {< $i {- $this_checked_complete 2}} ;don't check the final two numbers
+               {if_else $outbar ;make sure the bar has a string to sprint with
                   {do
-                     {set $out_needle {sprint $outbar $addspace}}
-                     {if_else
-                        {||
-                           {&& {> $i 60} {< $i 75}}
+                     {set $out_needle {sprint $outbar $addspace}} ;set the needle to our current position
+                     {foreach $entry {dx_get_note_array} ;check every entry in the guitar note tracker array
+                        {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}} ;if our current int percent matches the int percent of the start of the break
+                           {do
+                              {if_else {== {elem $entry 1} 0}
+                                 {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                 {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                              }
+                              {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                           }
+                           {set $this_set FALSE} ;do nothing
                         }
-                        {set $outbar {sprint $outbar $addspace}}
-                        {set $outbar {sprint $outbar $addchar}}
+                     }
+                     {if_else {&& {>= $i $this_percent_start} {<= $i $this_percent_end}} ;if we within our current break in and out points
+                        {set $outbar {sprint $outbar $addspace}} ;add a space
+                        {set $outbar {sprint $outbar $addchar}} ;add a character if we are not in a break
                      }
                   }
-                  {set $outbar $addchar}
+                  {set $outbar $addchar} ;create the first character for the bar
                }
             }
          }
-         {foreach_int $i 1 200
+         {foreach_int $i 0 200
             {if_else $out_backer
-               {if_else
-                  {||
-                     {&& {> $i 60} {< $i 75}}
+               {do
+                  {foreach $entry $guitar_note_tracker
+                     {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
+                        {do
+                           {if_else {== {elem $entry 1} 0}
+                              {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                              {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                           }
+                           {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                        }
+                        {set $this_set FALSE}
+                     }
                   }
-                  {set $out_backer {sprint $out_backer $addspace}}
-                  {set $out_backer {sprint $out_backer $addchar}}
+                  {if_else {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}
+                     {set $out_backer {sprint $out_backer $addspace}}
+                     {set $out_backer {sprint $out_backer $addchar}}
+                  }
                }
                {set $out_backer $addchar}
             }
