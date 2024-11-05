@@ -49,6 +49,49 @@
    {$thiscolor set color {pack_color $r $g $b}}
    {$thislabel set_local_pos $x $z $y}
 }
+{func dx_song_progress_instrument_label
+   ($name $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   ;do not change these so help me god
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name pentatonic}
+      {$thislabel set alt_font_resource_name instruments_icons}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set markup TRUE}
+      {$thislabel set text_size 3}
+      {$thislabel set alt_text_size 5}
+      {$thislabel set alt_z_offset 0.55}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 0.1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set fit_type kFitJust}
+      {$thislabel set alignment kMiddleLeft}
+      {$thislabel set width 50}
+      {$thislabel set height 50}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning -0.1645}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color 1 1 1}}
+   {$thislabel set_local_pos 70.5 230 64}
+}
 {func dx_song_progress_label
    ($name $reset)
    {set_this {coop_track_panel find scoreboard}}
@@ -146,6 +189,19 @@
             {set $dx_hud_time_remaining_text_y 11.8}
          )
       }
+      {dx_song_progress_instrument_label.lbl set_token_fmt
+         {switch $progress_bar_inst
+            ((guitar real_guitar) inst_icon_guitar)
+            ((bass real_bass) inst_icon_bass)
+            ((drum real_drum) inst_icon_drum)
+            ((keys real_keys) inst_icon_keys)
+            (vocals inst_icon_vocals)
+            (harm inst_icon_harm)
+         }
+      }
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 5.5}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 2 {+ {dx_song_progress_label.lbl get_local_pos_index 2} 0.25}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 0.5}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
       {dx_song_progress_label_back_border.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
@@ -161,15 +217,44 @@
    dx_get_this_countdown_array
    {set $outarray ()}
    {resize $outarray 0}
+   {set $this_local_player_count 0}
    {beatmatch foreach_active_player $player
       {if {{$player get_user} is_local} ;only track local player
          {switch {$player instrument}
-            ((real_guitar guitar) {set $outarray $guitar_note_tracker})
-            ((real_bass bass) {set $outarray $bass_note_tracker})
-            ((real_drum drum) {set $outarray $drum_note_tracker})
-            ((real_keys keys) {set $outarray $keys_note_tracker})
-            (vocals {set $outarray $vocals_note_tracker})
-            (harm {set $outarray $harm_note_tracker})
+            ((real_guitar guitar) {set $size1 {size $guitar_note_tracker}} {set $outarray $guitar_note_tracker} {set $progress_bar_inst guitar})
+            ((real_bass bass) {set $size2 {size $bass_note_tracker}} {set $outarray $bass_note_tracker} {set $progress_bar_inst bass})
+            ((real_drum drum) {set $size3 {size $drum_note_tracker}} {set $outarray $drum_note_tracker} {set $progress_bar_inst drum})
+            ((real_keys keys) {set $size4 {size $keys_note_tracker}} {set $outarray $keys_note_tracker} {set $progress_bar_inst keys})
+            (vocals {set $size5 {size $vocals_note_tracker}} {set $outarray $vocals_note_tracker} {set $progress_bar_inst vocals})
+            (harm {set $size6 {size $harm_note_tracker}} {set $outarray $harm_note_tracker} {set $progress_bar_inst harm})
+         }
+         {set $this_local_player_count {+ $this_local_player_count 1}}
+         {if {> $this_local_player_count 1}
+            ;this is really fucking bad but its 3am and i dont care
+            {if {&& {> $size1 $size2} {> $size1 $size3} {> $size1 $size4} {> $size1 $size5} {> $size1 $size6}}
+               {set $outarray $guitar_note_tracker}
+               {set $progress_bar_inst guitar}
+            }
+            {if {&& {> $size2 $size1} {> $size2 $size3} {> $size2 $size4} {> $size2 $size5} {> $size2 $size6}}
+               {set $outarray $bass_note_tracker}
+               {set $progress_bar_inst bass}
+            }
+            {if {&& {> $size3 $size1} {> $size3 $size2} {> $size3 $size4} {> $size3 $size5} {> $size3 $size6}}
+               {set $outarray $drum_note_tracker}
+               {set $progress_bar_inst drum}
+            }
+            {if {&& {> $size4 $size1} {> $size4 $size2} {> $size4 $size3} {> $size4 $size5} {> $size4 $size6}}
+               {set $outarray $keys_note_tracker}
+               {set $progress_bar_inst keys}
+            }
+            {if {&& {> $size5 $size1} {> $size5 $size2} {> $size5 $size3} {> $size5 $size4} {> $size5 $size6}}
+               {set $outarray $vocals_note_tracker}
+               {set $progress_bar_inst vocals}
+            }
+            {if {&& {> $size6 $size1} {> $size6 $size2} {> $size6 $size3} {> $size6 $size4} {> $size6 $size5}}
+               {set $outarray $harm_note_tracker}
+               {set $progress_bar_inst harm}
+            }
          }
       }
    }
