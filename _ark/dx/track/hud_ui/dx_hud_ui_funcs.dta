@@ -62,13 +62,19 @@
          {delete $thiscolor}
       }
    }
+   ;do not change these so help me god
    {if {! {exists $thislabel}}
       {new BandLabel $thislabel}
       {$thislabel set resource_name pentatonic}
+      {$thislabel set alt_font_resource_name pentatonic}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set markup TRUE}
+      {$thislabel set text_size 3}
+      {$thislabel set alt_text_size 2.8}
+      {$thislabel set alt_z_offset 0.55}
       {$thislabel set_showing TRUE}
       {$thislabel set_local_scale 0.1 1 1}
       {$thislabel set_local_rot 0 0 0}
-      {$thislabel set text_size 3}
       {$thislabel set fit_type kFitJust}
       {$thislabel set alignment kMiddleLeft}
       {$thislabel set width 50}
@@ -170,18 +176,42 @@
          {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
          {set $outbar FALSE}
          {set $out_needle FALSE}
+         {set $out_backer FALSE}
          {set $addchar "|"}
+         {set $addspace "<alt>.</alt>"}
          {foreach_int $i 1 $this_checked_complete
             {if {< $i {- $this_checked_complete 2}}
                {if_else $outbar
-                  {set $outbar {sprint $outbar $addchar}}
+                  {do
+                     {set $out_needle {sprint $outbar $addspace}}
+                     {if_else
+                        {||
+                           {&& {> $i 60} {< $i 75}}
+                        }
+                        {set $outbar {sprint $outbar $addspace}}
+                        {set $outbar {sprint $outbar $addchar}}
+                     }
+                  }
                   {set $outbar $addchar}
                }
             }
          }
+         {foreach_int $i 1 200
+            {if_else $out_backer
+               {if_else
+                  {||
+                     {&& {> $i 60} {< $i 75}}
+                  }
+                  {set $out_backer {sprint $out_backer $addspace}}
+                  {set $out_backer {sprint $out_backer $addchar}}
+               }
+               {set $out_backer $addchar}
+            }
+         }
          {if_else $outbar
             {do
-               {set $out_needle {sprint $outbar "||"}}
+               {set $out_needle {sprint $out_needle "||"}}
+               {dx_song_progress_label_back.lbl set text_token {sprint $out_backer}}
                {dx_song_progress_label.lbl set text_token {sprint $outbar}}
                {dx_song_progress_label_needle.lbl set text_token {sprint $out_needle}}
             }
@@ -192,20 +222,17 @@
             }
          }
          {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
+         {dx_song_progress_label_needle.lbl set alt_text_color dx_song_progress_label_needle.color}
+         {dx_song_progress_label.lbl set alt_text_color dx_song_progress_label.color}
          {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
          {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
+         {dx_song_progress_label_back.lbl set alt_text_color dx_song_progress_label_back.color}
          {dx_song_progress_label_back_border.color set color {pack_color 0.20 0.28 0.50}}
+         {dx_song_progress_label_back_border.lbl set alt_text_color dx_song_progress_label_back_border.color}
          {dx_song_progress_label_back_border.lbl set text_size 4}
          {dx_song_progress_label_back_border.lbl set kerning -0.1808}
+         {dx_song_progress_label_back_border.lbl set alt_text_color dx_song_progress_label_back_border.color}
          ;200
-         {dx_song_progress_label_back.lbl set_token_fmt
-            {sprint
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-               {localize song_progress_backer}
-            }
-         }
          {dx_song_progress_label_back_border.lbl set_token_fmt
             {sprint
                {localize song_progress_backer}
@@ -250,7 +277,8 @@
                               (TRUE
                                  {if_else $dx_time_remain_dbg
                                     {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" $brutal_number_0 $brutal_number_1 $brutal_number_2 $brutal_number_3 $dx_crowd_0 $dx_crowd_1 $dx_crowd_2 $dx_crowd_3}} ;temp brutal debug
-                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {dx_time_remaining_both $timer_str $total_str}} ;don't include debug line
+                                    ;{{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
                                  }
                               )
                               (FALSE
