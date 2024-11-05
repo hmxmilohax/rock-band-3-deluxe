@@ -184,6 +184,66 @@
    $out_end
 }
 {func
+   dx_new_set_song_progress_backer
+   ($enabled)
+   {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {dx_song_progress_label.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_needle.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back_border.lbl set_token_fmt os_blnk}
+   }
+   {if {&& $enabled $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {set $curr_beat {dx_get_current_beat}}
+      {set $total_beat $dx_end_of_song}
+      {set $this_final_note {* {/ {dx_get_final_note} $total_beat} 100}}
+      {set $this_checked_final_note {int {* $this_final_note 2}}}
+      {set $this_percent_complete {* {/ $curr_beat $total_beat} 100}}
+      {if {> $this_percent_complete 100}
+         {set $this_percent_complete 100}
+      }
+      {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
+      {set $out_backer FALSE}
+      {set $addchar "|"}
+      {set $addspace "<alt>.</alt>"}
+      ;progress bar backer
+      {foreach_int $i 0 200
+         {if_else {>= $i 198}
+            {if {&& {!= $i 199} {!= $i 200}}
+               {set $out_backer {sprint $out_backer $addchar $addchar}} ;ensure the last line is always a char
+            }
+            {if_else $out_backer
+               {if_else {> {size {dx_get_this_countdown_array}} 1}
+                  {do ;if we find breaks in the current countdown tracker
+                     {foreach $entry {dx_get_this_countdown_array}
+                        {if {has_substr {elem $entry 0} "delay_"}
+                           {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
+                              {do
+                                 {if_else {== {elem $entry 1} 0}
+                                    {set $this_percent_start 0} ;set this current break to 0 without any math bits
+                                    {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
+                                 }
+                                 {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
+                              }
+                              {set $this_set FALSE}
+                           }
+                        }
+                     }
+                     {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
+                        {set $out_backer {sprint $out_backer $addspace}}
+                        {set $out_backer {sprint $out_backer $addchar}}
+                     }
+                  }
+                  {set $out_backer {sprint $out_backer $addchar}}
+               }
+               {set $out_backer $addchar}
+            }
+         }
+      }
+   }
+}
+{func
    dx_new_set_song_progress
    ($enabled)
    {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode trainer}}}
@@ -207,11 +267,8 @@
          {set $this_checked_complete {int {* $this_percent_complete 2}}} ;map percent to of 200
          {set $outbar FALSE}
          {set $out_needle FALSE}
-         {set $out_backer FALSE}
          {set $addchar "|"}
          {set $addspace "<alt>.</alt>"}
-         {set $this_highest_start 0}
-         {set $this_highest_end 0}
          ;progress bar
          {foreach_int $i 0 $this_checked_complete ;check every number from 0-200 (100% with 200 ticks)
             {if {< $i {- $this_checked_complete 2}} ;don't check the final two numbers
@@ -242,48 +299,16 @@
                         {set $outbar {sprint $outbar $addchar}}
                      }
                   }
-                  {set $outbar $addchar} ;create the first character for the bar
-               }
-            }
-         }
-         ;progress bar backer
-         {foreach_int $i 0 200
-            {if_else {>= $i 198}
-               {if {&& {!= $i 199} {!= $i 200}}
-                  {set $out_backer {sprint $out_backer $addchar $addchar}} ;ensure the last line is always a char
-               }
-               {if_else $out_backer
-                  {if_else {> {size {dx_get_this_countdown_array}} 1}
-                     {do ;if we find breaks in the current countdown tracker
-                        {foreach $entry {dx_get_this_countdown_array}
-                           {if {has_substr {elem $entry 0} "delay_"}
-                              {if_else {== {int {/ $i 2}} {int {* {/ {elem $entry 1} $total_beat} 100}}}
-                                 {do
-                                    {if_else {== {elem $entry 1} 0}
-                                       {set $this_percent_start 0} ;set this current break to 0 without any math bits
-                                       {set $this_percent_start {int {* {* {/ {elem $entry 1} $total_beat} 100} 2}}} ;set this current break in and out points
-                                    }
-                                    {set $this_percent_end {int {* {* {/ {elem $entry 2} $total_beat} 100} 2}}}
-                                 }
-                                 {set $this_set FALSE}
-                              }
-                           }
-                        }
-                        {if_else {|| {>= $i $this_checked_final_note} {&& {>= $i $this_percent_start} {<= $i $this_percent_end}}}
-                           {set $out_backer {sprint $out_backer $addspace}}
-                           {set $out_backer {sprint $out_backer $addchar}}
-                        }
-                     }
-                     {set $out_backer {sprint $out_backer $addchar}}
+                  {do
+                     {set $outbar $addchar} ;create the first character for the bar
+                     {set $out_needle $addchar} ;create the first character for the needle
                   }
-                  {set $out_backer $addchar}
                }
             }
          }
          {if_else $outbar
             {do
                {set $out_needle {sprint $out_needle "||"}}
-               {dx_song_progress_label_back.lbl set text_token {sprint $out_backer}}
                {dx_song_progress_label.lbl set text_token {sprint $outbar}}
                {dx_song_progress_label_needle.lbl set text_token {sprint $out_needle}}
             }
@@ -293,12 +318,13 @@
                {set $out_needle " "}
             }
          }
+         {dx_song_progress_label_back.lbl set text_token {sprint $out_backer}}
+         {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
+         {dx_song_progress_label_back.lbl set alt_text_color dx_song_progress_label_back.color}
          {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
          {dx_song_progress_label_needle.lbl set alt_text_color dx_song_progress_label_needle.color}
          {dx_song_progress_label.lbl set alt_text_color dx_song_progress_label.color}
          {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
-         {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
-         {dx_song_progress_label_back.lbl set alt_text_color dx_song_progress_label_back.color}
          {dx_song_progress_label_back_border.color set color {pack_color 0.20 0.28 0.50}}
          {dx_song_progress_label_back_border.lbl set alt_text_color dx_song_progress_label_back_border.color}
          {dx_song_progress_label_back_border.lbl set text_size 4}
