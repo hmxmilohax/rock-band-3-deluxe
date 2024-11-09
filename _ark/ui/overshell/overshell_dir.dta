@@ -237,49 +237,23 @@
          (setup_options_list
             ($online_enabled)
             {do
-               ($options
-                  {array 0})
-               #ifdef HX_WII
-               {if
-                  {wii_invitations_provider is_invitation_pending}
-                  {push_back $options wii_friends_view_invite}}
-               #endif
-               {push_back $options overshell_return}
-                  #ifdef HX_WII
-                  {if_else
-                     {overshell in_wiifriend_invite}
-                     {do
-                        {options.lst set_data $options}}
-                     {do
-                        #endif
-                        #ifdef HX_WII
-                        {if
-                           {&&
-                              {!
-                                 {platform_mgr is_online_restricted}}
-                              {!
-                                 {meta_performer are_credits_pending}}}
-                           {if $gotcha
-                              {if_else $online_enabled
-                                 {switch $dx_connected_server
-                                    (none {push_back $options overshell_online_options})
-                                    (gocentral {push_back $options go_overshell_online_options})
-                                    (live {push_back $options live_overshell_online_options})
-                                    (liveless {push_back $options liveless_overshell_online_options})
-                                 }
-                                 {switch $dx_connected_server
-                                    (none {push_back $options overshell_register_online})
-                                    (gocentral {push_back $options go_overshell_register_online})
-                                    (live {push_back $options live_overshell_register_online})
-                                    (liveless {push_back $options liveless_overshell_register_online})
-                                 }
-                              }
-                           }
-                           {if {modifier_mgr is_modifier_active mod_auto_play}
-                              {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
-                           }
-                        }
-                        #else
+               ($options {array 0})
+               ; dx - local funcs to untangle gnarly unbalanced conditional
+               ($set_common_options
+                  {func setup_options_list_common_options
+                     ($options)
+                     {push_back $options overshell_change_character}
+                     {push_back $options overshell_game_options}
+                     {push_back $options overshell_leave}
+                     {if {modifier_mgr is_modifier_active mod_auto_play}
+                        {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
+                     }
+                  }
+               )
+               ($set_online_options
+                  {func setup_options_list_server_options
+                     ($options $online_enabled)
+                     {if $gotcha
                         {if_else $online_enabled
                            {switch $dx_connected_server
                               (none {push_back $options overshell_online_options})
@@ -294,56 +268,48 @@
                               (liveless {push_back $options liveless_overshell_register_online})
                            }
                         }
-                        #endif
-                        #ifdef HX_WII
-                        {if
-                           {&&
-                              {!
-                                 {memcardmgr is_disable_writing}}
-                              {!
-                                 {join_invite_panel join_in_progress}}}
-                           {push_back $options overshell_wiiprofile_options}}
-                        #endif
-                        {push_back $options overshell_change_character}
-                        {push_back $options overshell_game_options}
-                        {push_back $options overshell_leave}
-                        {options.lst set_data $options}
-                        #ifdef HX_WII}}
-                  #else
-                  {if $gotcha
-                     {if_else $online_enabled
-                        {switch $dx_connected_server
-                           (none {push_back $options overshell_online_options})
-                           (gocentral {push_back $options go_overshell_online_options})
-                           (live {push_back $options live_overshell_online_options})
-                           (liveless {push_back $options liveless_overshell_online_options})
-                        }
-                        {switch $dx_connected_server
-                           (none {push_back $options overshell_register_online})
-                           (gocentral {push_back $options go_overshell_register_online})
-                           (live {push_back $options live_overshell_register_online})
-                           (liveless {push_back $options liveless_overshell_register_online})
-                        }
                      }
                   }
-                  {if {modifier_mgr is_modifier_active mod_auto_play}
-                     {push_back $options overshell_dx_bot_settings} ; dx - show autoplay settings when active
+               )
+            #ifdef HX_WII
+               {if {wii_invitations_provider is_invitation_pending}
+                  {push_back $options wii_friends_view_invite}
+               }
+            #endif
+               {push_back $options overshell_return}
+            #ifdef HX_WII
+               {unless {overshell in_wiifriend_invite}
+                  {if {&&
+                        {! {platform_mgr is_online_restricted}}
+                        {! {meta_performer are_credits_pending}}
+                     }
+                     {$set_online_options $options $online_enabled}
                   }
-                  {set $dx_users 0}
-                  {user_mgr foreach_user $user
-                     {set $dx_users {+ $dx_users 1}}
+                  {if {&&
+                        {! {memcardmgr is_disable_writing}}
+                        {! {join_invite_panel join_in_progress}}
+                     }
+                     {push_back $options overshell_wiiprofile_options}
                   }
-                  {if {&& {! {session_mgr is_local}} {> $dx_users 1}}
-                     {push_back $options overshell_dx_quick_chat} ; dx - show quick chat menu when online
-                  }
+                  {$set_common_options $options}
+               }
+            #else
+               {$set_online_options $options $online_enabled}
+               {set $dx_users 0}
+               {user_mgr foreach_user $user
+                  {set $dx_users {+ $dx_users 1}}
+               }
+               {if {&& {! {session_mgr is_local}} {> $dx_users 1}}
+                  {push_back $options overshell_dx_quick_chat} ; dx - show quick chat menu when online
+               }
                {if {&& $dx_event_mode $dx_event_service}
                   {push_back $options os_event_options}
                }
-               {push_back $options overshell_change_character}
-               {push_back $options overshell_game_options}
-               {push_back $options overshell_leave}
+               {$set_common_options $options}
+            #endif
                {options.lst set_data $options}
-               #endif})
+            }
+         )
          (setup_sign_in_to_register_list
             ($show_continue)
             {do
