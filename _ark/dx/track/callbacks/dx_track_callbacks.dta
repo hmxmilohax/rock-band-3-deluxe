@@ -51,6 +51,38 @@
          {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          {dx_check_for_streak_popup $dx_note_streak_popups [track_instrument] [num_gems_combo]}
          {dx_indv_note_streak $dx_track_streak [track_instrument]}
+         
+         
+         {set $delay_tracker {array ()}}
+         {resize $delay_tracker 0}
+         {set $curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
+         {set $offset FALSE}
+         
+         {foreach $gem $guitar_note_tracker_2
+            {push_back $delay_tracker {'-' $curr_ms $gem}}
+         }
+         {foreach $i $delay_tracker
+            {if_else {< $i 0}
+               {do {set $i {'*' $i -1}} {set $negative TRUE}}
+               {set $negative FALSE}
+            }
+            {if_else $offset
+               {if_else {< $offset 0}
+                  {if {< $i {'*' $offset -1}} {set $offset {if_else $negative {'*' $i -1} $i}}}
+                  {if {< $i $offset} {set $offset {if_else $negative {'*' $i -1} $i}}}
+               }
+               {set $offset {if_else $negative {'*' $i -1} $i}}
+            }
+         }
+         {if $offset
+            {set $total {+ $total $offset}}
+            {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+            {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+            {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+            {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+            {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " $offset " Avg: " {/ $total [num_gems_hit]}}}}
+         }
+         
       )
       (miss ;when a note is missed (overstrum)
          {if {dx_check_first_note [track_instrument]}
@@ -87,6 +119,7 @@
       (num_gems_combo 0) ;default setup state and storage for note counters
       (num_gems_miss 0) ;default setup state and storage for note counters
       (num_gems_pass 0) ;default setup state and storage for note counters
+      {set $total 0}
    }
    {{sprint "fc_" $instrument "_callback"} set track_instrument $instrument} ;finally, apply the correct instrument to the object
 }
