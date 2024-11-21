@@ -44,6 +44,7 @@
    {new Object {sprint "fc_" $instrument "_callback"}
       (track_instrument none)
       (hit ;when a note is hit
+         ($gem_id $hit_flags $ratio)
          {$this first_note}
          {$this check_fc} ;run the logic to check if we are in an fc or not
          {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
@@ -57,22 +58,17 @@
          {resize $delay_tracker 0}
          {set $curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
          {set $offset FALSE}
-         
-         {foreach $gem $guitar_note_tracker_2
-            {push_back $delay_tracker {'-' $curr_ms $gem}}
+         {set $this_accuracy {'-' $curr_ms {elem $guitar_note_tracker_2 $gem_id}}}
+         {if_else {< $this_accuracy 0}
+            {do {set $this_accuracy {'*' $this_accuracy -1}} {set $negative TRUE}}
+            {set $negative FALSE}
          }
-         {foreach $i $delay_tracker
-            {if_else {< $i 0}
-               {do {set $i {'*' $i -1}} {set $negative TRUE}}
-               {set $negative FALSE}
+         {if_else $offset
+            {if_else {< $offset 0}
+               {if {< $this_accuracy {'*' $offset -1}} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
+               {if {< $this_accuracy $offset} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
             }
-            {if_else $offset
-               {if_else {< $offset 0}
-                  {if {< $i {'*' $offset -1}} {set $offset {if_else $negative {'*' $i -1} $i}}}
-                  {if {< $i $offset} {set $offset {if_else $negative {'*' $i -1} $i}}}
-               }
-               {set $offset {if_else $negative {'*' $i -1} $i}}
-            }
+            {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}
          }
          {if $offset
             {set $total {+ $total $offset}}
