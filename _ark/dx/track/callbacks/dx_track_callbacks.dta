@@ -1,6 +1,6 @@
 {new Object fc_callback ;the main callback for all instruments
    (hit ;when a note is hit
-      {coop_track_panel dx_set_star_display_pos}
+      ;{coop_track_panel dx_set_star_display_pos}
       {dx_brutal_mode {modifier_mgr is_modifier_active mod_brutalmode}}
       {if {>= $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
          {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
@@ -10,15 +10,8 @@
    )
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {switch {$player instrument} ;switch based off the currently loaded instrument
-            (bass {unless {! $bass_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (real_guitar {unless {! $real_guitar_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (real_bass {unless {! $real_bass_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (keys {unless {! $keys_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (real_keys {unless {! $real_keys_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (guitar {unless {! $guitar_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (drum {unless {! $drum_firstnote} {dx_miss_fc_remover {$player instrument}}})
-            (real_drum {unless {! $real_drum_firstnote} {dx_miss_fc_remover {$player instrument}}})
+         {unless {! {eval {var {sprint {$player instrument} "_firstnote"}}}}
+            {dx_miss_fc_remover {$player instrument}}
          }
       }
       {dx_acceleration_mode 0}
@@ -37,14 +30,22 @@
    (num_gems_pass 0) ;default setup state and storage for note counters
 }
 {func dx_create_instrument_callback
-   ($instrument)
+   ($instrument $player $slot)
    {if {exists {sprint "fc_" $instrument "_callback"}} ;delete the object and recreate it if already exists
       {delete {sprint "fc_" $instrument "_callback"}}
    }
    {new Object {sprint "fc_" $instrument "_callback"}
       (track_instrument none)
+      (player none)
+      (slot none)
       (hit ;when a note is hit
          ($gem_id $hit_flags $ratio)
+         ;{time
+            {set $this_curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
+            {set $offset FALSE}
+            {set $this_accuracy {'-' $this_curr_ms {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} $gem_id}}}
+         ;}
+
          {$this first_note}
          {$this check_fc} ;run the logic to check if we are in an fc or not
          {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
@@ -53,12 +54,6 @@
          {dx_check_for_streak_popup $dx_note_streak_popups [track_instrument] [num_gems_combo]}
          {dx_indv_note_streak $dx_track_streak [track_instrument]}
          
-         
-         {set $delay_tracker {array ()}}
-         {resize $delay_tracker 0}
-         {set $curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
-         {set $offset FALSE}
-         {set $this_accuracy {'-' $curr_ms {elem $guitar_note_tracker_2 $gem_id}}}
          {if_else {< $this_accuracy 0}
             {do {set $this_accuracy {'*' $this_accuracy -1}} {set $negative TRUE}}
             {set $negative FALSE}
@@ -71,6 +66,18 @@
             {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}
          }
          {if $offset
+            {if_else {&& {< $offset 30} {> $offset -30}}
+               {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] TRUE}
+               {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] FALSE}
+               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find burn_bonus.trig} trigger}
+               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find hit_bonus.trig} trigger}
+               ;{script_task kTaskSeconds
+               ;   (delay 0.1)
+               ;   (script
+               ;      {{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find stop_burn.trig} trigger}
+               ;   )
+               ;}
+            }
             {set $total {+ $total $offset}}
             {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
             {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
@@ -118,6 +125,8 @@
       {set $total 0}
    }
    {{sprint "fc_" $instrument "_callback"} set track_instrument $instrument} ;finally, apply the correct instrument to the object
+   {{sprint "fc_" $instrument "_callback"} set player $player}
+   {{sprint "fc_" $instrument "_callback"} set slot $slot}
 }
 {new Object dx_streak_callback
    (hit {$this update_streak})
