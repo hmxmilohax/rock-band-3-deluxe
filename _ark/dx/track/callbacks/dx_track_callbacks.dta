@@ -11,7 +11,7 @@
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {unless {! {eval {var {sprint {$player instrument} "_firstnote"}}}}
-            {dx_miss_fc_remover {$player instrument}}
+            {dx_miss_fc_remover {$player instrument} $player {{$player get_user} get_slot_num}}
          }
       }
       {dx_acceleration_mode 0}
@@ -19,7 +19,7 @@
    )
    (pass ;when a note is passed (ignored)
       {beatmatch foreach_active_player $player
-         {dx_miss_fc_remover {$player instrument}} ;logic to remove the fc indicator upon miss/pass
+         {dx_miss_fc_remover {$player instrument} $player {{$player get_user} get_slot_num}} ;logic to remove the fc indicator upon miss/pass
       }
       {dx_acceleration_mode 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
@@ -40,12 +40,13 @@
       (slot none)
       (hit ;when a note is hit
          ($gem_id $hit_flags $ratio)
+         ;calculate this as early as possible for accuracy
          ;{time
             {set $this_curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
             {set $offset FALSE}
             {set $this_accuracy {'-' $this_curr_ms {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} $gem_id}}}
          ;}
-
+         ;then do other stuff
          {$this first_note}
          {$this check_fc} ;run the logic to check if we are in an fc or not
          {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
@@ -53,39 +54,7 @@
          {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          {dx_check_for_streak_popup $dx_note_streak_popups [track_instrument] [num_gems_combo]}
          {dx_indv_note_streak $dx_track_streak [track_instrument]}
-         
-         {if_else {< $this_accuracy 0}
-            {do {set $this_accuracy {'*' $this_accuracy -1}} {set $negative TRUE}}
-            {set $negative FALSE}
-         }
-         {if_else $offset
-            {if_else {< $offset 0}
-               {if {< $this_accuracy {'*' $offset -1}} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
-               {if {< $this_accuracy $offset} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
-            }
-            {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}
-         }
-         {if $offset
-            {if_else {&& {< $offset 30} {> $offset -30}}
-               {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] TRUE}
-               {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] FALSE}
-               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find burn_bonus.trig} trigger}
-               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find hit_bonus.trig} trigger}
-               ;{script_task kTaskSeconds
-               ;   (delay 0.1)
-               ;   (script
-               ;      {{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find stop_burn.trig} trigger}
-               ;   )
-               ;}
-            }
-            {set $total {+ $total $offset}}
-            {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
-            {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
-            {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
-            {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-            {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " $offset " Avg: " {/ $total [num_gems_hit]}}}}
-         }
-         
+         {$this perfects_indicator $dx_perfects_indidicator}
       )
       (miss ;when a note is missed (overstrum)
          {if {dx_check_first_note [track_instrument]}
@@ -118,6 +87,56 @@
       (check_missed
          {dx_fc_glow_disabler $dx_fc_glow [track_instrument] [num_gems_pass] [num_gems_miss]}
       )
+      (perfects_indicator
+         ($enabled)
+         {if $enabled
+            {if_else {< $this_accuracy 0}
+               {do {set $this_accuracy {'*' $this_accuracy -1}} {set $negative TRUE}}
+               {set $negative FALSE}
+            }
+            {if_else $offset
+               {if_else {< $offset 0}
+                  {if {< $this_accuracy {'*' $offset -1}} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
+                  {if {< $this_accuracy $offset} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
+               }
+               {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}
+            }
+            {if $offset
+               ;TODO make this a setting
+               {set $this_timing perfect}
+               {if {>= $offset 1} {set $this_timing late}}
+               {if {<= $offset -1} {set $this_timing early}}
+               {cond
+                  ({&& {< $offset 25} {> $offset -25}}
+                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing perfect}
+                  )
+                  ({&& {< $offset 40} {> $offset -40}}
+                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing great}
+                  )
+                  ({&& {< $offset 55} {> $offset -55}}
+                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing good}
+                  )
+                  {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing bad}
+               }
+               ;poc, show extra hit effects, needs a lot of work
+               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find burn_bonus.trig} trigger}
+               ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find hit_bonus.trig} trigger}
+               ;{script_task kTaskSeconds
+               ;   (delay 0.1)
+               ;   (script
+               ;      {{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find stop_burn.trig} trigger}
+               ;   )
+               ;}
+               {set $total {+ $total $offset}}
+               ;debug, show values
+               ;{{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+               ;{{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+               ;{{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+               ;{{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " $offset " Avg: " {/ $total [num_gems_hit]}}}}
+            }
+         }
+      )
       (num_gems_hit 0) ;default setup state and storage for note counters
       (num_gems_combo 0) ;default setup state and storage for note counters
       (num_gems_miss 0) ;default setup state and storage for note counters
@@ -134,55 +153,9 @@
    (pass {$this update_streak})
    (fetch_all_streaks
       {beatmatch foreach_active_player $player ;iterate through each player, grab the combo from the relevant callback, add them all together
-         {switch {$player instrument}
-            (bass
-               {if {! $bass_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_bass}}
-               }
-            )
-            (real_guitar
-               {if {! $real_guitar_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_real_guitar}}
-               }
-            )
-            (real_bass
-               {if {! $real_bass_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_real_bass}}
-               }
-            )
-            (keys
-               {if {! $keys_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_keys}}
-               }
-            )
-            (real_keys
-               {if {! $real_keys_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_real_keys}}
-               }
-            )
-            (guitar
-               {if {! $guitar_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_guitar}}
-               }
-            )
-            (drum
-               {if {! $drum_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_drum}}
-               }
-            )
-            (real_drum
-               {if {! $real_drum_finalnote}
-                  {set $dx_streak 0}
-                  {set $dx_streak {+ $dx_streak $num_gems_combo_real_drum}}
-               }
-            )
+         {if {! {eval {var {sprint {$player instrument} "_finalnote"}}}}
+            {set $dx_streak 0}
+            {set $dx_streak {+ $dx_streak {eval {var {sprint "num_gems_combo_" {$player instrument}}}}}}
          }
       }
    )
@@ -200,20 +173,11 @@
                {$this fetch_all_streaks}
                {set_this {coop_track_panel find scoreboard}}
                {if_else {> $dx_streak 0}
+                  ;TEMP currently disabled hud streak
                   {dx_hud_label_band_streak.lbl set_token_fmt os_blnk}
                   {dx_hud_label_band_streak.lbl set_token_fmt os_blnk}
                }
-               {if_else
-                  {&&
-                     {== {'+' $num_gems_miss_guitar $num_gems_pass_guitar} 0}
-                     {== {'+' $num_gems_miss_bass $num_gems_pass_bass} 0}
-                     {== {'+' $num_gems_miss_drum $num_gems_pass_drum} 0}
-                     {== {'+' $num_gems_miss_keys $num_gems_pass_keys} 0}
-                     {== {'+' $num_gems_miss_real_guitar $num_gems_pass_real_guitar} 0}
-                     {== {'+' $num_gems_miss_real_bass $num_gems_pass_real_bass} 0}
-                     {== {'+' $num_gems_miss_real_drum $num_gems_pass_real_drum} 0}
-                     {== {'+' $num_gems_miss_real_keys $num_gems_pass_real_keys} 0}
-                  }
+               {if_else {dx_check_for_band_miss}
                   {dx_hud_label_band_streak.color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
                   {dx_hud_label_band_streak.color set color {pack_color $dx_hud_band_streak_text_r $dx_hud_band_streak_text_g $dx_hud_band_streak_text_b}}
                }

@@ -1352,6 +1352,7 @@
       {push_back $options os_highway_username}
       {push_back $options os_highway_overdrive}
       {push_back $options os_highway_streak}
+      {push_back $options os_highway_perfects}
       {dx_state_setup dxState_TrackHighwayText TRUE}
    }
 )
@@ -1402,6 +1403,9 @@
             DX_HIGHWAY_TEXT_ELEMENTS_DATA
             {set $previous_state dxState_TrackHighwayText}
          )
+         (os_highway_perfects
+            {$this show_state dxState_TrackPerfects}
+         )
          (os_highway_username
             {$this show_state dxState_TrackHighwayUsername}
          )
@@ -1425,6 +1429,80 @@
    )
 )
 
+#define DX_TRACK_PERFECT_DATA
+(
+   {do
+      ($options
+         {array 0})
+
+      {push_back $options {if_else $dx_perfects_indidicator os_perfects_indidicator_on os_perfects_indidicator_off}}
+
+      {push_back $options {if_else $dx_detailed_hit_stats os_detailed_hit_on os_detailed_hit_off}}
+
+      {push_back $options {if_else $dx_detailed_hit_timing os_hit_timing_on os_hit_timing_off}}
+      
+      ;-----func----------state name------message
+      {dx_state_setup dxState_TrackPerfects TRUE}
+   }
+)
+(dxState_TrackPerfects
+   (view
+      DX_TRACK_PERFECT_DATA
+      {overshell_view_chooser}
+   )
+   (enter
+      DX_OS_OPEN_MSG
+      DX_MENU_DESC
+   )
+   (SCROLL_MSG
+      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   )
+   (SELECT_MSG
+      {switch {$component selected_sym}
+         ((os_perfects_indidicator_on os_perfects_indidicator_off)
+            {set $dx_perfects_indidicator {! $dx_perfects_indidicator}}
+            {if_else $dx_perfects_indidicator
+               {set $dx_tracked_changed os_perfects_indidicator_on}
+               {set $dx_tracked_changed os_perfects_indidicator_off}
+            }
+            {dx_state_pos_tracker}
+            DX_TRACK_PERFECT_DATA
+            {set $previous_state dxState_TrackPerfects}
+         )
+         ((os_detailed_hit_on os_detailed_hit_off)
+            {set $dx_detailed_hit_stats {! $dx_detailed_hit_stats}}
+            {if_else $dx_detailed_hit_stats
+               {set $dx_tracked_changed os_detailed_hit_on}
+               {set $dx_tracked_changed os_detailed_hit_off}
+            }
+            {dx_state_pos_tracker}
+            DX_TRACK_PERFECT_DATA
+            {set $previous_state dxState_TrackPerfects}
+         )
+         ((os_hit_timing_on os_hit_timing_off)
+            {set $dx_detailed_hit_timing {! $dx_detailed_hit_timing}}
+            {if_else $dx_detailed_hit_timing
+               {set $dx_tracked_changed os_hit_timing_on}
+               {set $dx_tracked_changed os_hit_timing_off}
+            }
+            {dx_state_pos_tracker}
+            DX_TRACK_PERFECT_DATA
+            {set $previous_state dxState_TrackPerfects}
+         )
+         kDataUnhandled
+      }
+      {set $in_state FALSE}
+      DX_TRACK_PERFECT_DATA
+      {set $previous_state dxState_TrackPerfects}
+   )
+   (exit 
+      {dx_state_pos_tracker}
+      DX_OS_CLOSE_MSG
+   )
+   (on_cancel
+      {$this show_state dxState_TrackHighwayText}
+   )
+)
 
 #define DX_TRACK_USERNAME_ELEMENTS_DATA
 (
