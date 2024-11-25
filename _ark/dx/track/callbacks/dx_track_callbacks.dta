@@ -11,7 +11,7 @@
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {unless {! {eval {var {sprint {$player instrument} "_firstnote"}}}}
-            {dx_miss_fc_remover {$player instrument} $player {{$player get_user} get_slot_num}}
+            {dx_miss_fc_remover $player {$player instrument} {{$player get_user} get_slot_num}}
          }
       }
       {dx_acceleration_mode 0}
@@ -19,7 +19,7 @@
    )
    (pass ;when a note is passed (ignored)
       {beatmatch foreach_active_player $player
-         {dx_miss_fc_remover {$player instrument} $player {{$player get_user} get_slot_num}} ;logic to remove the fc indicator upon miss/pass
+         {dx_miss_fc_remover $player {$player instrument} {{$player get_user} get_slot_num}} ;logic to remove the fc indicator upon miss/pass
       }
       {dx_acceleration_mode 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
@@ -38,23 +38,27 @@
       (track_instrument none)
       (player none)
       (slot none)
+      (curr_ms 0)
+      (diff none)
       (hit ;when a note is hit
          ($gem_id $hit_flags $ratio)
-         ;calculate this as early as possible for accuracy
-         ;{time
-            {set $this_curr_ms {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
-            {set $offset FALSE}
-            {set $this_accuracy {'-' $this_curr_ms {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} $gem_id}}}
-         ;}
+         {if {&& {{[player] get_user} is_local} {== [diff] expert} {gamemode in_mode qp_coop}}
+            ;calculate this as early as possible for accuracy
+            {set [curr_ms] {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
+            {set [offset] FALSE}
+            {set [accuracy] {'-' [curr_ms] {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} $gem_id}}}
+         }
          ;then do other stuff
          {$this first_note}
          {$this check_fc} ;run the logic to check if we are in an fc or not
          {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
          {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
          {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {dx_check_for_streak_popup $dx_note_streak_popups [track_instrument] [num_gems_combo]}
+         {dx_check_for_streak_popup $dx_note_streak_popups [player] [track_instrument] [num_gems_combo]}
          {dx_indv_note_streak $dx_track_streak [track_instrument]}
-         {$this perfects_indicator $dx_perfects_indidicator}
+         {if {&& {{[player] get_user} is_local} {== [diff] expert} {gamemode in_mode qp_coop}}
+            {$this perfects_indicator $dx_perfects_indicator}
+         }
       )
       (miss ;when a note is missed (overstrum)
          {if {dx_check_first_note [track_instrument]}
@@ -82,41 +86,46 @@
       )
       (check_fc
          {$this check_missed} ;run the logic to check our current misses
-         {dx_fc_glow_enabler $dx_fc_glow [track_instrument] [num_gems_pass] [num_gems_miss]}
+         {dx_fc_glow_enabler $dx_fc_glow [player] [track_instrument] [num_gems_pass] [num_gems_miss]}
       )
       (check_missed
-         {dx_fc_glow_disabler $dx_fc_glow [track_instrument] [num_gems_pass] [num_gems_miss]}
+         {dx_fc_glow_disabler $dx_fc_glow [player] [track_instrument] [num_gems_pass] [num_gems_miss]}
       )
+      (offset 0)
+      (timing 0)
+      (accuracy 0)
+      (negative 0)
+      (total 0)
       (perfects_indicator
          ($enabled)
          {if $enabled
-            {if_else {< $this_accuracy 0}
-               {do {set $this_accuracy {'*' $this_accuracy -1}} {set $negative TRUE}}
-               {set $negative FALSE}
+            {if_else {< [accuracy] 0}
+               {do {set [accuracy] {'*' [accuracy] -1}} {set [negative] TRUE}}
+               {set [negative] FALSE}
             }
-            {if_else $offset
-               {if_else {< $offset 0}
-                  {if {< $this_accuracy {'*' $offset -1}} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
-                  {if {< $this_accuracy $offset} {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}}
+            {if_else [offset]
+               {if_else {< [offset] 0}
+                  {if {< [accuracy] {'*' [offset] -1}} {set [offset] {if_else [negative] {'*' [accuracy] -1} [accuracy]}}}
+                  {if {< [accuracy] [offset]} {set [offset] {if_else [negative] {'*' [accuracy] -1} [accuracy]}}}
                }
-               {set $offset {if_else $negative {'*' $this_accuracy -1} $this_accuracy}}
+               {set [offset] {if_else [negative] {'*' [accuracy] -1} [accuracy]}}
             }
-            {if $offset
+            {if [offset]
                ;TODO make this a setting
-               {set $this_timing perfect}
-               {if {>= $offset 1} {set $this_timing late}}
-               {if {<= $offset -1} {set $this_timing early}}
+               {set [timing] perfect}
+               {if {>= [offset] 1} {set [timing] late}}
+               {if {<= [offset] -1} {set [timing] early}}
                {cond
-                  ({&& {< $offset 25} {> $offset -25}}
-                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing perfect}
+                  ({&& {< [offset] 25} {> [offset] -25}}
+                     {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
                   )
-                  ({&& {< $offset 40} {> $offset -40}}
-                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing great}
+                  ({&& {< [offset] 40} {> [offset] -40}}
+                     {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
                   )
-                  ({&& {< $offset 55} {> $offset -55}}
-                     {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing good}
+                  ({&& {< [offset] 55} {> [offset] -55}}
+                     {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] good}
                   )
-                  {dx_perfect_hit $dx_track_streak [track_instrument] [player] [slot] $dx_detailed_hit_stats $this_timing bad}
+                  {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] bad}
                }
                ;poc, show extra hit effects, needs a lot of work
                ;{{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find burn_bonus.trig} trigger}
@@ -127,13 +136,14 @@
                ;      {{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find stop_burn.trig} trigger}
                ;   )
                ;}
-               {set $total {+ $total $offset}}
+               {set [total] {+ [total] [offset]}}
                ;debug, show values
                ;{{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
                ;{{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
                ;{{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
                ;{{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " $offset " Avg: " {/ $total [num_gems_hit]}}}}
+               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint $sprinting}}}
+               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " [offset] " Avg: " {/ $total [num_gems_hit]}}}}
             }
          }
       )
@@ -141,11 +151,11 @@
       (num_gems_combo 0) ;default setup state and storage for note counters
       (num_gems_miss 0) ;default setup state and storage for note counters
       (num_gems_pass 0) ;default setup state and storage for note counters
-      {set $total 0}
    }
    {{sprint "fc_" $instrument "_callback"} set track_instrument $instrument} ;finally, apply the correct instrument to the object
    {{sprint "fc_" $instrument "_callback"} set player $player}
    {{sprint "fc_" $instrument "_callback"} set slot $slot}
+   {{sprint "fc_" $instrument "_callback"} set diff {{$player get_user} get_difficulty_sym}}
 }
 {new Object dx_streak_callback
    (hit {$this update_streak})

@@ -76,68 +76,45 @@
 ; prep od ready popup
 {func
    dx_calc_overdrive
-   ($instrument)
-   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-      {unless {== {$player instrument} vocals}
-         {if {== {$player instrument} $instrument}
-            ;fire popup once and then gate firing again until drained
-            {if {>= {$player band_energy} 0.5}
-               {switch $instrument
-                  (bass {unless $dx_stop_bass_od {dx_od_ready_popup $instrument}} {set $dx_stop_bass_od TRUE})
-                  (real_bass {unless $dx_stop_real_bass_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_bass_od TRUE})
-                  (guitar {unless $dx_stop_guitar_od {dx_od_ready_popup $instrument}} {set $dx_stop_guitar_od TRUE})
-                  (real_guitar {unless $dx_stop_real_guitar_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_guitar_od TRUE})
-                  (drum {unless $dx_stop_drum_od {dx_od_ready_popup $instrument}} {set $dx_stop_drum_od TRUE})
-                  (real_drum {unless $dx_stop_real_drum_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_drum_od TRUE})
-                  (keys {unless $dx_stop_keys_od {dx_od_ready_popup $instrument}} {set $dx_stop_keys_od TRUE})
-                  (real_keys {unless $dx_stop_real_keys_od {dx_od_ready_popup $instrument}} {set $dx_stop_real_keys_od TRUE})
-               }
-            }
-            ;once we are drained, allow popups to fire again when ready
-            {if {<= {$player band_energy} 0.01}
-               {switch $instrument
-                  (bass {set $dx_stop_bass_od FALSE})
-                  (real_bass {set $dx_stop_real_bass_od FALSE})
-                  (guitar {set $dx_stop_guitar_od FALSE})
-                  (real_guitar {set $dx_stop_real_guitar_od FALSE})
-                  (drum {set $dx_stop_drum_od FALSE})
-                  (real_drum {set $dx_stop_real_drum_od FALSE})
-                  (keys {set $dx_stop_keys_od FALSE})
-                  (real_keys {set $dx_stop_real_keys_od FALSE})
-               }
-            }
-         }
-      }
+   ($enabled $player $instrument)
+   ;fire popup once and then gate firing again until drained
+   {if {>= {$player band_energy} 0.5}
+      ;{if {! {eval {var {sprint "dx_stop_od_" $instrument}}}}
+         {dx_od_ready_popup $player $instrument }
+         {set_var {sprint "dx_stop_od_" $instrument} TRUE}
+      ;}
+   }
+   ;once we are drained, allow popups to fire again when ready
+   {if {<= {$player band_energy} 0.01}
+      {set_var {sprint "dx_stop_od_" $instrument} FALSE}
+   }
+}
+{func
+   dx_streak_timer_gen
+   {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
+   {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
+   {cond
+      ({< $dx_bpm 100} {set $dx_streak_timer 3})
+      ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
+      ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
+      ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
+      ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
+      ({> $dx_bpm 340} {set $dx_streak_timer 18})
    }
 }
 ; shows an "overdrive ready!" popup when od is ready
 {func
    dx_od_ready_popup
-   ($instrument)
-   {if {&& $dx_od_ready_popups {! {gamemode in_mode trainer}}}
-      {do
-         {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
-         {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
-         {cond
-            ({< $dx_bpm 100} {set $dx_streak_timer 3})
-            ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
-            ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
-            ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
-            ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
-            ({> $dx_bpm 340} {set $dx_streak_timer 18})
-         }
-         {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-            {if {&& {!= {$player instrument} vocals} {== {$player instrument} $instrument}}
-               {set_this {{find_obj DX_GEMTRACKDIR} find player_feedback}}
-               {super_streak_start.trig trigger}
-               {bass_super_streak.lbl set_token_fmt dx_overdrive_ready}
-               {script_task
-                  kTaskBeats
-                  (delay $dx_streak_timer)
-                  (script {dx_note_streak_remover $player $instrument})
-               }
-            }
-         }
+   ($player $instrument)
+   {if {! {gamemode in_mode trainer}}
+      {dx_streak_timer_gen}
+      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+      {super_streak_start.trig trigger}
+      {bass_super_streak.lbl set_token_fmt dx_overdrive_ready}
+      {script_task
+         kTaskBeats
+         (delay $dx_streak_timer)
+         (script {dx_note_streak_remover $player $instrument})
       }
    }
 }
