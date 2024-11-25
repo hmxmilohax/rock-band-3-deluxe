@@ -156,22 +156,59 @@
 #define MTV_DTA_READER
 (
    {if $dx_author_finder_is_enabled
+      ;init vars
       {set $dx_path_failed FALSE}
       {set $tempreadarray ()}
       {resize $tempreadarray 0}
       {set $songdtareader ()}
       {resize $songdtareader 0}
+      ;init base filepath
       {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+      ;if base file path exists
       {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+         ;set it
          {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}} ;a dlc dta
+          ;check if we are on disc
           {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"}}
+            ;set on disc path
             {set $filepath "songs/songs.dta"} ;on disc
-            {set $dx_path_failed TRUE}
+            ;we have to assume ps3 hw can see all, because file_exists doesnt work outside of the ark there
+            {if_else $dx_ps3hw
+               {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+               {set $dx_path_failed TRUE}
+            }
+         }
+      }
+      ;man idk why but ps3 hw cannot display a package_name for rb1, thus this mess
+      {if $dx_ps3hw
+         {foreach $entry
+            (
+               29fingers sayitaintso inbloom ithinkimparanoid
+               timewehad missqueen hereitgoesagain creep
+               blooddoll waveofmutilation shouldistay maps
+               gimmeshelter brainpower sabotage blitzkriegbop
+               celebrityskin imsosick whenyouwereyoung
+               blackholesun wanteddeadoralive learntofly seven
+               orangecrush mainoffender thehandthatfeeds
+               daylatedollarshort epic suffragettecity
+               ballroomblitz deadonarrival pleasure
+               trainkeptarollin areyougonnabemygirl paranoid
+               timmy welcomehome gowiththeflow danicalifornia
+               nightmare dontfearthereaper reptilia
+               electricversion vasoline detroitrockcity
+               cantletgo nexttoyou cherubrock tomsawyer
+               entersandman greengrass outside highwaystar
+               foreplaylongtime flirtinwithdisaster igetby
+               runtothehills wontgetfooled
+            )
+            {if {== $entry {symbol {meta_performer song}}}
+               {set $filepath "songs/rb1_songs.dta"}
+            }
          }
       }
       {if {! $dx_path_failed}
          #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
-         {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+         {if {&& {!= $filepath "songs/rb1_songs.dta"} {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
             {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
             {if {has_substr $filepath BLUS30050}
                {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
@@ -182,7 +219,16 @@
             {if {has_substr $filepath BLUS30463}
                {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
             }
-            {if_else {file_exists $ps3_base_path}
+            {if {has_substr $filepath BLES00986}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00986/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLES00385}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00385/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLES00228}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00228/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if_else {|| $dx_ps3hw {file_exists $ps3_base_path}}
                {set $filepath $ps3_base_path}
                {set $dx_path_failed TRUE}
             }
@@ -199,7 +245,7 @@
          }
          #endif
 
-         {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {file_exists $filepath}} #endif
+         {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {== $filepath "songs/rb1_songs.dta"} $dx_ps3hw {file_exists $filepath}} #endif
             {set $songdtareader {read_file $filepath}}
             {set $dx_path_failed TRUE}
          }
