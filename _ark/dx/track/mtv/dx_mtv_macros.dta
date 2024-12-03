@@ -1,31 +1,7 @@
 ;welcome to jnacks hell
-;inside the ark
-#define SONGPATH_DISC
-(
-   {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"} ;if we loaded a song from on disc, this is the location of the loaded songs.dta
-)
-;a dlc dta
-#define SONGPATH_DLC
-(
-   {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"} ;if we loaded a dlc song, this is the location of the loaded songs.dta
-)
-;on disc update
-#define SONGPATH_UPDATE
-(
-   {sprint {song_mgr song_path {meta_performer song}} "/../../../gen/missing_song_data_updates.dtb"} ;if we loaded a dlc song that has an on disc update
-)
-#define SONGPATH_RAW_DTB
-(
-   {sprint "dx/song_dta_collection/gen/" {meta_performer song} ".dtb"}
-)
-#define DX_MTV_BPM_HANDLER
-(
-   {if {&& $dx_bpm_report $dx_mtvup}
-      {set $dx_tmp {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}
-      {set $dx_bpm_counter {* {* 60 {/ 1 {- {beat_to_seconds {+ $dx_tmp 1}} {beat_to_seconds $dx_tmp}}}} $speedmod}}
-      {dx_mtv_setup_text}
-   }
-)
+;update, its not so bad no more
+
+;todo, implement this with the new stuffs
 #define DX_MTV_SET_POS_HANDLER
 (
    (dx_set_mtv_pos
@@ -35,37 +11,7 @@
       }
    )
 )
-#define MTV_DTA_PREPPER
-(
-   {dx_log_writer default {sprint "Attempting to read loaded song DTA."}}
-   ;{unless $dx_readdtaonce
-   ;   {set $dx_readdtaonce TRUE}
-   ;   {set $dx_readadditionaldtaonce FALSE}
-   ;   {set $theactualpath FALSE}
-      ;{set $songdtareader {read_file SONGPATH_DLC}} ;load the dta into memory
-      ;{if_else $theactualpath
-      ;   {do
-      ;      {if_else {== $theactualpath SONGPATH_UPDATE} ;check if this is an on disc update 
-      ;         {if_else {file_exists SONGPATH_RAW_DTB} ;check for the raw dtb, should always be there
-      ;            {do
-      ;               {set $songdtareader {read_file SONGPATH_RAW_DTB}} ; read the raw dtb
-      ;            }
-      ;            {do
-      ;               {set $dx_path_failed TRUE} ;failure (shouldnt happen)
-      ;               {dx_log_writer default {sprint "Found DTA update path, but couldn't find raw dtb"}}
-      ;            }
-      ;         }
-      ;         {set $songdtareader {read_file $theactualpath}} ;load the dta into memory
-      ;      }
-      ;      {dx_log_writer info {sprint "Found DTA path: " $theactualpath}}
-      ;   }
-      ;   {do
-      ;      {set $dx_path_failed TRUE}
-      ;      {dx_log_writer default {sprint "Unmapped DTA path: " {song_mgr song_file_path {meta_performer song} "/"}}}
-      ;   }
-      ;}
-   ;}
-)
+
 #define DTA_ARRAY_READER
 (
    {if {> {size $songdtareader} 0}
@@ -273,144 +219,210 @@
       }
    }
 )
+#define CREATE_MTV_LINE
+(
+   {dx_mtv_hud_label {sprint "dx_mtv_label_" $this_total_lines} $dx_mtv_overlay_text_size $dx_mtv_overlay_text_font $dx_mtv_overlay_text_alignment $dx_mtv_overlay_text_kerning $dx_mtv_overlay_text_x $dx_mtv_overlay_text_z {- $dx_mtv_overlay_text_y {* 0.78 {- $this_total_lines 1}}} $dx_mtv_overlay_text_r $dx_mtv_overlay_text_g $dx_mtv_overlay_text_b $mtv_destroy}
+)
+#define THIS_MTV_LBL
+(
+   {sprint "dx_mtv_label_" $this_total_lines ".lbl"}
+)
+#define MOD_STRING
+(
+   ;localized sprintf string
+   song_string
+   ;2 arguments
+   {{song_mgr get_meta_data {meta_performer song}} title}
+   {localize $this_mod}
+)
 #define DX_MTV_FORMATTER_HANDLER
 (
    (mtv_formatter
-      {dx_mtv_formatter reset} ; reset the formatted label to nothing first to prep for new data
-      ;TODO this is awful
-      {if {&& $artistvar $dx_artist_mtv_line}
-         {if_else $mastervar ;check if this song is labelled as a cover or not
-            {if_else {&& $dx_year_on_mtv $yearvar $dx_year_on_one_mtv_line}
-               {dx_mtv_formatter {sprint $artistvar ", " $yearvar}}
-               {dx_mtv_formatter $artistvar}
+      {do
+         ;index starts at 1 (this time)
+         ($this_total_lines 1)
+         ($this_mod FALSE)
+         ;destroy all current instances when running
+         {set $mtv_destroy TRUE}
+         ;iterate through existing labels and destroy them
+         {foreach_int $i 1 15
+            {if {exists {sprint "dx_mtv_label_" $i ".lbl"}}
+               {delete {sprint "dx_mtv_label_" $i ".lbl"}}
             }
-            {if_else {&& $dx_year_on_mtv $yearvar $dx_year_on_one_mtv_line}
-               {dx_mtv_formatter {sprint {localize store_famous_by} ": " $artistvar ", " $yearvar}}
-               {dx_mtv_formatter {sprint {localize store_famous_by} ": " $artistvar}}
+         }
+         ;create the first of many mtv overlay lines, defined above
+         CREATE_MTV_LINE
+         ;first cond is for song name and modifiers
+         {cond
+            ;check for various modifiers. The order is in priority.
+            ;Autoplay should always be first, for example.
+            ({&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+               {set $this_mod mod_auto_play}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_fakejuke}
+               {THIS_MTV_LBL set_song_name {meta_performer song}}
+            )
+            ({modifier_mgr is_modifier_active mod_auto_kick}
+               {set $this_mod mod_auto_kick}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_fastermode}
+               {THIS_MTV_LBL set_token_fmt
+                  ;localized sprintf string
+                  speed_string_mode
+                  ;3 arguments
+                  {{song_mgr get_meta_data {meta_performer song}} title}
+                  {localize mod_fastermode}
+                  {int {'+' 0.5 {'*' $speedmod 100}}}
+               }
+               {set $acceleration_label THIS_MTV_LBL} ;specify the label to update only it on speed change
+            )
+            ({&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
+               {THIS_MTV_LBL set_token_fmt
+                  ;localized sprintf string
+                  speed_string
+                  ;2 arguments
+                  {{song_mgr get_meta_data {meta_performer song}} title}
+                  {int {'+' 0.5 {'*' $speedmod 100}}}
+               }
+            )
+            ({modifier_mgr is_modifier_active mod_perfection}
+               ;sets locale string for use with define
+               {set $this_mod mod_perfection}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_brutalmode}
+               {set $this_mod mod_brutalmode}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_precision}
+               {set $this_mod mod_precision}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_chmode}
+               {set $this_mod mod_chmode}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ;cond fallback
+            ;if none above in cond detected, just set the name as is
+            {THIS_MTV_LBL set_song_name {meta_performer song}}
+         }
+         ;move up the song title a little bit for style
+         {THIS_MTV_LBL set text_size {* $dx_mtv_overlay_text_size 1.15}}
+         ;move on to next line
+         {++ $this_total_lines}
+         ;these are pretty straight forward for a bit
+         ;make new line, fill it
+         {if {|| $dx_artist_mtv_line {modifier_mgr is_modifier_active mod_fakejuke}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_artist_name_from_shortname {meta_performer song}}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_year_on_mtv {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt year_string {{song_mgr get_meta_data {meta_performer song}} year_released}}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_album_mtv_line $albumvar}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt stringify $albumvar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_genre_mtv_line {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt {{song_mgr get_meta_data {meta_performer song}} genre}}
+            {++ $this_total_lines}
+         }
+         ;only add subgenre line if it is unique against normal genre
+         {if {&& $dx_sub_genre_mtv_line {!= $subgenrevar {{song_mgr get_meta_data {meta_performer song}} genre}} $subgenrevar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt $subgenrevar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_game_origin_mtv_line $sourcevar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt $sourcevar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_author_mtv_line $authorvar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            ;mtv overlay happens faster than track panel enter so we need to check here first
+            {beatmatch foreach_active_player $player
+               {switch {$player instrument}
+                  (real_guitar {set $real_guitarplayeractive true})
+                  (real_bass {set $real_bassplayeractive true})
+                  (keys {set $keysplayeractive true})
+                  (real_keys {set $real_keysplayeractive true})
+                  kDataUnhandled
+               }
             }
+            {cond
+               ;if protar is active but not keys
+               (
+                  {&&
+                     {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
+                     $stringsauthorvar
+                     {!= $real_keysplayeractive true}
+                     {!= $keysplayeractive true}
+                  }
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar ", " {localize strings_author} ": " $stringsauthorvar}}
+               )
+               ;if keys are active but not protar
+               (
+                  {&&
+                     {!= $real_bassplayeractive true}
+                     {!= $real_guitarplayeractive true}
+                     $keysauthorvar
+                     {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
+                  }
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar ", " {localize keys_author} ": " $keysauthorvar}}
+               )
+               ;if both keys and protar is active
+               (
+                  {&&
+                     {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
+                     $stringsauthorvar
+                     $keysauthorvar
+                     {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
+                  }
+                  ;set the first line with the normal author
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar}}
+                  ;make a new line and populate with protar + keys authors
+                  {++ $this_total_lines}
+                  CREATE_MTV_LINE
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize strings_author} ": " $stringsauthorvar ", " {localize keys_author} ": " $keysauthorvar}}
+               )
+               ;cond fallback
+               ;if we only have one author, only print it
+               {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar}}
+            }
+            {++ $this_total_lines}
          }
-      }
-      {if {|| {&& $dx_year_on_mtv $yearvar $dx_year_on_one_mtv_line {! $dx_artist_mtv_line}} {&& $dx_year_on_mtv $yearvar {! $dx_year_on_one_mtv_line}}}
-         {dx_mtv_formatter {sprint $yearvar}}
-      }
-      {if {&& $dx_current_section $dx_section_mtv_line}
-         {dx_mtv_formatter {sprint {localize section} ": " $dx_current_section}}
-      }
-      ;{dx_mtv_formatter {sprint "\n" {localize time_remaining} ": " $dx_timer_minutes ":" $dx_timer_seconds}}
-      {if {&& $dx_album_mtv_line $albumvar}
-         {dx_mtv_formatter {sprint $albumvar}}
-      }
-      {if {&& $dx_genre_mtv_line $genrevar}
-         {dx_mtv_formatter {sprint {localize $genrevar}}}
-      }
-      {if {&& $dx_sub_genre_mtv_line $subgenrevar}
-         {dx_mtv_formatter {sprint {localize $subgenrevar}}}
-      }
-      {if {&& $dx_game_origin_mtv_line $sourcevar}
-         {dx_mtv_formatter {sprint {localize $sourcevar}}}
-      }
-      {if {&& $dx_author_mtv_line $authorvar}
-         {dx_mtv_formatter {sprint {localize author} ": " $authorvar}}
-      }
-      {if {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
-         {if {&& $dx_author_mtv_line $stringsauthorvar}
-            {dx_mtv_formatter {sprint ", " {localize strings_author} ": " $stringsauthorvar}}
+         {if {&& $dx_song_key_mtv_line $dx_song_key_var {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt keyof_string {localize $dx_song_key_var}}
+            {++ $this_total_lines}
          }
-      }
-      {if {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
-         {if {&& $dx_author_mtv_line $keysauthorvar}
-            {dx_mtv_formatter {sprint ", " {localize keys_author} ": " $keysauthorvar}}
+         {if {&& $dx_section_mtv_line {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt {beatmatch get_section_at_ms {{beatmatch main_performer} progress_ms}}}
+            {set $current_section_label THIS_MTV_LBL} ;specify the label to update only it on section change
+            {++ $this_total_lines}
          }
-      }
-      {if {&& $dx_song_key_mtv_line $dx_song_key_var}
-         {dx_mtv_formatter {sprint {localize key_of} ": " {localize $dx_song_key_var}}}
-      }
-      {artist.lbl set fixed_length 1000}
-      {artist.lbl set leading 0.9}
-      {switch $dx_mtv_elements
-         (0 {artist.lbl set height 100}) ;I dont know a better way to do this but we check how many elements are chosen by the user and fetch each of the elements from the created array manually depending on how many
-         (1 {artist.lbl set height 200} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_1} {elem $dx_mtv_holder 0}}})
-         (2 {artist.lbl set height 300} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_2} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1}}})
-         (3 {artist.lbl set height 400} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_3} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2}}})
-         (4 {artist.lbl set height 500} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_4} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3}}})
-         (5 {artist.lbl set height 600} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_5} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3} {elem $dx_mtv_holder 4}}})
-         (6 {artist.lbl set height 700} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_6} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3} {elem $dx_mtv_holder 4} {elem $dx_mtv_holder 5}}})
-         (7 {artist.lbl set height 800} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_7} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3} {elem $dx_mtv_holder 4} {elem $dx_mtv_holder 5} {elem $dx_mtv_holder 6}}})
-         (8 {artist.lbl set height 900} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_8} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3} {elem $dx_mtv_holder 4} {elem $dx_mtv_holder 5} {elem $dx_mtv_holder 6} {elem $dx_mtv_holder 7}}})
-         (9 {artist.lbl set height 1000} {artist.lbl set_token_fmt {sprintf {localize dx_mtv_9} {elem $dx_mtv_holder 0} {elem $dx_mtv_holder 1} {elem $dx_mtv_holder 2} {elem $dx_mtv_holder 3} {elem $dx_mtv_holder 4} {elem $dx_mtv_holder 5} {elem $dx_mtv_holder 6} {elem $dx_mtv_holder 8} {elem $dx_mtv_holder 9}}})
+         {if {&& $dx_bpm_report {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt bpm_report $dx_bpm_counter}
+            {set $bpm_label THIS_MTV_LBL} ;specify the label to update only it on bpm change
+            {++ $this_total_lines}
+         }
+         ;this is a hack and i should fix this better later
+         {set $mtv_destroy FALSE}
+
+         ;hide the old stinky label
+         {artist.lbl set_token_fmt os_blnk}
       }
    )
-)
-#define MTV_MOD_WRITER_HANDLER
-(
-   (mtv_song_title_writer
-      {set $dx_tmp ""}
-      {set $dx_tmp2 ""}
-      {if {modifier_mgr is_modifier_active mod_fastermode}
-         {set $dx_tmp2 {sprint $dx_tmp2 {localize mod_fastermode} " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%) " }}
-      }
-      {if {modifier_mgr is_modifier_active mod_chmode}
-         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "DRUNK MODE"}}
-      }
-      {if {modifier_mgr is_modifier_active mod_precision}
-         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "PRECISION MODE"}}
-      }
-      {if {&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
-         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "AUTOPLAY"}}
-      }
-      {if $dx_bpm_report
-         {set $dx_tmp2 {sprint $dx_tmp2 {if_else {!= $dx_tmp2 ""} " | " ""} "BPM: " $dx_bpm_counter}}
-      }
-      {if {&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
-         {set $dx_tmp {sprint $dx_tmp " (" {int {'+' 0.5 {'*' $speedmod 100}}} "%)" }}
-      }
-      {if_else $dx_song_title_mtv_line
-         {if {!= $dx_tmp2 ""}
-            {set $dx_tmp {sprint $dx_tmp "\n" $dx_tmp2}}
-         }
-         {if {!= $dx_tmp2 ""}
-            {set $dx_tmp {sprint $dx_tmp $dx_tmp2}}
-         }
-      }
-      {if_else $dx_song_title_mtv_line
-         {if_else {!= $dx_tmp ""}
-            {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title} $dx_tmp}}
-            {song.lbl set_token_fmt {sprint {{song_mgr get_meta_data {meta_performer song}} title}}}
-         }
-         {if_else {!= $dx_tmp ""}
-            {song.lbl set_token_fmt {sprint $dx_tmp}}
-            {song.lbl set_token_fmt {sprint " "}}
-         }
-      }
-   )
-)
-#define MTV_SONG_WRITER
-(
-   {if {modifier_mgr is_modifier_active mod_fakejuke} ;if fake jukebox mode is enabled
-       {set $authorvar FALSE} ;just completely disregard the author so our next script lands in the correct spot
-   }
-   {unless $dx_hmxcheckedonce
-      {set $dx_hmxcheckedonce TRUE}
-      #ifndef HX_XBOX
-      DX_CURRENT_SONG_TXT_WRITER
-      DX_CURRENT_SONG_JSON_WRITER
-      #endif
-      ;TODO this is lousy
-      ;{if_else $yearvar
-      ;   {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar ", " $yearvar " - Album: " $albumvar " - Genre: " $genrevar " - Source: " {localize $sourcevar} " - Authored By: " $authorvar " - Gamemode: " $dx_gamemode}}
-      ;   {if_else $authorvar
-      ;      {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar " - Authored By: " $authorvar " - Gamemode: " $dx_gamemode}}
-      ;      {if_else $artistvar
-      ;         {dx_log_writer default {sprint "Song Loaded: " $song_title " - " $artistvar " - Gamemode: " $dx_gamemode}}
-      ;         {dx_log_writer default {sprint "Song Loaded: " $song_title " - Gamemode: " $dx_gamemode}}
-      ;      }
-      ;   }
-      ;}
-   }
-   {unless {&& $dx_bpm_report $dx_mtv_formatted_once} ;show bpm formats way too often to be formatted multiple times
-      {set $dx_mtv_formatted_once TRUE}
-      {$this mtv_formatter}
-   }
 )
 #define MTV_WRITER_CHOOSER
 (
@@ -429,20 +441,12 @@
                   }
                   {set $dx_path_failed TRUE}
                }
-               ;{if {! $namevar} {set $namevar "No Name Found"}}
-               ;{if {! $artistvar} {set $artistvar "No Artist Found"}}
-               ;{if {! $yearvar} {set $yearvar "No Year Found"}}
-               ;{if {! $albumvar} {set $albumvar "No Album Found"}}
-               ;{if {! $genrevar} {set $genrevar "No Genre Found"}}
-               ;{if {! $subgenrevar} {set $subgenrevar "No Sub Genre Found"}}
-               ;{if {! $sourcevar} {set $sourcevar "No Source Found"}}
-               ;{if {! $dx_song_key_var} {set $dx_song_key_var "No Song Key Found"}}
-               {if {exists song.lbl}
-                  {song.lbl set fixed_length 1000}
-                  {$this mtv_song_title_writer}
-               }
                {if {exists artist.lbl}
-                  MTV_SONG_WRITER
+                  #ifndef HX_XBOX
+                  DX_CURRENT_SONG_TXT_WRITER
+                  DX_CURRENT_SONG_JSON_WRITER
+                  #endif
+                  {$this mtv_formatter}
                }
             }
          }
@@ -450,27 +454,12 @@
       {if $dx_path_failed
          {if
             {exists song.lbl}
-            {song.lbl set fixed_length 1000}
-            {$this mtv_song_title_writer}
+            {song.lbl set_song_name $short_name}
          }
          {if
             {exists artist.lbl}
             {artist.lbl set_artist_name_from_shortname $short_name}
          }
-      }
-   }
-)
-#define MTV_WRITER_NO_AUTHOR_FINDER
-(
-   {do
-      {if
-         {exists song.lbl}
-         {song.lbl set fixed_length 1000}
-         {$this mtv_song_title_writer}
-      }
-      {if
-         {exists artist.lbl}
-         {artist.lbl set_artist_name_from_shortname $short_name}
       }
    }
 )

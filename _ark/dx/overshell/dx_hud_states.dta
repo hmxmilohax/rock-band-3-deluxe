@@ -490,36 +490,8 @@
          (default {push_back $options os_mtv_vis_default})
       }
       {push_back $options os_pos}
-      ;{if_else $dx_ps3hw
-      ;   {if_else $dx_bpm_report
-      ;      {push_back $options os_bpm_on}
-      ;      {push_back $options os_bpm_off}
-      ;   }
-         {push_back $options os_currentsong}
-      ;}
-      ;{unless $dx_ps3hw
-      ;   {unless {$this in_game}
-      ;      {if_else $dx_author_finder_is_enabled
-      ;         {push_back $options os_author_finder_on}
-      ;         {push_back $options os_author_finder_off}
-      ;      }
-      ;   }
-      ;   {unless $dx_author_finder_is_enabled
-      ;      {if_else $dx_bpm_report
-      ;         {push_back $options os_bpm_on}
-      ;         {push_back $options os_bpm_off}
-      ;      }
-      ;   }
-      ;   {if $dx_author_finder_is_enabled
-      ;      {push_back $options os_currentsong}
-      ;   }
-      ;}
-      ;{if $dx_ps3hw
-      ;   {if_else $dx_bpm_report
-      ;      {push_back $options os_bpm_on}
-      ;      {push_back $options os_bpm_off}
-      ;   }
-      ;}
+      {push_back $options os_currentsong}
+      {push_back $options os_text_options}
       {dx_state_setup dxState_MTVElements TRUE}
    }
 )
@@ -533,6 +505,10 @@
    )
    (SELECT_MSG
       {switch {$component selected_sym}
+         (os_text_options
+            {set $dx_set_ui_label_tracked_ui mtv_overlay}
+            {$this show_state dxState_LabelOptions}
+         )
          (os_mtv_vis_default
             {set $dx_song_title always}
             {set $dx_long_mtv_delay FALSE}
@@ -870,18 +846,18 @@
    {do
       ($options
          {array 0})
-      {push_back $options {if_else $dx_bpm_report os_bpm_on os_bpm_off}}
-      {push_back $options {if_else $dx_song_title_mtv_line os_song_title_on os_song_title_off}}
+      ;{push_back $options {if_else $dx_song_title_mtv_line os_song_title_on os_song_title_off}}
       {push_back $options {if_else $dx_artist_mtv_line os_artist_on os_artist_off}}
       {push_back $options {if_else $dx_year_on_mtv os_year_on os_year_off}}
-      {push_back $options {if_else $dx_year_on_one_mtv_line os_yearonline_on os_yearonline_off}}
+      ;{push_back $options {if_else $dx_year_on_one_mtv_line os_yearonline_on os_yearonline_off}}
       {push_back $options {if_else $dx_album_mtv_line os_album_on os_album_off}}
       {push_back $options {if_else $dx_genre_mtv_line os_genre_on os_genre_off}}
       {push_back $options {if_else $dx_sub_genre_mtv_line os_sub_genre_on os_sub_genre_off}}
       {push_back $options {if_else $dx_game_origin_mtv_line os_source_on os_source_off}}
-      {push_back $options {if_else $dx_section_mtv_line os_section_on os_section_off}}
       {push_back $options {if_else $dx_author_mtv_line os_author_on os_author_off}}
       {push_back $options {if_else $dx_song_key_mtv_line os_song_key_on os_song_key_off}}
+      {push_back $options {if_else $dx_section_mtv_line os_section_on os_section_off}}
+      {push_back $options {if_else $dx_bpm_report os_bpm_on os_bpm_off}}
       {dx_state_setup dxState_CurrentSongSetup FALSE}
    }
 )
@@ -1024,9 +1000,11 @@
             {set $previous_state dxState_CurrentSongSetup}
          )
       }
+      {set $mtv_destroy TRUE}
       {if $dx_mtvup
          {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
       }
+      {set $mtv_destroy FALSE}
       {set $in_state FALSE}
       DX_CURRENT_SONG_SETUP_DATA
       {set $previous_state dxState_CurrentSongSetup}
@@ -1778,6 +1756,12 @@
          {set $dx_set_ui_text_alignment $dx_track_username_alignment}
          {set $dx_set_ui_text_kerning $dx_track_username_kerning}
       )
+      (mtv_overlay
+         {set $dx_set_ui_text_size $dx_mtv_overlay_text_size}
+         {set $dx_set_ui_text_font $dx_mtv_overlay_text_font}
+         {set $dx_set_ui_text_alignment $dx_mtv_overlay_text_alignment}
+         {set $dx_set_ui_text_kerning $dx_mtv_overlay_text_kerning}
+      )
       kDataUnhandled
    }
 )
@@ -1801,6 +1785,12 @@
          {set $dx_set_ui_text_size 2}
          {set $dx_set_ui_text_font pentatonic_outline}
          {set $dx_set_ui_text_alignment kMiddleCenter}
+         {set $dx_set_ui_text_kerning 0}
+      )
+      (mtv_overlay
+         {set $dx_set_ui_text_size 1}
+         {set $dx_set_ui_text_font pentatonic_outline}
+         {set $dx_set_ui_text_alignment kMiddleLeft}
          {set $dx_set_ui_text_kerning 0}
       )
    }
@@ -1849,6 +1839,17 @@
             }
          }
       )
+      (mtv_overlay
+         {set $dx_mtv_overlay_text_size $dx_set_ui_text_size}
+         {set $dx_mtv_overlay_text_font $dx_set_ui_text_font}
+         {set $dx_mtv_overlay_text_alignment $dx_set_ui_text_alignment}
+         {set $dx_mtv_overlay_text_kerning $dx_set_ui_text_kerning}
+         {if {$this in_game}
+            {if $dx_mtvup
+               {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+            }
+         }
+      )
       kDataUnhandled
    }
 )
@@ -1861,6 +1862,7 @@
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "interval_" $dx_pos_remapper_array_number}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprint {localize os_font_size} ": " $dx_set_ui_text_size}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprint {localize os_kerning}  ": " $dx_set_ui_text_kerning}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4}} os_blnk {sprint {localize os_alignment}  ": " $dx_set_ui_text_alignment}}
          {sprint os_font $dx_set_ui_text_font}        
       )
    }
@@ -1879,6 +1881,9 @@
          {options_audio.lst set_type overshell_menu_ingame}
          {options_audio.lst set_type overshell_menu}
       }
+      {set $dx_align_array (kTopLeft kTopCenter kTopRight kMiddleLeft kMiddleCenter kMiddleRight kBottomLeft kBottomCenter kBottomRight)}
+      {set $dx_align_array_size {size $dx_align_array}}
+      {set $dx_align_array_number 0}
       {set $dx_font_array (default gangly hamilton monospace_numbers_shadow pentatonic pentatonic_bold pentatonic_boldsmall pentatonic_display pentatonic_outline pentatonic_regularcond pentatonic_regularsmall pentatonic_mononumerals rats relay_black stainless stainless_ext_blk stainless_ext_reg)}
       {set $dx_font_array_size {size $dx_font_array}}
       {set $dx_font_array_number 0}
@@ -1937,6 +1942,22 @@
                   (4
                      {if
                         {switch $action
+                           (kAction_Down {> $dx_align_array_number 0})
+                           (kAction_Up {< $dx_align_array_number {- $dx_align_array_size 1}})
+                        }
+                        {set $dx_align_array_number
+                           {switch $action
+                              (kAction_Down {- $dx_align_array_number 1})
+                              (kAction_Up {+ $dx_align_array_number 1})
+                           }
+                        }
+                        {set $dx_set_ui_text_alignment {elem $dx_align_array $dx_align_array_number}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  (5
+                     {if
+                        {switch $action
                            (kAction_Down {> $dx_font_array_number 0})
                            (kAction_Up {< $dx_font_array_number {- $dx_font_array_size 1}})
                         }
@@ -1948,7 +1969,7 @@
                         }
                         {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
                      }
-                     {set $dx_list_pos 4}
+                     {set $dx_list_pos 5}
                   )
                   kDataUnhandled
                }
@@ -2012,6 +2033,22 @@
                   (4
                      {if
                         {switch $action
+                           (kAction_Left {> $dx_align_array_number 0})
+                           (kAction_Right {< $dx_align_array_number {- $dx_align_array_size 1}})
+                        }
+                        {set $dx_align_array_number
+                           {switch $action
+                              (kAction_Left {- $dx_align_array_number 1})
+                              (kAction_Right {+ $dx_align_array_number 1})
+                           }
+                        }
+                        {set $dx_set_ui_text_alignment {elem $dx_align_array $dx_align_array_number}}
+                     }
+                     {set $dx_list_pos 4}
+                  )
+                  (5
+                     {if
+                        {switch $action
                            (kAction_Left {> $dx_font_array_number 0})
                            (kAction_Right {< $dx_font_array_number {- $dx_font_array_size 1}})
                         }
@@ -2023,7 +2060,7 @@
                         }
                         {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
                      }
-                     {set $dx_list_pos 4}
+                     {set $dx_list_pos 5}
                   )
                   kDataUnhandled
                }
@@ -2042,6 +2079,7 @@
          (highway_overdrive_text {$this show_state dxState_TrackHighwayOverdrive})
          (highway_username_text {$this show_state dxState_TrackHighwayUsername})
          (highway_streak_text {$this show_state dxState_TrackHighwayStreak})
+         (mtv_overlay {$this show_state dxState_MTVElements})
       }
    )
 )
