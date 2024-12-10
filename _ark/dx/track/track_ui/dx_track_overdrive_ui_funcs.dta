@@ -1,34 +1,19 @@
-{func
-   ;disabled, left here for reference
-   dx_set_song_progress
-   {beatmatch foreach_active_player $player
-      {unless {== {$player instrument} vocals}
-         {if $dx_mtvup
-            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-            {set $curr_ms {beatmatch get_song_ms}}
-            {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}}
-            {set $percent_complete {/ $curr_ms $total_ms}}
-            {tour_meter_wipe.anim set_frame 0}
-            ;{tour_meter_wipe.anim set_frame $percent_complete}
-         }
-      }
-   }
-}
 ; shows the current overdrive of each player at the bottom of their respective highways
 {func
    dx_show_user_overdrive
    {if $dx_track_overdrive
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {if {!= {$player instrument} vocals}
-            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-            {set $this_od_label {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}}
-            {if_else {|| {$player is_deploying} {>= {$player band_energy} 0.50}}
-               {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
-               {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b FALSE}
+         {if {!= {$player instrument} vocals} ;sorry vocals players
+            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}} ;change context to the current checked player overdrive meter dir
+            {set $this_od_label {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".lbl"}} ;construct the name for the current player track label
+            {set $this_od_color {sprint "dx_track_label_overdrive" {{$player get_user} get_slot_num} ".color"}} ;construct the name for the current player track color
+            {if_else {|| {$player is_deploying} {>= {$player band_energy} 0.50}} ;color the label gold when od is ready or during activating
+               {$this_od_color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}} ;gold when active
+               {$this_od_color set color {pack_color $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b}} ;user color when inactive
             }
-            {if_else {>= {$player band_energy} 0.01}
-               {$this_od_label set_token_fmt dx_overdrive_report {* {$player band_energy} 100}}
-               {$this_od_label set_token_fmt os_blnk}
+            {if_else {>= {$player band_energy} 0.01} ;report the overdrive until empty
+               {$this_od_label set_token_fmt dx_overdrive_report {* {$player band_energy} 100}} ;overdrive reported percent with 2 decimal places
+               {$this_od_label set_token_fmt os_blnk} ;blank the label while empty
             }
          }
       }
@@ -36,87 +21,78 @@
 }
 {func dx_track_label_overdrive
    ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}}
-   {set $thislabel {sprint $name $slot ".lbl"}}
-   {set $thiscolor {sprint $name $slot ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
-      }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
+   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
+   {set $thislabel {sprint $name $slot ".lbl"}} ;construct label name
+   {set $thiscolor {sprint $name $slot ".color"}} ;construct linked color name
+   {if $reset ;if we need to destroy and rebuild this label
+      {if {exists $thislabel} {delete $thislabel}} ;destroy label
+      {if {exists $thiscolor} {delete $thiscolor}} ;destroy color
    }
-   {if {! {exists $thislabel}}
+   {if {! {exists $thislabel}} ;rebuild the label if it doesnt exist
       {new BandLabel $thislabel}
+      ;set up default properties
       {$thislabel set resource_name $font}
-      {$thislabel set alt_font_resource_name instruments_icons}
-      {$thislabel set markup TRUE}
-      {$thislabel set alt_text_size 3.3}
-      {$thislabel set alt_z_offset 0}
       {$thislabel set_showing TRUE}
       {$thislabel set_local_scale 1 1 1}
       {$thislabel set_local_rot 0 0 0}
       {$thislabel set width 500}
       {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {meters.grp add_object $thislabel}
-      ;{$thislabel set_token_fmt os_blnk}
+      {meters.grp add_object $thislabel} ;tie it into the overdrive meter group
    }
-   {if {! {exists $thiscolor}}
+   {if {! {exists $thiscolor}} ;rebuild the color if it doesnt exist
       {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
+      {$thislabel set color_override $thiscolor} ;link the color to the constructed label
    }
+   ;these properties are user controllable via overshell
+   ;when configured in-game they do not destroy the label
+   ;so we should run these when the func is called always
    {$thislabel set alignment $alignment}
    {$thislabel set text_size $size}
    {$thislabel set kerning $kerning}
    {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x -5 $y}
+   {$thislabel set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
 }
 ; prep od ready popup
 {func
    dx_calc_overdrive
    ($enabled $player $instrument)
    ;fire popup once and then gate firing again until drained
-   {if $enabled
-      {if {>= {$player band_energy} 0.5}
-         {if {! {eval {var {sprint "dx_stop_od_" $instrument}}}}
-            {dx_od_ready_popup $player $instrument }
-            {set_var {sprint "dx_stop_od_" $instrument} TRUE}
+   {if {&& $enabled {! {gamemode in_mode trainer}}}
+      {if {>= {$player band_energy} 0.5} ;once od is ready
+         {if {! {eval {var {sprint "dx_stop_od_" $instrument}}}} ;check if we havent fired od ready popup since last drain
+            {dx_od_ready_popup $player $instrument} ;fire popup to player
+            {set_var {sprint "dx_stop_od_" $instrument} TRUE} ;gate popup until next drain
          }
       }
-      ;once we are drained, allow popups to fire again when ready
-      {if {<= {$player band_energy} 0.01}
-         {set_var {sprint "dx_stop_od_" $instrument} FALSE}
+      {if {<= {$player band_energy} 0.01} ;once drained
+         {set_var {sprint "dx_stop_od_" $instrument} FALSE} ;allow popups again for this user when od is ready
       }
-   }
-}
-{func
-   dx_streak_timer_gen
-   {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}} ;grab current bpm same way the bpm counter does but not dependent on it
-   {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
-   {cond
-      ({< $dx_bpm 100} {set $dx_streak_timer 3})
-      ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
-      ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
-      ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
-      ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
-      ({> $dx_bpm 340} {set $dx_streak_timer 18})
    }
 }
 ; shows an "overdrive ready!" popup when od is ready
 {func
    dx_od_ready_popup
    ($player $instrument)
-   {if {! {gamemode in_mode trainer}}
-      {dx_streak_timer_gen}
-      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-      {super_streak_start.trig trigger}
-      {bass_super_streak.lbl set_token_fmt dx_overdrive_ready}
-      {script_task
-         kTaskBeats
-         (delay $dx_streak_timer)
-         (script {dx_note_streak_remover $player $instrument})
-      }
+   {dx_streak_timer_gen} ;calculate length of time to hold on popup
+   {set_this {find_obj DX_GEMTRACKDIR player_feedback}} ;set current context of this user
+   {bass_super_streak.lbl set_token_fmt dx_overdrive_ready} ;set text for popup to od ready locale
+   {super_streak_start.trig trigger} ;fire trigger for text popup
+   {script_task kTaskBeats
+      (delay $dx_streak_timer) ;wait for x beats before hiding
+      (script {dx_note_streak_remover $player $instrument}) ;hide popup via trigger to animate out
+   }
+}
+{func
+   dx_streak_timer_gen
+   ;grab current bpm same way the bpm counter does but not dependent on it
+   {set $dx_bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}} 1}} {beat_to_seconds {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}}}}} $speedmod}}
+   {set $dx_streak_timer 4} ;fallback if somehow the cond fails to set something
+   {cond ;show the popup for longer, the faster the bpm is
+      ({< $dx_bpm 100} {set $dx_streak_timer 3})
+      ({&& {> $dx_bpm 100} {< $dx_bpm 160}} {set $dx_streak_timer 4})
+      ({&& {> $dx_bpm 160} {< $dx_bpm 220}} {set $dx_streak_timer 6})
+      ({&& {> $dx_bpm 220} {< $dx_bpm 280}} {set $dx_streak_timer 8})
+      ({&& {> $dx_bpm 280} {< $dx_bpm 340}} {set $dx_streak_timer 12})
+      ({> $dx_bpm 340} {set $dx_streak_timer 18})
    }
 }
