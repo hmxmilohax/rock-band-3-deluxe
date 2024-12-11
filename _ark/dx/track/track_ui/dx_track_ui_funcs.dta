@@ -1,207 +1,135 @@
 {func
-   ;disabled, left here for reference
-   dx_track_panel_extended_ui
-   {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-      {unless {== {$player instrument} vocals}
-         {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-         {tour_configure_challenge.anim set_frame 1}
-         {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-         {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
-         {set $percent_complete {/ $curr_ms $total_ms}}
-         {tour_meter_wipe.anim set_frame 0} ;disabled for now
-         ;{tour_meter_wipe.anim set_frame $percent_complete}
-         ;{tour_meter_wipe.anim animate (period 20) (dest 1)}
-         {tour_show.trig trigger}
-         ;{streak_meter_bg.mesh set_showing FALSE}
-         ;{streak_meter_glass.mesh set_showing FALSE}
-         {tour_flag_1.mesh set_showing FALSE}
-         {tour_flag_2.mesh set_showing FALSE}
-         {tour_flag_3.mesh set_showing FALSE}
-         {tour_flag_rays.mesh set_showing FALSE}
-         {tour_fx.mesh set_showing FALSE}
-      }
-   }
-}
-
-{func
    dx_vanilla_track_text_reset
+   ($player $instrument)
    ;resets things like bass groove text and points text for cleanup
-   {beatmatch foreach_active_player $player
-      {if {!= {$player instrument} vocals}
-         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-         {bass_super_streak.lbl set_token_fmt bass_streak}
-         {points.lbl set_token_fmt dx_points}
-      }
-      {if {== {$player instrument} vocals}
-         {set_this {find_obj DX_VOCALDIR player_feedback}}
-         {points.lbl set_token_fmt dx_points}
-      }
+   {if_else {== {$player instrument} vocals} ;set proper context
+      {set_this {find_obj DX_VOCALDIR player_feedback}}
+      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
    }
+   ;clean up object text
+   {bass_super_streak.lbl set_token_fmt bass_streak} ;this doesnt exist in vox but who cares? not the game!
+   {points.lbl set_token_fmt dx_points} ;this exists in all dirs, its for solos
 }
+;clean up ps3 names
 {func
    dx_sanitize_player_name
    ($name)
-   ;remove gross ps3 local user tags
-   #ifdef HX_PS3
-   {search_replace $name " (1)" "" $name}
-   {search_replace $name " (2)" "" $name}
-   {search_replace $name " (3)" "" $name}
-   {search_replace $name " (4)" "" $name}
-   {search_replace $name " (5)" "" $name}
-   {search_replace $name " (6)" "" $name}
-   {search_replace $name " (7)" "" $name}
-   {search_replace $name "*" "" $name}
-   #endif
-   {set $dx_current_player_name_sanitized $name}
+   {foreach_int $i 0 9 ;for every number
+      {search_replace $name {sprint " (" $i ")"} "" $name} ;remove the ps3 user text
+   }
+   {search_replace $name "*" "" $name} ;this indicates a system problem but who cares? we dont!
+   $name ;return name
 }
+;constructs track icon to support difficulty rings
 {func
-   dx_get_localized_diff
-   ($instrument)
-   {localize
-      {sprint
-         "dx_diff_" 
-         {switch $instrument
-            (guitar $guitarrankvar)
-            (bass $bassrankvar)
-            (drum $drumrankvar)
-            (keys $keysrankvar)
-            (real_guitar $real_guitarrankvar)
-            (real_bass $real_bassrankvar)
-            (real_drum $drumrankvar)
-            (real_keys $real_keysrankvar)
+   dx_setup_player_icon
+   ($player $name)
+   {do
+      ($label "player_name.lbl")
+      {set_this {find_obj DX_GEMTRACKDIR player_intro}}
+      ;set up label for yarg diff rings on player name label
+      {$label set alt_style_enabled TRUE}
+      {$label set alt_font_resource_name instruments_icons_rings} ;custom font
+      {$label set markup TRUE}
+      {$label set width 100}
+      {$label set height 100}
+      {$label set alt_text_size 3.3}
+      {$label set alt_z_offset 0}
+      {icon.lbl set_local_pos_index 0 0.01}
+      ;setup text for this label
+      {$label set_token_fmt stringify ;this will always complain in notify so string it
+         {sprint
+            {if_else $dx_track_username ;dont show username here if track username is enabled
+               {localize os_blnk} ;empty line, must keep to line up diff rings
+               $name ;user name
+            }
+            "\n\n" ;add two lines for proper spacing on the icon (scuffed)
+            {localize {sprint "dx_diff_" {eval {var {sprint {$player instrument} "rankvar"}}}}} ;token for icon diff rank
          }
       }
    }
 }
+;player track icon popups, constructs name and optionally difficulty icon
 {func
    dx_set_player_names
-   ($enabled)
-   {if $enabled
-      {beatmatch foreach_active_player $player
-         {if {!= {$player instrument} vocals}
-            {dx_sanitize_player_name {get_user_name_from_player $player}}
-            (cond
-               ({gamemode in_mode trainer} kDataUnhandled) ;do nothing in training mode
-               ({&& {! $dx_path_failed} $dx_author_finder_is_enabled}
-                  ;set up yarg diff rings on player intro icon
-                  {set_this {find_obj DX_GEMTRACKDIR player_intro}}
-                  {player_name.lbl set alt_style_enabled TRUE}
-                  {player_name.lbl set alt_font_resource_name instruments_icons_rings}
-                  {player_name.lbl set markup TRUE}
-                  {player_name.lbl set width 100}
-                  {player_name.lbl set height 100}
-                  {player_name.lbl set alt_text_size 3.3}
-                  {player_name.lbl set alt_z_offset 0}
-                  {if {! $got_playericon_pos}
-                     {set $got_playericon_pos TRUE}
-                     {set $player_icon_pos {icon.lbl get_local_pos_index 0}}
-                  }
-                  {icon.lbl set_local_pos_index 0 {+ $player_icon_pos 0.01}}
-                  {player_name.lbl set_token_fmt
-                     {sprint
-                        {if_else $dx_track_username ;dont show username twice if track username is enabled
-                           {localize os_blnk}
-                           $dx_current_player_name_sanitized
-                        }
-                        "\n\n"
-                        {dx_get_localized_diff {$player instrument}}
-                     }
-                  }
-               )
-               ;dont put rings at all
-               {player_name.lbl set_token_fmt stringify $dx_current_player_name_sanitized}
-            )
-         }
+   ($enabled $player)
+   {do
+      ($label "player_name.lbl")
+      ($name {dx_sanitize_player_name {{$player get_user} get_user_name}}) ;construct name
+      {cond
+         ({&& $enabled {! $dx_path_failed}} ;bool is for diff rings
+            {dx_setup_player_icon $player $name} ;adapt label and apply diff rings
+         )
+         ($dx_track_username
+            {$label set_token_fmt os_blnk} ;dont show name AND dont show icons
+         )
+         {$label set_token_fmt stringify $name} ;only set player name
       }
    }
 }
 ; shows the username of each player at the bottom of their respective highways
 {func
    dx_show_track_username
-   {if $dx_track_username
-      {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
-         {if {!= {$player instrument} vocals}
-            {dx_sanitize_player_name {{$player get_user} get_user_name}}
-            {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b FALSE}
-            {set_this {find_obj DX_GEMTRACKDIR}}
-            {set $this_track_username_label {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}}
-            {set $this_icon
-               {switch {$player instrument}
-                  ((guitar real_guitar) inst_icon_guitar)
-                  ((bass real_bass) inst_icon_bass)
-                  ((drum real_drum) inst_icon_drum)
-                  ((keys real_keys) inst_icon_keys)
-               }
-            }
-            {cond
-               ({&& {== {beatmatch num_active_players} 1} $dx_highway_username_inst $dx_highway_username_sp_inst $dx_current_player_name_sanitized}
-                  {$this_track_username_label set_token_fmt {sprint $dx_current_player_name_sanitized " - " "<alt>" {localize $this_icon} "</alt>"}}
-               )
-               ({&& {== {beatmatch num_active_players} 1} $dx_current_player_name_sanitized}
-                  {$this_track_username_label set_token_fmt {sprint $dx_current_player_name_sanitized}}
-               )
-               ({&& {> {beatmatch num_active_players} 1} $dx_current_player_name_sanitized $dx_highway_username_inst {session_mgr is_local}}
-                  {$this_track_username_label set_token_fmt {sprint $dx_current_player_name_sanitized " - " "<alt>" {localize $this_icon} "</alt>"}}
-               )
-               ({&& $dx_current_player_name_sanitized {|| {! $dx_highway_username_inst} {! {session_mgr is_local}}}}
-                  {$this_track_username_label set_token_fmt {sprint $dx_current_player_name_sanitized}}
-               )
-               ({&& {> {beatmatch num_active_players} 1} {! $dx_current_player_name_sanitized} $dx_highway_username_inst {session_mgr is_local}}
-                  {$this_track_username_label set_token_fmt {sprint "<alt>" {localize $this_icon} "</alt>"}}
-               )
-               {$this_track_username_label set_token_fmt os_blnk}
-            }
-         }
+   ($enabled $player)
+   {do
+      ($label {sprint "dx_track_label_username" {{$player get_user} get_slot_num} ".lbl"}) ;construct label name
+      ($name {dx_sanitize_player_name {{$player get_user} get_user_name}}) ;get username
+      ($icon {sprint "inst_icon_" {$player instrument}}) ;localized icon letter
+      {set_this {find_obj DX_GEMTRACKDIR}}
+      {cond
+         ({|| {! $enabled} {! $name}} {$label set_token_fmt os_blnk}) ;dont show username on highway
+         ({! $dx_highway_username_inst} ;if icon is disabled
+            {$label set_token_fmt stringify {sprint $name}} ;dont show icon
+         )
+         ({&& {== {beatmatch num_active_players} 1} {! $dx_highway_username_sp_inst}} ;if one player and sp icon disabled
+            {$label set_token_fmt stringify {sprint $name}} ;dont show icon
+         )
+         {$label set_token_fmt stringify {sprint $name " - " {localize $icon}}} ;otherwise show name and icon
       }
    }
 }
+;solo box/countdown positon
 {func
    dx_set_solo_box_pos
-   {unless {&& {! $solo_boxpos_0} {! $solo_boxpos_1} {! $solo_boxpos_2}}
-      {beatmatch foreach_active_player $player
-         {unless {== {$player instrument} vocals}
-            {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find feedback.grp} set_local_pos $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
-         }
-      }
+   ($player $x $z $y)
+   {if {|| $x $z $y} ;default is 0, if any are not 0
+      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+      {feedback.grp set_local_pos $x $z $y} ;move the solo box
    }
 }
 {func dx_track_label
    ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot}}}
-   {set $thislabel {sprint $name $slot ".lbl"}}
-   {set $thiscolor {sprint $name $slot ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
+   {do
+      ($label {sprint $name $slot ".lbl"})
+      ($color {sprint $name $slot ".color"})
+      {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot}}} ;change context to the current checked player
+      {if $reset ;if we need to destroy and rebuild this label
+         {delete $label} {delete $color} ;destroy label
+         {new BandLabel $label} {new UIColor $color} ;rebuild label
+         ;set up default properties
+         {$label set resource_name $font}
+         {$label set color_override $color}
+         {$label set_showing TRUE}
+         {$label set_local_scale 1 1 1}
+         {$label set_local_rot 0 0 0}
+         {$label set width 500}
+         {$label set height 500}
+         ;set up alt properties
+         {$label set alt_font_resource_name instruments_icons}
+         {$label set alt_style_enabled TRUE}
+         {$label set markup TRUE}
+         {$label set alt_text_size 2}
+         {$label set alt_z_offset 0}
+         {$label set_token_fmt os_blnk}
+         {meters.grp add_object $label} ;tie it into a basic grp
       }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
+      ;these properties are user controllable via overshell
+      ;when configured in-game they do not destroy the label
+      ;so we should run these when the func is called always
+      {$label set alignment $alignment}
+      {$label set text_size $size}
+      {$label set kerning $kerning}
+      {$label set color {pack_color $r $g $b}}
+      {$label set_local_pos $x 0 $y} ;don't allow user configuration of Z space because it sucks
    }
-   {if {! {exists $thislabel}}
-      {new BandLabel $thislabel}
-      {$thislabel set resource_name $font}
-      {$thislabel set alt_font_resource_name instruments_icons}
-      {$thislabel set alt_style_enabled TRUE}
-      {$thislabel set markup TRUE}
-      {$thislabel set alt_text_size 2}
-      {$thislabel set alt_z_offset 0}
-      {$thislabel set_showing TRUE}
-      {$thislabel set_local_scale 1 1 1}
-      {$thislabel set_local_rot 0 0 0}
-      {$thislabel set width 500}
-      {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {meters.grp add_object $thislabel}
-      {$thislabel set_token_fmt os_blnk}
-   }
-   {if {! {exists $thiscolor}}
-      {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
-   }
-   {$thislabel set kerning $kerning}
-   {$thislabel set text_size $size}
-   {$thislabel set alignment $alignment}
-   {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x 0 $y}
 }
