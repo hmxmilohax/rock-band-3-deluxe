@@ -39,7 +39,7 @@ copy "%~dp0..\out\ps3\USRDIR\EBOOT.BIN" "%rpcs3_path%\dev_hdd0\game\BLUS30463\US
 :rpcs3_start
 if not defined base_eboot_path goto :end
 taskkill /IM rpcs3.exe /F
-START "" "%rpcs3_path%\rpcs3.exe" "%base_eboot_path%" --no-gui
+START "" "%rpcs3_path%\rpcs3.exe" "%base_eboot_path%"
 
 if not defined run_rich_presence goto :end
 cd "%~dp0"
