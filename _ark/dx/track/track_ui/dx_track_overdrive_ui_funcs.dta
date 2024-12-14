@@ -18,35 +18,6 @@
       }
    }
 }
-{func dx_track_label_overdrive
-   ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {do
-      ($label {sprint $name $slot ".lbl"})
-      ($color {sprint $name $slot ".color"})
-      {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
-      {if $reset ;if we need to destroy and rebuild this label
-         {delete $label} {delete $color} ;destroy label
-         {new BandLabel $label} {new UIColor $color} ;rebuild label
-         ;set up default properties
-         {$label set resource_name $font}
-         {$label set color_override $color}
-         {$label set_showing TRUE}
-         {$label set_local_scale 1 1 1}
-         {$label set_local_rot 0 0 0}
-         {$label set width 500}
-         {$label set height 500}
-         {meters.grp add_object $label} ;tie it into the overdrive meter group
-      }
-      ;these properties are user controllable via overshell
-      ;when configured in-game they do not destroy the label
-      ;so we should run these when the func is called always
-      {$label set alignment $alignment}
-      {$label set text_size $size}
-      {$label set kerning $kerning}
-      {$label set color {pack_color $r $g $b}}
-      {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
-   }
-}
 ; prep od ready popup
 {func
    dx_calc_overdrive
@@ -56,7 +27,10 @@
       {cond
          ({&& {>= {$player band_energy} 0.5} {! {eval {var {sprint "dx_stop_od_" $slot}}}}} ;once od is ready and if not popped already
             {set_var {sprint "dx_stop_od_" $slot} TRUE} ;gate popup until next drain
-            {dx_od_ready_popup $player} ;fire popup to player
+            {set_this {find_obj DX_GEMTRACKDIR player_feedback}} ;set current context of this user
+            {bass_super_streak.lbl set_token_fmt dx_overdrive_ready} ;set text for popup to od ready locale
+            {super_streak_start.trig trigger} ;fire trigger for text popup
+            {dx_remove_groove_label $player} ;remove text popup trigger
          )
          ({<= {$player band_energy} 0.01} ;once drained
             {set_var {sprint "dx_stop_od_" $slot} FALSE} ;allow popups again for this user when od is ready
@@ -64,15 +38,6 @@
          kDataUnhandled
       }
    }
-}
-; shows an "overdrive ready!" popup when od is ready
-{func
-   dx_od_ready_popup
-   ($player)
-   {set_this {find_obj DX_GEMTRACKDIR player_feedback}} ;set current context of this user
-   {bass_super_streak.lbl set_token_fmt dx_overdrive_ready} ;set text for popup to od ready locale
-   {super_streak_start.trig trigger} ;fire trigger for text popup
-   {dx_remove_groove_label $player} ;remove text popup trigger
 }
 {func
    dx_remove_groove_label
@@ -102,5 +67,34 @@
          ({> $bpm 340} {set $delay 18})
       }
       $delay
+   }
+}
+{func dx_track_label_overdrive
+   ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
+   {do
+      ($label {sprint $name $slot ".lbl"})
+      ($color {sprint $name $slot ".color"})
+      {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
+      {if $reset ;if we need to destroy and rebuild this label
+         {delete $label} {delete $color} ;destroy label
+         {new BandLabel $label} {new UIColor $color} ;rebuild label
+         ;set up default properties
+         {$label set resource_name $font}
+         {$label set color_override $color}
+         {$label set_showing TRUE}
+         {$label set_local_scale 1 1 1}
+         {$label set_local_rot 0 0 0}
+         {$label set width 500}
+         {$label set height 500}
+         {meters.grp add_object $label} ;tie it into the overdrive meter group
+      }
+      ;these properties are user controllable via overshell
+      ;when configured in-game they do not destroy the label
+      ;so we should run these when the func is called always
+      {$label set alignment $alignment}
+      {$label set text_size $size}
+      {$label set kerning $kerning}
+      {$label set color {pack_color $r $g $b}}
+      {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
    }
 }
