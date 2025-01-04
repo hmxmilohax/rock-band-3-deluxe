@@ -1,0 +1,41 @@
+{func
+   dx_fc_glow_enabler
+   ($enabled $player $num_gems_pass $num_gems_miss)
+   {if {&& $enabled {== {'+' $num_gems_pass $num_gems_miss} 0}} ;if on fc
+      {set_this {find_obj DX_GEMTRACKDIR streak_meter}} ;set context to this player
+      {star_deploy.trig trigger} ;color the max mult animation gold
+   }
+}
+{func
+   dx_fc_glow_disabler
+   ($enabled $player $slot $num_gems_pass $num_gems_miss)
+   {if {&& $enabled {> {'+' $num_gems_pass $num_gems_miss} 0}} ;if not on an fc
+      {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+      {if {! {eval {var {sprint $slot "_missed_once"}}}} ;only remove the actual blue backer on first hit
+         {set_var {sprint $slot "_missed_once"} TRUE} ;gate to not run again until restart
+         {end_streak.trig trigger} ;remove blue backer
+      }
+      ;we must remove gold matanim on every hit because OD turns it back on
+      {star_deploy_stop.trig trigger} ;this specifically only removes gold on every hit
+   }
+}
+{func
+   dx_miss_fc_remover
+   ($player $slot)
+   {unless {coop_track_panel get dx_is_nohud} ; this could break if someone were to disable performance mode mid song
+      {set_this coop_track_panel}
+      {if {! {eval {var {sprint $slot "_caughtmissed"}}}}
+         {set_var {sprint $slot "_caughtmissed"} TRUE} ;gate to not run again until restart
+         {fcframe.tex iterate_refs $ref {$ref set diffuse_tex multframe.tex}} ;remove the FC ring for entire band.
+      }
+   }
+}
+{func
+   dx_track_fc_reset
+   ($enabled $player)
+   {if $enabled ;on new song to start on fc
+      {set_this {find_obj DX_GEMTRACKDIR streak_meter}}
+      {peak_state.trig trigger} ;turn on blue backer
+      {star_deploy.trig trigger} ;color blue backer gold
+   }
+}

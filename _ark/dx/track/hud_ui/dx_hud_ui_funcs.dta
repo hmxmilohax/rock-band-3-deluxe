@@ -1,0 +1,673 @@
+;we dont do this anymore because of all the time remaining junk
+;{func
+;   dx_set_scoreboard_pos
+;   {if {gamemode in_mode qp_coop}
+;      {{{coop_track_panel find scoreboard} find scoreboard.grp} set_local_pos $scoreboardpos_0 $scoreboardpos_1 $scoreboardpos_2}
+;   }
+;}
+;{func
+;   dx_set_star_display_pos
+;   {if {gamemode in_mode qp_coop}
+;      {unless {&& {! $star_displaypos_0} {! $star_displaypos_1} {! $star_displaypos_2}}
+;         {{{{coop_track_panel find scoreboard} find star_display} find stars.grp} set_local_pos $star_displaypos_0 $star_displaypos_1 $star_displaypos_2}
+;      }
+;   }
+;}
+{func dx_game_hud_label
+   ($name $size $font $alignment $kerning $x $z $y $r $g $b $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name $font}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set text_size $size}
+      {$thislabel set alignment $alignment}
+      {$thislabel set width 500}
+      {$thislabel set height 500}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning $kerning}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color $r $g $b}}
+   {$thislabel set_local_pos $x $z $y}
+}
+{func dx_mtv_hud_label
+   ($name $size $font $alignment $kerning $x $z $y $r $g $b $reset)
+   {set_this {coop_track_panel find mtv_overlay}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name $font}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set text_size $size}
+      {$thislabel set alt_font_resource_name $font}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set alt_italics 0.1}
+      {$thislabel set alt_text_size 1}
+      {$thislabel set alt_z_offset 0}
+      {$thislabel set alignment $alignment}
+      {$thislabel set fit_type kFitWrap}
+      {if_else {&& {== $dx_mtv_pos_x 16.8} {== $dx_mtv_pos_y 13.78} {== $dx_mtv_pos_z 57}} ;if mtv overlay is default pos
+         ;handle autopos
+         {if_else $vocal_track_out
+            {if_else {>= {beatmatch num_active_players} {if_else {modifier_mgr is_modifier_active mod_auto_vocals} 3 2}}
+               {$thislabel set width 22} ;real vox
+               {$thislabel set width 25} ;AIM
+            }
+            {if_else {>= {beatmatch num_active_players} 2}
+               {$thislabel set width 34} ;2p
+               {$thislabel set width 37} ;1p
+            }
+         }
+         {$thislabel set width 37}
+      }
+      {$thislabel set markup TRUE}
+      {$thislabel set height 500}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning $kerning}
+      {Group.grp add_object $thislabel}
+      {Group.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color $r $g $b}}
+   {if_else {&& {== $dx_mtv_pos_x 16.80} {== $dx_mtv_pos_y 13.78} {== $dx_mtv_pos_z 57}} ;if mtv overlay is default pos
+      {$thislabel set_local_pos
+         ; X pos
+         {if_else {>= {beatmatch num_active_players} {if_else {modifier_mgr is_modifier_active mod_auto_vocals} 3 2}}
+            {- $x 1.74} ;band play scenario (move to make room for streak box)
+            $x ;singleplayer scenario (default)
+         }
+         ; Z pos
+         $z
+         ; Y pos
+         {if_else $vocal_track_out
+            {if_else {== $count_instrument harm}
+               {- $y 7.01} ;harm scenario
+               {- $y 5.92} ;solo vox scenario
+            }
+            {if_else {gamemode in_mode practice}
+               {- $y 5.66} ;practice no vox scenario
+               $y ;qp no vox scenario (default)
+            }
+         }
+      }
+      {$thislabel set_local_pos $x $z $y}
+   }
+}
+{func dx_song_progress_instrument_label
+   ($name $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   ;do not change these so help me god
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name pentatonic}
+      {$thislabel set alt_font_resource_name instruments_icons}
+      {$thislabel set alt_style_enabled TRUE}
+      {$thislabel set markup TRUE}
+      {$thislabel set text_size 3}
+      {$thislabel set alt_text_size 5}
+      {$thislabel set alt_z_offset 0.55}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 0.1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set fit_type kFitJust}
+      {$thislabel set alignment kMiddleLeft}
+      {$thislabel set width 50}
+      {$thislabel set height 50}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning -0.1645}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color 1 1 1}}
+   {$thislabel set_local_pos 70.5 230 64}
+}
+{func dx_song_progress_label
+   ($name $reset)
+   {set_this {coop_track_panel find scoreboard}}
+   {set $thislabel {sprint $name ".lbl"}}
+   {set $thiscolor {sprint $name ".color"}}
+   {if $reset
+      {if {exists $thislabel}
+         {delete $thislabel}
+      }
+      {if {exists $thiscolor}
+         {delete $thiscolor}
+      }
+   }
+   ;do not change these so help me god
+   {if {! {exists $thislabel}}
+      {new BandLabel $thislabel}
+      {$thislabel set resource_name #ifdef HX_WII convection_symbol #else poop_factory #endif}
+      {$thislabel set text_size 5}
+      {$thislabel set_showing TRUE}
+      {$thislabel set_local_scale 0.1 1 1}
+      {$thislabel set_local_rot 0 0 0}
+      {$thislabel set fit_type kFitJust}
+      {$thislabel set alignment kMiddleLeft}
+      {$thislabel set width 50}
+      {$thislabel set height 50}
+      {$thislabel set alpha 1}
+      {$thislabel set kerning -0.108}
+      {numbers.grp add_object $thislabel}
+      {numbers.grp set_showing TRUE}
+      {$thislabel set_token_fmt os_blnk}
+   }
+   {if {! {exists $thiscolor}}
+      {new UIColor $thiscolor}
+      {$thislabel set color_override $thiscolor}
+   }
+   {$thiscolor set color {pack_color $dx_hud_time_bar_r $dx_hud_time_bar_g $dx_hud_time_bar_b}}
+   {$thislabel set_local_pos 75.5 230 64}
+}
+{func
+   dx_fix_new_song_progress_pos
+   {if {&& $dx_mtvup {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {cond
+         ({&& $dx_song_progress_bar $vocal_track_out {! $dx_time_remaining_pos_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 15.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 3.3}
+         )
+         ({&& $dx_song_progress_bar $vocal_track_out $dx_time_remaining_pos_top}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 15.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 10.7}
+         )
+         ({&& $dx_song_progress_bar {! $vocal_track_out} $dx_time_remaining_pos_top}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 64}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 19.2}
+         )
+         ({&& $dx_song_progress_bar {! $vocal_track_out} {! $dx_time_remaining_pos_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 41.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 10.7}
+         )
+         ({&& {! $dx_song_progress_bar} $vocal_track_out {! $dx_time_remaining_pos_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 16}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 4.7}
+         )
+         ({&& {! $dx_song_progress_bar} $vocal_track_out $dx_time_remaining_pos_top}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 16}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 10.7}
+         )
+         ({&& {! $dx_song_progress_bar} {! $vocal_track_out} $dx_time_remaining_pos_top}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 64.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 18}
+         )
+         ({&& {! $dx_song_progress_bar} {! $vocal_track_out} {! $dx_time_remaining_pos_top}}
+            {dx_song_progress_label.lbl set_local_pos 75.6 230 41.5}
+            {set $dx_hud_time_remaining_text_x 33}
+            {set $dx_hud_time_remaining_text_z 65}
+            {set $dx_hud_time_remaining_text_y 11.9}
+         )
+      }
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 6}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_instrument_label.lbl set_local_pos_index 2 {+ {dx_song_progress_label.lbl get_local_pos_index 2} 0.6}}
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 0 {- {dx_song_progress_label.lbl get_local_pos_index 0} 0.5}}
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_back_border.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_needle.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_back.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_overdrive.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_overdrive.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_overdrive.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_solo.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_solo.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_solo.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+      {dx_song_progress_label_bre.lbl set_local_pos_index 0 {dx_song_progress_label.lbl get_local_pos_index 0}}
+      {dx_song_progress_label_bre.lbl set_local_pos_index 1 {dx_song_progress_label.lbl get_local_pos_index 1}}
+      {dx_song_progress_label_bre.lbl set_local_pos_index 2 {dx_song_progress_label.lbl get_local_pos_index 2}}
+   }
+}
+{func
+   dx_size_delay_array
+   ($note_tracker)
+   {set $this_count 0}
+   {foreach $entry $note_tracker
+      {if {has_substr {elem $entry 0} "delay_"}
+         {set $this_count {+ $this_count 1}}
+      }
+   }
+   $this_count
+}
+{func
+   dx_get_this_countdown_array
+   {set $outarray ()}
+   {resize $outarray 0}
+   {set $this_local_player_count 0}
+   {beatmatch foreach_active_player $player
+      {if {{$player get_user} is_local} ;only track local player
+         {switch {$player instrument}
+            ((real_guitar guitar) {set $size1 {dx_size_delay_array $guitar_note_tracker}} {set $outarray $guitar_note_tracker} {set $progress_bar_inst guitar})
+            ((real_bass bass) {set $size2 {dx_size_delay_array $bass_note_tracker}} {set $outarray $bass_note_tracker} {set $progress_bar_inst bass})
+            ((real_drum drum) {set $size3 {dx_size_delay_array $drum_note_tracker}} {set $outarray $drum_note_tracker} {set $progress_bar_inst drum})
+            ((real_keys keys) {set $size4 {dx_size_delay_array $keys_note_tracker}} {set $outarray $keys_note_tracker} {set $progress_bar_inst keys})
+            (vocals
+               {if_else {modifier_mgr is_modifier_active mod_auto_vocals}
+                  {do
+                     {set $size5 0} ;dont show vocal progress bar if AIM
+                     {set $size6 0}
+                  }
+                  {if_else {== {{$player get_user} get_track_icon} $dx_icon_harmony_2}
+                     {do
+                        {set $size6 {dx_size_delay_array $harm_note_tracker}}
+                        {set $outarray $harm_note_tracker}
+                        {set $progress_bar_inst harm2}
+                     }
+                     {if_else {== {{$player get_user} get_track_icon} $dx_icon_harmony_3}
+                        {do
+                           {set $size6 {dx_size_delay_array $harm_note_tracker}}
+                           {set $outarray $harm_note_tracker}
+                           {set $progress_bar_inst harm3}
+                        }
+                        {do
+                           {set $size5 {dx_size_delay_array $vocals_note_tracker}}
+                           {set $outarray $vocals_note_tracker}
+                           {set $progress_bar_inst vocals}
+                        }
+                     }
+                  }
+               }
+            )
+         }
+         {set $this_local_player_count {+ $this_local_player_count 1}}
+         {if {> $this_local_player_count 1}
+            ;this is really fucking bad but its 3am and i dont care
+            {if {&& {> $size1 $size2} {> $size1 $size3} {> $size1 $size4} {> $size1 $size5} {> $size1 $size6}}
+               {set $outarray $guitar_note_tracker}
+               {set $progress_bar_inst guitar}
+            }
+            {if {&& {> $size2 $size1} {> $size2 $size3} {> $size2 $size4} {> $size2 $size5} {> $size2 $size6}}
+               {set $outarray $bass_note_tracker}
+               {set $progress_bar_inst bass}
+            }
+            {if {&& {> $size3 $size1} {> $size3 $size2} {> $size3 $size4} {> $size3 $size5} {> $size3 $size6}}
+               {set $outarray $drum_note_tracker}
+               {set $progress_bar_inst drum}
+            }
+            {if {&& {> $size4 $size1} {> $size4 $size2} {> $size4 $size3} {> $size4 $size5} {> $size4 $size6}}
+               {set $outarray $keys_note_tracker}
+               {set $progress_bar_inst keys}
+            }
+            {if {&& {> $size5 $size1} {> $size5 $size2} {> $size5 $size3} {> $size5 $size4} {> $size5 $size6}}
+               {set $outarray $vocals_note_tracker}
+               {set $progress_bar_inst vocals}
+            }
+            {if {&& {> $size6 $size1} {> $size6 $size2} {> $size6 $size3} {> $size6 $size4} {> $size6 $size5}}
+               {set $outarray $harm_note_tracker}
+               {if_else {== {{$player get_user} get_track_icon} $dx_icon_harmony_2}
+                  {set $progress_bar_inst harm2}
+                  {set $progress_bar_inst harm3}
+               }
+            }
+         }
+      }
+   }
+   $outarray
+}
+{func
+   dx_get_final_note
+   {beatmatch foreach_active_player $player
+      {switch {$player instrument}
+         ((real_guitar guitar) {set $out_end $dx_final_note_guitar})
+         ((real_bass bass) {set $out_end $dx_final_note_bass})
+         ((real_drum drum) {set $out_end $dx_final_note_drum})
+         ((real_keys keys) {set $out_end $dx_final_note_keys})
+         (vocals
+            {if_else {> {$player get_singer_count} 1}
+               {set $out_end $dx_final_note_harm}
+               {set $out_end $dx_final_note_vocals}
+            }
+         )
+         $dx_final_note
+      }
+   }
+   $out_end
+}
+{func
+   dx_generate_progress_bar_tracks
+   ($enabled $name $label)
+   {do
+      ($this_track_start 0)
+      ($this_track_end 0)
+      ($this_found 0)
+      ($out_sprint ",,")
+      {if $enabled
+         {foreach $entry {dx_get_this_countdown_array} ;check each array in the countdown
+            {if {has_substr {elem $entry 0} $name}
+               {set $this_found TRUE}
+            }
+         }
+         {foreach_int $i 0 200 ;progress bar is 200 characters long
+            {if $this_found
+               {foreach $entry {dx_get_this_countdown_array} ;check each array in the countdown
+                  {if {has_substr {elem $entry 0} $name} ;countdown also has a buffer (none) array, so check it is valid delays
+                     {do
+                        ($this_start {int {* {* {/ {- {elem $entry 1} 4} $total_beat} 100} 2}})
+                        ($this_end {int {* {* {/ {- {elem $entry 2} 4} $total_beat} 100} 2}})
+                        {cond
+                           ;if $i matches the percentage in which a countdown occurs, subtracted by 8 beats to align with
+                           ({== $i $this_start}
+                              ;set current break in and out points
+                              {set $this_track_start $this_start} {set $this_track_end $this_end}
+                           )
+                        }
+                     }
+                  }
+               }
+               {if_else {&& {>= $i $this_track_start} {<= $i $this_track_end}}
+                  {set $out_sprint {sprint $out_sprint "!"}}
+                  {set $out_sprint {sprint $out_sprint ","}}
+               }
+            }
+            {if {! $this_found}
+               {set $out_sprint {sprint $out_sprint ","}}
+            }
+         }
+         {{sprint $label ".lbl"} set_token_fmt stringify {sprint $out_sprint}}
+      }
+   }
+}
+{func
+   dx_new_set_song_progress_backer
+   ($enabled)
+   {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {dx_song_progress_label.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_needle.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_overdrive.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_solo.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_bre.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back_border.lbl set_token_fmt os_blnk}
+      {dx_song_progress_instrument_label.lbl set_token_fmt os_blnk}
+   }
+   #ifndef HX_WII
+   {if {&& $enabled $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {do
+         ($total_beat $dx_end_of_song)
+         ($this_final_note {int {* {* {/ {dx_get_final_note} $total_beat} 100} 2}}) ;beat of final note to percent to 200 ticks
+         ($out_backer "!!") ;we start with two lines as our constant start
+         ($this_line_start 0)
+         ($this_line_end 0)
+         ($this_delay_found 0)
+         {foreach $entry {dx_get_this_countdown_array} ;check each array in the countdown
+            {if {has_substr {elem $entry 0} "delay_"}
+               {set $this_delay_found TRUE}
+            }
+         }
+         {foreach_int $i 0 200 ;progress bar is 200 characters long
+            {if $this_delay_found ;if we have no countdowns, each tick needs to be a line
+               {foreach $entry {dx_get_this_countdown_array} ;check each array in the countdown
+                  {if {has_substr {elem $entry 0} "delay_"} ;countdown also has a buffer (none) array, so check it is valid delays
+                     {do
+                        ($break_start {int {* {* {/ {- {elem $entry 1} 4} $total_beat} 100} 2}})
+                        ($break_end {int {* {* {/ {- {elem $entry 2} 4} $total_beat} 100} 2}})
+                        {cond
+                           ({&& {== $i 0} {== {elem $entry 1} 0}} ;if $i and a delay start on beat 0
+                              ;set current break in and out points
+                              {set $this_line_start 0} {set $this_line_end $break_end}
+                           )
+                           ;if $i matches the percentage in which a countdown occurs, subtracted by 8 beats to align with
+                           ({== $i $break_start}
+                              ;set current break in and out points
+                              {set $this_line_start $break_start} {set $this_line_end $break_end}
+                           )
+                        }
+                     }
+                  }
+               }
+               {if_else {|| {>= $i $this_final_note} {&& {>= $i $this_line_start} {<= $i $this_line_end}}}
+                  {set $out_backer {sprint $out_backer "."}}
+                  {set $out_backer {sprint $out_backer "!"}}
+               }
+            }
+            {if {! $this_delay_found}
+               {set $out_backer {sprint $out_backer "!"}} ;if we have no countdowns, each tick needs to be a line
+            }
+         }
+         {dx_generate_progress_bar_tracks $dx_overdrive_progress "overdrive_" dx_song_progress_label_overdrive}
+         {dx_generate_progress_bar_tracks $dx_solo_progress "solo_" dx_song_progress_label_solo}
+         {dx_generate_progress_bar_tracks $dx_bre_progress "bre_" dx_song_progress_label_bre}
+         {set $this_song_progress_bar {sprint $out_backer "!!"}} ;always end with two lines
+         {if $dx_icon_progress
+            {dx_song_progress_instrument_label.lbl set_token_fmt
+               {switch $progress_bar_inst
+                  ((guitar real_guitar) inst_icon_guitar)
+                  ((bass real_bass) inst_icon_bass)
+                  ((drum real_drum) inst_icon_drum)
+                  ((keys real_keys) inst_icon_keys)
+                  (vocals inst_icon_vocals)
+                  (harm2 inst_icon_harm2)
+                  (harm3 inst_icon_harm3)
+                  inst_icon_guitar
+               }
+            }
+         }
+         {dx_song_progress_label_back.lbl set_token_fmt stringify {sprint $this_song_progress_bar}}
+         {dx_song_progress_label.lbl set_token_fmt stringify {sprint $this_song_progress_bar}}
+         {dx_song_progress_label_overdrive.lbl set alpha 0.35}
+         {dx_song_progress_label_overdrive.color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
+         {dx_song_progress_label_solo.lbl set alpha 1}
+         {dx_song_progress_label_solo.color set color {pack_color 0.3 0.5 1}}
+         {dx_song_progress_label_bre.lbl set alpha 1}
+         {dx_song_progress_label_bre.color set color {pack_color 0.3 1 0.3}}
+         {dx_song_progress_label_back.color set color {pack_color 0.15 0.15 0.15}}
+         {dx_song_progress_label_needle.color set color {pack_color 1 1 1}}
+         {dx_song_progress_label_needle.lbl set color_override dx_song_progress_label_needle.color}
+         {dx_song_progress_label_back_border.color set color {pack_color 0.20 0.28 0.50}}
+         {dx_song_progress_label_back_border.lbl set color_override dx_song_progress_label_back_border.color}
+         {dx_song_progress_label_back_border.lbl set text_size 6}
+         {dx_song_progress_label_back_border.lbl set kerning -0.1133}
+         {dx_song_progress_label_back_border.lbl set_token_fmt
+            {sprint
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+               {localize song_progress_backer}
+            }
+         }
+      }
+   }
+   #endif
+}
+{func
+   dx_new_set_song_progress
+   ($enabled)
+   {if {&& {! $enabled} $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {dx_song_progress_label.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_needle.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_overdrive.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_solo.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_bre.lbl set_token_fmt os_blnk}
+      {dx_song_progress_label_back_border.lbl set_token_fmt os_blnk}
+      {dx_song_progress_instrument_label.lbl set_token_fmt os_blnk}
+   }
+   {if {&& $enabled $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}}
+      {set_this {coop_track_panel find scoreboard}}
+      {set $curr_beat {dx_get_current_beat}}
+      {set $total_beat $dx_end_of_song}
+      {set $this_final_note {* {/ {dx_get_final_note} $total_beat} 100}}
+      {set $this_checked_final_note {int {* $this_final_note 2}}}
+      {if {>= $curr_beat 1}
+         #ifndef HX_WII
+         {set $this_checked_complete {int {* {* {/ $curr_beat $total_beat} 100} 2}}}
+         {if {> $this_checked_complete 200}
+            {set $this_checked_complete 200}
+         }
+         #endif
+         {set $out_needle {sprint {substr $this_song_progress_bar 0 $this_checked_complete} ",!"}}
+         {dx_song_progress_label_needle.lbl set_token_fmt stringify {sprint $out_needle}}
+         {dx_song_progress_label.lbl set_token_fmt stringify {substr $this_song_progress_bar 0 $this_checked_complete}}
+      }
+   }
+}
+{func
+   dx_mtv_time_remaining_handler ;using length_ms from song_mgr and dx_ms_to_time_str func
+   ;{dx_log_writer beatmatch {sprint "func: dx_mtv_time_remaining_handler"}}
+   ;{dx_log_writer beatmatch
+   ;   {sprintf "Executed dx_mtv_time_remaining_handler - time: %.4fms"
+   ;      {time
+            {if {&& $dx_mtvup {exists beatmatch} {! {gamemode in_mode trainer}}}
+               {switch $dx_time_remaining_direction
+                  (off 
+                     {do
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.1336) ;in approximately 8 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (down
+                     {do
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
+                        {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
+                        {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                        {if {!= $timer_str $total_str}
+                           {switch $dx_disp_total_time ;check whether total time should be displayed
+                              (TRUE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" $brutal_number_0 $brutal_number_1 $brutal_number_2 $brutal_number_3 $dx_crowd_0 $dx_crowd_1 $dx_crowd_2 $dx_crowd_3}} ;temp brutal debug
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                 }
+                              )
+                              (FALSE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                 }
+                              )
+                           }
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  (up
+                     {do
+                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
+                        ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
+                        {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
+                        {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
+                        {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
+                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                        {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                        {if {!= $timer_str $total_str}
+                           {switch $dx_disp_total_time ;check whether total time should be displayed
+                              (TRUE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                 }
+                              )
+                              (FALSE
+                                 {if_else $dx_time_remain_dbg
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
+                                    {{{coop_track_panel find scoreboard} find dx_hud_label_time_remaining.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                 }
+                              )
+                           }
+                        }
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.0668) ;in approximately 4 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+                  )
+                  {do
+                     {dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning $dx_hud_time_remaining_text_x $dx_hud_time_remaining_text_z $dx_hud_time_remaining_text_y $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else}
+                     {script_task
+                        kTaskUISeconds
+                        (delay 0.1336) ;in approximately 8 frames, call this function again
+                        (script {dx_mtv_time_remaining_handler})
+                     }
+                  }
+
+               }
+                  ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+            }
+   ;      }
+   ;   }
+   ;}
+}

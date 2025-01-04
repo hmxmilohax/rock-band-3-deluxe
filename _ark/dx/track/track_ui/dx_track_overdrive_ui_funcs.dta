@@ -1,0 +1,100 @@
+; shows the current overdrive of each player at the bottom of their respective highways
+{func
+   dx_show_user_overdrive
+   ($enabled $player $slot)
+   {if $enabled
+      {do
+         ($label {sprint "dx_track_label_overdrive" $slot ".lbl"})
+         ($color {sprint "dx_track_label_overdrive" $slot ".color"})
+         {set_this {find_obj DX_GEMTRACKDIR band_power_meter}} ;change context to the current checked player overdrive meter dir
+         {if_else {|| {$player is_deploying} {>= {$player band_energy} 0.50}} ;color the label gold when od is ready or during activating
+            {$color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}} ;gold when active
+            {$color set color {pack_color $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b}} ;user color when inactive
+         }
+         {if_else {>= {$player band_energy} 0.01} ;report the overdrive until empty
+            {$label set_token_fmt dx_overdrive_report {* {$player band_energy} 100}} ;overdrive reported percent with 2 decimal places
+            {$label set_token_fmt os_blnk} ;blank the label while empty
+         }
+      }
+   }
+}
+; prep od ready popup
+{func
+   dx_calc_overdrive
+   ($enabled $player $slot)
+   ;fire popup once and then gate firing again until drained
+   {if {&& $enabled {! {gamemode in_mode trainer}}}
+      {cond
+         ({&& {>= {$player band_energy} 0.5} {! {eval {var {sprint "dx_stop_od_" $slot}}}}} ;once od is ready and if not popped already
+            {set_var {sprint "dx_stop_od_" $slot} TRUE} ;gate popup until next drain
+            {set_this {find_obj DX_GEMTRACKDIR player_feedback}} ;set current context of this user
+            {bass_super_streak.lbl set_token_fmt dx_overdrive_ready} ;set text for popup to od ready locale
+            {super_streak_start.trig trigger} ;fire trigger for text popup
+            {dx_remove_groove_label $player} ;remove text popup trigger
+         )
+         ({<= {$player band_energy} 0.01} ;once drained
+            {set_var {sprint "dx_stop_od_" $slot} FALSE} ;allow popups again for this user when od is ready
+         )
+         kDataUnhandled
+      }
+   }
+}
+{func
+   dx_remove_groove_label
+   ($player)
+   {delete {sprint "note_streak_remover_" $player}} ;cleanup existing tasks
+   {script_task kTaskBeats
+      (name {sprint "note_streak_remover_" $player})
+      (delay {dx_beat_delay_gen}) ;wait for x beats before hiding
+      (script ;hide popup via trigger to animate out
+         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+         {super_streak_end.trig trigger}
+      )
+   }
+}
+{func
+   dx_beat_delay_gen
+   {do
+      ($beat {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}})
+      ($bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ $beat 1}} {beat_to_seconds $beat}}}} $speedmod})
+      ($delay 4)
+      {cond ;show the popup for longer, the faster the bpm is
+         ({< $bpm 100} {set $delay 3})
+         ({< $bpm 160} {set $delay 4})
+         ({< $bpm 220} {set $delay 6})
+         ({< $bpm 280} {set $delay 8})
+         ({< $bpm 340} {set $delay 12})
+         ({> $bpm 340} {set $delay 18})
+      }
+      $delay
+   }
+}
+{func dx_track_label_overdrive
+   ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
+   {do
+      ($label {sprint $name $slot ".lbl"})
+      ($color {sprint $name $slot ".color"})
+      {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
+      {if $reset ;if we need to destroy and rebuild this label
+         {delete $label} {delete $color} ;destroy label
+         {new BandLabel $label} {new UIColor $color} ;rebuild label
+         ;set up default properties
+         {$label set resource_name $font}
+         {$label set color_override $color}
+         {$label set_showing TRUE}
+         {$label set_local_scale 1 1 1}
+         {$label set_local_rot 0 0 0}
+         {$label set width 500}
+         {$label set height 500}
+         {meters.grp add_object $label} ;tie it into the overdrive meter group
+      }
+      ;these properties are user controllable via overshell
+      ;when configured in-game they do not destroy the label
+      ;so we should run these when the func is called always
+      {$label set alignment $alignment}
+      {$label set text_size $size}
+      {$label set kerning $kerning}
+      {$label set color {pack_color $r $g $b}}
+      {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
+   }
+}
