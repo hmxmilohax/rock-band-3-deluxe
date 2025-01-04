@@ -1,123 +1,116 @@
 ; displays the streak of each individual instrument at the bottom of each track
 {func
    dx_indv_note_streak
-   ($enabled $instrument)
+   ($enabled $player $slot $combo $passed $missed)
    {if $enabled
-      {beatmatch foreach_active_player $player
-         {if {== {$player instrument} $instrument}
-            {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-            {set $track_label_inst {sprint "dx_track_label_streak" {{$player get_user} get_slot_num} ".lbl"}}
-            {dx_poll_inst_info $instrument}
-            {if_else {== {+ $polled_gems_miss $polled_gems_pass} 0}
-               {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b FALSE}
-               {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b FALSE}
-            }
-            {if_else {> $polled_gems_combo {if_else $dx_track_streak_gh3_delay 24 0}}
-               {$track_label_inst set_token_fmt dx_indv_combo $polled_gems_combo}
-               {$track_label_inst set_token_fmt os_blnk}
-            }
+      {do
+         ($label {sprint "dx_track_label_streak" $slot ".lbl"})
+         ($color {sprint "dx_track_label_streak" $slot ".color"})
+         ($counter {if_else $dx_track_streak_gh3_delay 24 0}) ;mimic's gh3 starting at 25 note streak
+         {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+         {if_else {== {+ $missed $passed} 0} ;if on an fc
+            {$color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}} ;gold when FC
+            {$color set color {pack_color $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b}} ;user color when broken
+         }
+         {if_else {> $combo $counter} ;dynamic start show streak
+            {$label set_token_fmt dx_indv_combo $combo} ;the note streak
+            {$label set_token_fmt os_blnk} ;hide until threshold
          }
       }
    }
 }
-{func dx_track_label_perfect
-   ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}}
-   {set $thislabel {sprint $name $slot ".lbl"}}
-   {set $thiscolor {sprint $name $slot ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
-      }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
-   }
-   {if {! {exists $thislabel}}
-      {new BandLabel $thislabel}
-      {$thislabel set resource_name $font}
-      {$thislabel set alt_font_resource_name instruments_icons}
-      {$thislabel set markup TRUE}
-      {$thislabel set alt_text_size 3.3}
-      {$thislabel set alt_z_offset 0}
-      {$thislabel set_showing TRUE}
-      {$thislabel set_local_scale 1 1 1}
-      {$thislabel set_local_rot 0 0 0}
-      {$thislabel set width 500}
-      {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {meters.grp add_object $thislabel}
-      ;{$thislabel set_token_fmt os_blnk}
-   }
-   {if {! {exists $thiscolor}}
-      {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
-   }
-   {$thislabel set kerning $kerning}
-   {$thislabel set italics 0.03}
-   {$thislabel set alignment $alignment}
-   {$thislabel set text_size $size}
-   {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x -5 $y}
-}
-{func dx_track_label_perfect_ctr
-   ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}}
-   {set $thislabel {sprint $name $slot ".lbl"}}
-   {set $thiscolor {sprint $name $slot ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
-      }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
-   }
-   {if {! {exists $thislabel}}
-      {new BandLabel $thislabel}
-      {$thislabel set resource_name $font}
-      {$thislabel set alt_font_resource_name instruments_icons}
-      {$thislabel set markup TRUE}
-      {$thislabel set alt_text_size 3.3}
-      {$thislabel set alt_z_offset 0}
-      {$thislabel set_showing TRUE}
-      {$thislabel set_local_scale 1 1 1}
-      {$thislabel set_local_rot 0 0 0}
-      {$thislabel set width 500}
-      {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {meters.grp add_object $thislabel}
-      {$thislabel set_token_fmt os_blnk}
-   }
-   {if {! {exists $thiscolor}}
-      {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
-   }
-   {$thislabel set kerning $kerning}
-   {$thislabel set italics 0.03}
-   {$thislabel set alignment $alignment}
-   {$thislabel set text_size $size}
-   {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x -5 $y}
-}
+
+; counts total perfects next to perfect indicator
 {func
    dx_perfect_hit_ctr
-   ($enabled $instrument $player $slot)
-   {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-   {set $perfect_ctr_label_inst {sprint "dx_track_label_perfect_ctr" {{$player get_user} get_slot_num} ".lbl"}}
-   {set $perfect_ctr_label_inst_color {sprint "dx_track_label_perfect_ctr" {{$player get_user} get_slot_num} ".color"}}
-   {set_var {sprint "dx_perfects_count_" $player} {+ 1 {eval {var {sprint "dx_perfects_count_" $player}}}}}
-   {if $enabled
-      {$perfect_ctr_label_inst set_token_fmt dx_indv_combo {eval {var {sprint "dx_perfects_count_" $player}}}} ;reusing locale since it's just %i and I need just %i
-      {$perfect_ctr_label_inst_color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
-   }
-   {if {! $enabled}
-      {$perfect_ctr_label_inst set_token_fmt os_blnk}
+   ($enabled $player $slot $diag $count)
+   {do
+      ($label {sprint "dx_track_label_perfect_ctr" $slot ".lbl"})
+      ($color {sprint "dx_track_label_perfect_ctr" $slot ".color"})
+      {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+      {$label set italics 0.03} ;this one is special with italics, ooooooohhhhh
+      {if_else $enabled ;we check enabled here to always store the count in the player object
+         {$label set_token_fmt dx_indv_combo $count} ;reusing locale since it's just %i and I need just %i
+         {$label set_token_fmt os_blnk} ;hide if disabled
+      }
+      {if_else $dx_detailed_hit_timing ;if we add on the extra timing char, we need to move the label slightly to account
+         {$label set_local_pos_index 0 {- $dx_track_perfect_ctr_x 0.3}} ;move slightly to the left
+         {$label set_local_pos_index 0 $dx_track_perfect_ctr_x} ;no timing, its fine
+      }
+      {$color set color
+         {if_else $diag ;adjust color of counter to match perfect text in detailed hit mode
+            {pack_color 0.42 1 1} ;cyan
+            {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b} ;gold
+         }
+      }
    }
 }
+; player note hit judgments
+{func
+   dx_perfect_hit
+   ($enabled $instrument $player $slot $diag $timing $level)
+   {if $enabled
+      {do
+         ($label {sprint "dx_track_label_perfect" $slot ".lbl"})
+         ($color {sprint "dx_track_label_perfect" $slot ".color"})
+         {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+         {$label set italics 0.03} ;this one is special with italics, ooooooohhhhh
+         {cond
+            ({== $level hide} {$label set_token_fmt os_blnk}) ;force hide the perfect text if requested
+            ({|| $diag {&& {! $diag} {== $level perfect}}} ;if all levels are showing or only perfect hits for perfect
+               {foreach_int $int 0 8 ;yep there sure are 8 tasks (i hate it)
+                  {delete {sprint "perfect_bounce" $int}} ;clean up running tasks
+               }
+               {switch $timing ;prep string for timing window
+                  (early {set $this_time_str '-'}) ;if you arrive somewhere at a negative time, you are early right?
+                  (late {set $this_time_str '+'})
+               }
+               {if_else $dx_detailed_hit_timing ;print strings
+                  {$label set_token_fmt stringify {sprint $this_time_str {localize {sprint "judge_" $level}}}} ;add timing string
+                  {$label set_token_fmt {sprint "judge_" $level}} ;only print level
+               }
+               ;set the color based off precision and mode
+               {$color set color
+                  {cond
+                     ({== $level invalid} {pack_color 0.94 0.28 0.28}) ;red
+                     ({! $diag} {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}) ;gold
+                     ({== $level perfect} {pack_color 0.42 1 1}) ;cyan
+                     ({== $level great} {pack_color 0.27 1 0.42}) ;green
+                     ({== $level good} {pack_color 0.98 0.96 0.22}) ;yellow
+                     ({== $level bad} {pack_color 0.94 0.28 0.28}) ;red
+                  }
+               }
+               ;reset everything before animating again
+               {$label set text_size $dx_track_perfect_size}
+               {$label set alpha 1.0}
+               {$label set_local_pos $dx_track_perfect_x -5 $dx_track_perfect_y}
+               ;animate the label
+               {dx_animate_perfect $player $perfect $level $label}
+            )
+         }
+      }
+   }
+}
+
+;gh style note streak text popups above the track
+{func
+   dx_note_streak_popup
+   ($enabled $player $combo)
+   {if {&& $enabled {! {gamemode in_mode trainer}}}
+      {if {== {mod $combo {if_else {> $combo 50} 100 50}} 0} ;dynamically adjust streak interval
+         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+         {bass_super_streak.lbl set_token_fmt dx_note_streak $combo} ;prep label with combo
+         {super_streak_start.trig trigger} ;show label (fancy anim)
+         {dx_remove_groove_label $player} ;remove text popup trigger
+      }
+   }
+}
+
+;this is terrible but whatever
+;it looks nice
 {func
    dx_animate_perfect
-   ($player $perfect $level $perfect_label_inst)
+   ($player $perfect $level $label)
    {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
    {do
       {script_task kTaskSeconds
@@ -125,8 +118,8 @@
          (delay 0.03)
          (script
             {if {== $level perfect}
-               {$perfect_label_inst set text_size {* $dx_track_perfect_size 1.04}}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.06} -5 $dx_track_perfect_y}
+               {$label set text_size {* $dx_track_perfect_size 1.04}}
+               {$label set_local_pos {- $dx_track_perfect_x 0.06} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -135,8 +128,8 @@
          (delay 0.06)
          (script
             {if {== $level perfect}
-               {$perfect_label_inst set text_size {* $dx_track_perfect_size 1.08}}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.12} -5 $dx_track_perfect_y}
+               {$label set text_size {* $dx_track_perfect_size 1.08}}
+               {$label set_local_pos {- $dx_track_perfect_x 0.12} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -145,8 +138,8 @@
          (delay 0.09)
          (script
             {if {== $level perfect}
-               {$perfect_label_inst set text_size {* $dx_track_perfect_size 1.1}}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.18} -5 $dx_track_perfect_y}
+               {$label set text_size {* $dx_track_perfect_size 1.1}}
+               {$label set_local_pos {- $dx_track_perfect_x 0.18} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -154,9 +147,9 @@
          (name perfect_bounce4)
          (delay {if_else $perfect 0.12 0.16})
          (script
-            {$perfect_label_inst set alpha 0.8}
+            {$label set alpha 0.8}
             {if {== $level perfect}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.24} -5 $dx_track_perfect_y}
+               {$label set_local_pos {- $dx_track_perfect_x 0.24} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -164,9 +157,9 @@
          (name perfect_bounce5)
          (delay {if_else $perfect 0.15 0.2})
          (script
-            {$perfect_label_inst set alpha 0.6}
+            {$label set alpha 0.6}
             {if {== $level perfect}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.24} -5 $dx_track_perfect_y}
+               {$label set_local_pos {- $dx_track_perfect_x 0.24} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -174,9 +167,9 @@
          (name perfect_bounce6)
          (delay {if_else $perfect 0.18 0.24})
          (script
-            {$perfect_label_inst set alpha 0.3}
+            {$label set alpha 0.3}
             {if {== $level perfect}
-               {$perfect_label_inst set_local_pos {- $dx_track_perfect_x 0.3} -5 $dx_track_perfect_y}
+               {$label set_local_pos {- $dx_track_perfect_x 0.3} -5 $dx_track_perfect_y}
             }
          )
       }
@@ -184,207 +177,39 @@
          (name perfect_bounce7)
          (delay {if_else $perfect 0.22 0.28})
          (script
-            {$perfect_label_inst set alpha 0}
+            {$label set alpha 0}
          )
       }
    }
 }
-{func
-   dx_perfect_hit
-   ($enabled $instrument $player $slot $diag $timing $level)
-   {if $enabled
-      {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-      {set $perfect_label_inst {sprint "dx_track_label_perfect" {{$player get_user} get_slot_num} ".lbl"}}
-      {set $perfect_label_inst_color {sprint "dx_track_label_perfect" {{$player get_user} get_slot_num} ".color"}}
-      {cond
-         ({== $level hide}
-            {$perfect_label_inst set_token_fmt os_blnk}
-         )
-         ({== $level oops}
-            {$perfect_label_inst_color set color {pack_color 0.94 0.28 0.28}} ;red
-            {$perfect_label_inst set_token_fmt judge_invalid}
-         )
-         {if {|| $diag {&& {! $diag} {== $level perfect}}}
-            {foreach_int $int 0 8
-               {if {exists {sprint "perfect_bounce" $int}}
-                  {delete {sprint "perfect_bounce" $int}}
-               }
-            }
-            {if {! $diag}
-               {$perfect_label_inst set_token_fmt judge_perfect}
-               {$perfect_label_inst_color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
-            }
-            {if $diag
-               {switch $timing
-                  (early {set $this_time_str '-'})
-                  (late {set $this_time_str '+'})
-               }
-               {switch $level
-                  (perfect
-                     {$perfect_label_inst set_token_fmt judge_perfect}
-                     {$perfect_label_inst_color set color {pack_color 0.42 1 1}}
-                  )
-                  (great
-                     {if_else $dx_detailed_hit_timing
-                        {$perfect_label_inst set_token_fmt stringify {sprint $this_time_str {localize judge_great}}}
-                        {$perfect_label_inst set_token_fmt judge_great}
-                     }
-                     {$perfect_label_inst_color set color {pack_color 0.27 1 0.42}} ;green
-                  )
-                  (good
-                     {if_else $dx_detailed_hit_timing
-                        {$perfect_label_inst set_token_fmt stringify {sprint $this_time_str {localize judge_good}}}
-                        {$perfect_label_inst set_token_fmt judge_good}
-                     }
-                     {$perfect_label_inst_color set color {pack_color 0.98 0.96 0.22}} ;yellow
-                  )
-                  (bad
-                     {if_else $dx_detailed_hit_timing
-                        {$perfect_label_inst set_token_fmt stringify {sprint $this_time_str {localize judge_bad}}}
-                        {$perfect_label_inst set_token_fmt judge_bad}
-                     }
-                     {$perfect_label_inst_color set color {pack_color 0.94 0.28 0.28}} ;red
-                  )
-                  kDataUnhandled
-               }
-            }
-            {$perfect_label_inst set text_size $dx_track_perfect_size}
-            {$perfect_label_inst set alpha 1.0}
-            {$perfect_label_inst set_local_pos $dx_track_perfect_x -5 $dx_track_perfect_y}
-            {dx_animate_perfect $player $perfect $level $perfect_label_inst}
-         }
-      }
-   }
-}
+
 {func dx_track_label_streak
    ($name $size $font $alignment $kerning $slot $x $y $r $g $b $reset)
-   {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}}
-   {set $thislabel {sprint $name $slot ".lbl"}}
-   {set $thiscolor {sprint $name $slot ".color"}}
-   {if $reset
-      {if {exists $thislabel}
-         {delete $thislabel}
+   {do
+      ($label {sprint $name $slot ".lbl"})
+      ($color {sprint $name $slot ".color"})
+      {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
+      {if $reset ;if we need to destroy and rebuild this label
+         {delete $label} {delete $color} ;destroy label
+         {new BandLabel $label} {new UIColor $color} ;rebuild label
+         ;set up default properties
+         {$label set resource_name $font}
+         {$label set color_override $color}
+         {$label set_showing TRUE}
+         {$label set_local_scale 1 1 1}
+         {$label set_local_rot 0 0 0}
+         {$label set width 500}
+         {$label set height 500}
+         {$label set_token_fmt os_blnk}
+         {meters.grp add_object $label} ;tie it into the overdrive meter group
       }
-      {if {exists $thiscolor}
-         {delete $thiscolor}
-      }
-   }
-   {if {! {exists $thislabel}}
-      {new BandLabel $thislabel}
-      {$thislabel set resource_name $font}
-      {$thislabel set alt_font_resource_name instruments_icons}
-      {$thislabel set markup TRUE}
-      {$thislabel set alt_text_size 3.3}
-      {$thislabel set alt_z_offset 0}
-      {$thislabel set_showing TRUE}
-      {$thislabel set_local_scale 1 1 1}
-      {$thislabel set_local_rot 0 0 0}
-      {$thislabel set width 500}
-      {$thislabel set height 500}
-      {$thislabel set alpha 1}
-      {meters.grp add_object $thislabel}
-      ;{$thislabel set_token_fmt os_blnk}
-   }
-   {if {! {exists $thiscolor}}
-      {new UIColor $thiscolor}
-      {$thislabel set color_override $thiscolor}
-   }
-   {$thislabel set kerning $kerning}
-   {$thislabel set alignment $alignment}
-   {$thislabel set text_size $size}
-   {$thiscolor set color {pack_color $r $g $b}}
-   {$thislabel set_local_pos $x -5 $y}
-}
-
-;gh style note streak text popups above the track
-{func
-   dx_note_streak_popup
-   ($player $instrument)
-   {dx_streak_timer_gen}
-   {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-   {super_streak_start.trig trigger}
-   {bass_super_streak.lbl set_token_fmt dx_note_streak {eval {var {sprint "num_gems_combo_" $instrument}}}}
-   {script_task
-      kTaskBeats
-      (delay $dx_streak_timer)
-      (script {dx_note_streak_remover $player $instrument})
-   }
-}
-{func
-   dx_check_for_streak_popup
-   ($enabled $player $instrument $num_gems_combo)
-   {if {&& $enabled {! {gamemode in_mode trainer}}}
-      {if {== {mod $num_gems_combo {dx_adjust_streak_popup_interval $instrument $num_gems_combo}} 0}
-         {dx_note_streak_popup $player $instrument}
-      }
-   }
-}
-{func
-   dx_adjust_streak_popup_interval
-   ($instrument $num_gems_combo)
-   {set $interval {if_else {> $num_gems_combo 50} 100 50}} ;adjust interval higher or lower based on combo
-   {switch $instrument ;specify interval to the specific instrument
-      (guitar {set $dx_streak_interval_guitar $interval})
-      (bass {set $dx_streak_interval_bass $interval})
-      (drum {set $dx_streak_interval_drum $interval})
-      (keys {set $dx_streak_interval_keys $interval})
-      (real_guitar {set $dx_streak_interval_real_guitar $interval})
-      (real_bass {set $dx_streak_interval_real_bass $interval})
-      (real_drum {set $dx_streak_interval_real_drum $interval})
-      (real_keys {set $dx_streak_interval_real_keys $interval})
-   }
-   $interval ;return interval
-}
-{func
-   dx_note_streak_remover
-   ($player $instrument)
-   {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-   {super_streak_end.trig trigger}
-}
-
-{func
-   dx_poll_inst_info
-   ($instrument)
-   {switch $instrument
-      (guitar
-         {set $polled_gems_miss $num_gems_miss_guitar}
-         {set $polled_gems_pass $num_gems_pass_guitar}
-         {set $polled_gems_combo $num_gems_combo_guitar}
-      )
-      (bass
-         {set $polled_gems_miss $num_gems_miss_bass}
-         {set $polled_gems_pass $num_gems_pass_bass}
-         {set $polled_gems_combo $num_gems_combo_bass}
-      )
-      (real_guitar
-         {set $polled_gems_miss $num_gems_miss_real_guitar}
-         {set $polled_gems_pass $num_gems_pass_real_guitar}
-         {set $polled_gems_combo $num_gems_combo_real_guitar}
-      )
-      (real_bass
-         {set $polled_gems_miss $num_gems_miss_real_bass}
-         {set $polled_gems_pass $num_gems_pass_real_bass}
-         {set $polled_gems_combo $num_gems_combo_real_bass}
-      )
-      (keys
-         {set $polled_gems_miss $num_gems_miss_keys}
-         {set $polled_gems_pass $num_gems_pass_keys}
-         {set $polled_gems_combo $num_gems_combo_keys}
-      )
-      (real_keys
-         {set $polled_gems_miss $num_gems_miss_real_keys}
-         {set $polled_gems_pass $num_gems_pass_real_keys}
-         {set $polled_gems_combo $num_gems_combo_real_keys}
-      )
-      (drum
-         {set $polled_gems_miss $num_gems_miss_drum}
-         {set $polled_gems_pass $num_gems_pass_drum}
-         {set $polled_gems_combo $num_gems_combo_drum}
-      )
-      (real_drum
-         {set $polled_gems_miss $num_gems_miss_real_drum}
-         {set $polled_gems_pass $num_gems_pass_real_drum}
-         {set $polled_gems_combo $num_gems_combo_real_drum}
-      )
+      ;these properties are user controllable via overshell
+      ;when configured in-game they do not destroy the label
+      ;so we should run these when the func is called always
+      {$label set alignment $alignment}
+      {$label set text_size $size}
+      {$label set kerning $kerning}
+      {$label set color {pack_color $r $g $b}}
+      {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
    }
 }

@@ -5,23 +5,23 @@
       {if {>= $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
          {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
       }
-      {dx_acceleration_mode 1}
+      {dx_acceleration_mode {modifier_mgr is_modifier_active mod_fastermode} 1}
       {dx_check_for_high_score $dx_high_score_report}
    )
    (miss ;when a note is missed (overstrum)
       {beatmatch foreach_active_player $player ;handle adding the appropriate callbacks to each player
          {unless {! {eval {var {sprint {$player instrument} "_firstnote"}}}}
-            {dx_miss_fc_remover $player {$player instrument} {{$player get_user} get_slot_num}}
+            {dx_miss_fc_remover $player {{$player get_user} get_slot_num}}
          }
       }
-      {dx_acceleration_mode 0}
+      {dx_acceleration_mode {modifier_mgr is_modifier_active mod_fastermode} 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
    )
    (pass ;when a note is passed (ignored)
       {beatmatch foreach_active_player $player
-         {dx_miss_fc_remover $player {$player instrument} {{$player get_user} get_slot_num}} ;logic to remove the fc indicator upon miss/pass
+         {dx_miss_fc_remover $player {{$player get_user} get_slot_num}} ;logic to remove the fc indicator upon miss/pass
       }
-      {dx_acceleration_mode 0}
+      {dx_acceleration_mode {modifier_mgr is_modifier_active mod_fastermode} 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
    )
    (num_gems_hit 0) ;default setup state and storage for note counters
@@ -64,27 +64,26 @@
          {$this check_fc} ;run the logic to check if we are in an fc or not
          {set [num_gems_hit] {'+' [num_gems_hit] 1}} ;increment the notes hit counter
          {set [num_gems_combo] {'+' [num_gems_combo] 1}} ;increment the notes comboed counter
-         {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
-         {dx_check_for_streak_popup $dx_note_streak_popups [player] [track_instrument] [num_gems_combo]}
-         {dx_indv_note_streak $dx_track_streak [track_instrument]}
+         {dx_store_note_hit_info [slot] [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_note_streak_popup $dx_note_streak_popups [player] [num_gems_combo]}
+         {dx_indv_note_streak $dx_track_streak [player] [slot] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
       )
       (miss ;when a note is missed (overstrum)
          {if {dx_check_first_note [track_instrument]}
             {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
             {set [num_gems_combo] 0} ;reset the notes comboed counter
-            {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+            {dx_store_note_hit_info [slot] [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
             {$this check_missed} ;run the logic to check our current misses
-            {dx_indv_note_streak $dx_track_streak [track_instrument]}
+            {dx_indv_note_streak $dx_track_streak [player] [slot] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          }
       )
       (pass ;when a note is passed (ignored)
          {$this first_note}
          {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
          {set [num_gems_combo] 0} ;reset the notes comboed counter
-         {dx_store_note_hit_info [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_store_note_hit_info [slot] [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          {$this check_missed} ;run the logic to check our current misses
-         {dx_acceleration_mode 0}
-         {dx_indv_note_streak $dx_track_streak [track_instrument]}
+         {dx_indv_note_streak $dx_track_streak [player] [slot] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
       )
       (first_note
          {if {! {dx_check_first_note [track_instrument]}} ;if the first note has not been hit/missed/passed yet, track that the first note has been hit/missed/passed
@@ -94,22 +93,23 @@
       )
       (check_fc
          {$this check_missed} ;run the logic to check our current misses
-         {dx_fc_glow_enabler $dx_fc_glow [player] [track_instrument] [num_gems_pass] [num_gems_miss]}
+         {dx_fc_glow_enabler $dx_fc_glow [player] [num_gems_pass] [num_gems_miss]}
       )
       (check_missed
-         {dx_fc_glow_disabler $dx_fc_glow [player] [track_instrument] [num_gems_pass] [num_gems_miss]}
+         {dx_fc_glow_disabler $dx_fc_glow [player] [slot] [num_gems_pass] [num_gems_miss]}
       )
       (offset 0)
       (timing 0)
       (accuracy 0)
       (negative 0)
       (total 0)
+      (perfects 0)
       (perfects_indicator
          ($accuracy)
          {if {== $accuracy -8675309}
             {if_else {> {+ [num_gems_miss] [num_gems_hit] [num_gems_pass]} 10}
                {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] hide}
-               {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] oops}
+               {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] invalid}
             }
          }
          {if {!= $accuracy -8675309}
@@ -129,15 +129,17 @@
                {set [timing] perfect}
                {if {>= [offset] 1} {set [timing] late}}
                {if {<= [offset] -1} {set [timing] early}}
+               #ifdef HX_WII {set $dx_wii_window_offset 66.73340006673341} #endif
                {cond
-                  ({&& {< [offset] 25} {> [offset] -25}}
+                  ({&& {< [offset] #ifdef HX_WII {+ 25 $dx_wii_window_offset} #else 25 #endif} {> [offset] #ifdef HX_WII {+ -25 $dx_wii_window_offset} #else -25 #endif}}
                      {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
-                     {dx_perfect_hit_ctr $dx_perfects_ctr [track_instrument] [player] [slot]}
+                     {++ [perfects]} ;increment local counter
+                     {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
                   )
-                  ({&& {< [offset] 40} {> [offset] -40}}
+                  ({&& {< [offset] #ifdef HX_WII {+ 40 $dx_wii_window_offset} #else 40 #endif} {> [offset] #ifdef HX_WII {+ -40 $dx_wii_window_offset} #else 40 #endif}}
                      {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
                   )
-                  ({&& {< [offset] 55} {> [offset] -55}}
+                  ({&& {< [offset] #ifdef HX_WII {+ 55 $dx_wii_window_offset} #else 55 #endif} {> [offset] #ifdef HX_WII {+ -55 $dx_wii_window_offset} #else -55 #endif}}
                      {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] good}
                   )
                   {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] bad}
@@ -153,12 +155,14 @@
                ;}
                {set [total] {+ [total] [offset]}}
                ;debug, show values
-               ;{{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
-               ;{{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
-               ;{{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
-               ;{{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint $sprinting}}}
-               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " [offset] " Avg: " {/ $total [num_gems_hit]}}}}
+               {if $dx_judgment_dbg
+                  {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+                  {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+                  {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+                  {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+                  {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint $sprinting}}}
+                  {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " #ifdef HX_WII {- [offset] $dx_wii_window_offset} #else [offset] #endif " Avg: " #ifdef HX_WII {- {/ [total] [num_gems_hit]} $dx_wii_window_offset} #else {/ [total] [num_gems_hit]} #endif}}}
+               }
             }
          }
       )
@@ -180,7 +184,7 @@
       {beatmatch foreach_active_player $player ;iterate through each player, grab the combo from the relevant callback, add them all together
          {if {! {eval {var {sprint {$player instrument} "_finalnote"}}}}
             {set $dx_streak 0}
-            {set $dx_streak {+ $dx_streak {eval {var {sprint "num_gems_combo_" {$player instrument}}}}}}
+            {set $dx_streak {+ $dx_streak {eval {var {sprint "num_gems_combo_" {{$player get_user} get_slot_num}}}}}}
          }
       }
    )

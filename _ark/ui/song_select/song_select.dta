@@ -1227,6 +1227,97 @@
                   $token}
                {set $ret $button}}}
          $ret})
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if
+         {&&
+            $ok
+            $this
+            {!
+               {==
+                  $text
+                  ""}}}
+         ;sanitize player input
+         {set $got_text {dx_special_char $text}}
+         ;force song sort
+         {{music_library get view_settings_provider} refresh_all_settings}
+         {song_select_filter_panel filter_enter}
+         {{music_library get view_settings_provider} select_setting 1}
+         {{music_library get view_settings_provider} select_setting_option 0}
+         {music_library report_sort_and_filters}
+         {song_select_filter_panel filter_exit}
+         ;jump to top of song select
+         {music_library skip_to_shortcut 1}
+         ;jump to the first letter shortcut
+         {switch {str_elem $got_text 0}
+            ((0 1 2 3 4 5 6 7 8 9)
+               {music_library skip_to_shortcut 1}
+            )
+            ("a" {music_library skip_to_shortcut 2})
+            ("b" {music_library skip_to_shortcut 3})
+            ("c" {music_library skip_to_shortcut 4})
+            ("d" {music_library skip_to_shortcut 5})
+            ("e" {music_library skip_to_shortcut 6})
+            ("f" {music_library skip_to_shortcut 7})
+            ("g" {music_library skip_to_shortcut 8})
+            ("h" {music_library skip_to_shortcut 9})
+            ("i" {music_library skip_to_shortcut 10})
+            ("j" {music_library skip_to_shortcut 11})
+            ("k" {music_library skip_to_shortcut 12})
+            ("l" {music_library skip_to_shortcut 13})
+            ("m" {music_library skip_to_shortcut 14})
+            ("n" {music_library skip_to_shortcut 15})
+            ("o" {music_library skip_to_shortcut 16})
+            ("p" {music_library skip_to_shortcut 17})
+            ("q" {music_library skip_to_shortcut 18})
+            ("r" {music_library skip_to_shortcut 19})
+            ("s" {music_library skip_to_shortcut 20})
+            ("t" {music_library skip_to_shortcut 21})
+            ("u" {music_library skip_to_shortcut 22})
+            ("v" {music_library skip_to_shortcut 23})
+            ("w" {music_library skip_to_shortcut 24})
+            ("x" {music_library skip_to_shortcut 25})
+            ("y" {music_library skip_to_shortcut 26})
+            ("z" {music_library skip_to_shortcut 27})
+         }
+         ;start searching for the song
+         {foreach_int $i 1 {- {song.lst num_data} 2}
+            {if_else
+               {||
+                  {&&
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                     {has_substr {dx_special_char {{music_library get_highlighted_node} title}} $got_text}
+                  }
+                  {&&
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                     {has_substr {dx_special_char {{music_library get_highlighted_node} get_token}} $got_text}
+                  }
+               }
+               kDataUnhandled
+               {if
+                  {||
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeHeader}
+                     {== {{music_library get_highlighted_node} get_node_type} kNodeFunction}
+                     {&&
+                        {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                        {! {has_substr {dx_special_char {{music_library get_highlighted_node} get_token}} $got_text}}
+                     }
+                     {&&
+                        {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                        {! {has_substr {dx_special_char {{music_library get_highlighted_node} title}} $got_text}}
+                     }
+                  }
+                  {if_else {== {song.lst selected_pos} {- {song.lst num_data} 3}}
+                     {song.lst set_selected_simulate_scroll 0}
+                     {song.lst set_selected_simulate_scroll {+ {song.lst selected_pos} 1}}
+                  }
+               }
+            }
+            
+         }
+      }
+   )
    (SELECT_MSG
       {unless {|| $dx_customizer $dx_auto_endurance}
          {with
@@ -2048,16 +2139,43 @@
                      {is_leader_local}
                      {if_else
                         {machine_mgr all_machines_have_same_net_ui_state}
-                        {ui
-                           sync_screen
-                           {music_library get_back_screen}
-                           0}
+                        ;dx virtual keyboard
+                        {virtual_keyboard
+                           show_keyboard
+                           $user
+                           17
+                           {localize song_search}
+                           {localize song_search_desc}
+                           {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                              {{music_library get_highlighted_node} title}
+                              {localize song_search_title}
+                           }
+                           $this
+                        }
+                        ;{ui sync_screen {music_library get_back_screen} 0}
                         {ui_event_mgr trigger_event remote_not_ready}}
                      {ui_event_mgr trigger_event remote_exit}}
-                  {ui
-                     go_back_screen
-                     {music_library get_back_screen}
-                     $user}}}})
+                  ;dx, fallback to search on hold red lmao
+                  {virtual_keyboard
+                     show_keyboard
+                     $user
+                     17
+                     {localize song_search}
+                     {localize song_search_desc}
+                     {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                        {{music_library get_highlighted_node} title}
+                        {localize song_search_title}
+                     }
+                     $this
+                  }
+                  ;{ui
+                  ;   go_back_screen
+                  ;   {music_library get_back_screen}
+                  ;   $user}
+                  }
+               }
+            }
+         )
          ({'||'
                #ifdef HX_WII
                {==
