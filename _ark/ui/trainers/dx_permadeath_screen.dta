@@ -1,0 +1,91 @@
+{new
+   TrainingPanel
+   permadeath_stats_panel
+   (file "lmao.milo")
+   (enter
+      {$this set_setlist}
+      {$this update_state kTrainingState_MainMenu}
+      {trainers.lst set_type practice_section}
+      {trainers.lst set_local_pos -392 0 75}
+      {trainers.lst refresh}
+
+      {lmao.lst set_type practice_section}
+      {lmao.lst refresh}
+      {lmao.lst set_data (play practice exit)}
+      {lmao.lst set_type overshell_menu}
+      {lmao.lst refresh}
+      {lmao.lst set_local_pos 92 0 75}
+      {lmao.lst set_data (play practice exit)}
+      {trainers.lst set_data $permadeath_setlist_names}
+      {$this iterate UIList $l {$l set scroll_time 0}}
+   )
+   (update_state
+      ($state)
+      {switch
+         $state
+         (kTrainingState_MainMenu
+            {main_menu.trg trigger}
+            {$this set_focus trainers.lst})
+         (kTrainingState_DrumLessons
+            {drum_lessons.trg trigger}
+            {$this set_focus lessons.lst})
+         (kTrainingState_ProDrumLessons
+            {pro_drum_lessons.trg trigger}
+            {$this set_focus lessons.lst})
+         (kTrainingState_ProGuitarLessons
+            {pro_guitar_lessons.trg trigger}
+            {$this set_focus lessons.lst})
+         (kTrainingState_ProKeyboardLessons
+            {pro_keyboard_lessons.trg trigger}
+            {$this set_focus lessons.lst})})
+   (set_setlist
+      {if
+         {exists song_mgr}
+         {do
+            ($highest_difficulty -1)
+            ($most_vocal_parts 0)
+            ($has_part FALSE)
+            {foreach_int $i 0 {meta_performer num_songs}
+               {do
+                  ($track_type_sym
+                     {$this get_track_type_sym})
+                  ($song
+                     {meta_performer indexed_song $i})
+                  ($difficulty
+                     {song_mgr rank_tier_for_song $song $track_type_sym})
+                  ($num_vocal_parts 0)
+                  {if {song_mgr part_plays_in_song $song $track_type_sym}
+                     {set $has_part TRUE}
+                  }
+                  {dx_add_permadeath_song $song}
+               }
+            }
+         }
+      }
+   )
+   (SELECT_MSG
+      {switch
+         $component
+         (trainers.lst
+            {set $permadeath_queued_song {elem $permadeath_setlist {$component selected_pos}}}
+            {$this set_focus lmao.lst}
+         )
+         (lmao.lst
+            {switch {lmao.lst selected_sym}
+               (play
+                  {gamemode set_mode qp_coop}
+                  {meta_performer reset_songs}
+                  {meta_performer set_song {symbol $permadeath_queued_song}}
+                  {ui goto_screen {music_library get_next_screen}}
+               )
+            }
+         )
+      }
+   )
+}
+{new
+   BandScreen
+   permadeath_stats_screen
+   (panels meta sv5_panel permadeath_stats_panel)
+   (focus permadeath_stats_panel)
+   (back song_select_screen)}
