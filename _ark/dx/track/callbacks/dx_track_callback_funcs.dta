@@ -53,3 +53,537 @@
    }
    $this_band_miss
 }
+
+
+{func
+   add_random_joker
+   ($type)
+   {do
+      ;pick a joker name
+      ($card {elem {random_elem $available_jokers} 0})
+      ;find the joker name in array
+      {if {&& {< {size $player_jokers} $max_jokers} {> {size $available_jokers} 0}}
+         {foreach $entry $available_jokers
+            ;if found joker id
+            {if {== $card {elem $entry 0}}
+               ;upgrade joker to type
+               {if $type
+                  {switch $type
+                     (foil {set_elem $entry 4 1})
+                     (chrome {set_elem $entry 5 1})
+                     (holo {set_elem $entry 6 1})
+                  }
+               }
+               ;add joker to player
+               {push_back $player_jokers $entry}
+               ;remove joker from pool
+               {remove_elem $available_jokers $entry}
+            }
+         }
+      }
+   }
+}
+
+{func
+   upgrade_random_joker
+   ($type)
+   {do
+      ;pick a joker name
+      ($card {elem {random_elem $player_jokers} 0})
+      ;find the joker name in array
+      {foreach $entry $player_jokers
+         ;if found joker id
+         {if {== $card {elem $entry 0}}
+            ;only upgrade a card once, sorry
+            {if {&& {== {elem $entry 4} 0} {== {elem $entry 4} 0} {== {elem $entry 4} 0}}
+               ;upgrade joker to type
+               {switch $type
+                  (foil {set_elem $entry 4 1})
+                  (chrome {set_elem $entry 5 1})
+                  (holo {set_elem $entry 6 1})
+               }
+            }
+         }
+      }
+   }
+}
+
+{func
+   add_random_playercard
+   ($type)
+   {do
+      ($allcards DX_PLAYER_CARDS)
+      ;pick a card name
+      ($card {elem {random_elem $allcards} 0})
+      ;find the card name in array
+      {foreach $entry $allcards
+         ;if found card id
+         {if {== $card {elem $entry 0}}
+            ;upgrade card to type
+            {if $type
+               {switch $type
+                  (foil {set_elem $entry 4 1})
+                  (chrome {set_elem $entry 5 1})
+                  (holo {set_elem $entry 6 1})
+               }
+            }
+            ;add card to player
+            {push_back $player_cards $entry}
+         }
+      }
+   }
+}
+
+{func
+   upgrade_random_playercard
+   ($type)
+   {do
+      ;pick a random player card id
+      ($card {elem {random_elem $player_cards} 0})
+      ;find player card id in array
+      {foreach $entry $player_cards
+         ;if found player card
+         {if {== $card {elem $entry 0}}
+            ;only upgrade a card once, sorry
+            {if {&& {== {elem $entry 4} 0} {== {elem $entry 4} 0} {== {elem $entry 4} 0}}
+               ;upgrade card to type
+               {switch $type
+                  (foil {set_elem $entry 4 1})
+                  (chrome {set_elem $entry 5 1})
+                  (holo {set_elem $entry 6 1})
+               }
+            }
+         }
+      }
+   }
+}
+
+{func
+   balatro_win
+   {++ $completed_blinds}
+   {upgrade_random_playercard {elem {random_elem DX_BAL_ENHANC_VAL} 0}}
+   {if {> {random_int 0 100} 50}
+      {if_else {> {random_int 0 100} 75}
+         {add_random_joker {elem {random_elem DX_BAL_ENHANC_VAL} 0}}
+         {add_random_joker 0}
+      }
+   }
+   {if {> {random_int 0 100} 90}
+      {upgrade_random_joker {elem {random_elem DX_BAL_ENHANC_VAL} 0}}
+   }
+}
+#define CALC_CARD_VALS
+(
+   ;base value for card
+   {if {!= {elem $entry 1} 0}
+      {set $base {+ $base {elem $entry 1}}}
+   }
+   ;luck value for card, if lucky
+   {if {!= {elem $entry 2} 0}
+      ;{if {> {random_int 0 100} 25}
+         {set $luck {+ $luck {elem $entry 2}}}
+      ;}
+   }
+   ;adds multiplier
+   {if {!= {elem $entry 3} 0}
+      {set $mult {+ $mult {elem $entry 3}}}
+   }
+   ;adds foil value if exists
+   {if {!= {elem $entry 4} 0}
+      {set $base {+ $base {elem {elem DX_BAL_ENHANC_VAL 0} 1}}}
+   }
+   ;adds chrome value if exists, if lucky
+   {if {!= {elem $entry 5} 0}
+      ;{if {> {random_int 0 100} 25}
+         {set $luck {+ $luck {elem {elem DX_BAL_ENHANC_VAL 1} 2}}}
+      ;}
+   }
+   ;adds holo value if exists
+   {if {!= {elem $entry 6} 0}
+      {set $mult {+ $mult {elem {elem DX_BAL_ENHANC_VAL 2} 3}}}
+   }
+)
+{func
+   dx_bal_shuffle_deck
+   {do
+      {set $temp ()}
+      {resize $temp 0}
+      {foreach $entry $player_cards
+         {push_back $temp $entry}
+      }
+      {set $available_cards ()}
+      {resize $available_cards 0}
+      {while {> {size $temp} 0}
+         {do
+            ($card {elem {random_elem $temp} 0})
+            {foreach $entry $temp
+               {if {== {elem $entry 0} $card}
+                  {push_back $available_cards $entry}
+                  {remove_elem $temp $entry}
+               }
+            }
+         }
+      }
+   }
+}
+{func
+   pick_a_card
+   ($id)
+   {do
+      ($str {sprint $id})
+      ($bit {int {str_elem $str {- {strlen $str} 1}}})
+      ($card 0)
+      ($has_played FALSE)
+      ($played_card 0)
+      ($prior_suit {random_int 0 4})
+      ($color 0)
+      ;pick a card 
+      {set $card
+         {switch $bit
+            ((1 2 3 4 5 6 7 8 9) {sprint $bit})
+            (0 {sprint {random_elem FACE_CARDS}})
+         }
+      }
+      {foreach $entry $available_cards
+         ;check for available card
+         {if
+            {&&
+               ;if we havent played a card
+               {! $has_played}
+               ;if value matches card
+               {||
+                  ;if suit and num matches checked card
+                  {&&
+                     {== {str_elem {elem $entry 0} 0} $card}
+                     {== $prior_suit {int {str_elem {elem $entry 0} {- {strlen {elem $entry 0}} 1}}}}
+                  }
+                  ;if num matches
+                  {== {str_elem {elem $entry 0} 0} $card}
+               }
+            }
+            ;we played a card, dont allow multiple cards per note
+            {set $has_played TRUE}
+            ;pass name up to return
+            {set $played_card {elem $entry 0}}
+            {set $color dx_balatro_output_card.color}
+            ;remove card from pool
+            {remove_elem $available_cards $entry}
+         }
+      }
+      $played_card
+   }
+}
+
+#define COMMON_HIT_MISS_BAL
+(
+   ($levels {if_else $completed_blinds {+ $completed_blinds 1} 1})
+   ;scale the difficulty by current player level
+   ($growth {* {+ 1 {- $levels 1}} 0.05})
+   ;the par for the song
+   ;total notes multiplied by 4 to consider all notes under 4x
+   ($ceiling {int {floor {* {- $total_notes 10} 4}}})
+   ;calculate the blind for this run by offsetting above by diff level and taking 98% of the total notes
+   ;add 25% more notes offset by diff level to account for notes hit under overdrive
+   ($offset 0.25)
+   ($forgiveness 0.97)
+   ($grow_blind {* $total_notes {+ {* 2.5 {/ $growth 2}} 2.5}})
+   ($calc {+ {* $ceiling $forgiveness} {* $grow_blind $offset}})
+   ($blind {int {floor {+ $calc {* $calc $growth}}}})
+   ;notes also increase by diff level, and are doubled while deployed overdrive
+   ($base_note {if_else {$player is_deploying} 2 1})
+   ($note {int {round {+ $base_note {* $base_note {/ $growth 1.25}}}}})
+   ;the base multipler also scales based on diff level
+   ;we dont wait for 40 note streak so misses arent so brutal against the player
+   ($base_mult
+      {cond
+         ({<= $combo 1} 1)
+         ({<= $combo 2} 2)
+         ({<= $combo 3} 3)
+         ({>= $combo 4} 4)
+      }
+   )
+   ($percent {int {* {/ {dx_get_current_beat} $dx_end_of_song} 100}})
+   ($base 0)
+   ($luck 0)
+   ($mult 0)
+   ($num_cards 0)
+   ($num_jokers 0)
+   ($new_base 0)
+   ($new_score 0)
+   ($played_card 0)
+   ($shuffled 0)
+)
+#define GET_CARD_INFO
+(
+   {$label set_token_fmt {elem $entry 0}}
+   {if $color
+      {$color set color {pack_color 1 1 1}}
+   }
+   {do
+      ($string {localize {elem $entry 0}})
+      ($out FALSE)
+      {if {!= {elem $entry 1} 0}
+         ;{if_else $out
+         ;   {set $out {sprint "+" {elem $entry 1} " <alt>r</alt> " $out}}
+         ;   {set $out {sprint "+" {elem $entry 1} " <alt>r</alt> "}}
+         ;}
+         {if $color
+            {$color set color {pack_color 1 0.51 0}}
+         }
+      }
+      {if {!= {elem $entry 2} 0}
+         ;{if_else $out
+         ;   {set $out {sprint "+" {elem $entry 2} #ifdef HX_XBOX " <alt>3</alt> " #else " <alt>^</alt> " #endif $out}}
+         ;   {set $out {sprint "+" {elem $entry 2} #ifdef HX_XBOX " <alt>3</alt> " #else " <alt>^</alt> " #endif}}
+         ;}
+         {if $color
+            {$color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
+         }
+      }
+      {if {!= {elem $entry 3} 0}
+         ;{if_else $out
+         ;   {set $out {sprint "+" {elem $entry 3} #ifdef HX_XBOX " <alt>%</alt> " #else " <alt>e</alt> " #endif $out}}
+         ;   {set $out {sprint "+" {elem $entry 3} #ifdef HX_XBOX " <alt>%</alt> " #else " <alt>e</alt> " #endif}}
+         ;}
+         {if $color
+            {$color set color {pack_color 0.3 0.9 0.3}}
+         }
+      }
+      {if {!= {elem $entry 4} 0}
+         {if_else $out
+            {set $out {sprint $out " <alt>Q</alt>"}}
+            {set $out {sprint "<alt>Q</alt>"}}
+         }
+         {if $color
+            {$color set color {pack_color 0.718 1 0.965}}
+         }
+      }
+      {if {!= {elem $entry 5} 0}
+         {if_else $out
+            {set $out {sprint $out " <alt>W</alt>"}}
+            {set $out {sprint "<alt>W</alt>"}}
+         }
+         {if $color
+            {$color set color {pack_color 0.671 0.463 1}}
+         }
+      }
+      {if {!= {elem $entry 6} 0}
+         {if_else $out
+            {set $out {sprint $out " <alt>E</alt>"}}
+            {set $out {sprint "<alt>E</alt>"}}
+         }
+         {if $color
+            {$color set color {pack_color 0 0.678 1}}
+         }
+      }
+      {if_else $out
+         {set $out {sprint $out $string}}
+         {set $out {sprint $string}}
+      }
+      {$label set_token_fmt stringify {sprint $out}}
+   }
+)
+#define DX_BAL_REPORT_COMMON
+(
+   {dx_balatro_output_words.lbl set_token_fmt stringify
+      {sprint
+         "lvl: " $levels " par: " $ceiling " - blind: " $blind
+         ;"\nbase_mult: " $base_mult " - base: " $base " - luck: " $luck " - mult: " $mult
+         ;"\nplayed_card: " $played_card " - id: " $id " - bal_score: " $bal_score
+      }
+   }
+   {foreach $entry $player_cards
+      {if {== $played_card {elem $entry 0}}
+         {set $label dx_balatro_output_card.lbl}
+         {set $color dx_balatro_output_card.color}
+         GET_CARD_INFO
+         {if
+            {||
+               ;if card has any buff at all
+               {> {elem $entry 1} 0} {> {elem $entry 2} 0}
+               {> {elem $entry 3} 0} {> {elem $entry 4} 0}
+               {> {elem $entry 5} 0} {> {elem $entry 6} 0}
+            }
+            ;reset everything before animating again
+            {$label set text_size $dx_hud_time_remaining_text_size}
+            {$label set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z 3}
+            {dx_animate_balatro $label 3}
+         }
+      }
+   }
+   {dx_balatro_output.lbl set_token_fmt solo_countdown {localize_separated_int $bal_score}}
+)
+#define DX_BAL_SCORE_CALC
+(
+   {if_else {> {size $available_cards} 1}
+      {do
+         {set $played_card {pick_a_card $id}}
+         ;if no card is available, shuffle the deck
+         {if {! $played_card}
+            {set $shuffled TRUE}
+            {dx_bal_shuffle_deck}
+            ;pick a new card
+            {set $played_card {pick_a_card $id}}
+         }
+      }
+      {do
+         {set $shuffled TRUE}
+         {dx_bal_shuffle_deck}
+      }
+   }
+   {foreach $entry $player_cards
+      {if {== $played_card {elem $entry 0}}
+         ;add value of card
+         CALC_CARD_VALS
+      }
+   }
+   {if {> {size $player_jokers} 0}
+      {foreach $entry $player_jokers
+         {++ $num_jokers}
+         {set $label {sprint "dx_balatro_output_joker" $num_jokers ".lbl"}}
+         {set $color {sprint "dx_balatro_output_joker" $num_jokers ".color"}}
+         GET_CARD_INFO
+         ;jokers only activate on percent complete
+         {if {> $percent $last_percent}
+            ;only use one joker at a time
+            {if {|| {== {size $player_jokers} 1} {&& {> {size $player_jokers} 1} {> $num_jokers $last_use_joker}}}
+               {set $last_percent {+ $percent 1}}
+               {set $last_use_joker $num_jokers}
+               {if {>= $last_use_joker {size $player_jokers}}
+                  {set $last_use_joker 0}
+               }
+               CALC_CARD_VALS
+               ;reset everything before animating again
+               {$label set text_size $dx_hud_time_remaining_text_size}
+               {$label set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z {- 3 $num_jokers}}
+               {dx_animate_balatro $label {- 3 $num_jokers}}
+            }
+         }
+      }
+   }
+   {if_else $mult
+      {set $new_mult {+ $base_mult {* $base_mult $mult}}}
+      {set $new_mult $base_mult}
+   }
+   {if $luck
+      {set $new_mult {+ $new_mult {* $new_mult $luck}}}
+   }
+   {if_else $base
+      {set $new_base {+ $note $base}}
+      {set $new_base $note}
+   }
+   {set $new_score {int {round {* $new_base $new_mult}}}}
+)
+{func
+   dx_bal_hit
+   ($enabled $player $last_score $id $hit $combo $pass $miss $total_notes)
+   {do
+      COMMON_HIT_MISS_BAL      
+      {set_this {coop_track_panel find scoreboard}}
+      DX_BAL_SCORE_CALC
+      {set $bal_score {int {+ $last_score $new_score}}}
+      {if_else {>= $bal_score $blind}
+         {dx_balatro_output.color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}}
+         {dx_balatro_output.color set color {pack_color 1 1 1}}
+      }
+      DX_BAL_REPORT_COMMON
+      {if {|| {> $base 0} {> $mult 0} {> $luck 0} {> $note 1}}
+         ;reset everything before animating again
+         {dx_balatro_output_math.lbl set text_size $dx_hud_time_remaining_text_size}
+         {dx_balatro_output_math.lbl set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z 5}
+         {dx_animate_balatro "dx_balatro_output_math.lbl" 5}
+      }
+      {dx_balatro_output_math.lbl set_token_fmt stringify {sprint "+" $new_score}}
+      {dx_balatro_output_math.color set color {pack_color 0.3 1 0.3}}
+      {dx_balatro_output_mathscore.color set color {pack_color 0.341 0.863 0.91}}
+      {dx_balatro_output_mathscore.lbl set_token_fmt print_mult {int $new_base} {int $new_mult}}
+      {dx_balatro_output_miss.lbl set_token_fmt stringify os_blnk}
+   }
+}
+
+{func
+   dx_bal_miss
+   ($enabled $player $last_score $id $hit $combo $pass $miss $total_notes)
+   {do
+      COMMON_HIT_MISS_BAL
+      {set_this {coop_track_panel find scoreboard}}
+      DX_BAL_SCORE_CALC
+      {set $bal_score {int {- $last_score $new_score}}}
+      DX_BAL_REPORT_COMMON
+      ;reset everything before animating again
+      {dx_balatro_output_math.lbl set text_size $dx_hud_time_remaining_text_size}
+      {dx_balatro_output_math.lbl set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z 5}
+      {dx_balatro_output_math.lbl set_token_fmt stringify {sprint "-" $new_score}}
+      {dx_balatro_output_math.color set color {pack_color 1 0.3 0.3}}
+      {dx_animate_balatro "dx_balatro_output_math.lbl" 5}
+      {dx_balatro_output_mathscore.color set color {pack_color 0.341 0.863 0.91}}
+      {dx_balatro_output_mathscore.lbl set_token_fmt print_mult {int $new_base} $new_mult}
+      {dx_balatro_output_miss.lbl set_token_fmt stringify {sprint "missed!"}}
+      ;reset everything before animating again
+      {dx_balatro_output_miss.lbl set text_size $dx_hud_time_remaining_text_size}
+      {dx_balatro_output_miss.lbl set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z 8}
+      {dx_balatro_output_miss.color set color {pack_color 1 0.3 0.3}}
+      {dx_animate_balatro "dx_balatro_output_miss.lbl" 8}
+   }
+}
+
+;this is terrible but whatever
+;it looks nice
+{func
+   dx_animate_balatro
+   ($label $y)
+   {set_this {coop_track_panel find scoreboard}}
+   {foreach_int $int 0 8 ;yep there sure are 8 tasks (i hate it)
+      {if {exists {sprint $label "_bounce" $int}}
+         {delete {sprint $label "_bounce" $int}} ;clean up running tasks
+      }
+   }
+   {do
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce1"})
+         (delay 0.03)
+         (script
+            {$label set text_size {* $dx_hud_time_remaining_text_size 1.04}}
+            {$label set_local_pos {- {- $dx_hud_time_remaining_text_x 15} 0.06} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce2"})
+         (delay 0.06)
+         (script
+            {$label set text_size {* $dx_hud_time_remaining_text_size 1.08}}
+            {$label set_local_pos {- {- $dx_hud_time_remaining_text_x 15} 0.12} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce3"})
+         (delay 0.09)
+         (script
+            {$label set text_size {* $dx_hud_time_remaining_text_size 1.1}}
+            {$label set_local_pos {- {- $dx_hud_time_remaining_text_x 15} 0.18} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce4"})
+         (delay 0.12)
+         (script
+            {$label set_local_pos {- {- $dx_hud_time_remaining_text_x 15} 0.24} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce5"})
+         (delay 0.15)
+         (script
+            {$label set_local_pos {- {- $dx_hud_time_remaining_text_x 15} 0.24} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+      {script_task kTaskSeconds
+         (name {sprint $label "_bounce6"})
+         (delay 0.18)
+         (script
+            {$label set text_size $dx_hud_time_remaining_text_size}
+            {$label set_local_pos {- $dx_hud_time_remaining_text_x 15} $dx_hud_time_remaining_text_z $y}
+         )
+      }
+   }
+}

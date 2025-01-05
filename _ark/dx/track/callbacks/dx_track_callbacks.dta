@@ -32,6 +32,7 @@
 {func dx_create_instrument_callback
    ($instrument $player $slot)
    {set_var {sprint "dx_perfects_count_" $player} 0} ;shove this here so it resets for a player when callback is added
+   {set $bal_score 0}
    {if {exists {sprint "fc_" $instrument "_callback"}} ;delete the object and recreate it if already exists
       {delete {sprint "fc_" $instrument "_callback"}}
    }
@@ -42,6 +43,9 @@
       (curr_ms 0)
       (diff none)
       (gem_id 0)
+      (hit_flag 0)
+      (total_notes 0)
+      (score 0)
       (hit ;when a note is hit
          ($gem_id)
          ;store gem_id as fast as possible
@@ -52,7 +56,7 @@
             {set [offset] FALSE}
             {set [accuracy] -8675309}
             ;failsafe, ensure the size of our tracker is the same as the reported total note count
-            {if {== {eval {var {sprint [track_instrument] "_note_tracker_2_size"}}} {[player] get_gem_count}}
+            {if {== [total_notes] {[player] get_gem_count}}
                {if {>= [gem_id] 0}
                   {set [accuracy] {'-' [curr_ms] {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} [gem_id]}}}
                }
@@ -67,9 +71,11 @@
          {dx_store_note_hit_info [slot] [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
          {dx_note_streak_popup $dx_note_streak_popups [player] [num_gems_combo]}
          {dx_indv_note_streak $dx_track_streak [player] [slot] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
+         {dx_bal_hit $dx_balatro [player] $bal_score [gem_id] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss] [total_notes]}
       )
       (miss ;when a note is missed (overstrum)
          {if {dx_check_first_note [track_instrument]}
+            {dx_bal_miss $dx_balatro [player] $bal_score {random_int 0 9} [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss] [total_notes]}
             {set [num_gems_miss] {'+' [num_gems_miss] 1}} ;increment the notes missed counter
             {set [num_gems_combo] 0} ;reset the notes comboed counter
             {dx_store_note_hit_info [slot] [track_instrument] [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss]}
@@ -78,6 +84,7 @@
          }
       )
       (pass ;when a note is passed (ignored)
+         {dx_bal_miss $dx_balatro [player] $bal_score {random_int 0 9} [num_gems_hit] [num_gems_combo] [num_gems_pass] [num_gems_miss] [total_notes]}
          {$this first_note}
          {set [num_gems_pass] {'+' [num_gems_pass] 1}} ;increment the notes passed counter
          {set [num_gems_combo] 0} ;reset the notes comboed counter
@@ -172,6 +179,7 @@
    {{sprint "fc_" $instrument "_callback"} set player $player}
    {{sprint "fc_" $instrument "_callback"} set slot $slot}
    {{sprint "fc_" $instrument "_callback"} set diff {{$player get_user} get_difficulty_sym}}
+   {{sprint "fc_" $instrument "_callback"} set total_notes {eval {var {sprint $instrument "_note_tracker_2_size"}}}}
 }
 {new Object dx_streak_callback
    (hit {$this update_streak})
