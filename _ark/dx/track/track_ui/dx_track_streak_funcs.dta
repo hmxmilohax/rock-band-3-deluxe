@@ -2,20 +2,18 @@
 {func
    dx_indv_note_streak
    ($enabled $player $slot $combo $passed $missed)
-   {if $enabled
-      {do
-         ($label {sprint "dx_track_label_streak" $slot ".lbl"})
-         ($color {sprint "dx_track_label_streak" $slot ".color"})
-         ($counter {if_else $dx_track_streak_gh3_delay 24 0}) ;mimic's gh3 starting at 25 note streak
-         {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
-         {if_else {== {+ $missed $passed} 0} ;if on an fc
-            {$color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}} ;gold when FC
-            {$color set color {pack_color $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b}} ;user color when broken
-         }
-         {if_else {> $combo $counter} ;dynamic start show streak
-            {$label set_token_fmt dx_indv_combo $combo} ;the note streak
-            {$label set_token_fmt os_blnk} ;hide until threshold
-         }
+   {do
+      ($label {sprint "dx_track_label_streak" $slot ".lbl"})
+      ($color {sprint "dx_track_label_streak" $slot ".color"})
+      ($counter {if_else $dx_track_streak_gh3_delay 24 0}) ;mimic's gh3 starting at 25 note streak
+      {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
+      {if_else {== {+ $missed $passed} 0} ;if on an fc
+         {$color set color {pack_color $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b}} ;gold when FC
+         {$color set color {pack_color $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b}} ;user color when broken
+      }
+      {if_else {&& $enabled {> $combo $counter}} ;dynamic start show streak
+         {$label set_token_fmt dx_indv_combo $combo} ;the note streak
+         {$label set_token_fmt os_blnk} ;hide until threshold
       }
    }
 }
@@ -59,7 +57,9 @@
             ({== $level hide} {$label set_token_fmt os_blnk}) ;force hide the perfect text if requested
             ({|| $diag {&& {! $diag} {== $level perfect}}} ;if all levels are showing or only perfect hits for perfect
                {foreach_int $int 0 8 ;yep there sure are 8 tasks (i hate it)
-                  {delete {sprint "perfect_bounce" $int}} ;clean up running tasks
+                  {if {exists {sprint "perfect_bounce" $int}}
+                     {delete {sprint "perfect_bounce" $int}} ;clean up running tasks
+                  }
                }
                {switch $timing ;prep string for timing window
                   (early {set $this_time_str '-'}) ;if you arrive somewhere at a negative time, you are early right?
@@ -190,7 +190,9 @@
       ($color {sprint $name $slot ".color"})
       {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
       {if $reset ;if we need to destroy and rebuild this label
-         {delete $label} {delete $color} ;destroy label
+         {if {exists $label}
+            {delete $label} {delete $color} ;destroy label
+         }
          {new BandLabel $label} {new UIColor $color} ;rebuild label
          ;set up default properties
          {$label set resource_name $font}
