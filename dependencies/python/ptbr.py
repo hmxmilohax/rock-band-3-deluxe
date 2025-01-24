@@ -2,7 +2,7 @@
 
 import re
 
-file_path = "../../_ark/dx/macros/dx_macros.dta"
+file_path = "_ark/dx/macros/dx_macros.dta"
 
 # Read the entire file
 with open(file_path, "r") as f:
