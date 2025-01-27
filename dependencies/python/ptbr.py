@@ -2,7 +2,10 @@
 
 import re
 
-file_path = "_ark/dx/macros/dx_macros.dta"
+file_path = os.path.abspath("_ark/dx/macros/dx_macros.dta")
+
+import os
+print("Current Working Directory:", os.getcwd())
 
 # Read the entire file
 with open(file_path, "r") as f:
