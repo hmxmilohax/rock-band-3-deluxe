@@ -56,8 +56,6 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
-        ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
-        ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.variable("superfreq", "dependencies/macos/superfreq")
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
@@ -202,52 +200,6 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
             if not out_path.name.endswith("_update.txt"):
                 ninja.build(str(out_path), "copy", str(f))
                 ark_files.append(str(out_path))
-
-# write version info
-dta = Path("obj", args.platform, "raw", "dx", "locale", "dx_version.dta")
-dtb = Path("obj", args.platform, "raw", "dx", "locale", "gen", "dx_version.dtb")
-enc = Path("obj", args.platform, "ark", "dx", "locale", "gen", "dx_version.dtb")
-
-ninja.build(str(dta), "version", implicit="_always")
-ninja.build(str(dtb), "dtab_serialize", str(dta))
-ninja.build(str(enc), "dtab_encrypt", str(dtb))
-
-ark_files.append(str(enc))
-
-# generate texture lists
-def generate_file_list(input_path: Path):
-    base = input_path.parts[1:]
-    dta = Path("obj", args.platform, "raw").joinpath(*base).joinpath("_list.dta")
-    dtb = Path("obj", args.platform, "raw").joinpath(*base).joinpath("gen", "_list.dtb")
-    enc = Path("obj", args.platform, "ark").joinpath(*base).joinpath("gen", "_list.dtb")
-    ninja.build(str(dta), "png_list", variables={"dir": str(input_path)}, implicit="_always")
-    ninja.build(str(dtb), "dtab_serialize", str(dta))
-    ninja.build(str(enc), "dtab_encrypt", str(dtb))
-
-generate_file_list(Path("_ark", "dx", "custom_textures", "highways"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "streaks"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "overdrive"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "gems", "gems_default"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "strikeline", "strikeline_guitar"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "flares", "flares_guitar_style"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "particles", "particles_spark"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "sustains"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "score", "scoreboard_frame"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "rails", "beat_lines"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "stars", "score_star_frame"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "font"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "solo_box"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "bre", "bre_shield"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "rails", "rails_track"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "lanes", "gem_mash_green_emmisive"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "overdrive_bar", "od_bar_background"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "multiplier_ring", "multiplier_ring_plate_fc"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "crowd_meter", "crowd_meter_frame"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "keyboard", "keyboard_lanes"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_highway", "vocal_highway_bg"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tube"))
-generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_overdrive", "vocal_overdrive_now_bar"))
 
 # build ark
 match args.platform:
