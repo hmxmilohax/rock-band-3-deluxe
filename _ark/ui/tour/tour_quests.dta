@@ -1,0 +1,333 @@
+{new
+   UIPanel
+   tour_post_seldiff_panel
+   (file
+      "tour_post_seldiff.milo")
+   (focus continue.btn)
+   (enter
+      {if_else
+         {is_leader_local}
+         {continue.btn set_showing TRUE}
+         {continue.btn set_showing FALSE}}
+      {challenge_name.lbl
+         set
+         text_token
+         {{tour performer}
+            current_quest_display_name}}
+      {challenge_desc.lbl
+         set
+         text_token
+         {{tour performer}
+            current_quest_long_description}})
+   (SELECT_MSG
+      {if_else
+         {acc_mgr has_new_reward_vignette_festival}
+         {ui goto_screen campaign_rewardvignette_festival_bs_screen}
+         {ui goto_screen preloading_screen}})}
+{new
+   BandScreen
+   tour_post_seldiff_screen
+   (panels meta sv4_panel tour_post_seldiff_panel)
+   (focus tour_post_seldiff_panel)}
+{new
+   BandScreen
+   tour_quest_outro_screen
+   (enter
+      {ui
+         goto_screen
+         {get_tour_screen}})}
+{new
+   BandScreen
+   tour_part_difficulty_screen
+   (panels meta sv4_panel part_difficulty_panel)
+   (enter
+      {overshell add_sink $this}
+      {if
+         {session_mgr is_leader_local}
+         {overshell set_song_options_required FALSE}
+         {if
+            {overshell in_override_flow kOverrideFlow_None}
+            {overshell begin_override_flow kOverrideFlow_SongSettings}}
+         {{tour performer}
+            select_venue}})
+   (exit
+      {overshell remove_sink $this}
+      {if
+         {overshell in_override_flow kOverrideFlow_SongSettings}
+         {overshell end_override_flow kOverrideFlow_SongSettings TRUE}})
+   (override_ended
+      ($override_type $cancel)
+      {if
+         {== $override_type kOverrideFlow_SongSettings}
+         {if_else
+            $cancel
+            {do
+               {if_else
+                  {{tour performer}
+                     is_current_quest_custom}
+                  {ui goto_screen song_select_screen}
+                  {ui goto_screen tour_gigguide_screen}}
+               {meta_performer clear_venues}}
+            {if_else
+               {tour should_show_post_seldiff_screen}
+               {ui goto_screen tour_post_seldiff_screen}
+               {if_else
+                  {acc_mgr has_new_reward_vignette_festival}
+                  {ui goto_screen campaign_rewardvignette_festival_bs_screen}
+                  {ui goto_screen preloading_screen}}}}})}
+{new
+   QuestFilterPanel
+   tour_gigguide_panel
+   (file
+      "tour_filters.milo")
+   (focus
+      "filters.lst")
+   (is_showing_filters FALSE)
+   (is_loaded
+      {content_mgr refresh_done})
+   (enter
+      {reset.trg trigger}
+      {$this set is_showing_filters FALSE}
+      {if_else
+         {is_leader_local}
+         {continue.ihp set_showing TRUE}
+         {continue.ihp set_showing FALSE}}
+      {session_mgr
+         add_sink
+         $this
+         (add_local_user_result_msg)}
+      {session
+         add_sink
+         $this
+         (local_user_left)})
+   (exit
+      {session_mgr remove_sink $this add_local_user_result_msg}
+      {session remove_sink $this local_user_left})
+   (hide_filters
+      {$this set is_showing_filters FALSE}
+      {goback.trg trigger}
+      {if
+         {&&
+            {session_mgr has_leader_user}
+            {is_leader_local}}
+         {$this
+            handle_leader_toggled_filters
+            [is_showing_filters]}})
+   (show_filters
+      {$this set is_showing_filters TRUE}
+      {continue.trg trigger}
+      {if
+         {&&
+            {session_mgr has_leader_user}
+            {is_leader_local}}
+         {$this
+            handle_leader_toggled_filters
+            [is_showing_filters]}})
+   (update_all
+      {name.lbl
+         set
+         text_token
+         {{tour performer}
+            current_quest_display_name}}
+      {tour_name.lbl
+         set
+         text_token
+         {{tour progress}
+            get_tour_name}}
+      {city.lbl
+         set_token_fmt
+         {{tour progress}
+            get_next_city}}
+      {flavor.lbl
+         set
+         text_token
+         {tour get_gig_flavor}}
+      {description.lbl
+         set
+         text_token
+         {{tour performer}
+            current_quest_description}}
+      {setlist_choose.lbl set text_token tour_choose_setlist}
+      {tour_total.lbl
+         set_token_fmt
+         generic_int
+         {{tour progress}
+            get_num_stars}}
+      {$this update_goal_info}
+      {$this update_for_selection})
+   (update_goal_info
+      {tour_bronze.lbl
+         set_token_fmt
+         tourdesc_stars_needed
+         {tour get_bronze_medal_goal}}
+      {if_else
+         {tour has_bronze_medal}
+         {do
+            {bronze.pic
+               set
+               tex_file
+               {tour get_bronze_medal_icon}}
+            {bronze_unearned.pic
+               set
+               tex_file
+               ""}
+            {bronze_prize_overlay.mesh set showing TRUE}}
+         {do
+            {bronze.pic
+               set
+               tex_file
+               ""}
+            {bronze_unearned.pic
+               set
+               tex_file
+               {tour get_bronze_medal_icon}}
+            {bronze_prize_overlay.mesh set showing FALSE}}}
+      {tour_silver.lbl
+         set_token_fmt
+         tourdesc_stars_needed
+         {tour get_silver_medal_goal}}
+      {if_else
+         {tour has_silver_medal}
+         {do
+            {silver.pic
+               set
+               tex_file
+               {tour get_silver_medal_icon}}
+            {silver_unearned.pic
+               set
+               tex_file
+               ""}
+            {silver_prize_overlay.mesh set showing TRUE}}
+         {do
+            {silver.pic set tex_file ''}
+            {silver_unearned.pic
+               set
+               tex_file
+               {tour get_silver_medal_icon}}
+            {silver_prize_overlay.mesh set showing FALSE}}}
+      {tour_gold.lbl
+         set_token_fmt
+         tourdesc_stars_needed
+         {tour get_gold_medal_goal}}
+      {if_else
+         {tour has_gold_medal}
+         {do
+            {gold.pic
+               set
+               tex_file
+               {tour get_gold_medal_icon}}
+            {gold_unearned.pic
+               set
+               tex_file
+               ""}
+            {gold_prize_overlay.mesh set showing TRUE}}
+         {do
+            {gold.pic
+               set
+               tex_file
+               ""}
+            {gold_unearned.pic
+               set
+               tex_file
+               {tour get_gold_medal_icon}}
+            {gold_prize_overlay.mesh set showing FALSE}}})
+   (client_tour_hideshow_filters
+      ($show)
+      {if
+         {!
+            {is_leader_local}}
+         {if_else
+            $show
+            {$this show_filters}
+            {$this hide_filters}}})
+   (BUTTON_DOWN_MSG
+      {switch
+         $action
+         (kAction_Confirm
+            {if_else
+               [is_showing_filters]
+               {do
+                  {$this handle_filter_selected}
+                  {play_instr_sfx $user button_select}}
+               {do
+                  {$this show_filters}
+                  {play_instr_sfx $user button_select}
+                  0}})
+         (kAction_Cancel
+            {play_instr_sfx $user button_back}
+            {if_else
+               [is_showing_filters]
+               {$this hide_filters}
+               {ui sync_screen tour_customize_screen 0}})
+         {if_else
+            [is_showing_filters]
+            kDataUnhandled
+            0}})
+   (update_for_selection
+      {$this update_details})
+   (SCROLL_MSG
+      {if
+         {!= $component songs.lst}
+         {$this update_for_selection}})
+   (update_filter_provider
+      ($provider)
+      {filters.lst set_provider $provider})
+   (add_local_user_result_msg
+      {if
+         {&&
+            {is_leader_local}
+            {!
+               {$this are_current_filters_valid}}}
+         {ui goto_screen tour_gigguide_init_screen}})
+   (local_user_left
+      {if
+         {&&
+            {is_leader_local}
+            {!
+               {$this are_current_filters_valid}}}
+         {ui goto_screen tour_gigguide_init_screen}})
+   (get_selected_filter_index
+      {filters.lst selected_pos})
+   (get_songselect_screen song_select_enter_screen)
+   (get_diffselect_screen tour_part_difficulty_screen)
+   (get_backscreen tour_gigguide_init_screen)}
+{new
+   UIPanel
+   tour_gigguide_init_panel
+   (is_loaded
+      {content_mgr refresh_done})}
+{new
+   BandScreen
+   tour_gigguide_init_screen
+   (panels meta sv4_panel tour_gigguide_init_panel)
+   (enter
+      {if
+         {'||'
+            {!
+               {session_mgr has_leader_user}}
+            {is_leader_local}}
+         {{tour performer}
+            initialize_next_gig}})
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen tour_gigguide_screen})}
+{new
+   UIPanel
+   tour_gigguide_map_panel
+   (file
+      {tour get_tour_gigguide_map})
+   (enter
+      {do
+         ($gig_num
+            {{tour progress}
+               get_current_gig_num})
+         {{$this
+               find
+               {sprintf
+                  "gig0%i.trg"
+                  $gig_num}}
+            trigger}})}
+{new
+   BandScreen
+   tour_gigguide_screen
+   (panels meta sv4_panel tour_gigguide_map_panel tour_gigguide_panel)
+   (focus tour_gigguide_panel)}

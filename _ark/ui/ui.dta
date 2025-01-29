@@ -1,0 +1,121 @@
+(cancel_transition_notify TRUE)
+(default_allow_edit_text FALSE)
+(verbose_locale_notifies TRUE)
+(show_nonenglish_notifies FALSE)
+(frontload_subdirs
+   "ui/meta_panel.milo")
+(init
+   #include init.dta
+   #ifndef _SHIP
+   {ui set_require_fixed_text TRUE}
+   #endif
+   {meta_loading load TRUE}
+   {dialog_panel load TRUE}
+   {dialog_small_panel load TRUE}
+   {lose_panel load TRUE}
+   {coop_endgame_panel load TRUE}
+   {coop_track_panel load TRUE}
+   {overshell load TRUE}
+   {event_dialog_panel load TRUE}
+   {content_loading_panel load TRUE}
+   {passive_messages_panel load TRUE}
+   {saveload_status_panel load TRUE}
+   {transition_fallback_panel load TRUE}
+   {abstract_wipe_panel load TRUE}
+   {hint_career_panel load TRUE}
+   {hint_careerlaunch_panel load TRUE}
+   {hint_career_halloffame_panel load TRUE}
+   {hint_goalcomplete_panel load TRUE}
+   {hint_prodrums_panel load TRUE}
+   {hint_rb3_welcome_panel load TRUE}
+   {tour_post_seldiff_panel load TRUE}
+   {tour_welcome_panel load TRUE}
+   {ui init_panels}
+   #ifndef _SHIP
+   {ui set_require_fixed_text FALSE}
+   #endif
+   {net_cache_mgr
+      init
+      {find $syscfg store netcache_init}}
+   #ifndef _SHIP
+   {ui add_message_type session_mgr add_local_user_result_msg}
+   #endif
+   {set $first_screen intro_movie_screen}
+   {ui my_init}
+   {ui goto_screen $first_screen})
+#include band_ui.dta
+(max_push_depth 2)
+(my_init)
+(overload_horizontal_nav TRUE)
+#include cam.dta
+(SELECT_MSG
+   {if
+      {&&
+         $user
+         {$user is_local}}
+      {unless
+         {&&
+            {{ui current_screen}
+               has
+               (muted_btns)}
+            {find_elem
+               {{ui current_screen}
+                  get
+                  muted_btns}
+               $component}}
+         {play_instr_sfx $user button_select}}}
+   kDataUnhandled)
+(SCROLL_MSG
+   {if
+      {&&
+         $user
+         {$user is_local}}
+      {if_else
+         {$component is_a UISlider}
+         {synth play slider.cue}
+         {if
+            {ui current_screen}
+            {do
+               ($play
+                  {handle_ret
+                     ({ui current_screen}
+                        scroll_sfx)})
+               {if
+                  {'||'
+                     {== $play kDataUnhandled}
+                     $play}
+                  {play_instr_sfx $user button_toggle}}}}}}
+   kDataUnhandled)
+(SCROLL_SELECT_MSG
+   {if
+      {&&
+         $user
+         {$user is_local}}
+      {play_instr_sfx
+         $user
+         {if_else $selected button_select button_back}}}
+   kDataUnhandled)
+(FOCUS_MSG
+   {unless
+      {'||'
+         {==
+            $nav_type
+            ""}
+         {== $nav_type none}}
+      {do
+         ($ct_arr
+            {find $syscfg joypad instrument_mapping $nav_type})
+         ($ct_sym
+            {elem
+               (CHAR_INSTRUMENT_SYMBOLS)
+               {elem $ct_arr 1}})
+         {play_instr_ctlr_sfx $ct_sym button_toggle TRUE}}}
+   kDataUnhandled)
+(go_back_screen
+   ($screen $user)
+   {if
+      {&&
+         $user
+         {$user is_local}}
+      {play_instr_sfx $user button_back}}
+   0)

@@ -1,0 +1,602 @@
+#include gem_preview.dta
+#include challenges.dta
+#include guitar_challenges.dta
+#include drum_challenges.dta
+#include rg_challenges.dta
+#include rk_challenges.dta
+#define GEM_TRAINER_PANEL_ENTER
+({if
+      {>
+         {beatmatch num_active_players}
+         0}
+      {{coop_track_panel find scoreboard}
+         set_showing
+         FALSE}
+      {{coop_track_panel find crowd_meter}
+         set_showing
+         FALSE}
+      {{coop_track_panel find player_hud_top.grp}
+         set_showing
+         FALSE}
+      {{{{{beatmatch active_player 0}
+                  track}
+               get_dir}
+            get
+            popup_object}
+         set
+         intro_disabled
+         TRUE}
+      {{{{{beatmatch active_player 0}
+                  track}
+               get_dir}
+            get
+            popup_object}
+         set
+         popup_help_disabled
+         TRUE}
+      {{{{{beatmatch active_player 0}
+                  track}
+               get_dir}
+            get
+            player_intro}
+         set
+         set_enabled
+         FALSE}
+      {$this clear_gems}
+      {{beatmatch active_player 0}
+         add_sink
+         $this}
+      {set
+         [speed_index]
+         0}
+      {$this update_speed FALSE}
+      {lesson_restrictions.lbl set_showing TRUE}
+      {lesson_restrictions_body.lbl set_showing FALSE}
+      {if_else
+         {gamemode get show_song_in_header}
+         {sub_lesson.lbl
+            set_artist_name_from_shortname
+            {meta_performer song}}
+         {lesson.lbl
+            set
+            text_token
+            [header]}}
+      {{{beatmatch active_player 0}
+            track}
+         track_in_now}
+      {if_else
+         {gamemode get stop_start}
+         {show_stop_start.trig trigger}
+         {hide_stop_start.trig trigger}}
+      {hide_chord_legend.trig trigger}
+      {num_steps.anim set_frame 0.0}
+      {set
+         [trainer_go_back]
+         TRUE}
+      {set
+         [trainer_go_forward]
+         TRUE}
+      {set
+         [num_success]
+         0}
+      {if
+         {&&
+            {gamemode get metronome_default_on}
+            {!
+               [metronome_defaulted]}}
+         {$this enable_metronome TRUE}
+         {set
+            [metronome_defaulted]
+            TRUE}}})
+#define GEM_TRAINER_PANEL_EXIT
+({{coop_track_panel find scoreboard}
+      set_showing
+      TRUE}
+   {{coop_track_panel find crowd_meter}
+      set_showing
+      TRUE}
+   {{coop_track_panel find player_hud_top.grp}
+      set_showing
+      TRUE}
+   {synth stop_all_sfx})
+#define GEM_TRAINER_PANEL_SCORING
+((hit
+      ($gem_id $hit_flags $ratio)
+      {'+='
+         [num_hit]
+         $ratio}
+      {$this update_score}
+      {$this score_on_final_gem $gem_id}
+      {$this on_hit $gem_id}
+      {if
+         {< $ratio 0.9}
+         {$this fail}})
+   (miss
+      ($user $slot $gem_id)
+      {if
+         {$this should_miss_cause_fail}
+         {$this fail}
+         {$this on_miss $gem_id}})
+   (pass
+      ($gem_id)
+      {$this fail}
+      {$this on_pass $gem_id}
+      {$this score_on_final_gem $gem_id})
+   (loop
+      {if_else
+         {&&
+            {$this all_sections_finished}
+            [trainer_go_back]}
+         {do
+            {{gamemode get game_panel}
+               pause_track
+               TRUE}
+            {applause_ultra.cue play}
+            {ui push_screen trainer_finished_screen}}
+         {do
+            {if
+               {&&
+                  {==
+                     [speed_index]
+                     0}
+                  {>=
+                     [num_success]
+                     3}
+                  [trainer_go_forward]
+                  {!
+                     {$this all_sections_finished}}
+                  {!
+                     [failed]}
+                  {!
+                     {ui in_transition}}}
+               {set
+                  [num_success]
+                  0}
+               {{gamemode get game_panel}
+                  pause_track
+                  TRUE}
+               {applause.cue play}
+               {ui push_screen lesson_finished_screen}}}})
+   (score
+      {if_else
+         [failed]
+         {do
+            {score_success.lbl
+               set_token_fmt
+               eg_percent_format
+               {int
+                  {'*'
+                     {/
+                        [num_hit]
+                        {$this get_num_gems_float}}
+                     100.0}}}
+            {loop_nosuccess.trig trigger}}
+         {do
+            {if_else
+               {$this challenge_success}
+               {do
+                  {score_success.lbl set_token_fmt eg_percent_format 100}
+                  {success.trig trigger}
+                  {{elem
+                        [success_fx]
+                        [speed_index]}
+                     play}
+                  {$this
+                     on_success
+                     [speed_index]}
+                  {{get_track_panel}
+                     play_seq
+                     achieve_star.cue}
+                  {meter_fill_mid.anim
+                     animate
+                     (dest
+                        {'*'
+                           5.0
+                           {$this
+                              speed_to_parametric
+                              {elem
+                                 [speed_modifier]
+                                 [speed_index]}}})
+                     (period 0.3)}
+                  {if
+                     {==
+                        [speed_index]
+                        0}
+                     {'++'
+                        [num_success]}}}
+               {do
+                  {score_success.lbl set_token_fmt eg_percent_format 100}
+                  {loop_nosuccess.trig trigger}
+                  {challenge_fail.trig trigger}
+                  {$this
+                     on_fail
+                     [speed_index]}
+                  {set
+                     [num_success]
+                     0}}}}}
+      {$this reset_score})
+   (update_score
+      {do
+         ($percent
+            {'*'
+               {/
+                  [num_hit]
+                  {$this get_num_gems_float}}
+               100.0})
+         {score.lbl
+            set_token_fmt
+            eg_percent_format
+            {int $percent}}})
+   (reset_score
+      {score.lbl set_token_fmt eg_percent_format 0}
+      {score.lbl set color_override success.color}
+      {set
+         [num_hit]
+         0.0}
+      {set
+         [failed]
+         FALSE})
+   (fail
+      {if
+         {!
+            [failed]}
+         {do
+            ($index
+               [speed_index])
+            {if
+               {==
+                  {mod $index 2}
+                  1}
+               {'+=' $index 1}}
+            {fail.trig trigger}
+            {score.lbl set color_override fail.color}
+            {set
+               [failed]
+               TRUE}}})
+   (update_thermometer
+      ($section)
+      {do
+         ($panel
+            {gamemode get game_panel})
+         ($mid_speed
+            {'*'
+               5.0
+               {$this sec_speed_to_parametric $section}})
+         {meter_fill_mid.anim
+            animate
+            (dest $mid_speed)
+            (period 0.3)}})
+   (speed_to_parametric
+      ($speed)
+      {/
+         {- $speed 0.5}
+         0.5})
+   (sec_speed_to_parametric
+      ($section)
+      {$this
+         speed_to_parametric
+         {{gamemode get game_panel}
+            lesson_complete_speed
+            {$panel mod_section_num $section}}}))
+#define GEM_TRAINER_PANEL_SPEED
+((inc_speed
+      {if
+         {>
+            [speed_index]
+            0}
+         {dpad_up.trig trigger}
+         {--
+            [speed_index]}
+         {$this
+            update_speed
+            {!
+               {beatmatch get_paused}}}})
+   (dec_speed
+      {if
+         {<
+            [speed_index]
+            {-
+               {size
+                  [speed_modifier]}
+               1}}
+         {dpad_down.trig trigger}
+         {'++'
+            [speed_index]}
+         {$this
+            update_speed
+            {!
+               {beatmatch get_paused}}}})
+   (update_speed
+      ($fail)
+      {do
+         ($speed_ratio
+            {elem
+               [speed_modifier]
+               [speed_index]})
+         ($speed_percent
+            {'*' $speed_ratio 100.0})
+         {$this set_speed_ratio $speed_ratio}
+         {speed.lbl
+            set_token_fmt
+            eg_percent_format
+            {int $speed_percent}}
+         {do
+            ($speed_frame
+               {'*'
+                  4.0
+                  {/
+                     {- $speed_ratio 0.6}
+                     0.4}})
+            {meter_bracket.anim
+               animate
+               (dest $speed_frame)}}}
+      {if
+         $fail
+         {$this reset_score}
+         {$this fail}})
+   (get_speed_modifier
+      ($speed)
+      {elem
+         [speed_modifier]
+         $speed}))
+#define GEM_TRAINER_PANEL_PREVIEW
+((goto_preview
+      ($sec_dir)
+      {if
+         {gamemode get has_chord_legend}
+         {if
+            {{gamemode get game_panel}
+               get_legend_mode}
+            {$this end_chord_legend_internal}
+            {$this pause_track TRUE}}}
+      {if_else
+         {> $sec_dir 0}
+         {{{gamemode get game_panel}
+               find
+               dpad_right.trig}
+            trigger}
+         {if
+            {< $sec_dir 0}
+            {{{gamemode get game_panel}
+                  find
+                  dpad_left.trig}
+               trigger}}}
+      {gem_preview_panel set sec_dir $sec_dir}
+      {if_else
+         {==
+            {ui current_screen}
+            {gamemode get game_screen}}
+         {ui push_screen gem_preview_screen}
+         {ui goto_screen gem_preview_screen}}))
+#define GEM_TRAINER_SCREEN_BUTTON_HANDLING
+((BUTTON_DOWN_MSG
+      {if
+         {!=
+            {$user get_track_sym}
+            none}
+         {switch
+            $action
+            (kAction_Right
+               {{gamemode get game_panel}
+                  goto_preview
+                  1})
+            (kAction_Left
+               {{gamemode get game_panel}
+                  goto_preview
+                  -1})
+            (kAction_Up
+               {if
+                  {== $raw_button kPad_DUp}
+                  {{gamemode get game_panel}
+                     inc_speed}})
+            (kAction_Down
+               {if
+                  {== $raw_button kPad_DDown}
+                  {{gamemode get game_panel}
+                     dec_speed}})}}
+      kDataUnhandled))
+#define GEM_TRAINER_PANEL_SECTIONS
+((update_restrictions
+      ($token)
+      {lesson_restrictions_body.lbl set_showing TRUE}
+      {lesson_restrictions_body.lbl set text_token $token})
+   (set_section_name
+      ($token $num)
+      {set_locale_verbose_notify FALSE}
+      {do
+         ($tok
+            {sprint
+               $token
+               "_desc"})
+         {if_else
+            {!=
+               $tok
+               {localize $tok}}
+            {do
+               {if_else
+                  {&&
+                     {gamemode in_mode trainer_pro_drums}
+                     {== $tok trainer_drm_disco1_22_desc}}
+                  {hide_music_theory.trig trigger}
+                  {do
+                     {show_music_theory.trig trigger}
+                     {description_body.lbl set text_token $tok}}}}
+            {do
+               {hide_music_theory.trig trigger}}}}
+      {if_else
+         {gamemode get show_song_in_header}
+         {do
+            {lesson.lbl
+               set_song_name
+               {meta_performer song}}
+            {lesson.lbl set_showing TRUE}
+            {lesson_info.lbl set_showing TRUE}
+            {hide_music_theory.trig trigger}
+            {if_else
+               {gamemode get song_lessons}
+               {lesson_info.lbl
+                  set_token_fmt
+                  {gamemode get section_token_fmt}
+                  {'+' $num 1}}
+               {lesson_info.lbl set text_token $token}}}
+         {do
+            ($tok
+               {sprint
+                  $token
+                  "_info"})
+            {sub_lesson.lbl set_showing TRUE}
+            {sub_lesson.lbl set text_token $token}
+            {if_else
+               {!=
+                  $tok
+                  {localize $tok}}
+               {do
+                  {lesson_info.lbl set text_token $tok}
+                  {lesson_info.lbl set_showing TRUE}}
+               {do
+                  {lesson_info.lbl set_showing FALSE}}}}}
+      {set_locale_verbose_notify TRUE}
+      {set
+         [trainer_go_forward]
+         TRUE}
+      {set
+         [num_success]
+         0})
+   (pause_track
+      ($val)
+      {beatmatch set_paused $val TRUE FALSE})
+   (pause_track_hide_track
+      ($val)
+      {$this pause_track $val}
+      {coop_track_panel
+         set_showing
+         {! $val}})
+   (unpause_track_no_rollback
+      {beatmatch set_paused FALSE TRUE FALSE})
+   (unpause_track_rollback
+      {beatmatch set_paused FALSE TRUE TRUE})
+   (get_header
+      [header])
+   (set_key
+      ($key)
+      {if_else
+         {gamemode get show_song_key}
+         {do
+            {key.lbl set_showing TRUE}
+            {key.lbl set_token_fmt eg_key_format $key}}
+         {$this hide_key}})
+   (hide_key
+      {key.lbl set_showing FALSE}))
+#define GEM_TRAINER_PANEL_PROPERTIES
+((speed_modifier
+      (1.0 0.95 0.9 0.85 0.8 0.75 0.7 0.65 0.6))
+   (speed_index 0)
+   (success_fx
+      (success5.cue success4.cue success4.cue success3.cue success3.cue success2.cue success2.cue success1.cue success1.cue))
+   (num_hit 0.0)
+   (failed FALSE)
+   (num_success 0)
+   (header '')
+   (trainer_go_back TRUE)
+   (trainer_go_forward TRUE)
+   (metronome_defaulted FALSE))
+{new
+   GemTrainerPanel
+   gem_trainer_panel
+   (file
+      "gem_trainer_panel.milo")
+   (enter
+      GEM_TRAINER_PANEL_ENTER
+      {section_list_hide.trig trigger}
+      {$this goto_preview 1}
+      {toggle_icon.lbl set_showing FALSE})
+   (exit GEM_TRAINER_PANEL_EXIT)
+   GEM_TRAINER_PANEL_SCORING
+   GEM_TRAINER_PANEL_SPEED
+   GEM_TRAINER_PANEL_PREVIEW
+   GEM_TRAINER_PANEL_SECTIONS
+   GEM_TRAINER_PANEL_PROPERTIES
+   (on_hit
+      ($gem_id))
+   (on_miss
+      ($gem_id))
+   (on_pass
+      ($gem_id))}
+{new GemTrainerLoopPanel gem_trainer_loop_panel}
+{new
+   DeJitterPanel
+   trainer_background_panel
+   (file
+      "../../world/vignette/shell/sv5_a.milo")
+   (enter
+      #ifndef _SHIP
+      {ui
+         write_to_vignette_overlay
+         "shell vignette: (sv5_a)"}
+      #endif
+      {{practice_ao find sv5_fader.fade}
+         set
+         level
+         -96.0})}
+{new
+   BandScreen
+   guitar_trainer_screen
+   (panels game sync_audio_net_panel gem_trainer_loop_panel trainer_background_panel coop_track_panel gem_trainer_panel)
+   GAME_SCREEN_HANDLERS
+   GEM_TRAINER_SCREEN_BUTTON_HANDLING}
+{new
+   BandScreen
+   drum_trainer_screen
+   (panels game sync_audio_net_panel gem_trainer_loop_panel trainer_background_panel coop_track_panel gem_trainer_panel)
+   (focus gem_trainer_panel)
+   GAME_SCREEN_HANDLERS
+   GEM_TRAINER_SCREEN_BUTTON_HANDLING}
+{new
+   BandScreen
+   trainer_finished_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_custom trainer_go_back yes no opt1.btn})
+   (exit
+      {{gamemode get game_panel}
+         unpause_track_rollback})
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {ui pop_screen}
+            {ui_event_mgr trigger_event quit_early})
+         (opt2.btn
+            {ui pop_screen}
+            {{gamemode get game_panel}
+               set
+               trainer_go_back
+               FALSE})})}
+{new
+   BandScreen
+   lesson_finished_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel set_custom trainer_go_forward yes no opt1.btn})
+   (exit)
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {{gamemode get game_panel}
+               set
+               trainer_go_forward
+               TRUE}
+            {{gamemode get game_panel}
+               goto_preview
+               1})
+         (opt2.btn
+            {{gamemode get game_panel}
+               set
+               trainer_go_forward
+               FALSE}
+            {{gamemode get game_panel}
+               unpause_track_rollback}
+            {ui pop_screen})})}

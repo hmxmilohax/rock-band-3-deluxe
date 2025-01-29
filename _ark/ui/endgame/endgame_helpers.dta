@@ -1,0 +1,656 @@
+{func
+   send_player_stats
+   ($player)
+   {$player
+      send_remote_stats
+      {$player get_user}}}
+{new
+   BandScreen
+   endgame_waiting_screen
+   (panels)
+   (entered FALSE)
+   (prevent_waiting_users TRUE)
+   (TRANSITION_COMPLETE_MSG
+      {set
+         [entered]
+         TRUE}
+      {beatmatch
+         foreach_active_player
+         $p
+         {if
+            {!
+               {$p is_net}}
+            {$p finalize_stats}
+            {send_player_stats $p}}})
+   (exit
+      {set
+         [entered]
+         FALSE})
+   (poll
+      {if
+         {'||'
+            {is_leader_local}
+            {!
+               {session_mgr get_leader_user}}}
+         {if
+            [entered]
+            {do
+               ($proceed TRUE)
+               {beatmatch
+                  foreach_active_player
+                  $p
+                  {if
+                     {!
+                        {$p stats_finalized}}
+                     {set $proceed FALSE}}}
+               {if
+                  {&&
+                     $proceed
+                     {!
+                        {ui in_transition}}}
+                  {beatmatch
+                     foreach_active_player
+                     $p
+                     {send_player_stats $p}}
+                  {ui goto_screen endgame_waiting_complete_screen}}}}})}
+{new
+   BandScreen
+   endgame_waiting_complete_screen
+   (TRANSITION_COMPLETE_MSG
+      {beatmatch stats_synced}
+      {if_else
+         {!
+            {beatmatch is_invalid_score}}
+         {meta_performer trigger_song_completion}
+         {if
+            {gamemode in_mode tour}
+            {{tour performer}
+               handle_song_completion_with_invalid_score}}}
+      {if
+         {'||'
+            {is_leader_local}
+            {!
+               {session_mgr get_leader_user}}}
+         {ui goto_screen endgame_advance_screen}})}
+{new
+   BandScreen
+   endgame_advance_screen
+   (enter
+      {if
+         {!=
+            {rnd aspect}
+            kWidescreenAspect}
+         {rnd set_aspect kLetterboxAspect}})
+   (TRANSITION_COMPLETE_MSG
+      {if
+         {'||'
+            {is_leader_local}
+            {!
+               {session_mgr get_leader_user}}}
+         {if_else
+            {meta_performer is_playing_demo}
+            {ui pop_screen demo_complete_screen}
+            {do
+               {if_else
+                  {beatmatch is_invalid_score}
+                  {meta_performer skip_song}
+                  {meta_performer
+                     advance_song
+                     {{beatmatch main_performer}
+                        num_stars}}}
+               #ifndef _SHIP
+               {if
+                  $cheat.win_event
+                  {while
+                     {!
+                        {meta_performer is_last_song}}
+                     {if_else
+                        {beatmatch is_invalid_score}
+                        {meta_performer skip_song}
+                        {do
+                           {meta_performer trigger_song_completion}
+                           {meta_performer
+                              advance_song
+                              {{beatmatch main_performer}
+                                 num_stars}}}}}
+                  {set $cheat.win_event FALSE}}
+               #endif
+               {ui
+                  pop_screen
+                  {gamemode get endgame_screen}}}}})}
+#define ENDGAME_PANEL_HANDLERS
+((set_results
+      {song.lbl
+         set_song_name
+         {meta_performer get_completed_song}}
+      {if_else
+         {gamemode in_mode tour}
+         {do
+            {quest.sd
+               set_values
+               {{tour performer}
+                  get_song_quest_stars}
+               {{tour performer}
+                  get_total_quest_stars}}
+            {quest.grp set showing TRUE}
+            {tour_stuff.grp set_showing TRUE}}
+         {tour_stuff.grp set_showing FALSE}}
+      {if_else
+         {beatmatch is_invalid_score}
+         {do
+            {score.scr set_showing FALSE}
+            {stars.sd set_showing FALSE}
+            {failed_pct.lbl set_showing TRUE}
+            {failed_pct.lbl
+               set_token_fmt
+               {if_else
+                  {&&
+                     {beatmatch skipped_song}
+                     {!
+                        {beatmatch resumed_no_score}}}
+                  skipped_pct_fmt
+                  failed_pct_fmt}
+               {int
+                  {'*'
+                     {beatmatch get_fraction_completed}
+                     100.0}}}
+            {$this clear_highscore_info}}
+         {do
+            {score.scr set_showing TRUE}
+            {stars.sd set_showing TRUE}
+            {failed_pct.lbl set_showing FALSE}
+            {if_else
+               {meta_performer is_using_persistent_data}
+               {do
+                  {score.scr
+                     set_values
+                     {meta_performer get_recent_instrument_mask}
+                     {{beatmatch main_performer}
+                        accumulated_score}}
+                  {stars.sd
+                     set_values
+                     {meta_performer get_total_stars_capped}
+                     {'*'
+                        5
+                        {meta_performer num_completed}}}}
+               {do
+                  {score.scr
+                     set_values
+                     {meta_performer get_recent_instrument_mask}
+                     {{beatmatch main_performer}
+                        score}}
+                  {stars.sd
+                     set_values
+                     {{beatmatch main_performer}
+                        num_stars}
+                     5}}}
+            {$this populate_instarank_data}}}
+      {do
+         {foreach_int
+            $slot
+            0
+            {players.set
+               size
+               (objects)}
+            {do
+               ($pxy
+                  {players.set
+                     get
+                     (objects $slot)})
+               ($user
+                  {user_mgr get_user_from_slot $slot})
+               ($active
+                  {beatmatch is_active_user $user})
+               {$pxy set_showing TRUE}
+               {handle
+                  ($this lock_mics)}
+               {with
+                  $pxy
+                  {player.grp set_showing $active}
+                  {if
+                     $active
+                     {do
+                        ($player
+                           {$user player})
+                        {player_details.lbl set_intro_name $user}
+                        {instrument.lbl
+                           set
+                           icon
+                           {$user get_track_icon}}
+                        {instrument_details.lbl
+                           set
+                           icon
+                           {$user get_track_icon}}
+                        {noteshit_details.lbl
+                           set_token_fmt
+                           endgame_player_noteshit_fmt
+                           {int
+                              {'*'
+                                 100
+                                 {{$user player}
+                                    notes_hit_fraction}}}}
+                        {do
+                           ($award_sym
+                              {coop_endgame_panel get_performance_award $slot})
+                           {performance_award.lbl set text_token $award_sym}
+                           {challenge_bg.mesh
+                              set_showing
+                              {!= $award_sym ''}}}
+                        {$user
+                           set_last_hit_fraction
+                           {$player notes_hit_fraction}}
+                        {solostars.sd
+                           set_values
+                           {{$user player}
+                              num_stars}
+                           5}
+                        {difficulty_details.lbl
+                           set
+                           text_token
+                           {$user get_difficulty_sym}}
+                        {if_else
+                           {gamemode in_mode tour}
+                           {do
+                              {{tour performer}
+                                 update_tour_player_contribution_label
+                                 tour_contribution.lbl
+                                 $user}
+                              {tour.grp set_showing TRUE}
+                              {non_tour.grp set_showing FALSE}}
+                           {do
+                              {non_tour.grp set_showing TRUE}
+                              {tour.grp set_showing FALSE}}}
+                        {if
+                           {==
+                              {{$user player}
+                                 instrument}
+                              vocals}
+                           {do
+                              ($singerCount
+                                 {{$user player}
+                                    get_singer_count})
+                              ($vocalPartCount
+                                 {{$user player}
+                                    get_song_num_vocal_parts})
+                              {switch
+                                 $vocalPartCount
+                                 (3
+                                    {vocal_harmony_3parts.trg trigger}
+                                    {instrument.lbl
+                                       set
+                                       icon
+                                       {get_font_char_for_harmony_mics
+                                          3
+                                          {$user get_hardcore_icon_level}}})
+                                 (2
+                                    {vocal_harmony_2parts.trg trigger}
+                                    {instrument.lbl
+                                       set
+                                       icon
+                                       {get_font_char_for_harmony_mics
+                                          2
+                                          {$user get_hardcore_icon_level}}})
+                                 (1
+                                    {vocal_harmony_1part.trg trigger})
+                                 {notify
+                                    "A song does not have 1-3 vocal parts!"}}
+                              {foreach_int
+                                 $iSinger
+                                 0
+                                 $singerCount
+                                 {foreach_int
+                                    $iRank
+                                    0
+                                    $vocalPartCount
+                                    {do
+                                       ($percentage
+                                          {{$user player}
+                                             get_singer_ranked_percentage
+                                             $iSinger
+                                             $iRank})
+                                       ($part
+                                          {{$user player}
+                                             get_singer_ranked_part
+                                             $iSinger
+                                             $iRank})
+                                       ($labelName
+                                          {sprintf
+                                             "singer%d_part%d.lbl"
+                                             $iSinger
+                                             $iRank})
+                                       ($colorAnimName
+                                          {sprintf
+                                             "vox_scoring_bg_singer%d_part%d.anim"
+                                             $iSinger
+                                             $iRank})
+                                       ($label
+                                          {$pxy find $labelName})
+                                       ($colorAnim
+                                          {$pxy find $colorAnimName})
+                                       {$label
+                                          set_token_fmt
+                                          endgame_player_noteshit_fmt
+                                          {int
+                                             {'*' 100 $percentage}}}
+                                       {$colorAnim set frame $part}}}}}}}}}}}})
+   (setup_mics
+      ($hasmic1 $hasmic2 $hasmic3)
+      {if
+         {'||' $hasmic1 $hasmic2 $hasmic3}
+         {foreach_int
+            $slot
+            0
+            {players.set
+               size
+               (objects)}
+            {do
+               ($pxy
+                  {players.set
+                     get
+                     (objects $slot)})
+               ($user
+                  {user_mgr get_user_from_slot $slot})
+               ($num_mics_trigger
+                  "mic")
+               {if
+                  {&&
+                     $user
+                     {==
+                        {$user get_track_sym}
+                        vocals}}
+                  {if
+                     $hasmic1
+                     {strcat
+                        $num_mics_trigger
+                        "A"}}
+                  {if
+                     $hasmic2
+                     {strcat
+                        $num_mics_trigger
+                        "B"}}
+                  {if
+                     $hasmic3
+                     {strcat
+                        $num_mics_trigger
+                        "C"}}
+                  {strcat
+                     $num_mics_trigger
+                     ".trg"}
+                  {{$pxy find $num_mics_trigger}
+                     trigger}}}}})
+   (trigger_show_up_arrow
+      ($slot)
+      {do
+         ($pxy
+            {players.set
+               get
+               (objects $slot)})
+         {{$pxy find show_up.trg}
+            trigger}})
+   (trigger_show_down_arrow
+      ($slot)
+      {do
+         ($pxy
+            {players.set
+               get
+               (objects $slot)})
+         {{$pxy find show_down.trg}
+            trigger}})
+   (trigger_hide_up_arrow
+      ($slot)
+      {do
+         ($pxy
+            {players.set
+               get
+               (objects $slot)})
+         {{$pxy find hide_up.trg}
+            trigger}})
+   (trigger_hide_down_arrow
+      ($slot)
+      {do
+         ($pxy
+            {players.set
+               get
+               (objects $slot)})
+         {{$pxy find hide_down.trg}
+            trigger}})
+   (populate_instarank_data
+      {if_else
+         {meta_performer has_online_scoring}
+         {$this populate_instarank_data_online}
+         {$this populate_instarank_data_offline}})
+   (populate_instarank_data_offline
+      {do
+         ($got_highscore FALSE)
+         {instarank_offline.trig trigger}
+         {if_else
+            {meta_performer has_highscore}
+            {do
+               {highscore.trig trigger}
+               {highscore_1.lbl set text_token instarank_highscore}
+               {set $got_highscore TRUE}}
+            {do
+               {no_highscore.trig trigger}
+               {if_else
+                  {meta_performer has_valid_band_score}
+                  {highscore_1.lbl
+                     set_token_fmt
+                     instarank_previousbest
+                     "j"
+                     {localize_separated_int
+                        {meta_performer get_last_offline_score}}}
+                  {highscore_1.lbl
+                     set
+                     text_token
+                     ""}}}}
+         {foreach_int
+            $slot
+            0
+            {players.set
+               size
+               (objects)}
+            {do
+               ($pxy
+                  {players.set
+                     get
+                     (objects $slot)})
+               ($user
+                  {user_mgr get_user_from_slot $slot})
+               ($active
+                  {beatmatch is_active_user $user})
+               {if
+                  $active
+                  {with
+                     $pxy
+                     {instarank_offline.trig trigger}
+                     {if_else
+                        {meta_performer has_solo_highscore $user}
+                        {do
+                           {highscore.trig trigger}
+                           {solo_highscore1_label01.lbl set text_token instarank_highscore}
+                           {set $got_highscore TRUE}}
+                        {do
+                           {no_highscore.trig trigger}
+                           {if_else
+                              {meta_performer has_valid_user_score $user}
+                              {solo_highscore1_label01.lbl
+                                 set_token_fmt
+                                 instarank_previousbest
+                                 {meta_performer get_solo_score_type_icon $user}
+                                 {localize_separated_int
+                                    {meta_performer get_last_offline_solo_score $user}}}
+                              {solo_highscore1_label01.lbl
+                                 set
+                                 text_token
+                                 ""}}}}}}}}
+         {if
+            $got_highscore
+            {{$this find song_highscore.cue}
+               play}}})
+   (clear_highscore_info
+      {rank.lbl
+         set
+         text_token
+         ""}
+      {highscore_1.lbl
+         set
+         text_token
+         ""}
+      {highscore_2.lbl
+         set
+         text_token
+         ""}
+      {no_highscore.trig trigger}
+      {foreach_int
+         $slot
+         0
+         {players.set
+            size
+            (objects)}
+         {do
+            ($pxy
+               {players.set
+                  get
+                  (objects $slot)})
+            ($user
+               {user_mgr get_user_from_slot $slot})
+            ($active
+               {beatmatch is_active_user $user})
+            {if
+               $active
+               {with
+                  $pxy
+                  {solo_rank_label01.lbl
+                     set
+                     text_token
+                     ""}
+                  {solo_highscore1_label01.lbl
+                     set
+                     text_token
+                     ""}
+                  {solo_highscore2_label01.lbl
+                     set
+                     text_token
+                     ""}
+                  {no_highscore.trig trigger}}}}})
+   (populate_instarank_data_online
+      {if_else
+         {meta_performer has_valid_instarank_data}
+         {do
+            ($got_highscore FALSE)
+            {meta_performer update_instarank_rank_label rank.lbl}
+            {meta_performer update_instarank_highscore_1_label highscore_1.lbl}
+            {meta_performer update_instarank_highscore_2_label highscore_2.lbl}
+            {if_else
+               {==
+                  {{$this find highscore_2.lbl}
+                     get
+                     text_token}
+                  instarank_nofriend_beat}
+               {instarank_offline.trig trigger}
+               {instarank.trig trigger}}
+            {if_else
+               {meta_performer has_highscore}
+               {do
+                  {highscore.trig trigger}
+                  {set $got_highscore TRUE}}
+               {no_highscore.trig trigger}}
+            {foreach_int
+               $slot
+               0
+               {players.set
+                  size
+                  (objects)}
+               {do
+                  ($pxy
+                     {players.set
+                        get
+                        (objects $slot)})
+                  ($user
+                     {user_mgr get_user_from_slot $slot})
+                  ($active
+                     {beatmatch is_active_user $user})
+                  {if
+                     $active
+                     {with
+                        $pxy
+                        {meta_performer update_instarank_solo_rank_label $user solo_rank_label01.lbl}
+                        {meta_performer update_instarank_solo_highscore_1_label $user solo_highscore1_label01.lbl}
+                        {meta_performer update_instarank_solo_highscore_2_label $user solo_highscore2_label01.lbl}
+                        {if_else
+                           {==
+                              {{$pxy find solo_highscore2_label01.lbl}
+                                 get
+                                 text_token}
+                              instarank_nofriend_beat}
+                           {instarank_offline.trig trigger}
+                           {instarank.trig trigger}}
+                        {if_else
+                           {meta_performer has_solo_highscore $user}
+                           {do
+                              {highscore.trig trigger}
+                              {set $got_highscore TRUE}}
+                           {no_highscore.trig trigger}}}}}}
+            {if
+               $got_highscore
+               {song_highscore.cue play}}}
+         {$this clear_highscore_info}})
+   (instarank_done
+      {$this populate_instarank_data})
+   (detail_component_parent
+      "detail_components.grp")
+   (details_scroll_group
+      "scroller.grp")
+   (details_scroll_step 30)
+   (details_page_size 180)
+   (details_footer_size 5)
+   (detail_types
+      (default_type
+         (height 15)
+         (margin_top 0)
+         (margin_bottom 2)
+         (required_padding_override 0))
+      (header
+         (resource_fmt
+            "details_header%02i.lbl")
+         (height 20)
+         (margin_top -5)
+         (margin_bottom 10))
+      (header_continued
+         (resource_fmt
+            "details_headercontinued%02i.lbl")
+         (height 20)
+         (margin_top -5)
+         (margin_bottom 10))
+      (label
+         (resource_fmt
+            "details_label%02i.lbl"))
+      (left_label
+         (resource_fmt
+            "details_left%02i.lbl")
+         (height 0)
+         (margin_top 0)
+         (margin_bottom 0)
+         (required_padding_override 17))
+      (right_label
+         (resource_fmt
+            "details_right%02i.lbl"))
+      (solo_rank_label
+         (resource_fmt
+            "solo_rank_label%02i.lbl"))
+      (solo_instarank_group
+         (resource_fmt
+            "solo_instarank%02i.grp")
+         (height 60))
+      (score
+         (resource_fmt
+            "details_score%02i.scr")
+         (height 20)
+         (margin_top 3)
+         (margin_bottom 3))
+      (vocals_grid
+         (resource_fmt
+            "vocals_grid%02i.grp")
+         (height 50)
+         (margin_top 3)
+         (margin_bottom 19))))

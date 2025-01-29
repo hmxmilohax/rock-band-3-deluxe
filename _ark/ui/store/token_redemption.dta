@@ -1,0 +1,113 @@
+#ifndef HX_PS3
+{new
+   TokenRedemptionPanel
+   token_redemption_panel
+   (file
+      "token_redemption_xbox.milo")
+   (focus redeem.btn)
+   (enter
+      {$this set_focus redeem.btn}
+      {offers.lst set_provider offers.lst}
+      {all.grp set_showing FALSE}
+      {original_all.grp set_showing TRUE})
+   (exit
+      {virtual_keyboard clear_callback})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {&&
+            {== $action kAction_Cancel}
+            {==
+               {$this focus_name}
+               "offers.lst"}}
+         {do
+            {offers.lst set_provider offers.lst}
+            {all.grp set_showing FALSE}
+            {original_all.grp set_showing TRUE}
+            {$this set_focus redeem.btn}}
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (redeem.btn
+            {virtual_keyboard
+               show_keyboard
+               $user
+               17
+               {localize token_input_vk_title}
+               {localize token_input_vk_desc}
+               ""
+               $this})
+         (find.btn
+            {$this
+               get_previous_offers
+               {input_mgr get_user}})
+         (offers.lst
+            {$this
+               show_purchase_ui_for_offer
+               {offers.lst selected_pos}
+               $user})})
+   (virtual_keyboard_result_msg
+      ($ok $str)
+      {if
+         $ok
+         {$this
+            get_offers_for_token
+            $str
+            {input_mgr get_user}}})
+   (token_redemption_msg
+      ($sym)
+      {token_redemption_dialog_screen set msg_sym $sym}
+      {ui push_screen token_redemption_dialog_screen})
+   (token_offers_ready
+      {all.grp set_showing TRUE}
+      {original_all.grp set_showing FALSE}
+      {offers.lst set_provider $this}
+      {$this set_focus offers.lst})
+   (checkout_finished
+      ($purchase_made))}
+{new
+   BandScreen
+   token_redemption_screen
+   (panels meta sv2_panel token_redemption_panel store_panel)
+   (focus token_redemption_panel)
+   (back main_hub_screen)}
+{new
+   BandScreen
+   token_redemption_dialog_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (msg_sym '')
+   (enter
+      {dialog_panel
+         set_ok
+         [msg_sym]})
+   (SELECT_MSG
+      {ui pop_screen})}
+#else
+{new
+   TokenRedemptionPanel
+   token_redemption_panel
+   (file
+      "token_redemption_ps3.milo")
+   (focus offers.lst)
+   (enter
+      {offers.lst set_provider $this})
+   (refresh_offers
+      {offers.lst refresh})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {!
+            {$this user_can_do_input}}
+         TRUE
+         kDataUnhandled})
+   (SELECT_MSG
+      {$this
+         select_list_ix
+         {offers.lst selected_data}})}
+{new
+   BandScreen
+   token_redemption_screen
+   (panels meta sv2_panel token_redemption_panel)
+   (focus token_redemption_panel)
+   (back main_hub_screen)}
+#endif

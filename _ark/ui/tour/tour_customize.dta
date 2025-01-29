@@ -1,0 +1,182 @@
+{new
+   TourDescPanel
+   tour_customize_panel
+   (file
+      "tour_customize.milo")
+   (focus
+      "tours.lst")
+   (initially_selected_tour '')
+   (enter
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)})
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {tour initialize_tour}
+      {if
+         {'||'
+            {!
+               {session_mgr has_leader_user}}
+            {is_leader_local}}
+         {tour update_progress_with_career_data}}
+      {$this refresh})
+   (setup_new_tour
+      {tour
+         reset_tour_data
+         {tour get_profile}}
+      {tour update_progress_with_career_data}
+      {{tour progress}
+         set_on_tour
+         TRUE}
+      {{tour progress}
+         set_tour_desc
+         {$this get_selected_tour}})
+   (handle_tour_chosen
+      {do
+         ($tour
+            {$this get_selected_tour})
+         {if_else
+            {tour
+               is_underway
+               {tour get_profile}}
+            {if_else
+               {==
+                  $tour
+                  {{tour progress}
+                     get_tour_name}}
+               {ui push_screen tour_newcontinue_screen}
+               {ui push_screen tour_confirm_new_screen}}
+            {do
+               {$this setup_new_tour}
+               {ui
+                  goto_screen
+                  {get_tour_screen}}}}})
+   (BUTTON_DOWN_MSG
+      {switch
+         $action
+         (kAction_ViewModify
+            {if
+               {is_leader_local}
+               {profile_mgr set_primary_profile_by_user $user}})
+         kDataUnhandled})
+   (SELECT_MSG
+      {if_else
+         {$this is_tour_available}
+         {$this handle_tour_chosen}
+         {ui push_screen tour_notavailable_screen}})
+   (update_tourdesc_provider
+      ($provider)
+      {tours.lst set_provider $provider}
+      {tours.lst refresh})
+   (get_selected_tourdesc_index
+      {tours.lst selected_pos})
+   (get_initially_selected_tour
+      [initially_selected_tour])
+   (clear_initially_selected_tour
+      {$this set initially_selected_tour ''})}
+{new
+   BandScreen
+   tour_customize_post_screen
+   (panels meta sv3_panel tour_customize_panel accomplishments_status_panel)
+   (focus tour_customize_panel)
+   (back main_hub_screen)}
+{new
+   BandScreen
+   tour_customize_screen
+   (panels meta sv3_panel)
+   (enter
+      {if
+         {tour progress}
+         {if
+            {{tour progress}
+               is_tour_complete}
+            {{tour progress}
+               update_most_stars}
+            {tour
+               reset_tour_data
+               {tour get_profile}}}}
+      {acc_mgr check_for_tour_goals}
+      {tour initialize_tour}
+      {if
+         {'||'
+            {!
+               {session_mgr has_leader_user}}
+            {is_leader_local}}
+         {tour update_progress_with_career_data}})
+   (TRANSITION_COMPLETE_MSG
+      {ui goto_screen tour_customize_post_screen})}
+{new
+   BandScreen
+   tour_notavailable_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel
+         set_ok
+         (tour_notavailable_msg
+            {machine_mgr get_leader_profile_name})})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})
+   (SELECT_MSG
+      {ui pop_screen})}
+{new
+   BandScreen
+   tour_confirm_new_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel
+         set_yesno
+         (tour_confirm_new
+            {machine_mgr get_leader_profile_name})
+         no.btn})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (yes.btn
+            {tour_customize_panel setup_new_tour}
+            {ui
+               pop_screen
+               {get_tour_screen}})
+         (no.btn
+            {ui pop_screen})})}
+{new
+   BandScreen
+   tour_newcontinue_screen
+   (panels dialog_small_panel)
+   (focus dialog_small_panel)
+   (enter
+      {dialog_small_panel
+         set_custom_3btn
+         (tour_newcontinue
+            {machine_mgr get_leader_profile_name})
+         tour_newcontinue_continue
+         tour_newcontinue_new
+         cancel
+         opt1.btn})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})
+   (SELECT_MSG
+      {switch
+         $component
+         (opt1.btn
+            {ui
+               pop_screen
+               {get_tour_screen}})
+         (opt2.btn
+            {ui goto_screen tour_confirm_new_screen})
+         (opt3.btn
+            {ui pop_screen})})}

@@ -1,0 +1,171 @@
+#include vocal_preview.dta
+#include vocal_challenges.dta
+#define VOCAL_TRAINER_PANEL_ENTER
+({{coop_track_panel find scoreboard}
+      set_showing
+      FALSE}
+   {{coop_track_panel find crowd_meter}
+      set_showing
+      FALSE}
+   {{coop_track_panel find player_hud_top.grp}
+      set_showing
+      FALSE}
+   {{coop_track_panel find popup_help_01}
+      set
+      intro_disabled
+      TRUE}
+   {{coop_track_panel find popup_help_01}
+      set
+      popup_help_disabled
+      TRUE}
+   {{beatmatch active_player 0}
+      add_sink
+      $this}
+   {lesson_restrictions.lbl set_showing TRUE}
+   {$this pause_track_hide_track TRUE})
+#define VOCAL_TRAINER_PANEL_EXIT
+({{beatmatch active_player 0}
+      remove_sink
+      $this}
+   {synth stop_all_sfx})
+#define VOCAL_TRAINER_PANEL_SCORING
+((loop
+      {if
+         {!
+            [failed]}
+         {if_else
+            {$this challenge_success}
+            {do
+               {success.trig trigger}
+               {$this on_success 0}}
+            {do
+               {challenge_fail.trig trigger}
+               {$this on_fail 0}}}}
+      {$this reset_score})
+   (update_score
+      ($pct $best_pct)
+      {do
+         ($percent
+            {'*' $pct 100})
+         {score.lbl
+            set_int
+            {int $percent}}})
+   (reset_score
+      {score.lbl set_int 0}
+      {set
+         [num_hit]
+         0.0}
+      {set
+         [failed]
+         FALSE})
+   (fail
+      {if
+         {!
+            [failed]}
+         {fail.trig trigger}
+         {{elem
+               [speed_labels]
+               [speed_index]}
+            set
+            color_override
+            fail.color}
+         {set
+            [failed]
+            TRUE}}))
+#define VOCAL_TRAINER_PANEL_PREVIEW
+((goto_preview
+      ($sec_dir)
+      {if_else
+         {> $sec_dir 0}
+         {{{gamemode get game_panel}
+               find
+               dpad_right.trig}
+            trigger}
+         {if
+            {< $sec_dir 0}
+            {{{gamemode get game_panel}
+                  find
+                  dpad_left.trig}
+               trigger}}}
+      {vocal_preview_panel set sec_dir $sec_dir}
+      {ui push_screen vocal_preview_screen}))
+#define VOCAL_TRAINER_SCREEN_BUTTON_HANDLING
+((BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Right}
+         {{gamemode get game_panel}
+            goto_preview
+            1}
+         {if_else
+            {== $action kAction_Left}
+            {{gamemode get game_panel}
+               goto_preview
+               -1}
+            kDataUnhandled}}
+      kDataUnhandled))
+#define VOCAL_TRAINER_PANEL_SECTIONS
+((update_restrictions
+      ($token)
+      {lesson_restrictions_body.lbl set_showing TRUE}
+      {lesson_restrictions_body.lbl set text_token $token})
+   (set_section_name
+      ($token)
+      {sub_lesson.lbl set text_token $token})
+   (pause_track
+      ($val)
+      {beatmatch set_paused $val}
+      {{get_track_panel}
+         set_paused
+         $val})
+   (pause_track_hide_track
+      ($val)
+      {$this pause_track $val}
+      {coop_track_panel
+         set_showing
+         {! $val}}))
+#define VOCAL_TRAINER_PANEL_PROPERTIES
+((pct_hit 0.0)
+   (failed FALSE)
+   (header_num 0)
+   (lesson_num 0))
+{new
+   VocalTrainerPanel
+   vocal_trainer_panel
+   (file
+      "vocal_trainer_panel.milo")
+   (enter
+      VOCAL_TRAINER_PANEL_ENTER
+      {section_list_hide.trig trigger}
+      {$this goto_preview 1}
+      {toggle_icon.lbl set_showing FALSE})
+   (exit VOCAL_TRAINER_PANEL_EXIT)
+   VOCAL_TRAINER_PANEL_SCORING
+   VOCAL_TRAINER_PANEL_PREVIEW
+   VOCAL_TRAINER_PANEL_SECTIONS
+   VOCAL_TRAINER_PANEL_PROPERTIES}
+{new
+   BandScreen
+   vocal_trainer_screen
+   (panels game sync_audio_net_panel coop_track_panel vocal_trainer_panel)
+   GAME_SCREEN_HANDLERS
+   VOCAL_TRAINER_SCREEN_BUTTON_HANDLING
+   //
+   'TODO:'
+   fill
+   in
+   with
+   real
+   values
+   (lessons
+      ((vocal_lesson_easy
+            ((vocal_lesson_easy_1 vocaltrainertest)
+               (vocal_lesson_easy_2 vocaltrainertest)
+               (vocal_lesson_easy_3 vocaltrainertest)))
+         (vocal_lesson_medium
+            ((vocal_lesson_medium_1 vocaltrainertest)
+               (vocal_lesson_medium_2 vocaltrainertest)
+               (vocal_lesson_medium_3 vocaltrainertest)))
+         (vocal_lesson_hard
+            ((vocal_lesson_hard_1 vocaltrainertest)
+               (vocal_lesson_hard_2 vocaltrainertest)
+               (vocal_lesson_hard_3 vocaltrainertest)))))}

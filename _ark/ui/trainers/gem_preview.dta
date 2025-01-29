@@ -1,0 +1,189 @@
+{new
+   UIPanel
+   gem_preview_panel
+   (file
+      "gem_preview.milo")
+   (enter
+      {set
+         [curr_section]
+         {{gamemode get game_panel}
+            get_curr_section}}
+      {num_steps.anim set_frame 0.0}
+      {{gamemode get game_panel}
+         set
+         draw_tab
+         TRUE}
+      {if
+         {!=
+            [sec_dir]
+            0}
+         {if_else
+            {==
+               [sec_dir]
+               1}
+            {$this inc_section}
+            {$this dec_section}}}
+      {$this update_labels}
+      {{gamemode get game_panel}
+         clear_gems}
+      {{gamemode get game_panel}
+         reset_score}
+      {{{gamemode get game_panel}
+            find
+            show_desc.trig}
+         trigger}
+      {script_task
+         kTaskUISeconds
+         (delay 0)
+         (script
+            {{gamemode get game_panel}
+               pause_track
+               TRUE})})
+   (exit
+      {{gamemode get game_screen}
+         set_focus
+         {gamemode get game_panel}}
+      {{gamemode get game_panel}
+         unpause_track_no_rollback}
+      {{{gamemode get game_panel}
+            find
+            hide_desc.trig}
+         trigger}
+      {{gamemode get game_panel}
+         set
+         draw_tab
+         FALSE})
+   (update_labels
+      {set_locale_verbose_notify FALSE}
+      {{gamemode get game_panel}
+         update_restrictions
+         {{gamemode get game_panel}
+            get_challenge_restriction
+            [curr_section]}}
+      {{gamemode get game_panel}
+         update_thermometer
+         [curr_section]}
+      {{gamemode get game_panel}
+         set_current_progress_section
+         [curr_section]}
+      {if_else
+         {{gamemode get game_panel}
+            has_challenge
+            [curr_section]}
+         {{{gamemode get game_panel}
+               find
+               show_restrictions.trig}
+            trigger}
+         {{{gamemode get game_panel}
+               find
+               hide_restrictions.trig}
+            trigger}}
+      {{gamemode get game_panel}
+         set_tab
+         [curr_section]}
+      {set_locale_verbose_notify TRUE}
+      {{gamemode get game_panel}
+         set_section_name
+         {{gamemode get game_panel}
+            get_section_name
+            [curr_section]}
+         [curr_section]}
+      {{gamemode get game_panel}
+         set_curr_section
+         [curr_section]})
+   (update_progress_meter
+      {{{gamemode get game_panel}
+            find
+            progress_meter}
+         update_progress
+         {'+'
+            [curr_section]
+            1}
+         {{gamemode get game_panel}
+            get_num_sections}})
+   (inc_section
+      {'++'
+         [curr_section]}
+      {if
+         {>=
+            [curr_section]
+            {{gamemode get game_panel}
+               get_num_sections}}
+         {set
+            [curr_section]
+            0}}
+      {$this update_progress_meter}
+      {{{gamemode get game_panel}
+            find
+            dpad_right.trig}
+         trigger})
+   (dec_section
+      {--
+         [curr_section]}
+      {if
+         {<
+            [curr_section]
+            0}
+         {set
+            [curr_section]
+            {-
+               {{gamemode get game_panel}
+                  get_num_sections}
+               1}}}
+      {$this update_progress_meter}
+      {{{gamemode get game_panel}
+            find
+            dpad_left.trig}
+         trigger})
+   (BUTTON_DOWN_MSG
+      {if
+         {&&
+            {== $action kAction_Confirm}
+            {!=
+               {$user get_track_sym}
+               none}
+            {!
+               {game is_game_over}}
+            {session is_in_game}}
+         {script_task
+            kTaskUISeconds
+            (delay 0)
+            (script
+               {{gamemode get game_panel}
+                  start_section
+                  [curr_section]}
+               {ui pop_screen})}}
+      {if
+         {!=
+            {$user get_track_sym}
+            none}
+         {if
+            {&&
+               {== $action kAction_ViewModify}
+               {gamemode get stop_start}}
+            {{gamemode get game_panel}
+               toggle_start_stop}}
+         {switch
+            $raw_button
+            (kPad_DLeft
+               {$this dec_section}
+               {$this update_labels})
+            (kPad_DRight
+               {$this inc_section}
+               {$this update_labels})
+            (kPad_DUp
+               {{gamemode get game_panel}
+                  inc_speed})
+            (kPad_DDown
+               {{gamemode get game_panel}
+                  dec_speed})}}
+      kDataUnhandled)
+   (sec_dir 0)
+   (curr_section 0)}
+{new
+   BandScreen
+   gem_preview_screen
+   (panels gem_preview_panel)
+   (focus gem_preview_panel)
+   (enter)
+   (exit)}

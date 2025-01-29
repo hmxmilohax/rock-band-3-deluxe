@@ -1,0 +1,252 @@
+{new
+   UIPanel
+   patch_profile_watcher
+   (enter
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)})
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {ui_event_mgr trigger_event patch_profile_exit})}
+{new
+   PatchSelectPanel
+   patch_select_panel
+   (file
+      "patch_select.milo")
+   (focus patch.lst)
+   (patch_return_screen main_hub_screen)
+   (source FALSE)
+   (force_selected_patch_reload FALSE)
+   (enter
+      {edit_none.trg trigger}
+      {$this set_focus patch.lst}
+      {$this
+         select_patch
+         [starting_patch_ix]}
+      {$this refresh_vignette}
+      {if_else
+         {practice_space_panel is_up}
+         {change_camera_angle.ihp set showing FALSE}
+         {change_camera_angle.ihp set showing TRUE}}
+      {if
+         [start_with_menu]
+         {$this show_patch_menu}}
+      #ifdef HX_PS3
+      {move_camera_help.trg trigger}
+      #endif
+      {if
+         [force_selected_patch_reload]
+         {set
+            [force_selected_patch_reload]
+            FALSE}
+         {char_cache
+            recompose_chars_with_patch_ix
+            {$this selected_patch_ix}}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {==
+            {patch.lst get_state}
+            kComponentFocused}
+         {switch
+            $action
+            (kAction_Cancel
+               {$this leave $user})
+            (kAction_ViewModify
+               {if
+                  {!
+                     {practice_space_panel is_up}}
+                  {closet_mgr cycle_camera}})
+            kDataUnhandled}
+         {switch
+            $action
+            (kAction_Cancel
+               {synth play button_back}
+               {edit_none.trg trigger}
+               {$this set_focus patch.lst})
+            kDataUnhandled}})
+   (SCROLL_MSG
+      {$this refresh_vignette})
+   (edit_patch
+      {patch_panel
+         set
+         editing_patch
+         {$this selected_patch}}
+      {set
+         [start_with_menu]
+         TRUE}
+      {ui goto_screen patch_screen})
+   (duplicate
+      {do
+         ($patch_ix
+            {$this
+               duplicate_patch
+               {$this selected_patch}})
+         {if
+            {!= $patch_ix -1}
+            {edit_none.trg trigger}
+            {$this select_patch $patch_ix}
+            {$this set_focus patch.lst}
+            {char_cache recompose_chars_with_patch_ix $patch_ix}}})
+   (SELECT_MSG
+      {switch
+         $component
+         (apply.btn
+            {$this
+               confirm
+               {$this selected_patch_ix}}
+            {$this leave $user})
+         (edit.btn
+            {set
+               [starting_patch_ix]
+               {$this selected_patch_ix}}
+            {$this edit_patch})
+         (duplicate.btn
+            {$this duplicate})
+         (delete.btn
+            {ui push_screen patch_delete_screen})
+         {do
+            ($patch
+               {$this selected_patch})
+            {cond
+               ({! $patch}
+                  {$this confirm -1}
+                  {$this leave $user})
+               ({$patch has_layers}
+                  {$this show_patch_menu})
+               (TRUE
+                  {set
+                     [starting_patch_ix]
+                     {$this selected_patch_ix}}
+                  {$this edit_patch})}}})
+   (show_patch_menu
+      {do
+         ($patch
+            {$this selected_patch})
+         {if
+            {&&
+               $patch
+               {$patch has_layers}}
+            {edit_patch.trg trigger}
+            {edit_patch.mat
+               set
+               diffuse_tex
+               {$patch get_tex}}
+            {$this set_focus apply.btn}}})
+   (leave
+      ($user)
+      {switch
+         [patch_return_screen]
+         (song_select_screen
+            {song_select_panel set resume_setlist_edit TRUE})
+         (customize_clothing_screen
+            {customize_panel set resume_patch_edit TRUE})
+         (customize_instrument_screen
+            {customize_panel set resume_patch_edit TRUE})
+         (customize_salon_screen
+            {customize_panel set resume_patch_edit TRUE})
+         (customize_tattoo_screen
+            {customize_panel set resume_patch_edit TRUE})}
+      {cond
+         ({==
+               [patch_return_screen]
+               customize_clothing_screen}
+            {ui goto_screen customize_clothing_screen})
+         ({==
+               [patch_return_screen]
+               customize_instrument_screen}
+            {ui goto_screen customize_instrument_screen})
+         ({==
+               [patch_return_screen]
+               customize_tattoo_screen}
+            {ui goto_screen customize_tattoo_screen})
+         ({==
+               [patch_return_screen]
+               customize_salon_screen}
+            {ui goto_screen customize_salon_screen})
+         {ui
+            go_back_screen
+            [patch_return_screen]
+            $user}})
+   (highlighted_tex
+      {if_else
+         {&&
+            {$this selected_patch}
+            {{$this selected_patch}
+               has_layers}}
+         {{$this selected_patch}
+            get_tex}
+         ""})
+   (refresh_vignette
+      {if
+         {practice_space_panel is_up}
+         {do
+            ($mat
+               {practice_space_panel find art_maker_patch.mat})
+            ($tex
+               {$this highlighted_tex})
+            {$mat set diffuse_tex $tex}
+            {if_else
+               $tex
+               {$mat set alpha 1.0}
+               {$mat set alpha 0.0}}}}
+      {if
+         {'||'
+            {customize_tattoo_panel is_up}
+            {customize_salon_panel is_up}}
+         {customize_panel refresh_patch_edit}})}
+{new
+   BandScreen
+   patch_delete_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_yesno shell_delete_patch no.btn})
+   (SELECT_MSG
+      {if
+         {== $component yes.btn}
+         {with
+            patch_select_panel
+            {{$this selected_patch}
+               clear}
+            {char_cache
+               recompose_chars_with_patch_ix
+               {$this selected_patch_ix}}
+            {$this set_focus patch.lst}
+            {patch.lst refresh}
+            {edit_none.trg trigger}
+            {$this refresh_vignette}}}
+      {ui pop_screen})}
+{new
+   BandScreen
+   patch_select_screen
+   (panels
+      meta
+      (practice_space_panel
+         (always_load FALSE))
+      (customize_clothing_panel
+         (always_load FALSE))
+      (customize_instrument_panel
+         (always_load FALSE))
+      (customize_tattoo_panel
+         (always_load FALSE))
+      (customize_salon_panel
+         (always_load FALSE))
+      (customize_panel
+         (always_load FALSE)
+         (active FALSE))
+      patch_select_panel
+      patch_profile_watcher)
+   (focus patch_select_panel)}
+{new
+   BandScreen
+   patch_select_practice_space_screen
+   (panels meta practice_space_panel patch_select_panel patch_profile_watcher)
+   (focus patch_select_panel)
+   (enter
+      {if
+         {practice_space_panel is_up}
+         {practice_space_panel goto_shot art_maker.shot}})
+   (exit
+      {closet_mgr set_no_user_mode FALSE})}

@@ -1,0 +1,124 @@
+(StreakMeterDir
+   (types
+      (test_streak_meter
+         (editor
+            (max_multiplier
+               int
+               (help
+                  "The maximum multiplier this track can reach w/o overdrive")
+               (range 0 25))
+            (test
+               script
+               (help
+                  "Test the streak meter")
+               (script
+                  {$this test}))
+            (break
+               script
+               (help
+                  "Break the streak")
+               (script
+                  {$this break}))
+            (stop_test
+               script
+               (help
+                  "Stop the streak meter test")
+               (script
+                  {$this stop_test}))
+            (star_deploy
+               script
+               (help
+                  "Deploy overdrive")
+               (script
+                  {$this star_deploy}))
+            (star_deploy_stop
+               script
+               (help
+                  "Stop deploying overdrive")
+               (script
+                  {$this star_deploy_stop}))
+            (reset
+               script
+               (help
+                  "Reset everything")
+               (script
+                  {$this test_reset})))
+         (test_hit_val 0)
+         (test_streak_multiplier 1)
+         (max_multiplier 4)
+         (test
+            {$this test_reset}
+            {set
+               [test_hit_val]
+               0}
+            {set
+               [test_streak_multiplier]
+               1}
+            {thread_task
+               kTaskSeconds
+               (name streak_meter_test)
+               (script
+                  {set
+                     [test_hit_val]
+                     [test_hit_val]}
+                  {set
+                     [test_hit_val]
+                     {'+'
+                        [test_hit_val]
+                        1}}
+                  {if
+                     {>
+                        [test_hit_val]
+                        20}
+                     {set
+                        [test_hit_val]
+                        {-
+                           [test_hit_val]
+                           20}}}
+                  {if
+                     {==
+                        [test_hit_val]
+                        20}
+                     {set
+                        [test_streak_multiplier]
+                        {'+'
+                           [test_streak_multiplier]
+                           1}}}
+                  {if
+                     {>
+                        [test_streak_multiplier]
+                        4}
+                     {$this peak_state}}
+                  {if_else
+                     {>
+                        [test_streak_multiplier]
+                        [max_multiplier]}
+                     {$this set_wipe 1}
+                     {do
+                        {$this
+                           set_wipe
+                           {/
+                              [test_hit_val]
+                              20}}
+                        {$this
+                           set_multiplier
+                           [test_streak_multiplier]}}}
+                  {$task sleep 0.1}
+                  {$task loop})})
+         (test_reset
+            {$this stop_test}
+            {$this reset}
+            {star_deploy_stop.trig trigger})
+         (break
+            {$this set_multiplier 1}
+            {$this break_streak}
+            {set
+               [test_hit_val]
+               0}
+            {set
+               [test_streak_multiplier]
+               1})
+         (stop_test
+            {if
+               {exists streak_meter_test}
+               {delete streak_meter_test}}))))

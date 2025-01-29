@@ -1,0 +1,248 @@
+#define TRACKER_DISPLAY_COMMON_EDITOR
+((hide
+      script
+      (script
+         {$this hide})
+      (help
+         "Fade the display out, hiding it."))
+   (target_progress
+      script
+      (script
+         {$this target_progress})
+      (help
+         "Simulate the tracker incrementing, but not passing a target value."))
+   (advance_target
+      script
+      (script
+         {$this advance_target 0 target})
+      (help
+         "Simulate passing a target."))
+   (last_target_passed
+      script
+      (script
+         {$this last_target_passed})
+      (help
+         "Simulate passing the last target.")))
+#define TRACKER_DISPLAY_COMMON_HANDLERS
+((set_progress
+      ($data_array)
+      {tg_main_text_middle.lbl set_token_fmt $data_array})
+   (set_int_progress
+      ($int)
+      {tg_main_text_middle.lbl set_int $int TRUE})
+   (set_target
+      ($data_array)
+      {if_else
+         {size $data_array}
+         {tg_main_text_bottom.lbl set_token_fmt $data_array}
+         {tg_main_text_bottom.lbl
+            set_token_fmt
+            ""}})
+   (target_progress
+      {target_progress.trig trigger})
+   (advance_target
+      ($passed_target_index $new_target_description)
+      {thread_task
+         kTaskSeconds
+         (script
+            {target_pass.trig trigger}
+            {$task sleep 1.0}
+            {tg_main_text_bottom.lbl set_token_fmt $new_target_description})})
+   (last_target_passed
+      {thread_task
+         kTaskSeconds
+         (script
+            {target_pass.trig trigger})}))
+(RndDir
+   (types
+      (tracker_band_display
+         (editor
+            TRACKER_DISPLAY_COMMON_EDITOR
+            (show
+               script
+               (script
+                  {$this show overdrive_focus_description})
+               (help
+                  "Fade the display in."))
+            (graphic_type
+               script
+               (script
+                  {$this set_display_type kBandTrackerDisplayType_Graphic})
+               (help
+                  "Change the display mode to graphic."))
+            (text_type
+               script
+               (script
+                  {$this set_display_type kBandTrackerDisplayType_Text})
+               (help
+                  "Change the display mode to text."))
+            (tour_style
+               script
+               (script
+                  {$this set_display_style kBandTrackerDisplayStyle_Tour})
+               (help
+                  "Change the display style to tour."))
+            (campaign_style
+               script
+               (script
+                  {$this set_display_style kBandTrackerDisplayStyle_Campaign})
+               (help
+                  "Change the display style to campaign."))
+            (campaign_succeeding
+               script
+               (script
+                  {$this set_success_state TRUE})
+               (help
+                  "Player is succeeding."))
+            (campaign_failing
+               script
+               (script
+                  {$this set_success_state FALSE})
+               (help
+                  "Player is failing.")))
+         TRACKER_DISPLAY_COMMON_HANDLERS
+         (set_display_type
+            ($type)
+            {switch
+               $type
+               (kBandTrackerDisplayType_Graphic
+                  {configure_type.anim set_frame 0})
+               (kBandTrackerDisplayType_Text
+                  {configure_type.anim set_frame 1})})
+         (set_display_style
+            ($style)
+            {switch
+               $style
+               (kBandTrackerDisplayStyle_Tour
+                  {setup_tour.trig trigger})
+               (kBandTrackerDisplayStyle_Campaign
+                  {setup_campaign.trig trigger})})
+         (show
+            ($description)
+            {show.trig trigger}
+            {tg_main_text_top.lbl set text_token $description})
+         (hide
+            {hide.trig trigger})
+         (set_challenge_type
+            ($type)
+            {foreach_int
+               $i
+               0
+               4
+               {do
+                  ($star_name
+                     {sprintf
+                        "star%d"
+                        $i})
+                  ($star_obj
+                     {star_display find $star_name})
+                  ($anim
+                     {$star_obj find tour_configure_challenge.anim})
+                  {switch
+                     $type
+                     (kTrackerChallengeType_Accuracy
+                        {$anim set_frame 2})
+                     (kTrackerChallengeType_Overdrive
+                        {$anim set_frame 1})
+                     (kTrackerChallengeType_Streak
+                        {$anim set_frame 0})}}})
+         (set_success_state
+            ($success)
+            {if_else
+               $success
+               {campaign_succeeding.trig trigger}
+               {campaign_failing.trig trigger}})
+         (set_progress_percentage
+            ($percentage)
+            {star_display
+               set
+               num_stars
+               {'*' $percentage 5.0}}))
+      (tracker_broadcast_display
+         (editor
+            (show
+               script
+               (script
+                  {$this show})
+               (help
+                  "Show the display."))
+            (hide
+               script
+               (script
+                  {$this hide})
+               (help
+                  "Hide the display."))
+            (broadcast_type
+               script
+               (script
+                  {$this set_display_type kBroadcastTrackerDisplay_Broadcast})
+               (help
+                  "Change the type to broadcast."))
+            (show_broadcast
+               script
+               (script
+                  {broadcast.trig trigger}))
+            (band_message_type
+               script
+               (script
+                  {$this set_display_type 1})
+               (help
+                  "Change the type to band message."))
+            (tour_set_secondary_state_0
+               script
+               (script
+                  {$this set_secondary_state_level 0}))
+            (tour_set_secondary_state_1
+               script
+               (script
+                  {$this set_secondary_state_level 1}))
+            (tour_set_secondary_state_2
+               script
+               (script
+                  {$this set_secondary_state_level 2}))
+            (tour_set_secondary_state_3
+               script
+               (script
+                  {$this set_secondary_state_level 3})))
+         (show
+            {tg_desc_show.trig trigger})
+         (hide
+            {tg_desc_hide.trig trigger})
+         (set_description
+            ($description)
+            {tg_desc.lbl set text_token $description})
+         (broadcast
+            ($data_array $expanded_desc)
+            {tg_desc.lbl set_token_fmt $data_array}
+            {tg_desc_expanded.lbl set text_token $expanded_desc}
+            {broadcast.trig trigger})
+         (set_challenge_type
+            ($type)
+            {switch
+               $type
+               (kTrackerChallengeType_Accuracy
+                  {tour_configure_challenge.anim set_frame 2})
+               (kTrackerChallengeType_Overdrive
+                  {tour_configure_challenge.anim set_frame 1})
+               (kTrackerChallengeType_Streak
+                  {tour_configure_challenge.anim set_frame 0})})
+         (set_display_type
+            ($type)
+            {switch
+               $type
+               (kBroadcastTrackerDisplay_Broadcast
+                  {tour_configure_type.anim set_frame 0})
+               (kBroadcastTrackerDisplay_BandMessage
+                  {tour_configure_type.anim set_frame 1})})
+         (set_band_message
+            ($message)
+            {band_message.lbl set_token_fmt $message})
+         (show_brief_band_message
+            ($message)
+            {$this set_band_message $message}
+            {band_message.trig trigger})
+         (set_secondary_state_level
+            ($level)
+            {tour_secondary_state.anim
+               animate
+               (dest $level)}))))

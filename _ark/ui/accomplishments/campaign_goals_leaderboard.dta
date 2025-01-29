@@ -1,0 +1,176 @@
+{new
+   CampaignGoalsLeaderboardChoicePanel
+   campaign_goals_leaderboard_choice_panel
+   (file
+      "campaign_goals_leaderboard_choice.milo")
+   (focus
+      "goals.lst")
+   (goal '')
+   (return_screen '')
+   (SELECT_MSG
+      {$this
+         set
+         goal
+         {$this get_selected_goal}}
+      {campaign_goals_leaderboard_panel
+         set_goal
+         [goal]}
+      {campaign_goals_leaderboard_screen set return_screen campaign_goals_leaderboard_choice_screen}
+      {ui goto_screen campaign_goals_leaderboard_screen})
+   (BUTTON_DOWN_MSG
+      {if
+         {== $action kAction_Cancel}
+         {$this set goal ''}
+         {ui
+            goto_screen
+            [return_screen]}}
+      kDataUnhandled)
+   (update_leaderboard_provider
+      ($provider)
+      {goals.lst set_provider $provider}
+      {if
+         {!=
+            [goal]
+            ''}
+         {goals.lst
+            set_selected
+            [goal]}})
+   (get_selected_index
+      {goals.lst selected_pos})}
+{new
+   BandScreen
+   campaign_goals_leaderboard_choice_screen
+   (panels meta sv7_panel accomplishments_status_panel campaign_goals_leaderboard_choice_panel)
+   (focus campaign_goals_leaderboard_choice_panel)
+   (enter
+      {campaign_goals_leaderboard_choice_panel set return_screen campaign_leaderboard_hub_screen}
+      {campaign_goals_leaderboard_panel set return_screen campaign_goals_leaderboard_choice_screen})}
+{new
+   CampaignGoalsLeaderboardPanel
+   campaign_goals_leaderboard_panel
+   (file
+      "campaign_goals_leaderboard.milo")
+   (focus
+      "leaderboard.lst")
+   (return_screen '')
+   (enter
+      {if_else
+         {$this has_goal_icon}
+         {icon.pic
+            set
+            tex_file
+            {$this get_goal_icon}}
+         {icon.pic
+            set
+            tex_file
+            "ui/image/blank_album_art_keep.png"}}
+      {title.lbl
+         set
+         text_token
+         {$this get_goal}}
+      {units.lbl
+         set
+         text_token
+         {$this get_goal_units}}
+      {description.lbl
+         set
+         text_token
+         {$this get_goal_desc}}
+      {leaderboard_types.lst
+         set_data
+         (lb_global lb_friends)
+         0
+         TRUE})
+   (update_leaderboard_provider
+      ($provider)
+      {leaderboard.lst set_provider $provider})
+   (refresh_leaderboard
+      {if
+         {$this is_up}
+         {$this lb_in_progress}
+         {$this
+            set_leaderboard_mode
+            {leaderboard_types.lst selected_data}}
+         {leaderboard.lst refresh}})
+   (BUTTON_DOWN_MSG
+      {switch
+         $action
+         (kAction_ViewModify
+            {leaderboard_types.lst scroll 1 $user}
+            {$this refresh_leaderboard})
+         (kAction_Up
+            {if_else
+               {&&
+                  {leaderboard.lst num_data}
+                  {==
+                     {leaderboard.lst selected_data}
+                     0}
+                  {$this scroll_lb_up}}
+               {$this refresh_leaderboard}
+               kDataUnhandled})
+         (kAction_Down
+            {if_else
+               {&&
+                  {leaderboard.lst num_data}
+                  {==
+                     {leaderboard.lst selected_data}
+                     {-
+                        {leaderboard.lst num_data}
+                        1}}
+                  {$this scroll_lb_down}}
+               {$this refresh_leaderboard}
+               kDataUnhandled})
+         (kAction_Cancel
+            {ui
+               goto_screen
+               [return_screen]}
+            kDataUnhandled)
+         (kAction_Confirm
+            {$this
+               select_lb_row
+               {leaderboard.lst selected_pos}
+               $user}
+            kDataUnhandled)
+         kDataUnhandled})
+   (SCROLL_MSG
+      {cond
+         ({== $component leaderboard_types.lst}
+            {$this refresh_leaderboard})})
+   (lb_in_progress
+      {lb_status.lbl set text_token lb_waiting}
+      {leaderboard.lst set showing FALSE}
+      {view_gamer_card.ihp set_showing FALSE})
+   (lb_success
+      ($noresults $unranked $unplayed)
+      {$this refresh_leaderboard}
+      {$this set_to_starting_lb_ix leaderboard.lst}
+      {if_else
+         {<=
+            {leaderboard.lst num_data}
+            0}
+         {do
+            {lb_status.lbl set text_token lb_noresults}
+            {leaderboard.lst set showing FALSE}
+            {view_gamer_card.ihp set_showing FALSE}}
+         {do
+            {lb_status.lbl
+               set
+               text_token
+               ""}
+            {leaderboard.lst set showing TRUE}
+            #ifdef HX_XBOX
+            {view_gamer_card.ihp set_showing TRUE}
+            #endif}})
+   (lb_failure
+      {$this refresh_leaderboard}
+      {leaderboard.lst set showing FALSE}
+      {view_gamer_card.ihp set_showing FALSE}
+      {if_else
+         {platform_mgr is_connected}
+         {lb_status.lbl set text_token lb_error}
+         {lb_status.lbl set text_token lb_error_live}})}
+{new
+   BandScreen
+   campaign_goals_leaderboard_screen
+   (panels meta sv7_panel accomplishments_status_panel campaign_goals_leaderboard_panel)
+   (focus campaign_goals_leaderboard_panel)}

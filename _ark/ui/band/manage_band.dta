@@ -1,0 +1,279 @@
+{new
+   ManageBandPanel
+   manage_band_panel
+   (file
+      "manage_band.milo")
+   (reward_vignettes
+      ((vignetteviewer_rv1 createband_rewardvignette_created_screen)
+         (vignetteviewer_rv2 campaign_rewardvignette_firstgig_screen)
+         (vignetteviewer_rv3 campaign_rewardvignette_van_screen)
+         (vignetteviewer_rv4 campaign_rewardvignette_bus_screen)
+         (vignetteviewer_rv5 campaign_rewardvignette_festival_replay_screen)
+         (vignetteviewer_rv6 campaign_rewardvignette_jet_screen)
+         (vignetteviewer_rv7 campaign_rewardvignette_win_screen)))
+   (refresh_all
+      {critical_user_listener clear_critical_user}
+      {input_mgr clear_user}
+      {$this update_band_name_label}
+      {if_else
+         {$this get_band_logo_tex}
+         {do
+            {logo.mat set diffuse_tex canvas.tex}
+            {logo_overlay.mat
+               set
+               diffuse_tex
+               {$this get_band_logo_tex}}
+            {logo_overlay.mesh set_showing TRUE}}
+         {do
+            {logo.mat set diffuse_tex logo.tex}
+            {logo_overlay.mesh set_showing FALSE}}}
+      {standins.lst
+         set_provider
+         {$this get_standin_provider}}
+      {characters.lst
+         set_provider
+         {$this get_char_provider}}
+      {history.lst
+         set_provider
+         {$this get_history_provider}}
+      {$this check_for_kickout_condition})
+   (enter
+      {net_sync set_ui_state kNetUI_CustomizeBand})
+   (TRANSITION_COMPLETE_MSG
+      {saveload_mgr autosave})
+   (exit)
+   (VIRTUAL_KEYBOARD_RESULT_MSG
+      {if
+         {&&
+            $ok
+            $this
+            {ui focus_panel}
+            {$this is_up}
+            {==
+               {ui focus_panel}
+               $this}
+            {!
+               {==
+                  $text
+                  ""}}
+            {!
+               {==
+                  $text
+                  " "}}}
+         {{$this get_profile}
+            set_band_name
+            $text}
+         {acc_mgr
+            earn_accomplishment
+            {$this get_profile}
+            acc_bandcreate}
+         {$this update_band_name_label}
+         {saveload_mgr autosave}})
+   (SCROLL_MSG
+      {cond
+         ({== $component standins.lst}
+            {$this
+               update_character_from_standin_list
+               {standins.lst selected_pos}})
+         ({== $component characters.lst}
+            {$this
+               update_character_from_char_list
+               {characters.lst selected_pos}})})
+   (SELECT_MSG
+      {switch
+         $component
+         (edit_band_name.btn
+            {virtual_keyboard
+               show_keyboard
+               $user
+               kBandNameLength
+               {localize create_band_vk_title}
+               {localize create_band_vk_desc}
+               {$this get_default_vk_name TRUE}
+               $this})
+         (edit_logo.btn
+            {closet_mgr set_no_user_mode TRUE}
+            {critical_user_listener set_critical_user $user}
+            {input_mgr set_user $user}
+            {patch_select_panel
+               setup_for_band_logo
+               {$this get_profile}}
+            {patch_select_panel set patch_return_screen manage_band_screen}
+            {ui goto_screen patch_select_practice_space_screen})
+         (standins.btn
+            {ui abstract_wipe}
+            {closet_mgr set_no_user_mode TRUE}
+            {ui goto_screen manage_band_standins_screen})
+         (history.btn
+            {if_else
+               {session_mgr is_local}
+               {$this set_state kManageBand_VignetteViewer}
+               {ui push_screen manage_band_no_history_when_online_screen}})
+         (standins.lst
+            {$this
+               set_selected_standin
+               {standins.lst selected_pos}}
+            {$this refresh_standin_list}
+            {$this set_state kManageBand_SelectCharacter})
+         (history.lst
+            {do
+               ($provider
+                  {$this get_history_provider})
+               ($pos
+                  {history.lst selected_pos})
+               {cond
+                  ({!
+                        {session_mgr is_local}}
+                     {ui push_screen manage_band_no_history_when_online_screen})
+                  ({$provider is_locked $pos}
+                     {basic_confirm_dialog_screen set ok_msg vignetteviewer_locked}
+                     {ui push_screen basic_confirm_dialog_screen})
+                  {net_sync set_ui_state kNetUI_MetaLoadingPreSave}
+                  {$this
+                     queue_reward_vignette
+                     {$provider get_screen $pos}}
+                  {ui goto_screen meta_loading_return_to_manage_band_screen}}})
+         (characters.lst
+            {$this
+               set_standin
+               {characters.lst selected_pos}}
+            {$this set_state kManageBand_StandInsMenu})})
+   (BUTTON_DOWN_MSG
+      {switch
+         $action
+         (kAction_ViewModify
+            {profile_mgr set_primary_profile_by_user $user})
+         (kAction_Cancel
+            {switch
+               {$this get_state}
+               (kManageBand_StandInsMenu
+                  {$this set_selected_standin 0}
+                  {$this set_state kManageBand_MainMenu}
+                  {ui go_back_screen manage_band_screen $user})
+               (kManageBand_SelectCharacter
+                  {$this set_state kManageBand_StandInsMenu})
+               (kManageBand_VignetteViewer
+                  {$this set_state kManageBand_MainMenu})
+               kDataUnhandled})
+         kDataUnhandled})
+   (show_character
+      {practice_space_panel goto_shot idle_1.shot})
+   (hide_character
+      {practice_space_panel goto_shot empty.shot})
+   (update_band_name_label
+      {band_name.lbl
+         set_band_name
+         {$this get_profile}})
+   (get_default_vk_name
+      ($band_name)
+      {do
+         ($name
+            {{$this get_profile}
+               get_band_name})
+         {if_else
+            {{$this get_profile}
+               has_band_name_been_set}
+            $name
+            {sprintf
+               "%s %s"
+               {localize
+                  {name_generator get_random_name band_firstnames}}
+               {localize
+                  {name_generator get_random_name band_secondnames}}}}})
+   (update_state
+      ($new_state $old_state)
+      {switch
+         $new_state
+         (kManageBand_MainMenu
+            {switch
+               $old_state
+               (kManageBand_Invalid
+                  {show_main_menu.trg trigger}
+                  {$this set_focus edit_band_name.btn})
+               (kManageBand_StandInsMenu
+                  {show_main_menu.trg trigger}
+                  {$this set_focus standins.btn})
+               (kManageBand_VignetteViewer
+                  {show_main_menu.trg trigger}
+                  {$this set_focus history.btn})})
+         (kManageBand_StandInsMenu
+            {standins.lst refresh}
+            {show_standins_menu.trg trigger}
+            {$this set_focus standins.lst}
+            {standins.lst
+               set_selected
+               {$this get_selected_standin}}
+            {$this
+               update_character_from_standin_list
+               {standins.lst selected_pos}})
+         (kManageBand_VignetteViewer
+            {show_history.trg trigger}
+            {$this set_focus history.lst})
+         (kManageBand_SelectCharacter
+            {show_characters.trg trigger}
+            {$this set_focus characters.lst}
+            {characters.lst set_selected 0}
+            {$this
+               update_character_from_char_list
+               {characters.lst selected_pos}})})}
+{new
+   BandScreen
+   manage_band_screen
+   (panels meta sv5_panel manage_band_panel accomplishments_status_panel)
+   (focus manage_band_panel)
+   (back_override
+      "")
+   (back
+      {manage_band_screen get back_override})
+   (enter
+      {closet_mgr set_no_user_mode FALSE}
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)})
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {if
+         {profile_mgr has_primary_profile}
+         {do
+            ($profile
+               {profile_mgr get_primary_profile})
+            ($user
+               {$profile get_associated_user})
+            {manage_band_panel set_profile $profile}
+            {manage_band_panel refresh_to_main_state}}})}
+{new
+   BandScreen
+   manage_band_standins_screen
+   (panels meta practice_space_panel manage_band_panel accomplishments_status_panel)
+   (focus manage_band_panel)
+   (enter
+      {manage_band_panel set_state kManageBand_StandInsMenu}
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)})
+   (exit
+      {closet_mgr set_no_user_mode FALSE}
+      {char_sync update_char_cache}
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (primary_profile_changed_msg
+      {if
+         {profile_mgr has_primary_profile}
+         {do
+            ($profile
+               {profile_mgr get_primary_profile})
+            ($user
+               {$profile get_associated_user})
+            {manage_band_panel set_profile $profile}
+            {manage_band_panel refresh_to_standins_state}}})}
+{new
+   BandScreen
+   manage_band_no_history_when_online_screen
+   (panels dialog_panel)
+   (focus dialog_panel)
+   (enter
+      {dialog_panel set_ok cannot_launch_when_online})
+   (SELECT_MSG
+      {ui pop_screen})}

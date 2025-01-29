@@ -1,0 +1,141 @@
+{new
+   MoviePanel
+   credits_movie_panel
+   MOVIE_PANEL_STUFF
+   (videos win_credits)
+   (block_event
+      ($event)
+      TRUE)
+   (movie_done
+      {ui goto_screen credits_screen})}
+{new
+   BandScreen
+   credits_movie_screen
+   (panels credits_movie_panel)
+   (focus credits_movie_panel)
+   (enter
+      {overshell set_active_status kOvershellInactive})}
+{new
+   UIPanel
+   credits_pause_panel
+   (file
+      "credits_pause.milo")
+   (focus
+      "resume.btn")
+   (hint_start_time 0)
+   (hint_timeout 3)
+   (hint_shown FALSE)
+   (show_hint
+      {$this set hint_shown TRUE}
+      {$this
+         set
+         hint_start_time
+         {taskmgr ui_seconds}}
+      {fade_pausehint.anim
+         animate
+         (range
+            {fade_pausehint.anim frame}
+            {fade_pausehint.anim end_frame})})
+   (hide_hint
+      {$this set hint_shown FALSE}
+      {fade_pausehint.anim
+         animate
+         (range
+            {fade_pausehint.anim frame}
+            {fade_pausehint.anim start_frame})})
+   (show_self
+      {$this hide_hint}
+      {$this
+         set_focus
+         "resume.btn"}
+      {fade.anim animate})
+   (hide_self
+      {fade.anim stop_animation}
+      {fade.anim set_frame 0})
+   (SELECT_DONE_MSG
+      {if
+         {$this showing}
+         {switch
+            $component
+            (resume.btn
+               {credits_screen handle_unpause})
+            (skip.btn
+               {credits_panel credits_done})}})
+   (poll
+      {if
+         [hint_shown]
+         {if
+            {>
+               {-
+                  {taskmgr ui_seconds}
+                  [hint_start_time]}
+               [hint_timeout]}
+            {$this hide_hint}}})}
+{new
+   CreditsPanel
+   credits_panel
+   (file
+      "credits.milo")
+   (focus
+      "credits.lst")
+   (target_screen '')
+   (credits_done
+      {ui pop_screen})}
+{new
+   BandScreen
+   credits_screen
+   (panels credits_panel credits_pause_panel)
+   (focus credits_panel)
+   (scroll_sfx FALSE)
+   (is_menu_shown FALSE)
+   (enter
+      {$this handle_unpause}
+      {platform_mgr disable_xmp}
+      {platform_mgr
+         add_sink
+         $this
+         (ui_changed)})
+   (exit
+      {platform_mgr remove_sink $this ui_changed}
+      {overshell set_active_status kOvershellInShell})
+   (handle_pause
+      {$this set is_menu_shown TRUE}
+      {credits_panel pause_panel TRUE}
+      {credits_pause_panel show_self}
+      {$this set_focus_panel credits_pause_panel})
+   (handle_unpause
+      {$this set is_menu_shown FALSE}
+      {credits_panel pause_panel FALSE}
+      {credits_pause_panel hide_self}
+      {$this set_focus_panel credits_panel})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Start}
+         {do
+            {if_else
+               [is_menu_shown]
+               {$this handle_unpause}
+               {$this handle_pause}}
+            {play_instr_sfx $user button_back}
+            kDataUnhandled}
+         {if_else
+            [is_menu_shown]
+            {do
+               {if
+                  {== $action kAction_Cancel}
+                  {play_instr_sfx $user button_back}
+                  {$this handle_unpause}}
+               kDataUnhandled}
+            {if_else
+               {$this is_cheat_on}
+               kDataUnhandled
+               {do
+                  {credits_pause_panel show_hint}
+                  0}}}})
+   (UI_CHANGED_MSG
+      {if
+         {&&
+            {platform_mgr guide_showing}
+            {!
+               [is_menu_shown]}}
+         {$this handle_pause}})}

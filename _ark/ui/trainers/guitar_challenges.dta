@@ -1,0 +1,194 @@
+{new
+   TrainerChallenge
+   guitar_whammy_challenge
+   (enter
+      {set
+         [whammied]
+         FALSE}
+      {set
+         [whammy_count]
+         0}
+      {{beatmatch active_player 0}
+         add_sink
+         $this})
+   (exit
+      {{beatmatch active_player 0}
+         remove_sink
+         $this})
+   (whammy_start
+      {set
+         [whammied]
+         TRUE}
+      TRUE)
+   (held_note_released_callback
+      ($fraction)
+      {if
+         {== $fraction 1.0}
+         {if
+            [whammied]
+            {'++'
+               [whammy_count]}}}
+      {set
+         [whammied]
+         FALSE})
+   (hit
+      {set
+         [whammied]
+         FALSE})
+   (miss
+      {set
+         [whammied]
+         FALSE})
+   (pass
+      {set
+         [whammied]
+         FALSE})
+   (success
+      {>=
+         [whammy_count]
+         [whammies_needed]})
+   (restriction_token tc_guitar_whammy)
+   (whammied FALSE)
+   (whammy_count 0)
+   (whammies_needed 2)}
+{new
+   TrainerChallenge
+   guitar_alternating_strum_challenge
+   (enter
+      {set
+         [has_hit]
+         FALSE}
+      {set
+         [has_alternated]
+         TRUE}
+      {{beatmatch active_player 0}
+         add_sink
+         $this})
+   (exit
+      {{beatmatch active_player 0}
+         remove_sink
+         $this})
+   (hit
+      ($gem_id $hit_flags)
+      {if_else
+         [has_hit]
+         {do
+            ($up
+               {$this is_up_strum $hit_flags})
+            {if_else
+               {==
+                  [up_strum]
+                  $up}
+               {set
+                  [has_alternated]
+                  FALSE}
+               {set
+                  [up_strum]
+                  $up}}}
+         {do
+            {set
+               [has_hit]
+               TRUE}
+            {set
+               [up_strum]
+               {$this is_up_strum $hit_flags}}}})
+   (is_up_strum
+      ($hit_flags)
+      {!=
+         0
+         {& $hit_flags kGemHitFlagUpstrum}})
+   (success
+      [has_alternated])
+   (restriction_token tc_guitar_alternating_strum)
+   (has_hit TRUE)
+   (up_strum FALSE)
+   (has_alternated TRUE)}
+{new
+   TrainerChallenge
+   guitar_strum_challenge
+   (enter
+      {set
+         [strum_count]
+         0}
+      {set
+         [up_strum]
+         FALSE}
+      {set
+         [failed]
+         FALSE}
+      {{beatmatch active_player 0}
+         add_sink
+         $this})
+   (exit
+      {{beatmatch active_player 0}
+         remove_sink
+         $this})
+   (hit
+      ($gem_id $hit_flags)
+      {if_else
+         {==
+            [up_strum]
+            {$this is_up_strum $hit_flags}}
+         {do
+            {'++'
+               [strum_count]}
+            {if
+               {==
+                  [strum_count]
+                  [num_to_strum]}
+               {set
+                  [up_strum]
+                  {!
+                     [up_strum]}}
+               {set
+                  [strum_count]
+                  0}}}
+         {do
+            {set
+               [failed]
+               TRUE}}})
+   (is_up_strum
+      ($hit_flags)
+      {!=
+         0
+         {& $hit_flags kGemHitFlagUpstrum}})
+   (success
+      {!
+         [failed]})
+   (restriction_token tc_guitar_strum)
+   (strum_count 0)
+   (up_strum FALSE)
+   (failed FALSE)
+   (num_to_strum 4)}
+{new
+   TrainerChallenge
+   guitar_high_frets_challenge
+   (enter
+      {set
+         [failed]
+         FALSE}
+      {{beatmatch active_player 0}
+         add_sink
+         $this})
+   (exit
+      {{beatmatch active_player 0}
+         remove_sink
+         $this})
+   (hit
+      ($gem_id $hit_flags)
+      {if
+         {!
+            {$this is_high_frets $hit_flags}}
+         {set
+            [failed]
+            TRUE}})
+   (is_high_frets
+      ($hit_flags)
+      {!=
+         0
+         {& $hit_flags kGemHitFlagSolo}})
+   (success
+      {!
+         [failed]})
+   (restriction_token tc_guitar_high_frets_challenge)
+   (failed FALSE)}

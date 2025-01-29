@@ -1,0 +1,124 @@
+{new
+   UIPanel
+   accomplishments_status_panel
+   (file
+      "accomplishment_status.milo")
+   (enter
+      {machine_mgr
+         add_sink
+         $this
+         (remote_machine_updated)}
+      {machine_mgr
+         add_sink
+         $this
+         (local_machine_updated)}
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)}
+      {profile_mgr
+         add_sink
+         $this
+         (profile_changed_msg)}
+      {platform_mgr
+         add_sink
+         $this
+         (signin_changed)}
+      {session_mgr
+         add_sink
+         $this
+         (add_local_user_result_msg)}
+      {session_mgr
+         add_sink
+         $this
+         (remote_leader_left_msg)}
+      {session
+         add_sink
+         $this
+         (local_user_left)}
+      {$this refresh})
+   (exit
+      {machine_mgr remove_sink $this remote_machine_updated}
+      {machine_mgr remove_sink $this local_machine_updated}
+      {profile_mgr remove_sink $this primary_profile_changed_msg}
+      {profile_mgr remove_sink $this profile_changed_msg}
+      {platform_mgr remove_sink $this signin_changed}
+      {session_mgr remove_sink $this add_local_user_result_msg}
+      {session_mgr remove_sink $this remote_leader_left_msg}
+      {session remove_sink $this local_user_left})
+   (remote_machine_updated
+      {$this refresh})
+   (local_machine_updated
+      {$this refresh})
+   (profile_changed_msg
+      {$this refresh})
+   (remote_leader_left_msg
+      {$this refresh})
+   (add_local_user_result_msg
+      {$this refresh})
+   (local_user_left
+      {$this refresh})
+   (signin_changed
+      {$this refresh})
+   (primary_profile_changed_msg
+      {$this refresh}
+      {swap_profiles.trig trigger})
+   (update_status
+      {if_else
+         {&&
+            {profile_mgr has_primary_profile}
+            {'||'
+               {!
+                  {gamemode in_mode tour}}
+               {is_leader_local}}}
+         {do
+            ($profile
+               {profile_mgr get_primary_profile})
+            ($user
+               {$profile get_associated_user})
+            ($current_status
+               {campaign get_campaign_level $user})
+            {if_else
+               {profile_mgr can_change_primary_profile}
+               {enable_multipleprofiles.trig trigger}
+               {enable_1profile.trig trigger}}
+            {gamertag.lbl set_band_name $user}
+            {level.lbl set text_token $current_status}
+            {do
+               ($fans
+                  {campaign get_fan_count $user})
+               {if_else
+                  {== $fans 1}
+                  {fan_total.lbl set text_token campaign_1fan}
+                  {fan_total.lbl
+                     set_token_fmt
+                     campaign_fans
+                     {localize_separated_int $fans}}}}
+            {if_else
+               {campaign is_user_on_last_campaign_level $user}
+               {do
+                  {progress.md set showing FALSE}
+                  {current_icon.pic
+                     set
+                     tex_file
+                     ""}
+                  {next_icon.pic
+                     set
+                     tex_file
+                     ""}}
+               {do
+                  {progress.md set showing TRUE}
+                  {campaign update_progress_meter progress.md $user}
+                  {campaign update_current_major_level_icon $user current_icon.pic}
+                  {campaign update_next_major_level_icon $user next_icon.pic}}}
+            {set
+               $tex
+               {$profile get_band_logo_tex}}
+            {if_else
+               $tex
+               {icon.mat set diffuse_tex $tex}
+               {icon.mat set diffuse_tex icon.tex}}}
+         {do
+            {disable.trig trigger}}})
+   (refresh
+      {$this update_status})}

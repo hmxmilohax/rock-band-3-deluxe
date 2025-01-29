@@ -1,0 +1,371 @@
+(RndDir
+   (types
+      (gem_smasher
+         (editor
+            (reset
+               script
+               (script
+                  {$this reset}))
+            (color
+               symbol
+               (list
+                  (green red yellow blue orange purple))
+               (post_sync
+                  {$this
+                     set_color
+                     [color]}))
+            (glow
+               bool
+               (post_sync
+                  {$this
+                     set_glow
+                     [glow]}))
+            (in_danger
+               bool
+               (post_sync
+                  {$this
+                     set_danger
+                     [in_danger]}))
+            (label
+               string
+               (post_sync
+                  {$this
+                     set_label
+                     [label]}))
+            (do_hit
+               script
+               (script
+                  {$this hit})
+               (read_only
+                  {!
+                     {exists hit.trig}}))
+            (do_hit_bonus
+               script
+               (script
+                  {$this hit_bonus})
+               (read_only
+                  {!
+                     {exists hit_bonus.trig}}))
+            (do_big_rock_hit
+               script
+               (script
+                  {$this coda_hit})
+               (read_only
+                  {!
+                     {exists big_rock_hit.trig}}))
+            (do_hit_fill
+               script
+               (script
+                  {$this
+                     hit_fill_vel
+                     [test_velocity]}))
+            (do_hit_drum
+               script
+               (script
+                  {$this hit_drum})
+               (read_only
+                  {!
+                     {exists hit_drums.trig}}))
+            (do_hit_cymbal
+               script
+               (script
+                  {$this hit_cymbal})
+               (read_only
+                  {!
+                     {exists hit_cymbals.trig}}))
+            (do_hit_drum_bonus
+               script
+               (script
+                  {$this hit_drum_bonus})
+               (read_only
+                  {!
+                     {exists hit_drums_bonus.trig}}))
+            (do_hit_cymbal_bonus
+               script
+               (script
+                  {$this hit_cymbal_bonus})
+               (read_only
+                  {!
+                     {exists hit_cymbals_bonus.trig}}))
+            (do_drumfill_complete_hit
+               script
+               (script
+                  {$this drum_fill_complete})
+               (read_only
+                  {!
+                     {exists hit_drums.trig}}))
+            (do_hit_chord
+               script
+               (script
+                  {$this hit_chord})
+               (read_only
+                  {!
+                     {exists hit_chord.trig}}))
+            (do_miss
+               script
+               (script
+                  {$this miss}))
+            (burn
+               script
+               (script
+                  {$this burn}))
+            (burn_chord
+               script
+               (script
+                  {$this burn_chord})
+               (read_only
+                  {!
+                     {exists burn_chord.trig}}))
+            (big_rock_burn
+               script
+               (script
+                  {$this coda_burn}))
+            (burn_bonus
+               script
+               (script
+                  {$this burn_bonus}))
+            (stop_burn
+               script
+               (script
+                  {$this stop_burn}))
+            (test_velocity
+               int
+               (range 0 10)
+               (help
+                  "velocity of fill hit from soft to loud"))
+            (velocity_fill_triggers
+               (array
+                  object
+                  (class EventTrigger))
+               (help
+                  "fill hits by velocity from lightest to hardest"))
+            (colored_particle_launchers
+               (array
+                  object
+                  (class PartLauncher particle_launcher))
+               (help
+                  "list of all particle launchers whose color should change depending on the color of the smasher")))
+         (glow FALSE)
+         (in_danger FALSE)
+         (label
+            "")
+         (color green proxy_save)
+         (burning FALSE)
+         (test_velocity 0)
+         (velocity_fill_triggers
+            ())
+         (colored_particle_launchers
+            ())
+         (last_set_color '')
+         (reset
+            {$this
+               set_color
+               [color]}
+            {$this reset_triggers}
+            {if
+               {exists stop_burn.trig}
+               {set
+                  [burning]
+                  TRUE}
+               {$this stop_burn}}
+            {reset.trig trigger}
+            {if
+               {exists LOD.anim}
+               {LOD.anim set_frame $track_LOD}})
+         (reset_triggers
+            {do
+               ($trigs
+                  (big_rock_burn.trig big_rock_burn_chord.trig big_rock_hit.trig big_rock_hit_chord.trig burn.trig burn_bonus.trig burn_chord.trig hit.trig hit_bonus.trig hit_chord.trig hit_cymbals.trig hit_cymbals_bonus.trig hit_drums.trig hit_drums_bonus.trig hit_fill.trig hit_fill_hard.trig hit_fill_light.trig hit_fill_medium.trig miss.trig stop_burn.trig strum.trig))
+               {foreach
+                  $trig
+                  $trigs
+                  {if
+                     {exists $trig}
+                     {$trig basic_cleanup}}}})
+         (reset_particles
+            {$this
+               iterate_self
+               (Object particle_launcher)
+               $launcher
+               {do
+                  ($part
+                     {$launcher get part})
+                  {if
+                     $part
+                     {$part clear_all_particles}}}})
+         (set_color
+            ($in_color)
+            {if
+               {!=
+                  [last_set_color]
+                  $in_color}
+               {do
+                  ($slot)
+                  ($frame)
+                  {set
+                     [color]
+                     $in_color}
+                  {switch
+                     $in_color
+                     (green
+                        {set $slot 0})
+                     (red
+                        {set $slot 1})
+                     (yellow
+                        {set $slot 2})
+                     (blue
+                        {set $slot 3})
+                     (orange
+                        {set $slot 4})
+                     (purple
+                        {set $slot 5})}
+                  {set $frame $slot}
+                  {if
+                     {exists particle_slot_colors.anim}
+                     {particle_slot_colors.anim set_frame $frame}}
+                  {foreach
+                     $launcher
+                     [colored_particle_launchers]
+                     {$this set_launcher_color $launcher}}}
+               {set
+                  [last_set_color]
+                  $in_color}})
+         (set_lefty
+            ($in_val)
+            {if_else
+               $in_val
+               {if
+                  {exists toggle_lefty.trig}
+                  {toggle_lefty.trig trigger}}
+               {if
+                  {exists toggle_righty.trig}
+                  {toggle_righty.trig trigger}}}
+            {$this reset_particles})
+         (set_launcher_color
+            ($launcher)
+            {do
+               ($part
+                  {$launcher get part})
+               {set
+                  $part
+                  {$this
+                     find
+                     {$part name}}}
+               {$launcher set override_start_color TRUE}
+               {$launcher
+                  set
+                  start_color
+                  {$part get start_color_high}}
+               {$launcher
+                  set
+                  start_alpha
+                  {$part get start_alpha_high}}
+               {$launcher set override_mid_color TRUE}
+               {$launcher
+                  set
+                  mid_color
+                  {$part get mid_color_high}}
+               {$launcher
+                  set
+                  mid_alpha
+                  {$part get mid_alpha_high}}
+               {$launcher set override_end_color TRUE}
+               {$launcher
+                  set
+                  end_color
+                  {$part get end_color_high}}
+               {$launcher
+                  set
+                  end_alpha
+                  {$part get end_alpha_high}}})
+         (set_glow
+            ($in_state)
+            {set
+               [glow]
+               $in_state}
+            {if
+               {exists gem_smasher_glow.mesh}
+               {gem_smasher_glow.mesh
+                  set_showing
+                  [glow]}})
+         (set_label
+            ($in_val))
+         (hit
+            {hit.trig trigger})
+         (hit_cymbal
+            {hit_cymbals.trig trigger})
+         (hit_drum
+            {hit_drums.trig trigger})
+         (hit_drum_bonus
+            {hit_drums_bonus.trig trigger})
+         (hit_cymbal_bonus
+            {hit_cymbals_bonus.trig trigger})
+         (hit_chord
+            {hit_chord.trig trigger})
+         (coda_hit
+            {big_rock_hit.trig trigger})
+         (coda_hit_chord
+            {big_rock_hit_chord.trig trigger})
+         (hit_bonus
+            {hit_bonus.trig trigger})
+         (hit_fill_vel
+            ($velocity)
+            {if
+               {== $velocity 0}
+               {set $velocity 6}}
+            {if_else
+               {<
+                  $velocity
+                  {size
+                     [velocity_fill_triggers]}}
+               {do
+                  ($trig
+                     {elem
+                        [velocity_fill_triggers]
+                        $velocity})
+                  {if_else
+                     {!= $trig ''}
+                     {$trig trigger}
+                     {hit_fill.trig trigger}}}
+               {hit_fill.trig trigger}})
+         (rg_strum
+            {strum.trig trigger})
+         (miss
+            {miss.trig trigger}
+            {$this stop_burn})
+         (burn
+            {burn.trig trigger}
+            {set
+               [burning]
+               TRUE})
+         (burn_chord
+            {burn_chord.trig trigger}
+            {set
+               [burning]
+               TRUE})
+         (coda_burn
+            {big_rock_burn.trig trigger}
+            {set
+               [burning]
+               TRUE})
+         (coda_burn_chord
+            {big_rock_burn_chord.trig trigger}
+            {set
+               [burning]
+               TRUE})
+         (burn_bonus
+            {burn_bonus.trig trigger}
+            {set
+               [burning]
+               TRUE})
+         (stop_burn
+            {if
+               [burning]
+               {stop_burn.trig trigger}
+               {set
+                  [burning]
+                  FALSE}})
+         (drum_fill_complete
+            {hit_drums.trig trigger})
+         (set_danger
+            ($in_state)))))

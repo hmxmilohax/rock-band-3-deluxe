@@ -1,0 +1,281 @@
+(RndDir
+   (types
+      (scoreboard
+         (editor
+            (reset
+               script
+               (script
+                  {$this reset}))
+            (test_score
+               int
+               (post_sync
+                  {$this
+                     set_score_milo
+                     [test_score]})
+               (help
+                  "Current score."))
+            (test_stars
+               float
+               (post_sync
+                  {$this
+                     set_num_stars
+                     [test_stars]}))
+            (sound
+               bool
+               "Play a sound when the stars change")
+            (config
+               symbol
+               (list
+                  (normal botb botb_star))
+               (post_sync
+                  {$this
+                     set_config
+                     [config]}))
+            (stars
+               (array
+                  object
+                  (class RndDir))))
+         (current_star 0)
+         (test_score 0)
+         (test_stars 0)
+         (test_opponent_score 0)
+         (score 0)
+         (num_stars 0)
+         (opponent_score 0)
+         (sweep_pct 0)
+         (max_score 100)
+         (max_stars 5)
+         (gold 0)
+         (stars
+            ())
+         (sound FALSE)
+         (config
+            "normal")
+         (reset
+            {set
+               [current_star]
+               0}
+            {set
+               [gold]
+               0}
+            {foreach
+               $star
+               [stars]
+               {$star set showing 0}
+               {$star set_frame 0}
+               {{$star find reset.trig}
+                  trigger}}
+            {if
+               {exists stars_offset.tnm}
+               {stars_offset.tnm set_frame 0}}
+            {set
+               [score]
+               1}
+            {if_else
+               {exists milo}
+               {$this set_score_milo 0}
+               {$this set_score 0}}
+            {$this set_num_stars 0.0}
+            {set
+               [test_score]
+               0}
+            {if
+               {exists gold_stars.anim}
+               {gold_stars.anim set_frame 0}})
+         (set_score
+            ($in_val)
+            {if
+               {&&
+                  {!=
+                     $in_val
+                     [score]}
+                  {exists score.lbl}}
+               {score.lbl
+                  set_score_or_stars
+                  {meta_performer current}
+                  $in_val}}
+            {set
+               [score]
+               $in_val})
+         (set_opponent_score
+            ($in_val)
+            {if
+               {&&
+                  {!=
+                     $in_val
+                     [opponent_score]}
+                  {exists score_opponent.txt}}
+               {score_opponent.lbl
+                  set_text
+                  {if_else
+                     {meta_performer is_battle_brand_new}
+                     "-"
+                     {fmt_score_or_stars $in_val}}}}
+            {set
+               [opponent_score]
+               $in_val})
+         (set_score_milo
+            ($in_val)
+            {if
+               {exists score.lbl}
+               {score.lbl set_int $in_val TRUE}}
+            {set
+               [score]
+               $in_val})
+         (set_opponent_score_milo
+            ($in_val)
+            {if
+               {exists score_opponent.txt}
+               {score_opponent.lbl
+                  set_text
+                  {fmt_score $in_val}}}
+            {set
+               [opponent_score]
+               $in_val})
+         (set_num_stars
+            ($stars)
+            {if
+               {>
+                  {size
+                     [stars]}
+                  0}
+               {if
+                  {== $stars 0}
+                  {{elem
+                        [stars]
+                        0}
+                     set
+                     showing
+                     TRUE}}
+               {if_else
+                  {>=
+                     $stars
+                     [max_stars]}
+                  {if
+                     {!
+                        [gold]}
+                     {if
+                        {exists gold_stars.trig}
+                        {gold_stars.trig trigger}}
+                     {$this play_star_sound}
+                     {set
+                        [gold]
+                        1}}
+                  {do
+                     {if_else
+                        {>=
+                           $stars
+                           {'+'
+                              [current_star]
+                              1}}
+                        {do
+                           {{{elem
+                                    [stars]
+                                    [current_star]}
+                                 find
+                                 sweep.mnm}
+                              set_frame
+                              1}
+                           {{{elem
+                                    [stars]
+                                    [current_star]}
+                                 find
+                                 full.trig}
+                              trigger}
+                           {$this play_star_sound}
+                           {set
+                              [current_star]
+                              {'+'
+                                 [current_star]
+                                 1}}
+                           {if
+                              {<
+                                 [current_star]
+                                 {-
+                                    [max_stars]
+                                    1}}
+                              {{elem
+                                    [stars]
+                                    [current_star]}
+                                 set
+                                 showing
+                                 1}
+                              {stars_offset.tnm
+                                 animate
+                                 (dest
+                                    {'*'
+                                       [current_star]
+                                       10})}
+                              {{{elem
+                                       [stars]
+                                       [current_star]}
+                                    find
+                                    sweep.mnm}
+                                 set_frame
+                                 {-
+                                    [sweep_pct]
+                                    1}}}}
+                        {if
+                           {<
+                              [current_star]
+                              {-
+                                 [max_stars]
+                                 1}}
+                           {set
+                              [sweep_pct]
+                              {-
+                                 $stars
+                                 [current_star]}}
+                           {if
+                              {<
+                                 [current_star]
+                                 [max_stars]}
+                              {{{elem
+                                       [stars]
+                                       [current_star]}
+                                    find
+                                    sweep.mnm}
+                                 set_frame
+                                 {min
+                                    [sweep_pct]
+                                    0.95}}}}}}}})
+         (play_star_sound
+            {if
+               [sound]
+               {if
+                  {'||'
+                     {!
+                        {exists game}}
+                     {gamemode get play_star_sfx}}
+                  {{get_track_panel}
+                     play_seq
+                     achieve_star.cue}}})
+         (set_config
+            ($config)
+            {switch
+               $config
+               (normal
+                  {config_normal.trig trigger}
+                  {$this set_star_battle FALSE})
+               (botb
+                  {config_botb.trig trigger}
+                  {$this set_star_battle FALSE})
+               (botb_star
+                  {config_botb.trig trigger}
+                  {$this set_star_battle TRUE})})
+         (set_star_battle
+            ($in_val)
+            {if_else
+               $in_val
+               {star_battle.trig trigger}
+               {star_battle_off.trig trigger}})
+         (config_normal
+            {$this show_stars TRUE})
+         (config_botb
+            {$this show_stars FALSE})
+         (show_stars
+            ($val)
+            {stars.grp set_showing $val}
+            {set
+               [sound]
+               $val}))))

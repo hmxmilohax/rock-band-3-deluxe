@@ -1,0 +1,97 @@
+{new
+   BandPreloadPanel
+   preload_panel
+   (song_mgr song_mgr)
+   (current_song
+      {meta_performer song})
+   (preload_files
+      ({song_mgr
+            midi_file
+            {meta_performer song}}
+         FALSE
+         #ifdef HX_PS3
+         {song_mgr
+            package_name
+            {meta_performer song}}
+         #endif)
+      ({song_mgr
+            song_file_path
+            {meta_performer song}
+            ".milo"}
+         TRUE
+         #ifdef HX_PS3
+         ""
+         #endif)
+      ({song_mgr
+            upgrade_midi_file
+            {meta_performer song}}
+         {!
+            {song_mgr
+               has_upgrade
+               {meta_performer song}}}
+         #ifdef HX_PS3
+         {song_mgr
+            upgrade_package_name
+            {meta_performer song}}
+         #endif))
+   (on_preload_ok
+      {net_sync disable}
+      {if_else
+         {==
+            {ui current_screen}
+            preloading_screen}
+         {ui
+            goto_screen
+            {gamemode get game_screen}}
+         {ui goto_screen load_nextsong_screen}})
+   (on_preload_failed
+      {net_sync disable}
+      {passive_messenger trigger_skip_song_msg}
+      {if_else
+         {!
+            {meta_performer is_last_song}}
+         {if_else
+            {==
+               {ui current_screen}
+               preloading_screen}
+            {ui goto_screen preloading_failed_screen}
+            {ui goto_screen preload_failed_nextsong_screen}}
+         {ui goto_screen meta_loading_continue_screen}})}
+{new
+   BandScreen
+   preloading_screen
+   (panels meta preload_panel transition_fallback_panel)
+   (focus preload_panel)
+   (show_fallback FALSE)
+   (enter
+      {transition_fallback_panel
+         set_showing
+         [show_fallback]}
+      {{transition_fallback_panel find waiting.lbl}
+         set_showing
+         FALSE}
+      {if
+         [show_fallback]
+         {transition_fallback_panel start_loading_quick_anim}}
+      {$this set show_fallback FALSE}
+      {session_mgr set_active_roster TRUE}
+      {overshell set_active_status kOvershellInactive}
+      {seed_random_context
+         {session_mgr get_net_random_seed}}
+      {game set multi_event FALSE}
+      {song_mgr
+         add_recent_song
+         {meta_performer song}}
+      {if
+         {exists game}
+         {acc_mgr clear_goal_info}})
+   (TRANSITION_COMPLETE_MSG
+      {net_sync disable}
+      kDataUnhandled)}
+{new
+   BandScreen
+   preloading_failed_screen
+   (panels meta)
+   (TRANSITION_COMPLETE_MSG
+      {meta_performer skip_song}
+      {ui goto_screen preloading_screen})}

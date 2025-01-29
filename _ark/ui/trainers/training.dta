@@ -1,0 +1,224 @@
+{new
+   TrainingPanel
+   training_panel
+   (file
+      "training.milo")
+   (enter
+      {profile_mgr
+         add_sink
+         $this
+         (primary_profile_changed_msg)}
+      {$this refresh_all}
+      {cond
+         ({gamemode in_mode trainer_pro_drums}
+            {trainers.lst set_selected trainer_pro_drums}
+            {$this goto_trainer trainer_pro_drums})
+         ({gamemode in_mode trainer_drums}
+            {trainers.lst set_selected trainer_drums}
+            {$this goto_trainer trainer_drums})
+         ({gamemode in_mode trainer_real_guitar}
+            {trainers.lst set_selected trainer_real_guitar}
+            {$this goto_trainer trainer_real_guitar})
+         ({gamemode in_mode trainer_pro_keyboard}
+            {trainers.lst set_selected trainer_pro_keyboard}
+            {$this goto_trainer trainer_pro_keyboard})
+         {$this set_state kTrainingState_MainMenu}})
+   (exit
+      {profile_mgr remove_sink $this primary_profile_changed_msg})
+   (refresh_all
+      {if_else
+         {!
+            {profile_mgr has_primary_profile}}
+         {ui_event_mgr
+            trigger_event
+            sign_out
+            (dummy init kLocalUserSignedOut)}
+         {do
+            ($profile
+               {profile_mgr get_primary_profile})
+            ($user
+               {$profile get_associated_user})
+            {training_mgr set_user $user}
+            {trainers.lst
+               set_provider
+               {$this trainer_provider}}
+            {lessons.lst
+               set_provider
+               {$this lesson_provider}}}})
+   (primary_profile_changed_msg
+      {$this refresh_all}
+      {$this set_state kTrainingState_MainMenu})
+   (update_state
+      ($state)
+      {switch
+         $state
+         (kTrainingState_MainMenu
+            {input_mgr clear_user}
+            {critical_user_listener clear_critical_user}
+            {training_mgr clear_current_lesson}
+            {main_menu.trg trigger}
+            {$this set_focus trainers.lst})
+         (kTrainingState_DrumLessons
+            {drum_lessons.trg trigger}
+            {$this set_focus lessons.lst}
+            {lessons.lst
+               set_selected
+               {training_mgr get_current_lesson}})
+         (kTrainingState_ProDrumLessons
+            {pro_drum_lessons.trg trigger}
+            {$this set_focus lessons.lst}
+            {show_hint hint_prodrums_screen}
+            {lessons.lst
+               set_selected
+               {training_mgr get_current_lesson}})
+         (kTrainingState_ProGuitarLessons
+            {pro_guitar_lessons.trg trigger}
+            {$this set_focus lessons.lst}
+            {lessons.lst
+               set_selected
+               {training_mgr get_current_lesson}})
+         (kTrainingState_ProKeyboardLessons
+            {pro_keyboard_lessons.trg trigger}
+            {$this set_focus lessons.lst}
+            {lessons.lst
+               set_selected
+               {training_mgr get_current_lesson}})})
+   (refresh_lessons_list
+      {lessons.lst refresh})
+   (SELECT_MSG
+      {switch
+         $component
+         (trainers.lst
+            {set
+               $trainer
+               {trainers.lst selected_sym}}
+            {cond
+               ({!
+                     {$user can_save_data}}
+                  {push_signin_needed_dialog trainer_must_signin})
+               ({!
+                     {$this is_correct_controller $trainer $user}}
+                  {push_basic_confirm_dialog_small trainer_wrong_instrument})
+               {profile_mgr set_primary_profile_by_user $user}
+               {critical_user_listener set_critical_user $user}
+               {$this goto_trainer $trainer}})
+         (lessons.lst
+            {set
+               $trainer
+               {trainers.lst selected_sym}}
+            {cond
+               ({!
+                     {$this is_correct_controller $trainer $user}}
+                  {push_basic_confirm_dialog_small trainer_wrong_instrument})
+               {set
+                  $name
+                  {lessons.lst selected_sym}}
+               {training_mgr
+                  set_current_lesson
+                  {lessons.lst selected_pos}}
+               {goto_trainer_lesson $user $name training_screen overshell_quit_trainer}})})
+   (load
+      {content_mgr start_refresh})
+   (is_loaded
+      {content_mgr refresh_done})}
+{new
+   BandScreen
+   training_screen
+   (panels meta sv5_panel training_panel accomplishments_status_panel)
+   (focus training_panel)
+   (back main_hub_screen)}
+{func
+   goto_trainer_lesson
+   ($user $name $return_screen $quit_token)
+   {critical_user_listener set_critical_user $user}
+   {training_mgr set_user $user}
+   {training_mgr set_return_info $return_screen $quit_token}
+   {set
+      $mode
+      {training_mgr get_mode_from_lesson_name $name}}
+   {gamemode set_mode $mode}
+   {set
+      $track_type
+      {training_mgr get_track_type_from_lesson_name $name}}
+   {training_mgr set_track_type $track_type}
+   {set
+      $difficulty
+      {training_mgr get_difficulty_from_lesson_name $name}}
+   {training_mgr set_difficulty $difficulty}
+   {set
+      $song
+      {training_mgr get_song_from_lesson_name $name}}
+   {meta_performer set_song $song}
+   {training_mgr unparticipate_users}
+   {{gamemode get game_panel}
+      set
+      header
+      $name}
+   {ui goto_screen preloading_screen}}
+{func
+   goto_trainer_song_lesson
+   ($user $song $track_type $minimum_difficulty $return_screen $quit_token)
+   {critical_user_listener set_critical_user $user}
+   {training_mgr set_user $user}
+   {training_mgr set_return_info $return_screen $quit_token}
+   {training_mgr set_track_type $track_type}
+   {training_mgr set_minimum_difficulty $minimum_difficulty}
+   {set
+      $mode
+      {training_mgr get_mode_from_track_type $track_type}}
+   {gamemode set_mode $mode}
+   {meta_performer set_song $song}
+   {ui goto_screen part_difficulty_screen}}
+{new
+   MoviePanel
+   trainers_guitar_tutorial_01_panel
+   MOVIE_PANEL_STUFF
+   (videos guitartutorial01)
+   (movie_done
+      {acc_mgr
+         earn_accomplishment
+         {campaign get_user}
+         acc_guitartutorial01}
+      {ui goto_screen accomplishment_screen})}
+{new
+   MoviePanel
+   trainers_guitar_tutorial_02_panel
+   MOVIE_PANEL_STUFF
+   (videos guitartutorial02)
+   (movie_done
+      {acc_mgr
+         earn_accomplishment
+         {campaign get_user}
+         acc_guitartutorial02}
+      {ui goto_screen accomplishment_screen})}
+{new
+   MoviePanel
+   trainers_guitar_tutorial_03_panel
+   MOVIE_PANEL_STUFF
+   (videos guitartutorial03)
+   (movie_done
+      {acc_mgr
+         earn_accomplishment
+         {campaign get_user}
+         acc_guitartutorial03}
+      {ui goto_screen accomplishment_screen})}
+#define TUTORIAL_SCREEN_STUFF
+((enter
+      {overshell set_active_status kOvershellInactive})
+   (exit
+      {overshell set_active_status kOvershellInShell}))
+{new
+   BandScreen
+   trainers_guitar_tutorial_01_screen
+   (panels trainers_guitar_tutorial_01_panel)
+   TUTORIAL_SCREEN_STUFF}
+{new
+   BandScreen
+   trainers_guitar_tutorial_02_screen
+   (panels trainers_guitar_tutorial_02_panel)
+   TUTORIAL_SCREEN_STUFF}
+{new
+   BandScreen
+   trainers_guitar_tutorial_03_screen
+   (panels trainers_guitar_tutorial_03_panel)
+   TUTORIAL_SCREEN_STUFF}

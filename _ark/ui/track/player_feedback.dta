@@ -1,0 +1,161 @@
+#define RESULTS
+(failed_solo bad_solo okay_solo solid_solo great_solo awesome_solo perfect_solo vox_lousy vox_poor vox_ok vox_good vox_great)
+#define INSTRUMENT_NAMES
+(guitar bass drum vocals)
+(RndDir
+   (types
+      (player_feedback
+         (editor
+            (reset
+               script
+               (script
+                  {$this reset}))
+            (start_solo
+               script
+               (script
+                  {$this start_solo}))
+            (end_solo
+               script
+               (script
+                  {$this end_solo}))
+            (test_val
+               int
+               (post_sync
+                  {$this
+                     set_percent
+                     [test_val]}))
+            (test_result
+               symbol
+               (list
+                  (RESULTS))
+               (post_sync
+                  {$this
+                     set_result
+                     [test_result]}))
+            (start_super_streak
+               script
+               (script
+                  {$this start_super_streak}))
+            (end_super_streak
+               script
+               (script
+                  {$this end_super_streak}))
+            (show_feedback
+               script
+               (script
+                  {$this feedback_on}))
+            (hide_feedback
+               script
+               (script
+                  {$this feedback_off})))
+         (test_val 0)
+         (test_result vox_lousy)
+         (in_solo FALSE)
+         (hide_feedback FALSE)
+         (feedback_on
+            {if
+               [in_solo]
+               {solo_start.trig trigger}}
+            {set
+               [hide_feedback]
+               FALSE})
+         (feedback_off
+            {reset.trig trigger}
+            {set
+               [hide_feedback]
+               TRUE})
+         (start_solo
+            {if
+               {!
+                  [hide_feedback]}
+               {solo_start.trig trigger}}
+            {$this set_percent 0}
+            {set
+               [in_solo]
+               TRUE})
+         (end_solo
+            {if
+               {!
+                  [hide_feedback]}
+               {if
+                  [in_solo]
+                  {solo_end.trig trigger}}}
+            {set
+               [in_solo]
+               FALSE})
+         (start_super_streak
+            {if
+               {!
+                  [hide_feedback]}
+               {super_streak_start.trig trigger}
+               {script_task
+                  kTaskSeconds
+                  (delay 4.0)
+                  (script
+                     {$this end_super_streak})}})
+         (end_super_streak
+            {if
+               {!
+                  [hide_feedback]}
+               {super_streak_end.trig trigger}})
+         (reset
+            {reset.trig trigger}
+            {set
+               [in_solo]
+               FALSE}
+            {set
+               [hide_feedback]
+               FALSE})
+         (set_result
+            ($sym)
+            {solo_rating.lbl set text_token $sym})
+         (set_award
+            ($in_val)
+            {score.lbl set_int $in_val TRUE})
+         (solo_end
+            ($sym $in_val)
+            {$this set_result $sym}
+            {$this set_award $in_val}
+            {$this end_solo})
+         (set_percent
+            ($in_val)
+            {do
+               ($val
+                  {int $in_val})
+               {solo_percent.lbl set_token_fmt solo_percent_fmt $val}})
+         (set_fade
+            ($fade)
+            {environ.env set fade_max $fade}
+            {bass_super_streak.lbl set alpha $fade}))
+      (endgame_feedback
+         (editor
+            (end_game_start
+               script
+               (script
+                  {$this
+                     end_game_start_inst
+                     [test_instrument]}))
+            (end_game_end
+               script
+               (script
+                  {$this end_game_end}))
+            (test_instrument
+               symbol
+               (list
+                  (INSTRUMENT_NAMES))
+               no_test))
+         (test_instrument guitar)
+         (end_game_start_inst
+            ($instrument)
+            {switch
+               $instrument
+               (guitar
+                  {end_game_start_guitar.trig trigger})
+               (bass
+                  {end_game_start_guitar.trig trigger})
+               (drum
+                  {end_game_start_drum.trig trigger})
+               (vocals
+                  {end_game_start_vox.trig trigger})})
+         (end_game_end
+            {end_game_end.trig trigger}))))

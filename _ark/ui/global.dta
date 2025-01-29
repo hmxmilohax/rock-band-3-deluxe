@@ -1,0 +1,336 @@
+{func
+   setup_game
+   ($song $venue $player_list)
+   {do
+      ($i 0)
+      {set $skipped_metagame TRUE}
+      {foreach
+         $player
+         $player_list
+         {do
+            ($user
+               {user_mgr get_user_from_pad_num $i})
+            ($track
+               {elem $player 0})
+            {if
+               {$user is_participating}
+               {session_mgr remove_local_user $user}}
+            {session_mgr add_local_user $user}
+            {switch
+               $track
+               (real_guitar_22
+                  {set $track real_guitar}
+                  {$user set_has_22_fret_guitar TRUE})
+               (real_bass_22
+                  {set $track real_bass}
+                  {$user set_has_22_fret_guitar TRUE})}
+            {$user set_track_type $track}
+            {$user
+               set_controller_type
+               {switch
+                  {$user get_track_type}
+                  (kTrackDrum kControllerDrum)
+                  ((kTrackGuitar kTrackBass)
+                     kControllerGuitar)
+                  (kTrackVocals kControllerVocals)
+                  ((kTrackRealGuitar kTrackRealBass)
+                     kControllerRealGuitar)
+                  ((kTrackKeys kTrackRealKeys)
+                     kControllerKeys)
+                  kControllerNone}}
+            {$user
+               set_difficulty
+               {elem $player 1}}
+            {$user
+               set
+               autoplay
+               {if_else
+                  {>
+                     {size $player}
+                     2}
+                  {elem $player 2}
+                  FALSE}}
+            {$user
+               set_prefab_char
+               {if_else
+                  {>
+                     {size $player}
+                     3}
+                  {eval
+                     {elem $player 3}}
+                  ''}
+               $i}}
+         {'++' $i}}
+      {if
+         {!= $venue ''}
+         {meta_performer set_venue $venue}}
+      {meta_performer set_song $song}
+      {gamecfg auto_assign_missing_slots}}}
+{func
+   are_enough_mics_connected
+   {do
+      ($enable_resume TRUE)
+      {user_mgr
+         foreach_local_user
+         $user
+         {if
+            {&&
+               {$user is_participating}
+               {==
+                  {$user get_track_sym}
+                  vocals}}
+            {if
+               {==
+                  {synth num_connected_mics}
+                  0}
+               {set $enable_resume FALSE}}}}
+      $enable_resume}}
+{func
+   participating_vocalist_exists
+   {do
+      ($vocalist_exists FALSE)
+      {user_mgr
+         foreach_local_user
+         $user
+         {if
+            {&&
+               {$user is_participating}
+               {==
+                  {$user get_track_sym}
+                  vocals}}
+            {set $vocalist_exists TRUE}}}
+      $vocalist_exists}}
+{func
+   game_restart
+   {unless
+      {ui_event_mgr has_active_destructive_event}
+      {net_sync disable}
+      #ifndef _SHIP
+      {if
+         {ui in_transition}
+         {fail
+            "Cannot restart game while in transition\n"}}
+      #endif
+      {cond
+         ({==
+               {ui current_screen}
+               {gamemode get game_screen}}
+            {ui push_screen restart_sync_audio_net_screen})
+         ({==
+               {ui bottom_screen}
+               {gamemode get game_screen}}
+            {ui goto_screen restart_sync_audio_net_screen})
+         {ui goto_screen restart_game_screen}}
+      {game clear_draw_glitch}
+      {beatmatch set_resume_fraction 0.0}
+      {beatmatch set_invalid_score FALSE}}}
+{func
+   game_resume_no_score
+   ($frac)
+   {game_restart}
+   {beatmatch set_resume_fraction $frac}
+   {beatmatch set_invalid_score TRUE}}
+{func
+   set_all_hud_showing
+   ($show)
+   {{get_track_panel}
+      set_showing
+      $show}}
+{func
+   player_pan
+   ($user)
+   {if_else
+      {game multiplayer}
+      {elem
+         (-0.5 0.5 -0.5 0.5)
+         {$user get_slot_num}}
+      0}}
+{func
+   play_common_seq
+   ($sequence_name)
+   {synth play $sequence_name}}
+{func
+   play_instr_ctlr_sfx
+   ($ct $sfx $playOverNet)
+   {do
+      ($full_sfx
+         {if_else
+            {== $ct none}
+            $sfx
+            {sprint
+               $sfx
+               "_"
+               $ct}})
+      {play_common_seq $full_sfx}
+      {if
+         {&&
+            $playOverNet
+            {net_sync is_enabled}
+            {!
+               {ui_event_mgr has_active_dialog_event}}
+            {'||'
+               {!
+                  {{ui current_screen}
+                     has
+                     (send_net_sfx)}}
+               {{ui current_screen}
+                  get
+                  send_net_sfx}}}
+         {session
+            send_msg_to_all
+            {'`'
+               (synth
+                  play
+                  {',' $full_sfx})}
+            kNetReliable}}}}
+{func
+   play_instr_sfx
+   ($user $sfx)
+   {play_instr_sfx_impl $user $sfx TRUE}}
+{func
+   play_instr_sfx_local
+   ($user $sfx)
+   {play_instr_sfx_impl $user $sfx FALSE}}
+{func
+   play_instr_sfx_impl
+   ($user $sfx $playOverNet)
+   {do
+      ($ct
+         {if_else
+            $user
+            {if_else
+               {$user is_local}
+               {$user connected_controller_sym}
+               {$user get_controller_sym}}
+            none})
+      {play_instr_ctlr_sfx $ct $sfx $playOverNet}}}
+{func
+   update_tour_display
+   {ui
+      foreach_screen
+      $s
+      {$s
+         foreach_panel
+         $p
+         {if
+            {$p is_up}
+            {handle
+               ($p refresh)}}}}
+   {overshell update_all}}
+{func
+   update_meta_performer
+   {ui
+      foreach_screen
+      $s
+      {$s
+         foreach_panel
+         $p
+         {if
+            {$p is_up}
+            {handle
+               ($p update_meta_performer)}}}}}
+{func
+   missing_slot_to_track_sym
+   ($slot)
+   {if_else
+      {== kGameSlotGuitar1 $slot}
+      {do
+         ($user
+            {user_mgr get_user_from_slot kGameSlotGuitar0})
+         {if_else
+            {&&
+               $user
+               {$user is_participating}
+               {==
+                  bass
+                  {$user get_track_sym}}}
+            guitar
+            bass}}
+      {elem
+         (COOP_SLOTS_ORDER)
+         $slot}}}
+{func
+   missing_slot_to_track_icon
+   ($slot)
+   {cnv_instrumenttoicon
+      {missing_slot_to_track_sym $slot}}}
+{func
+   get_user_name_from_player
+   ($player)
+   {if_else
+      $player
+      {do
+         ($user
+            {$player get_user})
+         {$user get_user_name}}
+      ""}}
+{func
+   get_player_name_from_slot
+   ($slot)
+   {do
+      ($user
+         {user_mgr get_user_from_slot $slot})
+      {if_else
+         $user
+         {$user get_user_name}
+         ""}}}
+{func
+   frac
+   ($x)
+   {int
+      {'*' $x 256}}}
+{func
+   defrac
+   ($x)
+   {/ $x 256.0}}
+{func
+   forfeit_ranked_game
+   {if
+      {&&
+         {session is_in_game}
+         {gamemode get ranked}}
+      {session_mgr default_ranked_match TRUE}}}
+{func
+   reset_all_callbacks
+   {func hopo_callback}
+   {func swingAtHopo_callback}
+   {func star_phrase_miss_callback}
+   {func star_phrase_captured_callback}
+   {func star_use_begin_callback}
+   {func star_use_end_callback}
+   {func hopo_hit}}
+{reset_all_callbacks}
+{func
+   unlock_modifier
+   ($modifier_sym $cheat_pad)
+   {do
+      ($user
+         {user_mgr get_user_from_pad_num $cheat_pad})
+      ($profile
+         {profile_mgr get_profile $user})
+      ($slot
+         {overshell get_slot $user})
+      {if
+         {&&
+            $profile
+            {!
+               {$profile has_unlocked_modifier $modifier_sym}}
+            {$slot is_unlocking_modifiers}}
+         {$profile unlock_modifier $modifier_sym}
+         {passive_messenger
+            trigger_message
+            {'`'
+               (modifier_unlocked_fmt
+                  {',' $modifier_sym})}
+            $user}
+         {saveload_mgr autosave}}}}
+{func
+   is_allowed_to_preview_offer
+   ($offer)
+   {allowed_to_access_content
+      {if_else
+         {$offer has_data rating}
+         {$offer
+            get_data
+            (rating)}
+         2}}}

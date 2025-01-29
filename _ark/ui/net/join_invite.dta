@@ -1,0 +1,63 @@
+{new
+   JoinInvitePanel
+   join_invite_panel
+   (file
+      "join_invite.milo")
+   (enter
+      {critical_user_listener clear_critical_user}
+      {net_sync disable}
+      {net_sync set_ui_state kNetUI_JoinInvite}
+      {gamemode set_mode init}
+      {$this set_focus retry.btn}
+      {$this disable retry.btn})
+   (exit
+      {ui set_invite_accepted FALSE})
+   (check_disconnect
+      {unless
+         {ui_event_mgr has_active_destructive_event}
+         #ifdef HX_XBOX
+         {if
+            {!
+               {platform_mgr is_connected}}
+            {ui_event_mgr
+               trigger_event
+               lost_connection
+               (dummy init kLostConnection)}}
+         #else
+         {if
+            {!
+               {server is_connected}}
+            {ui_event_mgr
+               trigger_event
+               lost_connection
+               (dummy init kLostServer)}}
+         #endif})
+   (enable_retry
+      {$this enable retry.btn}
+      {$this set_focus retry.btn})
+   (set_presence
+      ($token)
+      {presence.lbl set text_token $token})
+   (SELECT_MSG
+      {switch
+         $component
+         (retry.btn
+            {$this disable retry.btn}
+            {$this set_joining_user $user}
+            {$this join_invite})
+         (cancel.btn
+            {session disconnect}
+            {ui goto_screen main_hub_screen})})
+   (BUTTON_DOWN_MSG
+      {cond
+         ({!= $action kAction_Cancel}
+            kDataUnhandled)
+         (TRUE
+            {session disconnect}
+            kDataUnhandled)})}
+{new
+   BandScreen
+   join_invite_screen
+   (panels meta join_invite_panel)
+   (back main_hub_screen)
+   (focus join_invite_panel)}

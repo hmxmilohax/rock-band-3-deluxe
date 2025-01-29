@@ -1,0 +1,164 @@
+{new
+   FreestylePanel
+   drum_freestyle_panel
+   (file
+      "freestyle_panel.milo")
+   (enter
+      {$this
+         enable_metronome
+         [metronome_enabled]}
+      {set
+         [current_drums]
+         0}
+      {$this change_drums 0}
+      {set
+         [current_bpm]
+         100}
+      {$this update_bpm}
+      {platform_mgr enable_xmp}
+      {toggle_icon.lbl
+         set
+         icon
+         "s"})
+   (freestyle_button_down
+      ($raw_button)
+      {switch
+         $raw_button
+         (kPad_DUp
+            {if
+               {&&
+                  {!
+                     [dpad_left]}
+                  {!
+                     [dpad_right]}}
+               {dpad_up.trig trigger}
+               {set
+                  [dpad_up]
+                  TRUE}
+               {$this inc_bpm}})
+         (kPad_DDown
+            {if
+               {&&
+                  {!
+                     [dpad_left]}
+                  {!
+                     [dpad_right]}}
+               {dpad_down.trig trigger}
+               {set
+                  [dpad_down]
+                  TRUE}
+               {$this dec_bpm}})
+         (kPad_Select
+            {button_drums.trig trigger}
+            {$this inc_drums})})
+   (dpad_left FALSE)
+   (dpad_right FALSE)
+   (pause)
+   (unpause)
+   (bpm_max 200)
+   (bpm_min 40)
+   (current_bpm -1)
+   (bpm_interval 20)
+   (metronome_enabled FALSE)
+   (inc_bpm
+      {if
+         {<
+            [current_bpm]
+            [bpm_max]}
+         {$this
+            change_bpm
+            [bpm_interval]}})
+   (dec_bpm
+      {if
+         {>
+            [current_bpm]
+            [bpm_min]}
+         {$this
+            change_bpm
+            {-
+               [bpm_interval]}}})
+   (change_bpm
+      ($amount)
+      {'+='
+         [current_bpm]
+         $amount}
+      {clamp_eq
+         [current_bpm]
+         [bpm_min]
+         [bpm_max]}
+      {$this update_bpm})
+   (update_bpm
+      {$this
+         set_bpm
+         [current_bpm]}
+      {bpm.lbl
+         set_int
+         [current_bpm]})
+   (current_drums -1)
+   (drum_names
+      (kick.cue snare.cue tom1.cue tom2.cue crash.cue hat.cue hatopen.cue ride.cue tom3.cue))
+   (kits
+      (kit01_bank kit02_bank kit03_bank kit04_bank kit05_bank))
+   (kit_names
+      (kit_01_bank kit_02_bank kit_03_bank kit_04_bank kit_05_bank))
+   (pad_hit
+      ($pad $vol)
+      {{{elem
+               [kits]
+               [current_drums]}
+            find
+            {elem
+               [drum_names]
+               $pad}}
+         play
+         (volume $vol)}
+      {do
+         ($trigger_name
+            {sprint
+               "pad"
+               $pad
+               ".trig"})
+         {{$this find $trigger_name}
+            trigger}})
+   (get_kit_name
+      ($index)
+      {sprint
+         "freestyle_"
+         {elem
+            [kit_names]
+            $index}
+         "_name"})
+   (get_current_kit_name
+      {$this
+         get_kit_name
+         [current_drums]})
+   (change_drums
+      ($amount)
+      {set
+         [current_drums]
+         {mod
+            {'+'
+               [current_drums]
+               $amount}
+            {size
+               [kits]}}}
+      {$this update_kit_label})
+   (inc_drums
+      {$this change_drums 1})
+   (update_kit_label
+      {kit.lbl
+         set
+         text_token
+         {$this get_current_kit_name}})}
+{new
+   BandScreen
+   drum_freestyle_screen
+   (panels trainer_background_panel drum_freestyle_panel)
+   (focus drum_freestyle_panel)
+   (BUTTON_DOWN_MSG
+      {if
+         {== $action kAction_Start}
+         {input_mgr set_user $user}
+         {ui push_screen pause_screen}}
+      {drum_freestyle_panel freestyle_button_down $raw_button}
+      kDataUnhandled)}

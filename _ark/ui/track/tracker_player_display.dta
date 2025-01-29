@@ -1,0 +1,213 @@
+#define PLAYER_TRACKER_EDITOR
+((tour_disable
+      script
+      (script
+         {$this disable})
+      (help
+         "Disable the tour display."))
+   (tour_enable
+      script
+      (script
+         {$this enable})
+      (help
+         "Enable the tour display, but without focus."))
+   (tour_hide
+      script
+      (script
+         {$this hide})
+      (help
+         "Hide the tour display."))
+   (tour_gain_focus
+      script
+      (script
+         {$this gain_focus FALSE})
+      (help
+         "Fade the tour display in."))
+   (tour_lose_focus_success
+      script
+      (script
+         {$this lose_focus TRUE})
+      (help
+         "Player succeeded in passing focus."))
+   (tour_lose_focus_failure
+      script
+      (script
+         {$this lose_focus FALSE})
+      (help
+         "Focus moves, but without success."))
+   (tour_succeeding
+      script
+      (script
+         {$this set_success_state TRUE})
+      (help
+         "Player is succeeding, but focus doesn't change."))
+   (tour_failing
+      script
+      (script
+         {$this set_success_state FALSE})
+      (help
+         "Player is failing, but focus doesn't change."))
+   (tour_pulse_success
+      script
+      (script
+         {$this pulse TRUE})
+      (help
+         "Player succeeded at something, so show it, but don't remove the display."))
+   (tour_pulse_fail
+      script
+      (script
+         {$this pulse FALSE})
+      (help
+         "Player failed at something, so show it, but don't remove the display."))
+   (tour_set_secondary_state_0
+      script
+      (script
+         {$this set_secondary_state_level 0}))
+   (tour_set_secondary_state_1
+      script
+      (script
+         {$this set_secondary_state_level 1}))
+   (tour_set_secondary_state_2
+      script
+      (script
+         {$this set_secondary_state_level 2}))
+   (tour_set_secondary_state_3
+      script
+      (script
+         {$this set_secondary_state_level 3})))
+#define PLAYER_TRACKER_HANDLERS
+((set_challenge_type
+      ($type)
+      {switch
+         $type
+         (kTrackerChallengeType_Accuracy
+            {tour_configure_challenge.anim set_frame 2})
+         (kTrackerChallengeType_Overdrive
+            {tour_configure_challenge.anim set_frame 1})
+         (kTrackerChallengeType_Streak
+            {tour_configure_challenge.anim set_frame 0})})
+   (set_type
+      ($type)
+      {switch
+         $type
+         (kPlayerTrackerDisplayType_DynamicProgress
+            {tour_configure_type.anim set_frame 0})
+         (kPlayerTrackerDisplayType_MultiMessage
+            {tour_configure_type.anim set_frame 1})
+         (kPlayerTrackerDisplayType_StaticMessage
+            {tour_configure_type.anim set_frame 2})})
+   (hide
+      {tour_hide.trig trigger}
+      {tour_meter_wipe.anim set_frame 0.0}
+      {tour_secondary_state.anim set_frame 0}
+      {tour_pulse_fail.anim set_frame 0.0}
+      {tour_pulse_success.anim set_frame 0.0})
+   (enable
+      {tour_enable.trig trigger}
+      {tour_meter_wipe.anim set_frame 0.0}
+      {tour_secondary_state.anim set_frame 0}
+      {tour_pulse_fail.anim set_frame 0.0}
+      {tour_pulse_success.anim set_frame 0.0})
+   (disable
+      {tour_disable.trig trigger}
+      {tour_pulse_fail.anim set_frame 0.0}
+      {tour_pulse_success.anim set_frame 0.0})
+   (gain_focus
+      ($with_delay)
+      {tour_meter_wipe.anim set_frame 0.0}
+      {tour_configure_state.anim set_frame 0}
+      {if_else
+         $with_delay
+         {do
+            {script_task
+               kTaskSeconds
+               (delay 1.0)
+               (script
+                  {tour_show.trig trigger}
+                  {if
+                     {exists get_track_panel}
+                     {{get_track_panel}
+                        play_seq
+                        spade_appear.cue}})}}
+         {do
+            {tour_show.trig trigger}
+            {if
+               {exists get_track_panel}
+               {{get_track_panel}
+                  play_seq
+                  spade_appear.cue}}}})
+   (lose_focus
+      ($success)
+      {if_else
+         $success
+         {do
+            {tour_focus_success.trig trigger}}
+         {tour_focus_failure.trig trigger}}
+      {tour_meter_wipe.anim set_frame 0.0}
+      {tour_secondary_state.anim set_frame 0})
+   (set_success_state
+      ($success)
+      {if_else
+         $success
+         {tour_state_succeeding.trig trigger}
+         {tour_state_failing.trig trigger}})
+   (pulse
+      ($success)
+      {if_else
+         $success
+         {tour_pulse_success.trig trigger}
+         {tour_pulse_fail.trig trigger}})
+   (set_secondary_state_level
+      ($level)
+      {tour_secondary_state.anim
+         animate
+         (dest
+            {'*' 10 $level})})
+   (set_dynamic_message
+      ($message)
+      {dynamic_message.lbl set text_token $message})
+   (set_multi_message
+      ($where $message)
+      {switch
+         $where
+         (kPlayerTrackerDisplay_MultiTop
+            {tg_main_text_top.lbl set_token_fmt $message})
+         (kPlayerTrackerDisplay_MultiMiddle
+            {tg_main_text_middle.lbl set_token_fmt $message})
+         (kPlayerTrackerDisplay_MultiBottom
+            {tg_main_text_bottom.lbl set_token_fmt $message})})
+   (set_static_message
+      ($message)
+      {static_message.lbl set_token_fmt $message}
+      {static_message.lbl set showing TRUE})
+   (set_progress_percentage
+      ($percentage $animate)
+      {if_else
+         $animate
+         {do
+            ($distance
+               {abs
+                  {-
+                     $percentage
+                     {tour_meter_wipe.anim get frame}}})
+            ($period
+               {'*' $distance 1})
+            {if_else
+               {!= $distance 0.0}
+               {tour_meter_wipe.anim
+                  animate
+                  (period $period)
+                  (dest $percentage)}
+               {tour_meter_wipe.anim
+                  animate
+                  (range $percentage $percentage)}}}
+         {tour_meter_wipe.anim
+            animate
+            (range $percentage $percentage)}})
+   (fill_progress_and_reset
+      {$this set_progress_percentage 1.0 TRUE}
+      {script_task
+         kTaskSeconds
+         (delay 1.0)
+         (script
+            {$this set_progress_percentage 0.0 TRUE})}))

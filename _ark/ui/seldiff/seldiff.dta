@@ -1,0 +1,207 @@
+{new
+   SelectDifficultyPanel
+   part_difficulty_panel
+   (file seldiff.milo)
+   (marquee_rotation_ms 3000)
+   (enter
+      {tour.grp set_showing FALSE}
+      {career.grp set_showing FALSE}
+      {battle.grp set_showing FALSE}
+      {cond
+         ({gamemode in_mode tour}
+            {tour_challenge.lbl
+               set
+               text_token
+               {{tour performer}
+                  current_quest_display_name}}
+            {tour_challenge_desc.lbl
+               set
+               text_token
+               {{tour performer}
+                  current_quest_description}}
+            {tour.grp set_showing TRUE})
+         ({gamemode in_mode campaign}
+            {career_name.lbl
+               set
+               text_token
+               {campaign get_current_goal}}
+            {career_description.lbl
+               set
+               text_token
+               {campaign get_current_goal_description}}
+            {career.pic
+               set
+               tex_file
+               {campaign get_current_goal_icon}}
+            {career.grp set_showing TRUE})
+         ({$this is_battle}
+            {meta_performer update_battle_type_label battle_type.lbl}
+            {battle.grp set_showing TRUE})})
+   (update_tour_setlist_label
+      ($filter $song_count)
+      {setlist_label.grp set showing TRUE}
+      {if_else
+         {== $song_count 1}
+         {setlist_title.lbl set_token_fmt set_list_tour_title_singular $filter}
+         {setlist_title.lbl set_token_fmt set_list_tour_title $filter $song_count}})
+   (update_partyshuffle_setlist_label
+      ($song_count)
+      {setlist_label.grp set showing TRUE}
+      {if_else
+         {== $song_count 1}
+         {setlist_title.lbl set text_token set_list_partyshuffle_title_singular}
+         {setlist_title.lbl set_token_fmt set_list_partyshuffle_title $song_count}})
+   (update_named_setlist_label
+      ($setlist $song_count)
+      {setlist_label.grp set showing TRUE}
+      {if_else
+         {== $song_count 1}
+         {setlist_title.lbl set_token_fmt set_list_named_title_singular $setlist}
+         {setlist_title.lbl set_token_fmt set_list_named_title $setlist $song_count}})
+   (update_setlist_label
+      ($song_count)
+      {if_else
+         {== $song_count 1}
+         {setlist_label.grp set showing FALSE}
+         {do
+            {setlist_label.grp set showing TRUE}
+            {setlist_title.lbl set_token_fmt set_list_title $song_count}}})
+   (update_icon_art
+      ($icon_art)
+      {marquee.grp set_showing TRUE}
+      {if_else
+         {!
+            {==
+               $icon_art
+               ""}}
+         {album_art.pic set tex_file $icon_art}
+         {album_art.pic
+            set
+            tex_file
+            "ui/image/blank_album_art_keep.png"}})
+   (update_preview_song
+      ($song $album_art $index)
+      {marquee.grp set_showing TRUE}
+      {coming_up.lbl set text_token coming_up}
+      {song_preview.lbl set_song_and_artist_name_from_sym $song $index}
+      {if_else
+         {!
+            {==
+               $album_art
+               ""}}
+         {album_art.pic set tex_file $album_art}
+         {album_art.pic
+            set
+            tex_file
+            "ui/image/blank_album_art_keep.png"}})
+   (update_auto_vocals_label
+      ($num_players $auto_vocals_enabled $is_local)
+      {cond
+         ({! $is_local}
+            {7_player.grp set_showing FALSE})
+         ($auto_vocals_enabled
+            {7_player.grp set_showing TRUE}
+            {7_player.lbl set text_token seldiff_7_player_on})
+         ({>= $num_players 3}
+            {7_player.grp set_showing TRUE}
+            {7_player.lbl set text_token seldiff_7_player_off_with_full_band})
+         {7_player.grp set_showing FALSE}})}
+{new
+   BandScreen
+   part_difficulty_screen
+   (panels meta sv4_panel part_difficulty_panel)
+   (enter
+      {overshell add_sink $this}
+      {if
+         {session_mgr is_leader_local}
+         {overshell set_song_options_required FALSE}
+         {if
+            {overshell in_override_flow kOverrideFlow_None}
+            {overshell begin_override_flow kOverrideFlow_SongSettings}}})
+   (load_panels
+      {if
+         {session_mgr is_leader_local}
+         {if
+            {&&
+               {!
+                  {gamemode in_mode practice}}
+               {!
+                  {gamemode in_mode trainer}}}
+            {meta_performer select_random_venue}}})
+   (exit
+      {overshell remove_sink $this}
+      {if
+         {overshell in_override_flow kOverrideFlow_SongSettings}
+         {overshell end_override_flow kOverrideFlow_SongSettings TRUE}})
+   (override_ended
+      ($override_type $cancel)
+      {cond
+         ({&&
+               {== $override_type kOverrideFlow_RegisterOnline}
+               {is_leader_local}}
+            {overshell leave_options}
+            {overshell begin_override_flow kOverrideFlow_SongSettings})
+         ({&&
+               {== $override_type kOverrideFlow_SongSettings}
+               {is_leader_local}}
+            {if_else
+               $cancel
+               {do
+                  {cond
+                     ({gamemode in_mode tour}
+                        {ui
+                           go_back_screen
+                           {get_tour_screen}
+                           ""})
+                     ({gamemode in_mode trainer}
+                        {ui
+                           go_back_screen
+                           {training_mgr get_return_screen}
+                           ""})
+                     ({gamemode in_mode qp_coop}
+                        {ui
+                           go_back_screen
+                           song_select_screen
+                           ""})
+                     ({gamemode in_mode qp_practice}
+                        {ui
+                           go_back_screen
+                           song_select_screen
+                           ""})
+                     ({gamemode in_mode practice}
+                        {ui
+                           go_back_screen
+                           song_select_screen
+                           ""})
+                     ({gamemode in_mode party_shuffle}
+                        {ui
+                           go_back_screen
+                           main_hub_screen
+                           ""})
+                     ({gamemode in_mode campaign}
+                        {if_else
+                           {campaign get_was_launched_into_musiclibrary}
+                           {ui
+                              go_back_screen
+                              song_select_screen
+                              ""}
+                           {ui
+                              go_back_screen
+                              accomplishment_screen
+                              ""}})
+                     {ui
+                        go_back_screen
+                        main_hub_screen
+                        ""}}
+                  {meta_performer clear_venues}}
+               {cond
+                  ({gamemode in_mode practice}
+                     {training_mgr unparticipate_users}
+                     {practice_sel_section_panel clear_state}
+                     {ui goto_screen practice_preloading_screen})
+                  ({gamemode in_mode trainer}
+                     {training_mgr unparticipate_users}
+                     {ui goto_screen preloading_screen})
+                  ({acc_mgr has_new_reward_vignette_festival}
+                     {ui goto_screen campaign_rewardvignette_festival_bs_screen})
+                  {ui goto_screen preloading_screen}}})})}

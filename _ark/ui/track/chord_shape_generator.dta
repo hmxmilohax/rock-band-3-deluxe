@@ -1,0 +1,601 @@
+#define CHORD_SECTIONS
+((edge_left string_low_E gap_E_A string_A gap_A_D string_D gap_D_G string_G gap_G_B string_B gap_B_E string_high_E edge_right))
+#define CHORD_STRINGS
+((string_low_E string_A string_D string_G string_B string_high_E))
+#define CHORD_STRING_POSITIONS
+((unused open fret_1 fret_2 fret_3 fret_4))
+(RndDir
+   (types
+      (chord_shape_generator
+         (editor
+            (string_high_E
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (string_B
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (string_G
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (string_D
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (string_A
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (string_low_E
+               symbol
+               (list CHORD_STRING_POSITIONS)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (fret_num
+               int
+               (range 0 24)
+               (post_sync
+                  {set
+                     [preset_chord]
+                     ''})
+               (refresh preset_chord))
+            (preset_chord
+               object
+               (class Object guitar_chord)
+               (post_sync
+                  {if
+                     {!=
+                        [preset_chord]
+                        ''}
+                     {[preset_chord]
+                        apply}})
+               (refresh string_low_E string_A string_D string_G string_B string_high_E fret_num))
+            (apply
+               script
+               (script
+                  {$this apply})))
+         (string_high_E unused)
+         (string_B unused)
+         (string_G unused)
+         (string_D unused)
+         (string_A unused)
+         (string_low_E unused)
+         (fret_num 0)
+         (preset_chord '')
+         (reset
+            {$this
+               iterate_self
+               (RndDir chord_shape_component)
+               $comp
+               {$comp reset}})
+         (get_string_position
+            ($string)
+            {switch
+               $string
+               (string_low_E
+                  {set
+                     $ret
+                     [string_low_E]})
+               (string_A
+                  {set
+                     $ret
+                     [string_A]})
+               (string_D
+                  {set
+                     $ret
+                     [string_D]})
+               (string_G
+                  {set
+                     $ret
+                     [string_G]})
+               (string_B
+                  {set
+                     $ret
+                     [string_B]})
+               (string_high_E
+                  {set
+                     $ret
+                     [string_high_E]})}
+            $ret)
+         (apply
+            {set $number_placed FALSE}
+            {set $leftmost_finger -1}
+            {set $rightmost_finger -1}
+            {fret_num.txt set_showing FALSE}
+            {foreach
+               $string
+               CHORD_STRINGS
+               {find_elem CHORD_SECTIONS $string $str_idx}
+               {set
+                  $string_position
+                  {$this get_string_position $string}}
+               {{object $string}
+                  set
+                  position_left
+                  $string_position}
+               {{object $string}
+                  set
+                  position_right
+                  $string_position}
+               {{object
+                     {elem
+                        CHORD_SECTIONS
+                        {- $str_idx 1}}}
+                  set
+                  position_right
+                  $string_position}
+               {{object
+                     {elem
+                        CHORD_SECTIONS
+                        {'+' $str_idx 1}}}
+                  set
+                  position_left
+                  $string_position}
+               {if
+                  {&&
+                     {!= $string_position unused}
+                     {!= $string_position open}}
+                  {if
+                     {! $number_placed}
+                     {{object $string}
+                        get_local_pos
+                        $x
+                        $y
+                        $z}
+                     {fret_num.txt set_local_pos $x $y $z}
+                     {{object $string}
+                        get_local_rot
+                        $x
+                        $y
+                        $z}
+                     {fret_num.txt set_local_rot $x $y $z}
+                     {fret_num.txt
+                        set_text
+                        {sprint
+                           [fret_num]}}
+                     {fret_num.txt set_showing TRUE}
+                     {set $number_placed TRUE}}
+                  {set $rightmost_finger $str_idx}
+                  {if
+                     {== $leftmost_finger -1}
+                     {set $leftmost_finger $str_idx}}}}
+            {{object edge_left}
+               set
+               position_left
+               unused}
+            {{object edge_right}
+               set
+               position_right
+               unused}
+            {foreach
+               $sec
+               CHORD_SECTIONS
+               {{object $sec}
+                  set
+                  internal
+                  TRUE}}
+            {if
+               {!= $leftmost_finger -1}
+               {{object
+                     {elem
+                        CHORD_SECTIONS
+                        {- $leftmost_finger 1}}}
+                  set
+                  internal
+                  FALSE}
+               {{object
+                     {elem
+                        CHORD_SECTIONS
+                        {'+' $rightmost_finger 1}}}
+                  set
+                  internal
+                  FALSE}}
+            {foreach
+               $sec
+               CHORD_SECTIONS
+               {{object $sec}
+                  set_width
+                  0.51}
+               {{object $sec}
+                  apply}}))
+      (chord_shape_component
+         (editor
+            (position_left
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (position_right
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (internal_parameters
+               (indent
+                  (gem_type
+                     symbol
+                     (list
+                        (span cap internal_cap none))
+                     (post_sync
+                        {$this
+                           set_gem_type
+                           [gem_type]}))
+                  (base_type
+                     symbol
+                     (list
+                        (span cap none))
+                     (post_sync
+                        {$this
+                           set_base_type
+                           [base_type]}))
+                  (height
+                     float
+                     (range 0 1)
+                     (post_sync
+                        {$this
+                           set_height
+                           [height]}))
+                  (width
+                     float
+                     (range 0 1)
+                     (post_sync
+                        {$this
+                           set_width
+                           [width]}))
+                  (grade
+                     float
+                     (range -1 1)
+                     (post_sync
+                        {$this
+                           set_grade
+                           [grade]}))
+                  (orientation
+                     symbol
+                     (list
+                        (left right))
+                     (post_sync
+                        {$this
+                           set_orientation
+                           [orientation]}))
+                  (internal bool)))
+            (position_heights
+               (indent
+                  (fret_6_height float)
+                  (fret_5_height float)
+                  (fret_4_height float)
+                  (fret_3_height float)
+                  (fret_2_height float)
+                  (fret_1_height float)
+                  (open_height float)))
+            (apply
+               script
+               (script
+                  {$this apply})))
+         (position_left fret_4)
+         (position_right fret_4)
+         (gem_type span)
+         (base_type span)
+         (height 1)
+         (width 1)
+         (grade 0)
+         (orientation left)
+         (fret_6_height 1.4)
+         (fret_5_height 1.2)
+         (fret_4_height 1.0)
+         (fret_3_height 0.8)
+         (fret_2_height 0.6)
+         (fret_1_height 0.4)
+         (open_height 0.0)
+         (internal TRUE)
+         (set_gem_type
+            ($type)
+            {switch
+               $type
+               (span
+                  {config_gem.anim set frame 0})
+               (cap
+                  {config_gem.anim set frame 1})
+               (internal_cap
+                  {config_gem.anim set frame 2})
+               (none
+                  {config_gem.anim set frame -1})}
+            {set
+               [gem_type]
+               $type})
+         (set_base_type
+            ($type)
+            {switch
+               $type
+               (span
+                  {config_base.anim set frame 0})
+               (cap
+                  {config_base.anim set frame 1})
+               (none
+                  {config_base.anim set frame -1})}
+            {set
+               [base_type]
+               $type})
+         (set_height
+            ($val)
+            {set
+               [height]
+               $val}
+            {section_height.anim
+               set
+               frame
+               [height]})
+         (set_width
+            ($val)
+            {set
+               [width]
+               $val}
+            {section_width.anim
+               set
+               frame
+               [width]})
+         (set_grade
+            ($val)
+            {set
+               [grade]
+               $val}
+            {section_grade.msnm
+               set
+               frame
+               {'+'
+                  [grade]
+                  1}})
+         (set_orientation
+            ($val)
+            {if_else
+               {== $val left}
+               {cap_direction.anim set frame 0}
+               {cap_direction.anim set frame 1}}
+            {set
+               [orientation]
+               $val})
+         (reset
+            {$this
+               set_component_type
+               [component_type]}
+            {$this
+               set_height
+               [height]}
+            {$this
+               set_width
+               [width]}
+            {$this
+               set_grade
+               [grade]}
+            {$this
+               set_orientation
+               [orientation]})
+         (get_position_height
+            ($pos)
+            {switch
+               $pos
+               (fret_6
+                  {set
+                     $ret
+                     [fret_6_height]})
+               (fret_5
+                  {set
+                     $ret
+                     [fret_5_height]})
+               (fret_4
+                  {set
+                     $ret
+                     [fret_4_height]})
+               (fret_3
+                  {set
+                     $ret
+                     [fret_3_height]})
+               (fret_2
+                  {set
+                     $ret
+                     [fret_2_height]})
+               (fret_1
+                  {set
+                     $ret
+                     [fret_1_height]})
+               (open
+                  {set
+                     $ret
+                     [open_height]})
+               (unused
+                  {set $ret 0})}
+            $ret)
+         (apply
+            {if_else
+               {==
+                  [position_left]
+                  [position_right]}
+               {do
+                  {if_else
+                     {==
+                        [position_left]
+                        unused}
+                     {do
+                        {$this set_gem_type none}
+                        {$this set_base_type none}}
+                     {if_else
+                        {==
+                           [position_left]
+                           open}
+                        {do
+                           {$this set_gem_type none}
+                           {$this set_base_type span}}
+                        {do
+                           {$this set_gem_type span}
+                           {$this set_base_type span}
+                           {$this set_grade 0}
+                           {$this
+                              set_height
+                              {$this
+                                 get_position_height
+                                 [position_left]}}}}}}
+               {do
+                  {set
+                     $left_height
+                     {$this
+                        get_position_height
+                        [position_left]}}
+                  {set
+                     $right_height
+                     {$this
+                        get_position_height
+                        [position_right]}}
+                  {if_else
+                     {'||'
+                        {==
+                           [position_left]
+                           unused}
+                        {==
+                           [position_right]
+                           unused}}
+                     {do
+                        {$this set_base_type cap}
+                        {if_else
+                           {==
+                              [position_left]
+                              unused}
+                           {$this set_orientation left}
+                           {$this set_orientation right}}}
+                     {$this set_base_type span}}
+                  {if_else
+                     {&&
+                        {> $left_height 0}
+                        {> $right_height 0}}
+                     {do
+                        {$this set_gem_type span}
+                        {if_else
+                           {> $left_height $right_height}
+                           {do
+                              {$this set_height $left_height}
+                              {$this
+                                 set_grade
+                                 {-
+                                    {/ $right_height $left_height}
+                                    1}}}
+                           {do
+                              {$this set_height $right_height}
+                              {$this
+                                 set_grade
+                                 {-
+                                    1
+                                    {/ $left_height $right_height}}}}}}
+                     {do
+                        {if_else
+                           {'||'
+                              {> $left_height 0}
+                              {> $right_height 0}}
+                           {do
+                              {if_else
+                                 [internal]
+                                 {$this set_gem_type internal_cap}
+                                 {$this set_gem_type cap}}
+                              {if_else
+                                 {== $left_height 0}
+                                 {$this set_orientation left}
+                                 {$this set_orientation right}}}
+                           {$this set_gem_type none}}
+                        {$this
+                           set_height
+                           {max $left_height $right_height}}
+                        {$this set_grade 0}}}}}))))
+(Object
+   (types
+      (guitar_chord
+         (editor
+            (string_high_E
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (string_B
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (string_G
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (string_D
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (string_A
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (string_low_E
+               symbol
+               (list CHORD_STRING_POSITIONS))
+            (fret_num
+               int
+               (range 0 24))
+            (apply
+               script
+               (script
+                  {$this apply})))
+         (string_high_E unused)
+         (string_B unused)
+         (string_G unused)
+         (string_D unused)
+         (string_A unused)
+         (string_low_E unused)
+         (fret_num 0)
+         (apply
+            {if
+               {==
+                  {{$this dir}
+                     get_type}
+                  chord_shape_generator}
+               {{$this dir}
+                  set
+                  string_high_E
+                  [string_high_E]}
+               {{$this dir}
+                  set
+                  string_B
+                  [string_B]}
+               {{$this dir}
+                  set
+                  string_G
+                  [string_G]}
+               {{$this dir}
+                  set
+                  string_D
+                  [string_D]}
+               {{$this dir}
+                  set
+                  string_A
+                  [string_A]}
+               {{$this dir}
+                  set
+                  string_low_E
+                  [string_low_E]}
+               {{$this dir}
+                  set
+                  fret_num
+                  [fret_num]}
+               {{$this dir}
+                  set
+                  preset_chord
+                  $this}
+               {{$this dir}
+                  apply}}))))
