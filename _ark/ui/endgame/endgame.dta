@@ -1,30 +1,33 @@
-#include ../../dx/ui/endgame/dx_endgame_macros.dta
 #include endgame_helpers.dta
 {new
    NextSongPanel
    coop_endgame_panel
    (file
       "coop_endgame.milo")
-   (unload_async TRUE)
    (details_showing
       (FALSE FALSE FALSE FALSE))
    (network_mic_setup TRUE)
    (allowed_transition_actions
       (kAction_ViewModify))
    (min_time 5.0)
-   DX_ENDGAME_HANDLES
    ENDGAME_PANEL_HANDLERS
    (enter
       {platform_mgr set_notify_ui_location kOSNotifyBottomCenter}
       {$this set_results}
-      {$this dx_endgame_enter}
-      {$this dx_song_label_setter}
-      {$this dx_endgame_play_player_sfx}
-      {$this dx_endgame_diff_setter}
       {overshell set_use_extended_mic_arrows TRUE}
-      {songs.lbl set fixed_length 1000}
-      {set $dx_restart_allowed TRUE}
-      DX_ENDGAME_SHOW_NEXT_SONG
+      {if_else
+         {>
+            {meta_performer num_songs}
+            1}
+         {songs.lbl
+            set_token_fmt
+            tour_event_songs
+            {meta_performer num_completed}
+            {meta_performer num_songs}}
+         {songs.lbl
+            set
+            text_token
+            ""}}
       {if
          {&&
             {gamemode get loop_setlist}
@@ -96,7 +99,7 @@
             {{slot3 find review.ihp}
                set_showing
                FALSE}}
-         DX_AUTOSAVE})
+         {saveload_mgr autosave}})
    (update_help
       {help.ihp
          set_config
@@ -114,7 +117,6 @@
    (remote_leader_left_msg
       {$this update_help})
    (exit
-      {$this dx_endgame_exit}
       {overshell set_use_extended_mic_arrows FALSE}
       {unless
          {'||'
@@ -125,13 +127,7 @@
                meta_loading_continue_screen}
             {==
                {ui transition_screen}
-               meta_loading_continue_screen}
-            {==
-               {ui current_screen}
-               outro_to_meta_loading_continue_screen}
-            {==
-               {ui transition_screen}
-               outro_to_meta_loading_continue_screen}}
+               meta_loading_continue_screen}}
          {overshell set_active_status kOvershellInactive}}
       {song_highscore.cue stop}
       {platform_mgr set_notify_ui_location kOSNotifyTopRight}
@@ -144,10 +140,7 @@
             {ui_event_mgr has_active_destructive_event}
             {==
                {ui current_screen}
-               meta_loading_continue_screen}
-            {==
-               {ui current_screen}
-               outro_to_meta_loading_continue_screen}}
+               meta_loading_continue_screen}}
          {net_sync set_ui_state kNetUI_InGame}
          {overshell set_active_status kOvershellInSong}})
    (set_tour_results_showing
@@ -195,28 +188,27 @@
             {help.ihp
                set_config
                ()}
-               {if_else
-                  {meta_performer is_set_complete}
-                  {cond
-                     ({gamemode in_mode audition}
-                        {ui_event_mgr trigger_event quit_early})
-                     ({gamemode in_mode tour}
-                        {{tour performer}
-                           complete_quest}
-                        {ui sync_screen tour_challenge_results_screen 0})
-                     ({&&
-                           {gamemode in_mode campaign}
-                           {campaign has_current_goal}}
-                        {ui sync_screen complete_screen 0})
-                     ({meta_performer has_battle}
-                        {ui sync_screen complete_screen 0})
-                     {ui sync_screen meta_loading_continue_screen 0}}
-                  {ui sync_screen preload_nextsong_screen 0}})
+            {if_else
+               {meta_performer is_set_complete}
+               {cond
+                  ({gamemode in_mode audition}
+                     {ui_event_mgr trigger_event quit_early})
+                  ({gamemode in_mode tour}
+                     {{tour performer}
+                        complete_quest}
+                     {ui sync_screen tour_challenge_results_screen 0})
+                  ({&&
+                        {gamemode in_mode campaign}
+                        {campaign has_current_goal}}
+                     {ui sync_screen complete_screen 0})
+                  ({meta_performer has_battle}
+                     {ui sync_screen complete_screen 0})
+                  {ui sync_screen meta_loading_continue_screen 0}}
+               {ui sync_screen preload_nextsong_screen 0}})
          ({&&
                {== $action kAction_Option}
                {$this can_restart}
-               {is_leader_local}
-               $dx_restart_allowed}
+               {is_leader_local}}
             {if_else
                {gamemode in_mode tour}
                {ui push_screen tour_confirm_restart_screen}
@@ -224,22 +216,16 @@
          kDataUnhandled})
    (handle_song_restart
       {meta_performer host_restart_last_song}
-      #ifdef HX_WII
-      {game send_restart_game_net_msg TRUE}
-      {game_restart_from_win}
-      {ui sync_screen preload_nextsong_screen 0}
-      #else
       {game send_restart_game_net_msg}
       {game_restart}
-      {net_sync set_ui_state kNetUI_InGame}
-      #endif)
+      {net_sync set_ui_state kNetUI_InGame})
    (net_songresults_scroll
       ($slot $page)
       {$this set_scroll_expanded_details $slot $page})}
 {new
    BandScreen
    coop_endgame_screen
-   (panels GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel)
+   (panels GAME_SCREEN_PANELS coop_endgame_panel outro_vignette_loader)
    (focus coop_endgame_panel)
    (pending_restart FALSE)
    (TRANSITION_COMPLETE_MSG
@@ -251,16 +237,16 @@
 {new
    BandScreen
    coop_endgame_popups_screen
-   (panels GAME_SCREEN_PANELS_NO_TRACK)
+   (panels GAME_SCREEN_PANELS outro_vignette_loader)
    (enter
       {overshell set_active_status kOvershellInGameShell})
    (poll
       {if
-         ;{&&
+         {&&
             {!
                {ui in_transition}}
-            ;{!
-            ;   {passive_messenger has_messages}}} ; dx - commenting this out prevents waiting for goals to finish before entering endgame
+            {!
+               {passive_messenger has_messages}}}
          {ui goto_screen coop_endgame_screen}})}
 {new
    GameTimePanel
@@ -268,65 +254,22 @@
    (load
       {game set multi_event TRUE})}
 {new
-   UIPanel
-   character_hide_hack_panel
-   (load
-      {$banddirector set_character_hide_hack_enabled TRUE})
-   (unload
-      {$banddirector set_character_hide_hack_enabled FALSE})}
-{new
    BandScreen
    preload_nextsong_screen
-   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel preload_panel #ifdef HX_WII character_hide_hack_panel #endif)
+   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel preload_panel)
    (focus preload_panel)}
 {new
    BandScreen
    preload_failed_nextsong_screen
-   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel)
+   (panels game_time_panel GAME_SCREEN_PANELS coop_endgame_panel)
    (focus coop_endgame_panel)
    (TRANSITION_COMPLETE_MSG
       {meta_performer skip_song}
       {ui goto_screen preload_nextsong_screen})}
-#ifdef HX_WII
-{new
-   BandScreen
-   wii_preload_failed_nextsong_screen
-   (panels game_time_panel GAME_SCREEN_PANELS_NO_TRACK coop_endgame_panel dialog_panel)
-   WII_PRELOADING_FAILED_HANDLERS
-   (SELECT_MSG
-      {ui goto_screen meta_loading_continue_screen})}
-#endif
-#ifdef HX_WII
 {new
    BandScreen
    load_nextsong_screen
-   (panels game_time_panel world_panel character_hide_hack_panel)
-   (focus world_panel)
-   (enter
-      {overshell set_active_status kOvershellInactive})
-   (exit_complete
-      {overshell set_active_status kOvershellInGame})
-   (TRANSITION_COMPLETE_MSG
-      {ui goto_screen load_nextsong_screen_and_panel})}
-{new
-   BandScreen
-   load_nextsong_screen_and_panel
-   (panels game_time_panel world_panel coop_track_panel character_hide_hack_panel)
-   (focus world_panel)
-   (TRANSITION_COMPLETE_MSG
-      {song_mgr
-         add_recent_song
-         {meta_performer song}}
-      {$banddirector load_game_song TRUE}
-      {coop_track_panel set_paused TRUE}
-      {ui
-         goto_screen
-         {gamemode get game_screen}})}
-#else
-{new
-   BandScreen
-   load_nextsong_screen
-   (panels game_time_panel world_panel coop_endgame_panel)
+   (panels game_time_panel world_panel coop_endgame_panel outro_vignette_loader)
    (focus coop_endgame_panel)
    (TRANSITION_COMPLETE_MSG
       {song_mgr
@@ -337,7 +280,6 @@
       {ui
          goto_screen
          {gamemode get game_screen}})}
-#endif
 {new
    BandScreen
    tour_confirm_restart_screen

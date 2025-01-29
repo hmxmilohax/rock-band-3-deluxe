@@ -12,32 +12,15 @@
                (vocals)
                (guitar real_guitar keys))
             (auto_vocals
-               (guitar real_guitar keys drum vocals) ; dx - any instrument anywhere
-               (guitar real_guitar keys drum vocals)
-               (guitar real_guitar keys drum vocals)
-               (guitar real_guitar keys drum vocals)))
+               (guitar real_guitar keys)
+               (drum)
+               (guitar real_guitar keys)
+               (guitar real_guitar keys)))
          (joining_priority 0 3 2 1))
       (type
          (state_handlers
-            #include slot_states.dta
-            #include ../../dx/overshell/dx_main_states.dta
-            #include ../../dx/overshell/dx_speed_states.dta
-            #include ../../dx/overshell/dx_venue_states.dta
-            #include ../../dx/overshell/dx_track_theme_states.dta
-            #include ../../dx/overshell/dx_texture_states.dta
-            #include ../../dx/overshell/dx_color_states.dta
-            #include ../../dx/overshell/dx_advanced_states.dta
-            #include ../../dx/overshell/dx_hud_states.dta
-            #include ../../dx/overshell/dx_controller_states.dta
-            #include ../../dx/overshell/dx_warning_states.dta
-            #include ../../dx/overshell/dx_milo_states.dta
-         )
+            #include slot_states.dta)
          (enter
-            {unless $dx_set_overshell_tex_once
-               {set $dx_set_overshell_tex_once TRUE}
-               {if {== $dx_overshell_theme rb4} OVERSHELL_RB4OS} {if {== $dx_overshell_theme rivals} OVERSHELL_RIVALSOS}
-            }
-            {$this iterate UIList $l {$l set scroll_time 0}}
             {overshell_player_message set_showing FALSE})
          (exit)
          (get_remote_status
@@ -77,9 +60,6 @@
                   (kNetUI_CustomizeCharacter
                      (remote_status_customize_character))
                   (kNetUI_MusicLibrary
-                     #ifdef HX_WII
-                     (remote_status_music_library)
-                     #else
                      {do
                         ($song_name
                            {$user_machine get_current_song_preview})
@@ -90,18 +70,7 @@
                            (remote_status_music_library)
                            {'`'
                               (remote_status_song_preview
-                                 {',' $song_name})}}}
-                     #endif)
-                  #ifdef HX_WII
-                  (kNetUI_FindPlayersQp
-                     (finding_players))
-                  (kNetUI_FindPlayersTour
-                     (finding_players))
-                  (kNetUI_InvitingFriends
-                     (remote_status_inviting_friends))
-                  (kNetUI_InDialog
-                     (remote_status_leader_controlling))
-                  #endif
+                                 {',' $song_name})}}})
                   kDataUnhandled}})
          (print_haq_focus_status
             {do
@@ -137,41 +106,6 @@
          (hide_message
             {{overshell_player_message find hide.trg}
                trigger})
-         #ifdef HX_WII
-         (invitation_notification_visible 0)
-         (show_invitation_notification
-            {if
-               {==
-                  [invitation_notification_visible]
-                  0}
-               {do
-                  {set
-                     [invitation_notification_visible]
-                     1}
-                  {{{overshell_player_message find overshell_player_invitation_notification}
-                        find
-                        show_invitation.trg}
-                     trigger}}})
-         (hide_invitation_notification
-            {if
-               {==
-                  [invitation_notification_visible]
-                  1}
-               {do
-                  {set
-                     [invitation_notification_visible]
-                     0}
-                  {{{overshell_player_message find overshell_player_invitation_notification}
-                        find
-                        hide_invitation.trg}
-                     trigger}}})
-         (invite_received
-            {invitations.lst refresh}
-            kDataUnhandled)
-         (invite_expired
-            {invitations.lst refresh}
-            kDataUnhandled)
-         #endif
          PASSIVE_MESSAGE_SETUP_HANDLERS
          (message_dir overshell_player_message)
          (post_setup)
@@ -183,30 +117,17 @@
          $active
          {if
             {exists beatmatch}
-            {unless $dx_customizer
-               {beatmatch
-                  set_overshell_pause
-                  {&&
-                     {session is_local}
-                     {! {modifier_mgr is_modifier_active mod_nopause}} ; dx - don't pause the game if we are in party mode
-                     {! $dx_in_calibration} ;dx - don't pause the game when entering in-game calibration
-                     {'||'
-                        {$this should_pause}
-                        {platform_mgr guide_showing}}}}}
-            #ifdef HX_WII
-            {if
-               {!
-                  {coop_track_panel is_unloaded}}
-               {coop_track_panel
-                  update_join_in_progress
-                  {$this is_any_slot_joinable}
-                  FALSE}}
-            #else
+            {beatmatch
+               set_overshell_pause
+               {&&
+                  {session is_local}
+                  {'||'
+                     {$this should_pause}
+                     {platform_mgr guide_showing}}}}
             {coop_track_panel
                update_join_in_progress
                {$this is_any_slot_joinable}
-               FALSE}
-            #endif}
+               FALSE}}
          {if
             {gamemode in_mode drum_freestyle}
             {drum_freestyle_panel
@@ -235,35 +156,19 @@
             {&&
                $zero_players
                $active
-               #ifndef HX_WII
                {'||'
                   {!
                      {gamemode in_mode audition}}
                   {!
-                     {audition_mgr has_autoplayer}}}
-               #endif}
+                     {audition_mgr has_autoplayer}}}}
             {if
                {&&
                   $in_game
-                  {! $any_dialog_up}	
-                  {! {modifier_mgr is_modifier_active mod_nopause}}} ;dx - hides "Press START" screen while in-game when pause is disabled
+                  {! $any_dialog_up}}
                {ui_event_mgr trigger_event zero_players}}
             {if
                $zero_players_dialog_up
-               {ui_event_mgr dismiss_dialog_event}}}
-         ;hides score and crowd meter if no players active
-         {if {exists beatmatch} {unless {get_track_panel}
-         {if_else
-            {&&
-               $zero_players
-			   $active}
-            {{{get_track_panel}
-               my_track_panel_dir} 
-               hide_score}
-            {{{get_track_panel}
-               my_track_panel_dir} 
-               show_score}}
-         }}}
+               {ui_event_mgr dismiss_dialog_event}}}}
       {ui
          foreach_screen
          $screen
@@ -286,20 +191,12 @@
                               {!
                                  {session_mgr is_leader_local}}
                               {net_sync is_enabled}}}}}}}}}
-      #ifdef HX_WII
-      {handle
-         (ui
-            overshell_allowing_input
-            {$this is_any_slot_allowing_input_to_shell}
-            {$this get_first_user_allowing_input_to_shell})}
-      #else
       {handle
          (ui
             overshell_allowing_input
             {'||'
                {! $active}
-               {$this is_any_slot_allowing_input_to_shell}})}
-      #endif)
+               {$this is_any_slot_allowing_input_to_shell}})})
    (autohide_msg
       ($enabled)
       {if_else
@@ -375,7 +272,6 @@
          (dest 0)})
    (wait_for_session
       {$this update_all})
-   #ifdef RB3E
    (move_slots
       ($in_game)
       {if_else
@@ -385,14 +281,6 @@
             {slot_positions.anim set_frame 2}
             {slot_positions.anim set_frame 1}}
          {slot_positions.anim set_frame 0}})
-   #else
-   (move_slots
-      ($in_game)
-      {if_else
-         $in_game
-         {slot_positions.anim set_frame DX_IS_VOX_LANED} ; dx - dynamically moves the vocalist's pause menu depending on if they're on a laned instrument or not
-         {slot_positions.anim set_frame 0}})
-   #endif
    (set_position_frame
       ($frame)
       {slot_positions.anim set_frame $frame})

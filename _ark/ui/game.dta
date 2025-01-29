@@ -1,4 +1,3 @@
-#include ../dx/game/dx_game_handles.dta
 #include track_panel.dta
 #include pause_mics_helper.dta
 #define LOSE_MUSIC_SLOW_SEC
@@ -16,20 +15,7 @@
       (0 15 30 45 60))
    (audition_cam_toggle
       {audition_cycle_free_camera})
-   DX_GAME_PANEL_HANDLES
-   #ifdef HX_WII
-   (enter
-      {dx_trainer_checker}
-      {unless $dx_skip_game_setup ;skip game setup if no trainers found to prevent crash
-         {$this dx_on_game_enter}
-      }
-   )
-   (exit
-      {$this dx_on_game_exit}
-   )
-   #endif
    (reset
-      {$this dx_on_game_reset}
       {active_events_parser
          add_sink
          $this
@@ -103,10 +89,7 @@
                   $ex}}}}
       kDataUnhandled)
    (game_over
-      #ifndef HX_WII
       {stagekit_reset}
-      #endif
-      {$this dx_on_game_over}
       {beatmatch
          foreach_active_player
          $p
@@ -128,14 +111,11 @@
          track_end.cue})
    (game_won
       {$this game_won_common}
-      {$this dx_on_game_won}
       kDataUnhandled)
    (game_won_finale
       {$this game_won_common}
-      {$this dx_on_game_won}
       kDataUnhandled)
    (game_lost
-      {$this dx_on_game_over}
       {beatmatch set_realtime TRUE}
       {beatmatch
          foreach_active_player
@@ -159,31 +139,25 @@
       {handle
          ($this game_outro)})
    (game_outro
-      {if $dx_customizer
-         {game_restart}
-      }
-      {if {! $dx_customizer}
-         {if
-            {&&
-               {==
-                  {ui current_screen}
-                  {gamemode get game_screen}}
-               {!
-                  {ui in_transition}}}
-            {beatmatch set_ready_for_exit TRUE}}
-         {beatmatch
-            foreach_active_player
-            $p
-            {$p disable_controller}}
-         {$this dx_on_game_over}
-         {ui
-            sync_screen
-            {if_else
-               {$this lost}
-               {gamemode get lose_screen}
-               {gamemode get win_screen}}
-          1}
-      }
+      {if
+         {&&
+            {==
+               {ui current_screen}
+               {gamemode get game_screen}}
+            {!
+               {ui in_transition}}}
+         {beatmatch set_ready_for_exit TRUE}}
+      {beatmatch
+         foreach_active_player
+         $p
+         {$p disable_controller}}
+      {ui
+         sync_screen
+         {if_else
+            {$this lost}
+            {gamemode get lose_screen}
+            {gamemode get win_screen}}
+         1}
       kDataUnhandled)
    (disable_all_controllers
       {beatmatch
@@ -208,9 +182,6 @@
    (file
       "../world/world.milo")
    (unload_async TRUE)
-   (enter
-      {world_panel set_showing {! {== $dx_venue none}}}
-   )
    (unload
       {if
          $bandwardrobe
@@ -220,12 +191,6 @@
 ((disable_screen_saver TRUE)
    PAUSE_ON_MIC_DISCONNECT
    (enter
-      #ifndef HX_WII
-      {dx_trainer_checker}
-      {unless $dx_skip_game_setup  ;skip game setup if no trainers found to prevent crash
-         {$this dx_on_game_enter}
-      }
-      #endif
       {$this set_showing TRUE}
       {set
          [delayed_mic_check]
@@ -252,9 +217,6 @@
       {handle
          ($this my_enter)})
    (exit
-      #ifndef HX_WII
-      {$this dx_on_game_exit}
-      #endif
       {platform_mgr remove_sink $this ui_changed}
       {platform_mgr remove_sink $this microphones_changed}
       {synth stop_playback_all_mics}
@@ -274,21 +236,42 @@
    (on_guide_change
       {overshell update_all}
       PAUSE_MICS_ON_GUIDE_CHANGE))
-#ifdef HX_WII
-#define GAME_SCREEN_PANELS
-(world_panel coop_track_panel game sync_audio_net_panel)
-#else
+{new
+   UIPanel
+   outro_vignette_loader
+   (chosen_vignette '')
+   (load
+      {set
+         [chosen_vignette]
+         ''}
+      {if
+         {meta_performer is_set_complete}
+         {meta_performer upload_debug_stats}
+         {set
+            [chosen_vignette]
+            {interstitial_mgr pick_interstitial_between_screens meta_loading_outro song_select_screen}}
+         #ifndef _SHIP
+         {if
+            {ui get_vignettes_showing}
+            {print
+               "Loading outro vignette: "
+               [chosen_vignette]
+               "\n"}
+            {[chosen_vignette]
+               load}}
+         #else
+         {[chosen_vignette]
+            load}
+         #endif})
+   (unload
+      {if
+         {!=
+            [chosen_vignette]
+            ''}
+         {[chosen_vignette]
+            unload}})}
 #define GAME_SCREEN_PANELS
 (game world_panel coop_track_panel sync_audio_net_panel)
-#endif
-; I hate wii
-#ifdef HX_WII
-#define GAME_SCREEN_PANELS_NO_TRACK
-(world_panel game sync_audio_net_panel)
-#else
-#define GAME_SCREEN_PANELS_NO_TRACK
-(game world_panel sync_audio_net_panel)
-#endif
 {new
    BandScreen
    game_screen
@@ -333,7 +316,6 @@
    restart_sync_audio_net_screen
    (panels)
    (enter
-      {dx_send_leader_song_speed}
       {overshell set_active_status kOvershellInactive}
       {{gamemode get game_screen}
          set_showing
@@ -353,7 +335,7 @@
 {new
    BandScreen
    restart_game_screen
-   (panels GAME_SCREEN_PANELS_NO_TRACK sync_audio_net_screen_panel)
+   (panels GAME_SCREEN_PANELS sync_audio_net_screen_panel)
    (load_panels
       {overshell set_active_status kOvershellInactive}
       {$this set_showing FALSE})
@@ -501,15 +483,6 @@
       {print
          "\n\nVOCAL SCORE SONG DONE!\n"}
       {exit})}
-#ifdef HX_WII
-{new
-   UIPanel
-   mydta_start_in_game_panel
-   (load
-      {content_mgr start_refresh})
-   (is_loaded
-      {content_mgr refresh_done})}
-#else
 {new
    UIPanel
    mydta_start_in_game_panel
@@ -523,7 +496,7 @@
          [state]
          saveload}
       {saveload_mgr activate}
-      DX_AUTOSAVE)
+      {saveload_mgr autosave})
    (poll
       {switch
          [state]
@@ -542,7 +515,6 @@
                   done}
                {{ui current_screen}
                   ready_for_game}})})}
-#endif
 {new
    BandScreen
    mydta_start_in_game_screen
