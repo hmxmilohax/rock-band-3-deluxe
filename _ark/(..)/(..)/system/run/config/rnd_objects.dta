@@ -1,0 +1,3947 @@
+(Anim
+   (description
+      "Base class for animatable objects. Anim objects change\n        their state or other objects.")
+   (allowed_dirs)
+   (editor
+      (rate
+         int
+         (list RATE_ENUM)
+         (help
+            "Rate to animate"))
+      (frame
+         float
+         (help
+            "Frame of animation")
+         (range
+            0
+            {$this end_frame})
+         (no_test)))
+   (views
+      (animating
+         {$this is_animating}
+         ("current frame"
+            {$this frame}))))
+(Poll
+   (description
+      "Abstract base class for pollable RND objects")
+   (allowed_dirs)
+   (editor
+      (enter
+         script
+         (script
+            {$this enter}))
+      (exit
+         script
+         (script
+            {$this exit})))
+   (types))
+(PollAnim
+   (description
+      "Class that drives Anims with time based on their rate.")
+   (superclasses Anim Poll)
+   (ext pa)
+   (editor
+      (anims
+         (array
+            object
+            (class Anim))
+         (help
+            "List of anims that will have SetFrame called on them according to their rate and the TheTaskMgr.Seconds or Beat")))
+   (types))
+(PropAnim
+   (description
+      "Animate any properties on target object")
+   (ext anim)
+   (superclasses Anim)
+   (editor
+      (loop
+         bool
+         (help
+            "Do I self loop on SetFrame")))
+   (types
+      (song_anim
+         (song TRUE))
+      (vignette_lipsync
+         (editor
+            (clip
+               object
+               (class CharClip)
+               (help
+                  "The clip that this propanim goes along with"))
+            (lip_sync
+               object
+               (class CharLipSync)
+               (help
+                  "The lipsync object to set from this propanim"))
+            (setup_from_clip
+               script
+               (script
+                  {$this setup_from_clip})))
+         (clip '')
+         (lip_sync '')
+         (setup_from_clip
+            {do
+               {set
+                  $target
+                  [lip_sync]}
+               {set
+                  $num_frames
+                  {'*'
+                     {[clip]
+                        get
+                        length_seconds}
+                     30}}
+               {foreach
+                  $viseme
+                  {$target get viseme_list}
+                  {set
+                     $temp
+                     {array 0}}
+                  {push_back $temp $viseme}
+                  {if
+                     {!
+                        {$this has_keys $target $temp}}
+                     {$this add_keys $target $temp kPropFloat}
+                     {$this set_key_val $target $temp 0 0.0}
+                     {$this set_key_val $target $temp $num_frames 0.0}}}}))
+      (song_facial_exp
+         (song TRUE)
+         (editor
+            (lip_sync
+               object
+               (class CharLipSync)
+               (help
+                  "The lipsync object to set from this propanim")))
+         (lip_sync '')
+         (setup
+            {if_else
+               {$tool_song song_name}
+               {do
+                  {set
+                     $target
+                     [lip_sync]}
+                  {set
+                     $num_frames
+                     {'*'
+                        {$tool_song get song_end_frame}
+                        30}}
+                  {foreach
+                     $viseme
+                     {$target get viseme_list}
+                     {set
+                        $temp
+                        {array 0}}
+                     {push_back $temp $viseme}
+                     {if
+                        {!
+                           {$this has_keys $target $temp}}
+                        {$this add_keys $target $temp kPropFloat}
+                        {$this set_key_val $target $temp 0 0.0}
+                        {$this set_key_val $target $temp $num_frames 0.0}}}}
+               {notify
+                  "No song selected in anim bar- can't set up lip sync.  Please select the song and try again."}}))))
+(AnimFilter
+   (description
+      "An AnimFilter object modifies the playing of another animatable object")
+   (superclasses Anim)
+   (ext filt)
+   (types)
+   (editor
+      (anim
+         object
+         (post_sync
+            {milo update_open_editor $this})
+         (list
+            {$this
+               safe_anims
+               {if_else
+                  {exists milo}
+                  {milo cur_dir}
+                  {$this dir}}})
+         (help
+            "Animatable object that receives filtered frame"))
+      (start
+         float
+         (help
+            "Overriden start frame of animation"))
+      (end
+         float
+         (help
+            "Overriden end frame of animation"))
+      (offset
+         float
+         (help
+            "Amount to offset frame for animation"))
+      (scale
+         float
+         (read_only
+            {!=
+               [period]
+               0.0})
+         (help
+            "Multiplier to speed of animation"))
+      (period
+         float
+         (refresh scale)
+         (help
+            "Alternative to scale, overriden period of animation"))
+      (snap
+         float
+         (help
+            "Snap frame to nearest multiple"))
+      (jitter
+         float
+         (help
+            "Jitter frame randomly up to this amount"))
+      (type
+         int
+         (list ANIM_ENUM)
+         (help
+            "How to treat the frame outside of start and end"))))
+(Cam
+   (description
+      "A Camera object is drawable and transformable. When drawn\n                 it sets up projection and clipping parameters for\n                 subsequent draw siblings.")
+   (superclasses Trans)
+   (ext cam)
+   (types)
+   (editor
+      (near_plane
+         float
+         (help
+            "The distance in world coordinates to the near clipping\n            plane. The near/far ratio is limited to 1:1000 to preserve\n            Z-buffer resolution."))
+      (far_plane
+         float
+         (help
+            "The distance in world coordinates to the far clipping\n            plane. The near/far ratio is limited to 1:1000 to preserve\n            Z-buffer resolution. Note that on the PS2, object polys are\n            culled rather than clipped to the far plane."))
+      (y_fov float)
+      (z_range
+         VECTOR2
+         (help
+            "The part of the Z-buffer to use, in normalized\n            coordinates. It can be useful to draw a scene where the near\n            and far planes must exceed the 1:1000 ratio (so multiple\n            cameras are used to draw farthest to nearest objects, each\n            using a closer range of the z-buffer) or to leave some\n            z-buffer for HUD overlay objects."))
+      (screen_rect
+         RECT
+         (help
+            "The area of the screen in normalized coordinates\n            (0 to 1) to draw into."))
+      (set_tool_cam
+         script
+         (script
+            {milo set tool_cam $this}
+            {milo update_objects TRUE})
+         (hide
+            {==
+               {milo get tool_cam}
+               $this})
+         (help
+            "Applies this cam as the tool view."))
+      (reset_tool_cam
+         script
+         (script
+            {milo
+               set
+               tool_cam
+               ""}
+            {milo update_objects TRUE})
+         (hide
+            {==
+               {milo get tool_cam}
+               ""})
+         (help
+            "Resets the tool view to be same as Milo's view."))))
+(CamAnim
+   (description
+      "A CamAnim object animates Camera properties.")
+   (superclasses Anim)
+   (ext cnm)
+   (types))
+(SoftParticles
+   (description
+      "Renders the specified particles with soft edges.")
+   (superclasses Draw)
+   (ext soft)
+   (types)
+   (editor
+      (particles
+         (array
+            object
+            (class Draw))
+         (help
+            "The list of particle objects to draw"))
+      (blend_mode
+         int
+         (list BLEND_ENUM)
+         (read_only TRUE)
+         (help
+            "Blending to use for the particle system"))))
+(TexRenderer
+   (description
+      "TexRender renders a draw and cam into a texture.")
+   (superclasses Anim Draw)
+   (ext rndtex)
+   (types)
+   (editor
+      (draw
+         object
+         (class Draw)
+         (help
+            "Draw Object to render to texture")
+         (hide
+            {$this is_a PatchRenderer}))
+      (cam
+         object
+         (class Cam)
+         (help
+            "Camera to use, if you want specific one, defaults to proxy cam, if none and draw is proxy"))
+      (mirror_cam
+         object
+         (class Cam)
+         (help
+            "We will mirror this cam about whatever mesh is associated with our output texture to automatically position the render-2-tex cam for mirroring"))
+      (output_texture
+         object
+         (class Tex)
+         (help
+            "Texture to write to")
+         (list
+            {$this get_render_textures})
+         (pre_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  reset_tex_render}})
+         (post_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  set_tex_render}
+               {[output_texture]
+                  set_rendered}}))
+      (draw_world_only
+         bool
+         (help
+            "Renders the texture only on 'world' frames, while skipping rendering on post processing frames"))
+      (draw_pre_clear
+         bool
+         (help
+            "Renders the texture before the rest of the scene is rendered. Useful for rendering large textures"))
+      (force
+         bool
+         (help
+            "Force rendering every frame"))
+      (imposter_height
+         float
+         (help
+            "Height for imposter rendering with current camera"))
+      (draw_responsible
+         bool
+         (help
+            "If true, exclusively draws the draw, if false the scene will draw it too, use with caution!"))
+      (no_poll
+         bool
+         (help
+            "If [draw] will not get enter, exit, or poll automatically, it will be up to script hooks to do any of that"))
+      (prime_draw
+         bool
+         (help
+            "Check this if rendering multiple characters to a texture.  Will draw 2x if checked."))
+      (force_mips
+         bool
+         (help
+            "Generate mip maps for the texture."))))
+(TexBlendController
+   (description
+      "Defines the two objects that will be used to determine the distance for the texture blend.")
+   (types)
+   (ext texblendctl)
+   (editor
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "The mesh object to render to the texture. This should be an unskinned mesh with UV coordinates that match the source mesh"))
+      (reference_object_1
+         object
+         (class Trans)
+         (help
+            "The first object to use as a distance reference")
+         (refresh base_distance min_distance max_distance)
+         (read_only
+            [override_map]))
+      (reference_object_2
+         object
+         (class Trans)
+         (help
+            "The second object to use as a distance reference")
+         (refresh base_distance min_distance max_distance)
+         (read_only
+            [override_map]))
+      (base_distance
+         float
+         (help
+            "The base distance used to compute which blending to use")
+         (read_only TRUE))
+      (min_distance
+         float
+         (help
+            "The distance where the 'near' texture map will be fully visible")
+         (read_only
+            [override_map]))
+      (max_distance
+         float
+         (help
+            "The distance where the 'far' texture map will be fully visible")
+         (read_only
+            [override_map]))
+      (set_base_distance
+         script
+         (help
+            "Sets the reference distance value from the current positions.")
+         (script
+            {$this set_base_distance})
+         (refresh base_distance min_distance max_distance)
+         (read_only
+            [override_map]))
+      (set_min_distance
+         script
+         (help
+            "Sets the min distance value from the current positions.")
+         (script
+            {$this set_min_distance})
+         (refresh min_distance)
+         (read_only
+            [override_map]))
+      (set_max_distance
+         script
+         (help
+            "Sets the max distance value from the current positions.")
+         (script
+            {$this set_max_distance})
+         (refresh max_distance)
+         (read_only
+            [override_map]))
+      (set_all_distances
+         script
+         (help
+            "Sets ALL distance values from the current positions.")
+         (script
+            {$this set_all_distances})
+         (refresh base_distance min_distance max_distance)
+         (read_only
+            [override_map]))
+      (override_map
+         object
+         (class Tex)
+         (help
+            "If set, ignores all other fields and forces 100% blend to it")
+         (refresh))))
+(TexBlender
+   (description
+      "Renderable texture used to composite pieces of texture maps based on the distance between bones or other animatiable objects")
+   (superclasses Draw)
+   (types)
+   (ext texblend)
+   (editor
+      (owner
+         object
+         (class Draw)
+         (help
+            "The owner of this texture blend. This is used to determine if the texture blend is visible. For example, if this texture blend is used in the head object of a character, set the owner to be the head object."))
+      (base_map
+         object
+         (class Tex)
+         (help
+            "The base texture map"))
+      (near_map
+         object
+         (class Tex)
+         (help
+            "The texture map to use when the constraints are closer than the default distance"))
+      (far_map
+         object
+         (class Tex)
+         (help
+            "The texture map to use when the constraints are further than the default distance"))
+      (output_texture
+         object
+         (class Tex)
+         (help
+            "The final result output texture")
+         (list
+            {$this get_render_textures})
+         (pre_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  reset_tex_render}})
+         (post_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  set_tex_render}
+               {[output_texture]
+                  set_rendered}}))
+      (controller_list
+         (array
+            object
+            (class TexBlendController))
+         (help
+            "The list of controller objects used to render pieces of a mesh to the output texture"))
+      (controller_influence
+         float
+         (help
+            "Global strength of the blending effect for each controller")
+         (range 0.0 1.0))))
+(MotionBlur
+   (description
+      "Contains a list of objects to apply object based motion blur")
+   (superclasses Draw)
+   (types)
+   (ext blur)
+   (editor
+      (draw_list
+         (array
+            object
+            (list
+               {$this allowed_drawable}))
+         (help
+            "The list of objects to render motion blur"))))
+(AmbientOcclusion
+   (description
+      "Computes ambient occlusion and automatic tessellation. Also stores AO configuration options.")
+   (types)
+   (ext ao)
+   (editor
+      (dont_cast_ao
+         (array
+            object
+            (list
+               {$this get_valid_objects}))
+         (help
+            "These objects will NOT cast shadows."))
+      (dont_receive_ao
+         (array
+            object
+            (list
+               {$this get_valid_objects}))
+         (help
+            "These objects will NOT receive shadows."))
+      (tessellate
+         (array
+            object
+            (list
+               {$this get_valid_objects}))
+         (help
+            "These objects will be automatically tessellated."))
+      (ignore_transparent
+         bool
+         (help
+            "Ignore transparent objects when casting shadows."))
+      (ignore_prelit
+         bool
+         (help
+            "Ignore prelit materials when receiving shadows."))
+      (ignore_hidden
+         bool
+         (help
+            "Ignore hidden objects when casting or receiving shadows."))
+      (intersect_back_faces
+         bool
+         (help
+            "If true, this will cause back faces of triangles to be added. This will more than double the calculation time."))
+      (use_mesh_normals
+         bool
+         (read_only TRUE)
+         (help
+            "Use the mesh normals when calculating. Otherwise, smoothed normals will be re-generated for each mesh."))
+      (tesselation_settings
+         (indent
+            (tessellate_tri_limit
+               int
+               (range 2 32)
+               (help
+                  "The maximum number of polys tessellation will generate. This is a multiplier of the current poly count. A value of 2 will generate a maximum of 2x the polys."))
+            (tessellate_tri_error
+               float
+               (range 0.1 15.0)
+               (help
+                  "The error threshold for the ambient occlusion calculation. Error larger than this value will result in a triangle being split."))
+            (tessellate_tri_large
+               float
+               (range 9.0 500.0)
+               (help
+                  "Triangles larger than this size will always be split."))
+            (tessellate_tri_small
+               float
+               (range 1.0 500.0)
+               (help
+                  "Triangles smaller than this size will not be split any further."))))
+      (calculate
+         script
+         (help
+            "Perform ambient occlusion and auto tessellation.")
+         (script
+            {$this calculate}))))
+(Draw
+   (description
+      "Base class for drawable objects. Draw objects either\n        render polys or determine rendering state.")
+   (allowed_dirs)
+   (editor
+      (showing
+         bool
+         (help
+            "Whether the object and its Draw children are drawn or collided with.")
+         (post_sync
+            {milo invalidate_listers_and_trees}))
+      (draw_order
+         float
+         (help
+            "Draw order within proxies, lower numbers are drawn first, so assign numbers from the outside-in (unless translucent), to minimize overdraw.  In groups, draw_order will be ignored unless you explicitly click the sort button."))
+      (sphere
+         SPHERE
+         (help
+            "bounding sphere"))
+      (update_sphere
+         script
+         (help
+            "Calculates the bounding sphere for the object.")
+         (script
+            {milo record $this update_sphere}
+            {$this update_sphere})
+         (refresh sphere)))
+   (views
+      (showing
+         ("Showing"
+            [showing])
+         ("Draw Order"
+            [draw_order]))))
+(Environ
+   (description
+      "An environment object is drawable. When drawn it sets up\n        dynamic lighting and fogging for subsequently drawn siblings.")
+   (ext env)
+   (types)
+   (editor
+      (lights_real
+         (array
+            object
+            (list
+               {$this allowable_lights_real}))
+         (help
+            "Real dynamic lights for this environment"))
+      (lights_approx
+         (array
+            object
+            (list
+               {$this allowable_lights_approx}))
+         (help
+            "Approximated dynamic lights for this environment"))
+      (ambient_color
+         color
+         (help
+            "Ambient color for this environment"))
+      (ambient_alpha
+         float
+         (help
+            "Ambient color alpha for this environment")
+         (range 0.0 1.0))
+      (fog_enable
+         bool
+         (help
+            "Whether fog is enabled for this environment")
+         (refresh fog_color fog_start fog_end))
+      (fog_color
+         color
+         (read_only
+            {!
+               {$this get fog_enable}})
+         (help
+            "Fog color"))
+      (fog_start
+         float
+         (read_only
+            {!
+               {$this get fog_enable}})
+         (help
+            "Fog start distance"))
+      (fog_end
+         float
+         (read_only
+            {!
+               {$this get fog_enable}})
+         (help
+            "Fog end distance"))
+      (ambient_fog_owner
+         object
+         (class Environ)
+         (help
+            "Share ambient and fog parameters with this environ")
+         (obj_flags no_null)
+         (no_test))
+      (animate_from_preset
+         bool
+         (help
+            "Whether this environment should be animated by light presets"))
+      (ng
+         (indent
+            (fade_settings
+               (indent
+                  (fade_out
+                     bool
+                     (help
+                        "Fade out the scene over distance"))
+                  (fade_start
+                     float
+                     (help
+                        "World space distance from camera to start fading"))
+                  (fade_end
+                     float
+                     (help
+                        "World space distance fade out completely"))
+                  (fade_max
+                     float
+                     (help
+                        "Maximum opacity of faded objects")
+                     (range 0 1))
+                  (fade_ref
+                     object
+                     (class Trans)
+                     (help
+                        "reference object to left/right fade along x-axis"))
+                  (left_out
+                     float
+                     (help
+                        "distance along negative x to start fading in"))
+                  (left_opaque
+                     float
+                     (help
+                        "distance along negative x to become fully opaque"))
+                  (right_opaque
+                     float
+                     (help
+                        "distance along positive x to become fully opaque"))
+                  (right_out
+                     float
+                     (help
+                        "distance along positive x to start fading in")))
+               (alias
+                  "fade settings")
+               (help
+                  "Settings for environment fade"))
+            (color_adjust
+               (indent
+                  (use_color_adjust
+                     bool
+                     (help
+                        "Enable color adjust")
+                     (refresh color_adjust_properties))
+                  (color_adjust_properties
+                     (indent
+                        (hue
+                           float
+                           (help
+                              "Hue: -180 to 180, 0.0 is neutral")
+                           (range -180 180))
+                        (saturation
+                           float
+                           (help
+                              "Saturation: -100 to 100, 0.0 is neutral")
+                           (range -100 100))
+                        (lightness
+                           float
+                           (help
+                              "Lightness: -100 to 100, 0.0 is neutral")
+                           (range -100 100))
+                        (contrast
+                           float
+                           (help
+                              "Contrast: -100 to 100, 0.0 is neutral")
+                           (range -100 100))
+                        (brightness
+                           float
+                           (help
+                              "Brightness: -100 to 100, 0.0 is neutral")
+                           (range -100 100))
+                        (levels
+                           (indent
+                              (in_lo
+                                 color
+                                 (help
+                                    "Input low end"))
+                              (in_hi
+                                 color
+                                 (help
+                                    "Input high end"))
+                              (out_lo
+                                 color
+                                 (help
+                                    "Output low end"))
+                              (out_hi
+                                 color
+                                 (help
+                                    "Output high end")))))
+                     (read_only
+                        {!
+                           [use_color_adjust]}))))
+            (ambient_occlusion_settings
+               (indent
+                  (ao_strength
+                     float
+                     (range 0 4)
+                     (help
+                        "Strength of the ambient occlusion effect"))
+                  (toggle_ao
+                     script
+                     (help
+                        "Toggle ambient occlusion for testing purposes ONLY.")
+                     (script
+                        {$this toggle_ao})))
+               (alias
+                  "ambient occlusion settings")
+               (help
+                  "Settings for manipulating the ambient occlusion properties of the environment"))
+            (tonemapping
+               (indent
+                  (tone_map
+                     bool
+                     (help
+                        "Enable color adjust")
+                     (alias
+                        "use tone mapping")
+                     (refresh tonemapping_properties))
+                  (tonemapping_properties
+                     (indent
+                        (intensity_rate
+                           float
+                           (range 0 1)
+                           (help
+                              "The rate the eye adjusts to scene lighting changes over time. The higher the value, the longer it takes the retina to adapt")
+                           (alias
+                              "eye adjust"))
+                        (exposure
+                           float
+                           (range 0 5)
+                           (help
+                              "The exposure value to use when tone-mapping. Adjusts the overall exposure level of the scene"))
+                        (white_point
+                           float
+                           (range 0 10)
+                           (help
+                              "The white point value to use when tone-mapping. Pixels brighter than this value will be clamped to white and bloom out")
+                           (alias
+                              "white point")))
+                     (read_only
+                        {!
+                           [tone_map]})))
+               (alias
+                  "tone mapping")
+               (help
+                  "Settings for changing the lighting exposure properties")))
+         (help
+            "Next-generation graphics settings"))))
+(EnvAnim
+   (description
+      "An EnvAnim object animates Environ properties.")
+   (superclasses Anim)
+   (ext enm)
+   (types))
+(Flare
+   (description
+      "Flare objects are particles that are rendered based on\n        the visibility of their center.<br />\n        Use them to implement sun flare peeking through tree leaves and\n        around buildings, flares on lamps and stage lights that get\n        occluded by characters, etc.  Flares should be drawn last in a\n        frame, and since they depend on the z-buffer for visibility\n        testing, previously drawn translucent or cutout objects must\n        properly use translucent or SrcAlphaCutout materials.")
+   (superclasses Draw Trans)
+   (ext flare)
+   (types)
+   (editor
+      (mat
+         object
+         (class Mat)
+         (help
+            "Material for flare"))
+      (sizes
+         VECTOR2
+         (help
+            "Size range of the flare.  If the sizes are unequal, the size will change depending on how much the camera faces the flare's Y axis."))
+      (steps
+         int
+         (help
+            "Number of steps for the flare to fade in and out."))
+      (range
+         VECTOR2
+         (help
+            "Fade range of the flare.  The flare will fade within this distance from the camera.  Past the max range, it will fade to 0."))
+      (offset
+         float
+         (help
+            "Offsets position of rendered flare towards the camera."))
+      (point_test
+         bool
+         (help
+            "Controls whether or not a point test is performed for the flare.  The test takes one world frame to take effect."))))
+(Font
+   (description
+      "Font objects determine the appearance for Text objects.")
+   (ext font)
+   (editor
+      (mat
+         object
+         (class Mat)
+         (help
+            "Material for font")
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (texture_owner
+         object
+         (class Font)
+         (help
+            "Font owner of the texture to use")
+         (obj_flags no_null)
+         (no_test)
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (monospace
+         bool
+         (help
+            "Font is monospaced.")
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (base_kerning
+         float
+         (help
+            "Base kerning of the font.")
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (packed
+         bool
+         (help
+            "Font texture is packed")
+         (read_only TRUE))
+      (cell_width
+         int
+         (help
+            "Texel width of character (if un-packed)")
+         (read_only
+            [packed])
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (cell_height
+         int
+         (help
+            "Texel height of character (if un-packed)")
+         (read_only
+            [packed])
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (chars_in_map
+         string
+         (help
+            "List of characters this font uses")
+         (read_only
+            [packed])
+         (pre_sync
+            {milo update_text $this})
+         (post_sync
+            {milo update_text $this}))
+      (bleed_test
+         script
+         (script
+            {$this bleed_test})
+         (help
+            "Tests the font for bleeding over edges.")))
+   (types
+      (imported_font
+         (editor
+            (font_name
+               string
+               (help
+                  "Font name used to import this font.")
+               (read_only TRUE))
+            (font_size
+               int
+               (help
+                  "Size of the font used to import this font.")
+               (read_only TRUE))
+            (bold
+               bool
+               (help
+                  "Bold state of the font used to import this font.")
+               (read_only TRUE))
+            (italics
+               bool
+               (help
+                  "Italics stat of the font used to import this font.")
+               (read_only TRUE))
+            (padding
+               (indent
+                  (left int)
+                  (right int)
+                  (top int)
+                  (bottom int))
+               (read_only TRUE)))
+         (font_name
+            "")
+         (font_size 12)
+         (bold FALSE)
+         (italics FALSE)
+         (left 0)
+         (right 0)
+         (top 0)
+         (bottom 0))))
+(Generator
+   (description
+      "A Generator object flies out object instances along a path.")
+   (superclasses Anim Draw Trans)
+   (ext gen)
+   (types))
+(Group
+   (description
+      "Represents a group of objects to which to propogate\n        animation and messages.")
+   (superclasses Anim Draw Trans)
+   (ext grp)
+   (types)
+   (editor
+      (environ
+         object
+         (class Environ))
+      (draw_only
+         object
+         (class Draw)
+         (list
+            {$this get_draws})
+         (help
+            "if set, only draws this member of the group"))
+      (sort_draws
+         script
+         (script
+            {$this sort_draws})
+         (help
+            "Sort objects by draw_order and material")
+         (post_sync
+            {milo update_objects}))
+      (lod
+         object
+         (class Draw)
+         (obj_flags no_this)
+         (help
+            "Object to draw instead below lod_screen_size"))
+      (lod_screen_size
+         float
+         (help
+            "Ratio of screen height for lod"))
+      (sort_in_world
+         bool
+         (help
+            "Sort by distance to current camera per frame.\n\n                              This has a CPU cost if there are many objects."))))
+(Light
+   (description
+      "Light objects are added to environments for drawing.")
+   (superclasses Trans)
+   (ext lit)
+   (types)
+   (editor
+      (type
+         int
+         (list LIGHT_TYPE_ENUM)
+         (help
+            "Type of dynamic lighting")
+         (refresh projection))
+      (range
+         float
+         (help
+            "Falloff distance for point lights"))
+      (falloff_start
+         float
+         (help
+            "Distance at which falloff starts for point lights"))
+      (color
+         color
+         (help
+            "Color of light")
+         (refresh intensity)
+         (no_test))
+      (intensity
+         float
+         (help
+            "Intensity of light color")
+         (refresh color)
+         (no_test))
+      (color_owner
+         object
+         (class Light)
+         (help
+            "Master for light color and intensity")
+         (obj_flags no_null)
+         (no_test))
+      (projection
+         (indent
+            (shadow_objects
+               (array
+                  object
+                  (class Draw))
+               (help
+                  "These objects will cast shadows for the projected light")
+               (hide
+                  {!=
+                     [type]
+                     kLightProjected}))
+            (projected_blend
+               int
+               (list LIGHT_BLEND_ENUM)
+               (alias
+                  "blend")
+               (help
+                  "Specifies blending for the projected light")
+               (refresh texture texture_xfm))
+            (topradius
+               float
+               (help
+                  "Fake cone small radius at the source")
+               (hide
+                  {!=
+                     [type]
+                     kLightProjected}))
+            (botradius
+               float
+               (help
+                  "Fake cone big radius at the far end")
+               (hide
+                  {!=
+                     [type]
+                     kLightProjected}))
+            (texture
+               object
+               (class Tex)
+               (help
+                  "Projected texture")
+               (read_only
+                  {!=
+                     [projected_blend]
+                     kLightAdd})
+               (hide
+                  {!=
+                     [type]
+                     kLightProjected}))
+            (cube_texture
+               object
+               (class CubeTex)
+               (help
+                  "Projected cube map texture")
+               (hide
+                  {!=
+                     [type]
+                     kLightPoint}))
+            (texture_xfm
+               TRANSFORM
+               (read_only
+                  {!=
+                     [projected_blend]
+                     kLightAdd})
+               (hide
+                  {!=
+                     [type]
+                     kLightProjected})))
+         (hide
+            {&&
+               {!=
+                  [type]
+                  kLightPoint}
+               {!=
+                  [type]
+                  kLightProjected}})
+         (help
+            "Projection parameters"))
+      (animate_color_from_preset
+         bool
+         (help
+            "Animation authority for LightPreset"))
+      (animate_position_from_preset
+         bool
+         (help
+            "Animation authority for LightPreset"))
+      (animate_range_from_preset
+         bool
+         (help
+            "Animate light's range from a LightPreset"))))
+(LightAnim
+   (description
+      "LightAnim objects animate light object properties using keyframe interpolation.")
+   (superclasses Anim)
+   (ext lnm)
+   (types))
+(Line
+   (description
+      "Line objects represent 3D lines with thickness, perspective, and optional end caps.")
+   (superclasses Draw Trans)
+   (ext line)
+   (types))
+(Mat
+   (description
+      "Material objects determine texturing, blending, and the\n        effect of lighting on drawn polys.")
+   (ext mat)
+   (types)
+   (editor
+      (color
+         color
+         (help
+            "Base material color"))
+      (alpha
+         float
+         (help
+            "Base material alpha"))
+      (use_environ
+         bool
+         (help
+            "Modulate with environment ambient and lights"))
+      (prelit
+         bool
+         (help
+            "Use vertex color and alpha for base or ambient"))
+      (diffuse_tex
+         object
+         (class Tex)
+         (help
+            "Base texture map, modulated with color and alpha")
+         (refresh intensify))
+      (intensify
+         bool
+         (help
+            "Double the intensity of base map")
+         (read_only
+            {!
+               [diffuse_tex]}))
+      (tex_wrap
+         int
+         (list TEXWRAP_ENUM)
+         (help
+            "Texture mapping mode"))
+      (tex_gen
+         int
+         (list TEXGEN_ENUM)
+         (help
+            "How to generate texture coordinates"))
+      (tex_xfm
+         TRANSFORM
+         (help
+            "Transform for coordinate generation"))
+      (blend
+         int
+         (list BLEND_ENUM)
+         (help
+            "How to blend poly into screen"))
+      (z_mode
+         int
+         (list ZMODE_ENUM)
+         (help
+            "How to read and write z-buffer"))
+      (alpha_cut
+         bool
+         (help
+            "Cut zero alpha pixels from z-buffer")
+         (refresh alpha_threshold))
+      (alpha_threshold
+         int
+         (help
+            "Alpha level below which gets cut")
+         (range 0 255)
+         (read_only
+            {!
+               [alpha_cut]}))
+      (alpha_write
+         bool
+         (help
+            "Write pixel alpha to screen"))
+      (next_pass
+         object
+         (class Mat)
+         (list
+            {$this allowed_next_pass})
+         (help
+            "Next material for object"))
+      (ng
+         (indent
+            (shader_capabilities
+               (indent
+                  (point_lights
+                     bool
+                     (help
+                        "Is the Mat lit with point lights?"))
+                  (fog
+                     bool
+                     (help
+                        "Is the Mat affected by fog?"))
+                  (fade_out
+                     bool
+                     (help
+                        "Is the Mat affected its Environment's fade_out?"))
+                  (color_adjust
+                     bool
+                     (help
+                        "Is the Mat affected its Environment's color adjust?")))
+               (alias
+                  "shader capabilities")
+               (help
+                  "Defines the capabilities of the shader generated using this material"))
+            (performance
+               (indent
+                  (recv_proj_lights
+                     bool
+                     (alias
+                        "receive projected lights")
+                     (help
+                        "Check this option to allow the material to receive projected lighting"))
+                  (recv_point_cube_tex
+                     bool
+                     (alias
+                        "receive point light cube maps")
+                     (help
+                        "Check this option to allow the material to receive projected cube maps from a point light"))
+                  (ps3_force_trilinear
+                     bool
+                     (alias
+                        "force trilinear (PS3 only)")
+                     (help
+                        "Force trilinear filtering of diffuse map (PS3 only)")))
+               (help
+                  "Performance options for this material"))
+            (per_pixel_lit
+               bool
+               (help
+                  "Use per-pixel lighting")
+               (refresh))
+            (emissive_settings
+               (indent
+                  (emissive_multiplier
+                     float
+                     (help
+                        "Multiplier to apply to emission"))
+                  (emissive_map
+                     object
+                     (class Tex)
+                     (help
+                        "Map for self illumination")))
+               (alias
+                  "emissive settings")
+               (help
+                  "Settings for manipulating the emissive properties of the material"))
+            (normal_map_settings
+               (indent
+                  (normal_map
+                     object
+                     (class Tex)
+                     (list
+                        {$this allowed_normal_map})
+                     (help
+                        "Texture map to define lighting normals.\nRequires per-pixel lighting."))
+                  (de_normal
+                     float
+                     (help
+                        "Amount to diminish normal map bumpiness, 0 is neutral, 1 is no bumps, -1 exaggerates")
+                     (range -3 1))
+                  (norm_detail_map
+                     object
+                     (class Tex)
+                     (list
+                        {$this allowed_normal_map})
+                     (help
+                        "Detail map texture"))
+                  (norm_detail_strength
+                     float
+                     (help
+                        "Strength of the detail map bumpiness"))
+                  (norm_detail_tiling
+                     float
+                     (help
+                        "Texture tiling scale for the detail map")))
+               (alias
+                  "normal map settings")
+               (read_only
+                  {!
+                     [per_pixel_lit]})
+               (help
+                  "Settings for manipulating the normals of the material.\nRequires per-pixel lighting."))
+            (specular_settings
+               (indent
+                  (specular_rgb
+                     color
+                     (alias
+                        "specular color")
+                     (help
+                        "Specular color. If a specular texture is present, this color is multiplied by the specular texture RGB color."))
+                  (specular_power
+                     float
+                     (alias
+                        "specular gloss")
+                     (help
+                        "This is the maximum level of 'shininess' of the surface; higher numbers represent a shinier surface. If a specular texture is present, this value is multiplied by the specular texture alpha channel."))
+                  (specular_map
+                     object
+                     (class Tex)
+                     (alias
+                        "specular map")
+                     (refresh specular_rgb)
+                     (help
+                        "Texture map for specular color (RGB channels) and glossiness (Alpha channel). Requires per-pixel lighting.")
+                     (read_only
+                        {!
+                           [per_pixel_lit]}))
+                  (anisotropy
+                     float
+                     (help
+                        "Specular power in downward (strand) direction, 0 to disable")
+                     (range 0.0 100.0)))
+               (alias
+                  "specular settings")
+               (help
+                  "Settings for manipulating the specular properties of the material"))
+            (rim_light_settings
+               (indent
+                  (rim_rgb
+                     color
+                     (alias
+                        "rim color")
+                     (help
+                        "Rim lighting color. If a rim texture is present, this color is multiplied by the rim texture RGB color."))
+                  (rim_power
+                     float
+                     (alias
+                        "rim power")
+                     (help
+                        "Rim lighting power. This is the sharpness of the wrap-around effect; higher numbers result in a sharper rim lighting effect. If a rim texture is present, this value is multiplied by the rim texture alpha channel.")
+                     (range 0 64))
+                  (rim_map
+                     object
+                     (class Tex)
+                     (alias
+                        "rim map")
+                     (refresh rim_rgb)
+                     (help
+                        "Texture map that defines the rim lighting color (in the RGB channels) and power (in the Alpha channel)."))
+                  (rim_light_under
+                     bool
+                     (alias
+                        "rim light under")
+                     (help
+                        "When enabled, this causes the rim effect to highlight the undersides of meshes")))
+               (alias
+                  "rim light settings")
+               (read_only
+                  {!
+                     [per_pixel_lit]})
+               (help
+                  "Settings for manipulating the rim lighting properties of the material"))
+            (environ_map_settings
+               (indent
+                  (environ_map
+                     object
+                     (class CubeTex)
+                     (alias
+                        "environ map")
+                     (help
+                        "Cube texture for reflections"))
+                  (environ_map_falloff
+                     bool
+                     (alias
+                        "environ map falloff")
+                     (help
+                        "Causes the relfection to increase at glancing angles and fade when viewed directly"))
+                  (environ_map_specmask
+                     bool
+                     (alias
+                        "environ map specular mask")
+                     (help
+                        "Masks the reflection by the specular map alpha channel")))
+               (alias
+                  "environ map settings")
+               (help
+                  "Settings for manipulating the environment map properties of the material"))
+            (refraction_settings
+               (indent
+                  (refract_enabled
+                     bool
+                     (alias
+                        "refraction enabled")
+                     (help
+                        "When enabled, this material will refract the screen under the material")
+                     (refresh refract_strength refract_normal_map))
+                  (refract_strength
+                     float
+                     (alias
+                        "refraction strength")
+                     (help
+                        "The scale of the refraction of the screen under the material.")
+                     (range 0 100)
+                     (read_only
+                        {!
+                           [refract_enabled]}))
+                  (refract_normal_map
+                     object
+                     (class Tex)
+                     (list
+                        {$this allowed_normal_map})
+                     (alias
+                        "refract normal map")
+                     (help
+                        "This is a normal map used to distort the screen under the material. If none is specified, the regular normal map will be used.")
+                     (read_only
+                        {!
+                           [refract_enabled]})))
+               (alias
+                  "refraction settings")
+               (help
+                  "Settings for applying refraction to the material"))
+            (custom_shader_settings
+               (indent
+                  (shader_variation
+                     int
+                     (list SHADERVARIATION_ENUM)
+                     (alias
+                        "shader variation")
+                     (help
+                        "Select a variation on the shader to enable a new range of rendering features.")
+                     (refresh specular2_rgb specular2_power))
+                  (specular2_rgb
+                     color
+                     (read_only
+                        {!=
+                           [shader_variation]
+                           kShaderVariationHair})
+                     (alias
+                        "secondary specular color")
+                     (help
+                        "Secondary specular color.  Only valid for certain shader variations."))
+                  (specular2_power
+                     float
+                     (read_only
+                        {!=
+                           [shader_variation]
+                           kShaderVariationHair})
+                     (alias
+                        "secondary specular power")
+                     (help
+                        "Secondary specular power.  Only valid for certain shader variations."))
+                  (fur
+                     object
+                     (class Fur)
+                     (help
+                        "Use fur shader")))
+               (alias
+                  "custom shader settings")
+               (help
+                  "Settings for using a custom shader effect."))
+            (misc_settings
+               (indent
+                  (screen_aligned
+                     bool
+                     (help
+                        "Projected material from camera's POV"))
+                  (cull
+                     bool
+                     (help
+                        "Cull backface polygons"))
+                  (stencil_mode
+                     int
+                     (list STENCILMODE_ENUM)
+                     (help
+                        "How to read and write the stencil buffer")))
+               (alias
+                  "misc settings")
+               (help
+                  "Miscellaneous settings.")))
+         (help
+            "Next-generation graphics settings\nDoes not apply to particles")))
+   (views
+      (alpha_write
+         (alpha_write
+            {$this get alpha_write}))
+      (Diffuse_tex
+         (diffuse_tex
+            [diffuse_tex])
+         (tex_size_kb
+            {if_else
+               [diffuse_tex]
+               {[diffuse_tex]
+                  size_kb}
+               0}))
+      (shader_flags
+         (point_lights
+            {$this get point_lights}
+            {$this set point_lights $milo_value})
+         (fog
+            {$this get fog}
+            {$this set fog $milo_value})
+         (fade_out
+            {$this get fade_out}
+            {$this set fade_out $milo_value})
+         (color_adjust
+            {$this get color_adjust}
+            {$this set color_adjust $milo_value}))
+      (per_pixel_lit
+         (per_pixel_lit
+            {$this get per_pixel_lit}))))
+(Fur
+   (description
+      "Parameters for fur shading, to be set on a material")
+   (ext fur)
+   (types)
+   (editor
+      (layers
+         int
+         (help
+            "Number of passes"))
+      (thickness
+         float
+         (help
+            "Length of fur"))
+      (curvature
+         float
+         (help
+            "Curvature exponent")
+         (range 0 3))
+      (shell_out
+         float
+         (help
+            "Bunch shells towards surface")
+         (range 0 1))
+      (alpha_falloff
+         float
+         (help
+            "Bunch opacity towards surface")
+         (range 0 1))
+      (stretch
+         float
+         (help
+            "Maximum stretch"))
+      (slide
+         float
+         (help
+            "Maximum lateral motion"))
+      (gravity
+         float
+         (help
+            "Strength of gravity")
+         (range 0 1))
+      (fluidity
+         float
+         (help
+            "Langor of motion")
+         (range 0 1))
+      (roots_tint
+         color
+         (help
+            "Tint at hair roots"))
+      (ends_tint
+         color
+         (help
+            "Tint at hair ends"))
+      (fur_detail
+         object
+         (class Tex)
+         (help
+            "Detail map for finer fur.  Only the alpha channel is used."))
+      (fur_tiling
+         float
+         (help
+            "Tiling for fur detail map.\nUVs of fur_detail are multiplied by this value.")
+         (range 2.0e-2 100.0))
+      (wind
+         object
+         (class Wind)
+         (help
+            "Wind Object, if set, blows on the fur."))))
+(MatAnim
+   (description
+      "MatAnim objects animate material properties.")
+   (superclasses Anim)
+   (ext mnm)
+   (types))
+(Mesh
+   (description
+      "A Mesh object is composed of triangle faces.")
+   (superclasses Draw Trans)
+   (ext mesh)
+   (types)
+   (editor
+      (mat
+         object
+         (class Mat)
+         (help
+            "Material used for rendering the Mesh"))
+      (geom_owner
+         object
+         (class Mesh)
+         (help
+            "Geometry owner for the mesh")
+         (obj_flags no_null)
+         (no_test)
+         (refresh mutable keep_mesh_data num_verts num_faces volume))
+      (mutable
+         (struct
+            (BIT_kMutableVerts
+               bool
+               (help
+                  "Verts are mutable for this mesh")
+               (alias verts))
+            (BIT_kMutableFaces
+               bool
+               (help
+                  "Faces are mutable for thie mesh")
+               (alias faces)))
+         (read_only
+            {!=
+               [geom_owner]
+               $this})
+         (refresh keep_mesh_data))
+      (keep_mesh_data
+         bool
+         (read_only
+            {'||'
+               {>
+                  [mutable]
+                  0}
+               {!=
+                  [geom_owner]
+                  $this}})
+         (help
+            "Whether or not to keep mesh vertices and faces.  Mutable meshes will always keep this data."))
+      (num_verts
+         int
+         (range 0 10000)
+         (help
+            "Number of verts in the mesh")
+         (read_only
+            {!=
+               [geom_owner]
+               $this})
+         (no_test))
+      (num_faces
+         int
+         (range 0 10000)
+         (help
+            "Number of faces in the mesh")
+         (read_only
+            {!=
+               [geom_owner]
+               $this})
+         (no_test))
+      (volume
+         int
+         (list VOLUME_ENUM)
+         (read_only
+            {!=
+               [geom_owner]
+               $this})
+         (help
+            "Volume of the Mesh"))
+      (has_ao_calculation
+         bool
+         (read_only TRUE)
+         (help
+            "Whether or not this mesh has had ambient occlusion calculated on it."))
+      (bones
+         (array
+            (struct
+               (bone
+                  object
+                  (class Trans)
+                  (help
+                     "Trans of the bone"))))
+         (read_only TRUE))
+      (utilities
+         (indent
+            (burn_xfm
+               script
+               (script
+                  {$this burn_xfm})
+               (help
+                  "Burns the verts and resets the transform"))
+            (build_from_bsp
+               script
+               (script
+                  {$this build_from_bsp})
+               (help
+                  "Build from BSP"))
+            (reset_normals
+               script
+               (script
+                  {milo record $this reset_normals}
+                  {$this reset_normals})
+               (help
+                  "Resets the normals for this mesh"))
+            (tessellate
+               script
+               (refresh num_faces num_verts)
+               (read_only
+                  {!=
+                     [geom_owner]
+                     $this})
+               (script
+                  {milo record $this tessellate}
+                  {$this tessellate})
+               (help
+                  "Tessellates every face of this mesh"))
+            (clear_ao
+               script
+               (refresh has_ao_calculation)
+               (read_only
+                  {!=
+                     [geom_owner]
+                     $this})
+               (script
+                  {milo record $this clear_ao}
+                  {$this clear_ao})
+               (help
+                  "Clears the AO calculation on this mesh"))
+            (copy_geom_from_owner
+               script
+               (read_only
+                  {==
+                     [geom_owner]
+                     $this})
+               (script
+                  {$this copy_geom_from_owner})
+               (help
+                  "Copies the geometry owner's geometry into this mesh")))))
+   (views
+      (size
+         ("faces"
+            [num_faces])
+         ("verts"
+            [num_verts])
+         ("mutable"
+            [mutable BIT_kMutableVerts]))))
+(MeshAnim
+   (description
+      "A MeshAnim object animates Mesh vertices. This should be\n        done only when an effect can't be achieved with material\n        animation, because animating vertices directly is less efficient.")
+   (superclasses Anim)
+   (ext msnm)
+   (types))
+(Morph
+   (description
+      "A Morph object animates between multiple Mesh poses using\n        weight keyframes. This is an expensive technique, equivalent to a\n        MeshAnim for each active pose, so use only when skinning or a\n        single MeshAnim isn't enough. For example, we use it for\n        viseme-driven facial animation.")
+   (superclasses Anim)
+   (ext morph)
+   (types)
+   (editor
+      (target
+         object
+         (class Mesh)
+         (help
+            "Mesh for the morph to occur"))
+      (num_poses
+         int
+         (range 0 100)
+         (help
+            "Number of mesh keyframes to blend"))
+      (intensity
+         float
+         (help
+            "Modifier for weight interpolation"))
+      (normals
+         bool
+         (help
+            "Interpolates the normals if set to true, otherwise normals are not affected."))
+      (spline
+         bool
+         (help
+            "Smooths the interpolation of the morphing."))))
+(Movie
+   (description
+      "A Movie object animates a compressed video through a\n        texture. It works on Xbox and PS2 now, soon GC.")
+   (superclasses Anim)
+   (ext mov)
+   (types)
+   (editor
+      (movie_file
+         file
+         (help
+            "File - extension is automatically converted to platform"))
+      (stream
+         bool
+         (help
+            "Stream the file for this movie?"))
+      (loop
+         bool
+         (help
+            "Loop this movie?"))
+      (tex
+         object
+         (class Tex)
+         (help
+            "Texture to animate."))))
+(MultiMesh
+   (description
+      "A MultiMesh object draws a simple Mesh in many places\n        quickly. Create a multimesh by instancing the base mesh lots of\n        times in Max, then using the multiobject wizard.")
+   (superclasses Draw)
+   (ext mm)
+   (types))
+(ParticleSys
+   (description
+      "A ParticleSys object generates, animates, and draws large\n        numbers of similar sprites. Currently particles are rendered only\n        as points on the PC.")
+   (superclasses Poll Anim Draw Trans)
+   (ext part)
+   (types)
+   (views
+      (size
+         ("max_particles"
+            {$this max_particles})))
+   (editor
+      (mat
+         object
+         (class Mat)
+         (help
+            "material for particle system"))
+      (max_parts
+         int
+         (range 0 3072)
+         (help
+            "maximum number of particles"))
+      (screen_aspect
+         float
+         (help
+            "Ratio of screen height to width"))
+      (emit_rate
+         VECTOR2
+         (help
+            "Frame range to generate particles."))
+      (life
+         VECTOR2
+         (help
+            "Frame range of particle life."))
+      (speed
+         VECTOR2
+         (help
+            "Speed range, in world units per frame, of particles."))
+      (drag
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (start_size
+         VECTOR2
+         (help
+            "Size range, in world units, of particles."))
+      (delta_size
+         VECTOR2
+         (help
+            "Change in size of particles, in world units."))
+      (grow_ratio
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (shrink_ratio
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (force_dir
+         VECTOR3
+         (help
+            "Force direction in world coordinates, in units per frame added to each particle's velocity. Can be used for gravity."))
+      (bounce
+         object
+         (class Trans)
+         (help
+            "Specify a collide plane to reflect particles. Used to bounce particles off surfaces."))
+      (start_color_low
+         color
+         (help
+            "Random color ranges for start and end color of particles."))
+      (start_alpha_low
+         float
+         (range 0 1)
+         (help
+            "Random color ranges for start and end color of particles."))
+      (start_color_high
+         color
+         (help
+            "Random color ranges for start and end color of particles."))
+      (start_alpha_high
+         float
+         (range 0 1)
+         (help
+            "Random color ranges for start and end color of particles."))
+      (mid_color_ratio
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (mid_color_low
+         color
+         (read_only
+            {!
+               [fancy]}))
+      (mid_alpha_low
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (mid_color_high
+         color
+         (read_only
+            {!
+               [fancy]}))
+      (mid_alpha_high
+         float
+         (range 0 1)
+         (read_only
+            {!
+               [fancy]}))
+      (end_color_low
+         color
+         (help
+            "Random color ranges for start and end color of particles."))
+      (end_alpha_low
+         float
+         (range 0 1)
+         (help
+            "Random color ranges for start and end color of particles."))
+      (end_color_high
+         color
+         (help
+            "Random color ranges for start and end color of particles."))
+      (end_alpha_high
+         float
+         (range 0 1)
+         (help
+            "Random color ranges for start and end color of particles."))
+      (preserve bool)
+      (emitter
+         (indent
+            (mesh_emitter
+               object
+               (class Mesh)
+               (refresh box_extent_1 box_extent_2 pitch yaw))
+            (box_extent_1
+               VECTOR3
+               (read_only
+                  {!=
+                     [mesh_emitter]
+                     ""})
+               (help
+                  "Min point and max point, in object coordinates, of box region that particles are emitted from."))
+            (box_extent_2
+               VECTOR3
+               (read_only
+                  {!=
+                     [mesh_emitter]
+                     ""})
+               (help
+                  "Min point and max point, in object coordinates, of box region that particles are emitted from."))
+            (pitch
+               VECTOR2
+               (read_only
+                  {!=
+                     [mesh_emitter]
+                     ""}))
+            (yaw
+               VECTOR2
+               (read_only
+                  {!=
+                     [mesh_emitter]
+                     ""}))
+            (relative_parent
+               object
+               (class Trans))
+            (relative_motion float)
+            (subsamples int)
+            (frame_drive bool)
+            (pre_spawn bool)
+            (pause_offscreen bool)))
+      (max_burst
+         int
+         (range 0 10000)
+         (refresh burst_parameters))
+      (burst_parameters
+         (indent
+            (time_between VECTOR2)
+            (peak_rate VECTOR2)
+            (duration VECTOR2))
+         (read_only
+            {<=
+               [max_burst]
+               0}))
+      (fancy
+         bool
+         (refresh grow_ratio shrink_ratio drag mid_color_ratio mid_color_low mid_alpha_low mid_color_high mid_alpha_high bubble bubble_parameters spin spin_parameters velocity_align velocity_align_parameters))
+      (bubble
+         bool
+         (refresh bubble_parameters)
+         (read_only
+            {!
+               [fancy]}))
+      (bubble_parameters
+         (indent
+            (bubble_period VECTOR2)
+            (bubble_size VECTOR2))
+         (read_only
+            {'||'
+               {!
+                  [bubble]}
+               {!
+                  [fancy]}}))
+      (spin
+         bool
+         (refresh spin_parameters velocity_align)
+         (read_only
+            {'||'
+               [velocity_align]
+               {!
+                  [fancy]}}))
+      (spin_parameters
+         (indent
+            (rpm VECTOR2)
+            (rpm_drag
+               float
+               (range 0 1))
+            (random_direction bool)
+            (start_offset VECTOR2)
+            (end_offset VECTOR2))
+         (read_only
+            {'||'
+               {!
+                  [spin]}
+               {!
+                  [fancy]}}))
+      (velocity_align
+         bool
+         (refresh velocity_align_parameters spin)
+         (read_only
+            {'||'
+               {!
+                  [fancy]}
+               [spin]}))
+      (velocity_align_parameters
+         (indent
+            (stretch_with_velocity
+               bool
+               (refresh stretch_scale constant_area perspective))
+            (stretch_scale
+               float
+               (read_only
+                  {'||'
+                     {!
+                        [velocity_align]}
+                     {'||'
+                        {!
+                           [stretch_with_velocity]}
+                        {!
+                           [fancy]}}}))
+            (constant_area
+               bool
+               (read_only
+                  {'||'
+                     {!
+                        [velocity_align]}
+                     {'||'
+                        {!
+                           [stretch_with_velocity]}
+                        {!
+                           [fancy]}}}))
+            (perspective
+               bool
+               (read_only
+                  {'||'
+                     {!
+                        [velocity_align]}
+                     {'||'
+                        {!
+                           [stretch_with_velocity]}
+                        {!
+                           [fancy]}}})))
+         (read_only
+            {'||'
+               {!
+                  [velocity_align]}
+               {!
+                  [fancy]}}))))
+(ParticleSysAnim
+   (description
+      "Object that animates Particle System properties.")
+   (superclasses Anim)
+   (ext panim)
+   (types))
+(ScreenMask
+   (description
+      "Draws full screen quad with material and color.")
+   (superclasses Draw)
+   (ext mask)
+   (types)
+   (editor
+      (mat
+         object
+         (class Mat)
+         (help
+            "Material to draw on full screen quad"))
+      (color
+         color
+         (help
+            "Color of full screen quad"))
+      (alpha
+         float
+         (help
+            "Translucency of full screen quad"))
+      (screen_rect
+         RECT
+         (help
+            "The area of the screen in normalized coordinates (0 to 1) to draw into."))
+      (use_cam_rect
+         bool
+         (help
+            "Use current camera screen_rect instead of the full screen"))))
+(TexMovie
+   (description
+      "Renders bink movie to a texture.")
+   (superclasses Draw Poll)
+   (ext tmov)
+   (types)
+   (editor
+      (output_texture
+         object
+         (class Tex)
+         (help
+            "Texture to write to")
+         (list
+            {$this get_render_textures})
+         (pre_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  reset_tex_movie}})
+         (post_sync
+            {if
+               [output_texture]
+               {milo
+                  record
+                  [output_texture]
+                  set_tex_movie}
+               {[output_texture]
+                  set_rendered}}))
+      (bink_movie_file
+         file
+         (ext
+            "Bink Files"
+            bik)
+         (help
+            "Bink File"))
+      (loop
+         bool
+         (help
+            "Loop this movie?"))))
+(RndDir
+   (description
+      "A RndDir specially tracks drawable and animatable objects.")
+   (editor
+      (environ
+         object
+         (class Environ))
+      (polls
+         (array
+            object
+            (class Poll))
+         (help
+            "List of all the polls")
+         (read_only TRUE)
+         (no_test))
+      (draws
+         (array
+            object
+            (class Draw))
+         (help
+            "List of all the draws")
+         (read_only TRUE)
+         (no_test))
+      (test_event
+         symbol
+         (list
+            {$this supported_events})
+         (help
+            "Test event")
+         (no_test)
+         (no_cdb))
+      (fire_test
+         script
+         (script
+            {handle
+               ($this
+                  [test_event])})
+         (help
+            "Fire test event")))
+   (superclasses ObjectDir Anim Draw Trans Poll MsgSource)
+   (types
+      (world_fx
+         (editor
+            (start
+               script
+               (script
+                  {$this start})
+               (help
+                  "Start animation"))
+            (stop
+               script
+               (script
+                  {$this stop})
+               (help
+                  "Stop animation")))
+         (enter
+            {$this stop})
+         (exit
+            {$this stop})
+         (start
+            {$this
+               iterate
+               ParticleSys
+               $parts
+               {$parts exit}}
+            {$this
+               animate
+               (range 0 kHugeFloat)}
+            {$this set_showing TRUE})
+         (stop
+            {$this
+               iterate
+               ParticleSys
+               $parts
+               {$parts exit}}
+            {$this stop_animation}
+            {$this set_showing FALSE}))
+      (trigger_on_enter
+         (editor
+            (trig
+               object
+               (class EventTrigger)
+               (help
+                  "the trigger to fire when this dir enters")))
+         (enter
+            {if
+               [trig]
+               {[trig]
+                  trigger}})
+         (trig ''))))
+(PostProc
+   (description
+      "A PostProc drives post-processing effects.")
+   (ext pp)
+   (editor
+      (bloom
+         (indent
+            (bloom_color
+               color
+               (help
+                  "Color tint for bloom effect"))
+            (bloom_threshold
+               float
+               (help
+                  "Luminance intensity at which to bloom"))
+            (bloom_intensity
+               float
+               (help
+                  "Bloom intensity"))
+            (bloom_glare
+               bool
+               (help
+                  "Whether or not to use the glare effect"))
+            (bloom_streak
+               bool
+               (refresh bloom)
+               (help
+                  "Whether or not to use directional light streaks"))
+            (bloom_streak_attenuation
+               float
+               (read_only
+                  {!
+                     [bloom_streak]})
+               (range -2.0 2.0)
+               (help
+                  "Attenuation (scattering amount) of light streak.\n0.9 to 0.95 is the sweet spot."))
+            (bloom_streak_angle
+               float
+               (read_only
+                  {!
+                     [bloom_streak]})
+               (range -360.0 360.0)
+               (help
+                  "Angle for light streak"))))
+      (motion_blur
+         (indent
+            (motion_blur_velocity
+               bool
+               (alias
+                  "velocity blur")
+               (help
+                  "Whether or not to use the velocity motion blur effect. Should be enabled almost all the time."))
+            (motion_blur_blend
+               float
+               (alias
+                  "previous frame blend")
+               (help
+                  "The amount of the previous frame to blend into the current frame. This can be used to efficiently simulate motion blur or other effects. Set to zero to disable.")
+               (range 0.0 1.0))
+            (motion_blur_weight
+               color
+               (alias
+                  "color channel weight")
+               (help
+                  "The weighting for individual color channels in the previous frame blend."))
+            (motion_blur_exposure
+               float
+               (alias
+                  "exposure weight")
+               (help
+                  "The weighting for bright pixels in the previous frame blend.")
+               (range 0.0 1.0)))
+         (help
+            "Motion blur settings"))
+      (gradient_map
+         (indent
+            (gradient_map
+               object
+               (class Tex)
+               (alias
+                  "texture")
+               (help
+                  "Gradient map; this texture should be layed out horizontally such that the color to use when the pixel is black is on the left and white is on the right."))
+            (gradient_map_opacity
+               float
+               (alias
+                  "opacity")
+               (help
+                  "The opacity of the gradient map effect.")
+               (range 0.0 1.0))
+            (gradient_map_index
+               float
+               (alias
+                  "index")
+               (help
+                  "This indexes veritically into the gradient map texture. This is useful for storing multiple gradient map textures in a single texture, and to blend between them.")
+               (range 0.0 1.0))
+            (gradient_map_start
+               float
+               (alias
+                  "depth start")
+               (help
+                  "The depth where the gradient map will begin to take effect.")
+               (range 0.0 1.0))
+            (gradient_map_end
+               float
+               (alias
+                  "depth end")
+               (help
+                  "The depth where the gradient map will no longer take effect.")
+               (range 0.0 1.0)))
+         (help
+            "Gradient map settings"))
+      (chromatic_effects
+         (indent
+            (chromatic_aberration_offset
+               float
+               (alias
+                  "chromatic offset")
+               (help
+                  "The size, in pixels, of the chromatic aberration or sharpen effect."))
+            (chromatic_sharpen
+               bool
+               (alias
+                  "chromatic sharpen")
+               (help
+                  "Whether to sharpen the chromatic image or apply the aberration effect.")))
+         (alias
+            "chromatic effects")
+         (help
+            "Chromatic sharpen will sharpen the image, while chromatic aberration is an artifact where color channels are slightly shifted. This is useful to simulate old cameras, poor quality video, or underwater scenes."))
+      (refraction
+         (indent
+            (refract_map
+               object
+               (class Tex)
+               (list
+                  {$this allowed_normal_map})
+               (alias
+                  "texture")
+               (help
+                  "This is a normal map used to distort the screen."))
+            (refract_dist
+               float
+               (alias
+                  "distance")
+               (help
+                  "The distance to refract each pixel of the screen. This can also be negative to reverse the direction. Set to zero to disable."))
+            (refract_scale
+               VECTOR2
+               (alias
+                  "scale")
+               (help
+                  "This scales the refraction texture before distorting the screen, in the X and Y directions."))
+            (refract_panning
+               VECTOR2
+               (alias
+                  "scroll amount")
+               (help
+                  "The amount to offset the refraction texture, in the X and Y directions. This is a fixed amount to offset the refraction effect."))
+            (refract_velocity
+               VECTOR2
+               (alias
+                  "scroll velocity")
+               (help
+                  "The velocity to scroll the refraction texture, in the X and Y directions. The value is specified in units per second, and will offset the refraction effect over time."))
+            (refract_angle
+               float
+               (alias
+                  "angle")
+               (help
+                  "The angle to rotate the refraction texture, in degrees.")
+               (range 0.0 360.0)))
+         (help
+            "Full-screen refraction settings"))
+      (luminance_map
+         object
+         (class Tex)
+         (help
+            "Luminance map"))
+      (exposure_flicker
+         (indent
+            (flicker_intensity
+               VECTOR2
+               (alias
+                  "intensity")
+               (help
+                  "Min and max intensity range [0..1], 0.0 to disable"))
+            (flicker_secs_range
+               VECTOR2
+               (alias
+                  "secs_range")
+               (help
+                  "Min and max number of seconds for a light to dark cycle"))))
+      (noise
+         (indent
+            (noise_base_scale
+               VECTOR2
+               (help
+                  "X and Y tiling of the noise map"))
+            (noise_intensity
+               float
+               (help
+                  "intensity of the noise, 0.0 to disable")
+               (range -10.0 10.0))
+            (noise_stationary
+               bool
+               (help
+                  "keep the noise map static over the screen"))
+            (noise_map
+               object
+               (class Tex)
+               (help
+                  "Optional noise bitmap"))
+            (noise_midtone
+               bool
+               (help
+                  "Applies the noise using at mid-tones of the scene, using an Overlay blend mode."))))
+      (color_correct
+         (indent
+            (hue
+               float
+               (help
+                  "Hue: -180 to 180, 0.0 is neutral")
+               (range -180 180))
+            (saturation
+               float
+               (help
+                  "Saturation: -100 to 100, 0.0 is neutral")
+               (range -100 100))
+            (lightness
+               float
+               (help
+                  "Lightness: -100 to 100, 0.0 is neutral")
+               (range -100 100))
+            (contrast
+               float
+               (help
+                  "Contrast: -100 to 100, 0.0 is neutral")
+               (range -100 100))
+            (brightness
+               float
+               (help
+                  "Brightness: -100 to 100, 0.0 is neutral")
+               (range -100 100))
+            (levels
+               (indent
+                  (in_lo
+                     color
+                     (help
+                        "Input low end"))
+                  (in_hi
+                     color
+                     (help
+                        "Input high end"))
+                  (out_lo
+                     color
+                     (help
+                        "Output low end"))
+                  (out_hi
+                     color
+                     (help
+                        "Output high end"))))))
+      (posterize
+         (indent
+            (num_levels
+               float
+               (help
+                  "Number of levels for posterization, 0 turns off")
+               (range 0.0 255.0))
+            (min_intensity
+               float
+               (help
+                  "Minimum intensity to posterize, 1.0 is posterize all")
+               (range 0.0 1.0))))
+      (kaleidoscope
+         (indent
+            (kaleidoscope_complexity
+               float
+               (alias complexity)
+               (help
+                  "Number of slices in kaleidoscope, 0 turns off, 2 for vertical mirror")
+               (range 0.0 64.0))
+            (kaleidoscope_size
+               float
+               (alias size)
+               (help
+                  "Smaller size means more repeated areas, but each area is smaller")
+               (range 1.0e-2 64.0))
+            (kaleidoscope_angle
+               float
+               (alias angle)
+               (help
+                  "Additional clockwise degrees of rotation around center.")
+               (range 0.0 360.0))
+            (kaleidoscope_radius
+               float
+               (alias radius)
+               (help
+                  "Additional distance from center")
+               (range -0.5 0.5))
+            (kaleidoscope_flipUVs
+               bool
+               (alias flipUVs)
+               (help
+                  "Flip texture UV coords when reflect")))
+         (help
+            "Kaleidoscope settings"))
+      (emulate_fps
+         float
+         (help
+            "Frame rate to emulate, e.g. 24 for film. 0 disables emulation.")
+         (range 0.0 60.0))
+      (light_trail
+         (indent
+            (threshold
+               float
+               (help
+                  "Min pixel value to leave trails [0..1]")
+               (range 0.0 1.0))
+            (duration
+               float
+               (help
+                  "Seconds for the trails to last"))))
+      (hall_of_time
+         (indent
+            (hall_of_time_type
+               int
+               (alias
+                  "solid rings")
+               (list POSTPROC_HALL_OF_TIME_ENUM)
+               (help
+                  "Should the effect be blended, or should it produce solid colors?")
+               (refresh hall_of_time))
+            (hall_of_time_rate
+               float
+               (alias
+                  "rate")
+               (help
+                  "Speed of effect.  0 is off.  1 is regular speed.")
+               (range -10.0 10.0))
+            (hall_of_time_color
+               color
+               (alias
+                  "image color")
+               (help
+                  "Seconds for the trails to last."))
+            (hall_of_time_mix
+               float
+               (alias
+                  "image color mix")
+               (help
+                  "Amount of color to blend. 0 is no color, 1 is solid color.\nNot applicable if solid rings checked.")
+               (range 0.0 1.0)
+               (read_only
+                  {!=
+                     [hall_of_time_type]
+                     kHOTBlended})))
+         (help
+            "Video feedback effect"))
+      (vignette
+         (indent
+            (vignette_color
+               color
+               (help
+                  "Color tint for vignette effect"))
+            (vignette_intensity
+               float
+               (range 0 2)
+               (help
+                  "0 for no effect, 1 for normal, less than one for smaller effect, 2 is full color"))))
+      (select
+         script
+         (help
+            "Set this as the current post processing effect for preview.")
+         (script
+            {$this select}))
+      (unselect
+         script
+         (help
+            "Turn off all post-processing effects.")
+         (script
+            {rnd reset_postproc})))
+   (types))
+(Tex
+   (description
+      "Tex objects represent bitmaps used by materials. These\n        can be created automatically with 'import tex' on the file menu.")
+   (ext tex)
+   (types)
+   (views
+      (size
+         ("Width"
+            [width])
+         ("Height"
+            [height])
+         ("Bpp"
+            [bpp])
+         ("Size in kb"
+            {$this size_kb})
+         ("RMS Difference"
+            {$this rms_difference}))
+      (paths
+         ("path"
+            [file_path]))))
+(CubeTex
+   (description
+      "This class implements a cube map intended for environment mapping.")
+   (ext cube)
+   (types)
+   (editor
+      (right file)
+      (left file)
+      (top file)
+      (bottom file)
+      (back file)
+      (front file)))
+(Set
+   (description
+      "A group of objects to propagate animation and messages")
+   (ext set)
+   (editor
+      (objects
+         (array
+            object
+            (list
+               {$this allowed_objects})))
+      (highlight_objects
+         script
+         (script
+            {if
+               {exists milo}
+               {milo
+                  set_highlights
+                  {$this get_array objects}}})))
+   (types
+      (Spotlights
+         (editor
+            (color
+               color
+               (help
+                  "Color of the spotlight"))
+            (intensity
+               float
+               (help
+                  "Intensity of the spotlight")))
+         (color 0)
+         (intensity 0))
+      ('Show set'
+         (editor
+            (showing bool))
+         (showing TRUE))))
+(Text
+   (description
+      "A Text object draws a 3D character string.")
+   (superclasses Draw Trans)
+   (ext txt)
+   (types)
+   (editor
+      (text
+         string
+         (help
+            "Text value")
+         (no_test))
+      (font
+         object
+         (class Font)
+         (help
+            "Font to use for this Text")
+         (no_test))
+      (color
+         color
+         (help
+            "Color of the text object"))
+      (alpha
+         float
+         (range 0 1)
+         (help
+            "Alpha value of the text object"))
+      (align
+         int
+         (list
+            ("kTopLeft"
+               "kTopCenter"
+               "kTopRight"
+               "kMiddleLeft"
+               "kMiddleCenter"
+               "kMiddleRight"
+               "kBottomLeft"
+               "kBottomCenter"
+               "kBottomRight"))
+         (help
+            "Alignment option for the text"))
+      (caps_mode
+         int
+         (list
+            ("kCapsModeNone"
+               "kForceLower"
+               "kForceUpper"))
+         (help
+            "Defines the CAPS mode for the text"))
+      (wrap_width
+         float
+         (range 0 10000)
+         (help
+            "Width of text until it wraps"))
+      (leading
+         float
+         (range -5 5)
+         (help
+            "Vertical distance between lines"))
+      (italics
+         float
+         (range -5 5)
+         (help
+            "Defines the slant of the text"))
+      (fixed_length
+         int
+         (range 0 500)
+         (help
+            "Number of character maximum for the text"))
+      (size
+         float
+         (help
+            "Size of the text"))
+      (markup
+         bool
+         (help
+            "This text uses markup"))))
+(Trans
+   (description
+      "Base class for transformable objects. Trans objects have\n        a 3D position, rotation, and scale.")
+   (ext trans)
+   (types)
+   (editor
+      (trans_parent
+         object
+         (class Trans)
+         (obj_flags no_this)
+         (help
+            "Object this is linked to.")
+         (post_sync
+            {milo update_objects 0}))
+      (trans_constraint
+         int
+         (list CONSTRAINT_ENUM)
+         (help
+            "Trans constraint for the object.")
+         (no_test))
+      (trans_target
+         object
+         (class Trans)
+         (obj_flags no_this)
+         (help
+            "Target according to the constraint."))
+      (preserve_scale
+         bool
+         (help
+            "Preserve scale if applying dynamic constraint.")))
+   (anim_props
+      (scale VECTOR3)
+      (rotation VECTOR3)
+      (position VECTOR3))
+   (views
+      ('Local transform'
+         (x
+            {$this get_local_pos_index 0}
+            {$this set_local_pos_index 0 $milo_value})
+         (y
+            {$this get_local_pos_index 1}
+            {$this set_local_pos_index 1 $milo_value})
+         (z
+            {$this get_local_pos_index 2}
+            {$this set_local_pos_index 2 $milo_value})
+         (pitch
+            {$this get_local_rot_index 0}
+            {$this set_local_rot_index 0 $milo_value})
+         (roll
+            {$this get_local_rot_index 1}
+            {$this set_local_rot_index 1 $milo_value})
+         (yaw
+            {$this get_local_rot_index 2}
+            {$this set_local_rot_index 2 $milo_value})
+         ("scale x"
+            {$this get_local_scale_index 0}
+            {$this set_local_scale_index 0 $milo_value})
+         ("scale y"
+            {$this get_local_scale_index 1}
+            {$this set_local_scale_index 1 $milo_value})
+         ("scale z"
+            {$this get_local_scale_index 2}
+            {$this set_local_scale_index 2 $milo_value}))))
+(TransAnim
+   (description
+      "TransAnim objects animate the position, rotation, and\n        scale of transformable objects.")
+   (superclasses Anim)
+   (ext tnm)
+   (types)
+   (views
+      (num_keys
+         (trans
+            {$this num_trans_keys})
+         (rot
+            {$this num_rot_keys})
+         (scale
+            {$this num_scale_keys})
+         ("is key owner"
+            {if_else
+               {==
+                  $this
+                  [keys_owner]}
+               True
+               False}))))
+(TransProxy
+   (description
+      "Stand-in for a RndTransformable inside of a proxy, so you can use it")
+   (superclasses Trans)
+   (test_superclasses FALSE)
+   (ext tp)
+   (editor
+      (proxy
+         object
+         (class ObjectDir)
+         (help
+            "Proxy object this will look into."))
+      (part
+         symbol
+         (list
+            {object_list
+               [proxy]
+               Trans})
+         (help
+            "The part inside it")))
+   (types))
+(MeshDeform
+   (description
+      "Reskins target mesh according to exobones.")
+   (superclasses)
+   (ext deform)
+   (types)
+   (editor
+      (mesh
+         object
+         (class Mesh)
+         (help
+            "The mesh we will change, set you can make a zero vert meshdeform just to clean up mutable character meshes"))
+      (num_verts
+         int
+         (help
+            "How many verts it holds")
+         (read_only TRUE))
+      (num_bones
+         int
+         (help
+            "How many bones it holds")
+         (read_only TRUE))))
+(EventTrigger
+   (description
+      "Triggers animations, sfx, and responses to game events")
+   (allowed_dirs RndDir)
+   (ext trig)
+   (superclasses Anim)
+   (types
+      (particle_setter
+         (editor
+            (system
+               object
+               (class ParticleSys)
+               (help
+                  "particle system to animate"))
+            (set_emit
+               bool
+               (refresh))
+            (emit_low
+               float
+               (hide
+                  {!
+                     [set_emit]}))
+            (emit_hi
+               float
+               (hide
+                  {!
+                     [set_emit]}))
+            (set_color
+               bool
+               (refresh))
+            (color_start_low
+               color
+               (hide
+                  {!
+                     [set_color]}))
+            (alpha_start_low
+               float
+               (hide
+                  {!
+                     [set_color]}))
+            (color_start_hi
+               color
+               (hide
+                  {!
+                     [set_color]}))
+            (alpha_start_hi
+               float
+               (hide
+                  {!
+                     [set_color]}))
+            (color_end_low
+               color
+               (hide
+                  {!
+                     [set_color]}))
+            (alpha_end_low
+               float
+               (hide
+                  {!
+                     [set_color]}))
+            (color_end_hi
+               color
+               (hide
+                  {!
+                     [set_color]}))
+            (alpha_end_hi
+               float
+               (hide
+                  {!
+                     [set_color]})))
+         (system '')
+         (emit_low 0)
+         (emit_hi 1)
+         (color_start_low 0)
+         (color_start_hi 0)
+         (alpha_start_low 0)
+         (alpha_start_hi 0)
+         (color_end_low 0)
+         (color_end_hi 0)
+         (alpha_end_low 0)
+         (alpha_end_hi 0)
+         (set_emit 0)
+         (set_color 0)
+         (reset)
+         (trigger
+            {do
+               {if
+                  [set_emit]
+                  {[system]
+                     set_emit_rate
+                     [emit_low]
+                     [emit_hi]}}
+               {if
+                  [set_color]
+                  {do
+                     {[system]
+                        set_start_color_int
+                        [color_start_low]
+                        [color_start_hi]
+                        [alpha_start_low]
+                        [alpha_start_hi]}
+                     {[system]
+                        set_end_color_int
+                        [color_end_low]
+                        [color_end_hi]
+                        [alpha_end_low]
+                        [alpha_end_hi]}}}}))
+      (part_launcher
+         (editor
+            (systems
+               (array
+                  object
+                  (class ParticleSys))))
+         (systems
+            ())
+         (reset)
+         (trigger
+            {foreach
+               $elem
+               [systems]
+               {if
+                  $elem
+                  {$elem launch_part}}}))
+      (particle_trigger
+         (editor
+            (systems
+               (array
+                  object
+                  (class PartLauncher))))
+         (systems
+            ())
+         (trigger
+            {foreach
+               $elem
+               [systems]
+               {if
+                  $elem
+                  {$elem launch_particles}}}))
+      (play_mogg
+         (editor
+            (mogg
+               object
+               (class MoggClip)
+               (help
+                  "a mogg file to trigger. Will play when triggered, and stop when trigger is RESET")))
+         (mogg '')
+         (trigger
+            {[mogg]
+               play})
+         (reset
+            {[mogg]
+               stop}))
+      (trigger_pool
+         (editor
+            (triggers
+               (array
+                  object
+                  (class EventTrigger))
+               (help
+                  "will randomly trigger on of these when we are triggered"))
+            (pick_same_prob
+               float
+               (range 0 1)
+               (help
+                  "the probability of picking the same item twice in a row.  1 = always pick the same one, 0 = never pick the same twice in a row")))
+         (pick_same_prob 0.5)
+         (triggers
+            ())
+         (last_pick_idx -1)
+         (init
+            {set
+               [last_pick_idx]
+               -1})
+         (reset
+            {foreach_int
+               $i
+               0
+               {size
+                  [triggers]}
+               {set
+                  $curTrig
+                  [triggers $i]}
+               {$curTrig basic_cleanup}
+               {with
+                  $curTrig
+                  {foreach_int
+                     $j
+                     0
+                     {size
+                        [shows]}
+                     {[shows $j]
+                        set
+                        showing
+                        FALSE}}}})
+         (debug_str
+            {if_else
+               {==
+                  [last_pick_idx]
+                  -1}
+               "<none>"
+               {sprint
+                  {[triggers
+                        [last_pick_idx]]
+                     name}
+                  "  (#"
+                  {'+'
+                     [last_pick_idx]
+                     1}
+                  " out of "
+                  {size
+                     [triggers]}
+                  " possibilities)"}})
+         (trigger
+            {if
+               {>=
+                  [last_pick_idx]
+                  {size
+                     [triggers]}}
+               {set
+                  [last_pick_idx]
+                  -1}}
+            {set $nextPickIdx -1}
+            {if
+               {>
+                  {size
+                     [triggers]}
+                  0}
+               {if_else
+                  {==
+                     [last_pick_idx]
+                     -1}
+                  {do
+                     {set
+                        $nextPickIdx
+                        {random_int
+                           0
+                           {size
+                              [triggers]}}}}
+                  {do
+                     {if_else
+                        {'||'
+                           {==
+                              {size
+                                 [triggers]}
+                              1}
+                           {<=
+                              {random_float 0.0 1.0}
+                              [pick_same_prob]}}
+                        {do
+                           {set
+                              $nextPickIdx
+                              [last_pick_idx]}}
+                        {do
+                           {set
+                              $nextPickIdx
+                              {random_int
+                                 0
+                                 {size
+                                    [triggers]}}}
+                           {while
+                              {==
+                                 $nextPickIdx
+                                 [last_pick_idx]}
+                              {set
+                                 $nextPickIdx
+                                 {random_int
+                                    0
+                                    {size
+                                       [triggers]}}}}}}}}}
+            {if
+               {!= $nextPickIdx -1}
+               {foreach_int
+                  $i
+                  0
+                  {size
+                     [triggers]}
+                  {unless
+                     {== $i $nextPickIdx}
+                     {do
+                        {[triggers $i]
+                           basic_cleanup}}}}
+               {[triggers $nextPickIdx]
+                  trigger}
+               {set
+                  [last_pick_idx]
+                  $nextPickIdx}}))
+      (randomize_textures
+         (editor
+            (mats
+               (array
+                  object
+                  (class Mat))
+               (help
+                  "The materials whos diffuse textures will be randomly replaced when we trigger"))
+            (texture_pool
+               (array
+                  object
+                  (class Tex))
+               (help
+                  "The textures we will randomly distribute onto the materials on trigger")))
+         (mats
+            ())
+         (texture_pool
+            ())
+         (trigger
+            {if
+               {>
+                  {size
+                     [texture_pool]}
+                  0}
+               {set
+                  $texPoolRemaining
+                  {array
+                     [texture_pool]}}
+               {foreach
+                  $mat
+                  [mats]
+                  {if
+                     $mat
+                     {set $newTex ''}
+                     {while
+                        {== $newTex ''}
+                        {if
+                           {==
+                              {size $texPoolRemaining}
+                              0}
+                           {set
+                              $texPoolRemaining
+                              {array
+                                 [texture_pool]}}}
+                        {set
+                           $newTex
+                           {random_elem $texPoolRemaining}}
+                        {remove_elem $texPoolRemaining $newTex}}
+                     {$mat set diffuse_tex $newTex}}}}))
+      (random_show
+         (editor
+            (random_shows
+               (array
+                  object
+                  (class Draw))
+               (help
+                  "a list of drawables which we will randomly select from on trigger. Each trigger shows the random selection and hides the rest."))
+            (pick_same_prob
+               float
+               (range 0 1)
+               (help
+                  "the probability of picking the same item twice in a row.  1 = always pick the same one, 0 = never pick the same twice in a row")))
+         (random_shows
+            ())
+         (pick_same_prob 0.5)
+         (hide_or_show
+            ($thingToHide $show)
+            {$thingToHide set_showing $show}
+            {if
+               {$thingToHide is_a Group}
+               {set
+                  $grpChildren
+                  {$thingToHide get_draws}}
+               {foreach
+                  $child
+                  $grpChildren
+                  {if
+                     $child
+                     {if
+                        {$child is_a TexMovie}
+                        {$child set_showing $show}}}}})
+         (reset
+            {foreach_int
+               $i
+               0
+               {size
+                  [random_shows]}
+               {$this
+                  hide_or_show
+                  [random_shows $i]
+                  FALSE}}
+            {if
+               {&&
+                  {exists milo}
+                  {!
+                     {has_substr
+                        {{milo cur_dir}
+                           get_path_name}
+                        "world.milo"}}}
+               {milo update_objects}
+               {milo invalidate_listers_and_trees}})
+         (trigger
+            {set $nextPickIdx -1}
+            {if
+               {>
+                  {size
+                     [random_shows]}
+                  0}
+               {if_else
+                  {==
+                     [last_pick_idx]
+                     -1}
+                  {do
+                     {set
+                        $nextPickIdx
+                        {random_int
+                           0
+                           {size
+                              [random_shows]}}}}
+                  {do
+                     {if_else
+                        {'||'
+                           {==
+                              {size
+                                 [random_shows]}
+                              1}
+                           {<=
+                              {random_float 0.0 1.0}
+                              [pick_same_prob]}}
+                        {do
+                           {set
+                              $nextPickIdx
+                              [last_pick_idx]}}
+                        {do
+                           {set
+                              $nextPickIdx
+                              {random_int
+                                 0
+                                 {size
+                                    [random_shows]}}}
+                           {while
+                              {==
+                                 $nextPickIdx
+                                 [last_pick_idx]}
+                              {set
+                                 $nextPickIdx
+                                 {random_int
+                                    0
+                                    {size
+                                       [random_shows]}}}}}}}}}
+            {if
+               {!= $nextPickIdx -1}
+               {foreach_int
+                  $i
+                  0
+                  {size
+                     [random_shows]}
+                  {if_else
+                     {== $i $nextPickIdx}
+                     {do
+                        {$this
+                           hide_or_show
+                           [random_shows $i]
+                           TRUE}}
+                     {do
+                        {$this
+                           hide_or_show
+                           [random_shows $i]
+                           FALSE}}}}
+               {if
+                  {exists milo}
+                  {milo update_objects}
+                  {milo invalidate_listers_and_trees}}
+               {set
+                  [last_pick_idx]
+                  $nextPickIdx}})
+         (last_pick_idx -1)))
+   (editor
+      (trigger
+         script
+         (script
+            {$this trigger})
+         (help
+            "Tries to trigger this EventTrigger, won't work if [enabled] is false"))
+      (reset
+         script
+         (script
+            {$this basic_cleanup}))
+      (trigger_events
+         (array
+            symbol
+            (list
+               {$this supported_events})
+            (help
+               "Events which enable this trigger")))
+      (anims
+         (array
+            (struct
+               (anim
+                  object
+                  (class Anim)
+                  (refresh))
+               (blend float)
+               (delay float)
+               (wait bool)
+               (filter
+                  (indent
+                     (enable
+                        bool
+                        (refresh)
+                        (help
+                           "Enable animation filtering"))
+                     (rate
+                        int
+                        (list RATE_ENUM)
+                        (help
+                           "Rate to animate")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]}))
+                     (start
+                        float
+                        (help
+                           "Start frame of animation")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]}))
+                     (end
+                        float
+                        (help
+                           "End frame of animation")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]}))
+                     (scale
+                        float
+                        (help
+                           "Scale of animation")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]}))
+                     (period
+                        float
+                        (help
+                           "Period of animation if non-zero")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]}))
+                     (type
+                        symbol
+                        (list
+                           (range loop dest))
+                        (help
+                           "Type of animation")
+                        (read_only
+                           {!
+                              [anims
+                                 {elem $milo_prop_path 1}
+                                 enable]})))))
+            (header
+               {do
+                  ($index
+                     {elem $milo_prop_path 1})
+                  {sprint
+                     {if_else
+                        [anims $index anim]
+                        {[anims $index anim]
+                           name}
+                        "<none>"}}})))
+      (proxy_calls
+         (array
+            (struct
+               (proxy
+                  object
+                  (class ObjectDir))
+               (call
+                  symbol
+                  (list
+                     {$this proxy_calls}))
+               (event
+                  object
+                  (class EventTrigger)
+                  (dir
+                     [proxy_calls
+                        {elem $milo_prop_path 1}
+                        proxy])
+                  (help
+                     "event trigger to fire")))))
+      (sounds
+         (array
+            object
+            (class Sequence)))
+      (shows
+         (array
+            object
+            (class Draw)
+            (obj_flags no_null))
+         (help
+            "objects to show"))
+      (hide_delays
+         (array
+            (struct
+               (hide
+                  object
+                  (class Draw)
+                  (help
+                     "object to hide"))
+               (delay
+                  float
+                  (help
+                     "seconds to delay hiding"))
+               (rate
+                  int
+                  (list RATE_ENUM)
+                  (help
+                     "rate by which to measure delay")))))
+      (part_launchers
+         (array
+            object
+            (class PartLauncher)))
+      (enable_events
+         (array
+            symbol
+            (list
+               {$this supported_events})
+            (help
+               "event which enable this event trigger")))
+      (disable_events
+         (array
+            symbol
+            (list
+               {$this supported_events})
+            (help
+               "event which disable this event trigger")))
+      (enabled
+         bool
+         (help
+            "State of the event trigger. If TRUE, this EventTrigger can be triggered, if FALSE the EventTrigger can't be triggered.  This value is not saved, so feel free to change it for debugging")
+         (no_test))
+      (enabled_at_start
+         bool
+         (help
+            "Initial state of the EventTrigger. If TRUE, the EventTrigger will work initially, if FALSE the EventTrigger will not work until an enable_event happens.")
+         (refresh enabled))
+      (triggers_to_reset
+         (array
+            object
+            (class EventTrigger)
+            (obj_flags no_null))
+         (help
+            "these triggers will be reset (i.e. hide its shows, etc.) when this trigger fires"))
+      (wait_for_events
+         (array
+            symbol
+            (list
+               {$this supported_events})
+            (help
+               "When events are triggered, arm them, and delay fire until this handler is called")))
+      (next_link
+         object
+         (class EventTrigger)
+         (obj_flags no_this)
+         (refresh trigger_order))
+      (trigger_order
+         int
+         (list TRIGGER_ORDER_ENUM)
+         (read_only
+            {==
+               [next_link]
+               ""})
+         (help
+            "Order of triggering next_link"))
+      (anim_trigger
+         int
+         (list TRIGGER_ANIM_ENUM)
+         (help
+            "Sets whether and how this will trigger itself based on Anim calls to it")
+         (refresh anim_frame))
+      (anim_frame
+         float
+         (help
+            "If anim_trigger is kAnimTrigger, then this is the frame we will trigger ourselves on")
+         (read_only
+            {!=
+               [anim_trigger]
+               kTriggerAnimFrame})))
+   (views
+      (events
+         ("trigger"
+            [trigger_events 0])
+         ("disable"
+            [disable_events 0])
+         ("enable"
+            [enable_events 0])
+         ("wait_for"
+            [wait_for_events 0])))
+   (supported_events
+      (start)))
+(Wind
+   (description
+      "Object representing blowing wind, CharHair and Fur can point at them.")
+   (superclasses)
+   (ext wind)
+   (types)
+   (editor
+      (prevailing
+         VECTOR3
+         (help
+            "Prevailing wind in inches/sec, along each world space axis, adds to random component, 1 mph == 17 inches/sec"))
+      (random
+         VECTOR3
+         (help
+            "Random wind speed in inches/sec, along each world axis, adds to prevailing wind, 1 mph == 17 inches/sec"))
+      (time_loop
+         float
+         (help
+            "how long in seconds before the wind loops, 50 is a nice default"))
+      (space_loop
+         float
+         (help
+            "how far in inches before the wind loops, 100 is a nice default"))
+      (set_defaults
+         script
+         (help
+            "set defaults for outside")
+         (script
+            {$this set_defaults})
+         (refresh))
+      (set_zero
+         script
+         (help
+            "zero out the wind")
+         (script
+            {$this set_zero})
+         (refresh))
+      (wind_owner
+         object
+         (class Wind)
+         (help
+            "Wind owner for the wind, properties shown are not for the owner, however, you must edit it directly")
+         (obj_flags no_null)
+         (no_test))))
+(PartLauncher
+   (description
+      "Event object to launch a specified number of particles off a particle system")
+   (ext pl)
+   (types
+      (basic_launcher)
+      (particle_launcher))
+   (editor
+      (launch
+         script
+         (script
+            {$this launch_particles})
+         (help
+            "Launch the particles"))
+      (part
+         object
+         (class ParticleSys)
+         (help
+            "Particle sytem to launch from")
+         (refresh life speed size delta_size start_color mid_color end_color start_alpha mid_alpha end_alpha pitch_low pitch_high yaw_low yaw_high box_extent_1 box_extent_2 mesh))
+      (trans
+         object
+         (class Trans)
+         (help
+            "Optional transformable to use for the particle launch location"))
+      (num_parts
+         int
+         (range 0 1000)
+         (help
+            "Number of particles to launch"))
+      (emit_rate
+         VECTOR2
+         (help
+            "Frame range to generate particles."))
+      (override_life
+         bool
+         (refresh life)
+         (help
+            "Override the life of the particles at launch"))
+      (life
+         float
+         (read_only
+            {!
+               [override_life]})
+         (help
+            "Life of the particles at launch"))
+      (override_speed
+         bool
+         (refresh speed)
+         (help
+            "Override the speed of the particles at launch"))
+      (speed
+         float
+         (read_only
+            {!
+               [override_speed]})
+         (help
+            "Speed of the particles at launch"))
+      (override_size
+         bool
+         (refresh size)
+         (help
+            "Override the size of the particles at launch"))
+      (size
+         float
+         (read_only
+            {!
+               [override_size]})
+         (help
+            "Size of the particles at launch"))
+      (override_delta_size
+         bool
+         (refresh delta_size)
+         (help
+            "Override the delta size of the particles at launch"))
+      (delta_size
+         float
+         (read_only
+            {!
+               [override_delta_size]})
+         (help
+            "Delta size of the particles at launch"))
+      (override_start_color
+         bool
+         (refresh start_color start_alpha)
+         (help
+            "Override the start color of the particles at launch"))
+      (start_color
+         color
+         (read_only
+            {!
+               [override_start_color]})
+         (help
+            "Start color of the particles at launch"))
+      (start_alpha
+         float
+         (read_only
+            {!
+               [override_start_color]})
+         (range 0 1)
+         (help
+            "Start alpha of the particles at launch"))
+      (override_mid_color
+         bool
+         (refresh mid_color mid_alpha)
+         (help
+            "Override the mid color of the particles at launch"))
+      (mid_color
+         color
+         (read_only
+            {!
+               [override_mid_color]})
+         (help
+            "Mid color of the particles at launch"))
+      (mid_alpha
+         float
+         (read_only
+            {!
+               [override_mid_color]})
+         (range 0 1)
+         (help
+            "Mid alpha of the particles at launch"))
+      (override_end_color
+         bool
+         (refresh end_color end_alpha)
+         (help
+            "Override the end color of the particles at launch"))
+      (end_color
+         color
+         (read_only
+            {!
+               [override_end_color]})
+         (help
+            "End color of the particles at launch"))
+      (end_alpha
+         float
+         (read_only
+            {!
+               [override_end_color]})
+         (range 0 1)
+         (help
+            "End alpha of the particles at launch"))
+      (override_emit_direction
+         bool
+         (refresh pitch_low pitch_high yaw_low yaw_high)
+         (help
+            "Override the emit direction of the particles at launch"))
+      (pitch_low
+         float
+         (read_only
+            {!
+               [override_emit_direction]})
+         (help
+            "Low pitch range of the particle launch direction"))
+      (pitch_high
+         float
+         (read_only
+            {!
+               [override_emit_direction]})
+         (help
+            "High pitch range of the particle launch direction"))
+      (yaw_low
+         float
+         (read_only
+            {!
+               [override_emit_direction]})
+         (help
+            "Low yaw range of the particle launch direction"))
+      (yaw_high
+         float
+         (read_only
+            {!
+               [override_emit_direction]})
+         (help
+            "High yaw range of the particle launch direction"))
+      (override_box_emitter
+         bool
+         (refresh box_extent_1 box_extent_2 override_mesh_emitter mesh)
+         (read_only
+            [override_mesh_emitter])
+         (help
+            "Override the box emitter for the particle launch"))
+      (box_extent_1
+         VECTOR3
+         (read_only
+            {!
+               [override_box_emitter]})
+         (help
+            "Box extent bound 1 for the particle launch"))
+      (box_extent_2
+         VECTOR3
+         (read_only
+            {!
+               [override_box_emitter]})
+         (help
+            "Box extent bound 1 for the particle launch"))
+      (override_mesh_emitter
+         bool
+         (refresh box_extent_1 box_extent_2 override_box_emitter mesh)
+         (read_only
+            [override_box_emitter])
+         (help
+            "Override the mesh emitter for the particle launch"))
+      (mesh
+         object
+         (class Mesh)
+         (read_only
+            {!
+               [override_mesh_emitter]})
+         (help
+            "Mesh emitter override"))))

@@ -1,0 +1,114 @@
+{new
+   UIPanel
+   panel_select_panel
+   (file
+      "panel_select.milo")
+   (focus panels.lst)
+   (num_panel_dirs 0)
+   (list_items
+      ())
+   (enter
+      {resize
+         [list_items]
+         0}
+      {do
+         ($list_item_strings
+            ())
+         ($resources
+            ())
+         {resize $list_item_strings 0}
+         {resize $resources 0}
+         {ui
+            foreach_screen
+            $screen
+            {unless
+               {== $screen panel_select_screen}
+               {$screen
+                  foreach_panel
+                  $panel
+                  {if
+                     {&&
+                        {$panel loaded_dir}
+                        {!
+                           {find_elem
+                              [list_items]
+                              {$panel loaded_dir}}}}
+                     {push_back
+                        [list_items]
+                        {$panel loaded_dir}}
+                     {push_back
+                        $list_item_strings
+                        {path_name
+                           {$panel loaded_dir}}}}}}}
+         {foreach
+            $dir
+            [list_items]
+            {$dir
+               iterate
+               Object
+               $obj
+               {do
+                  ($class
+                     {$obj class_name})
+                  ($type
+                     {$obj get_type})
+                  ($resource '')
+                  {if
+                     {&& $class $type}
+                     {set
+                        $resource
+                        {find_exists $syscfg objects $class types $type resource_file}}
+                     {if
+                        $resource
+                        {set
+                           $resource
+                           {sprintf
+                              "ui/%s"
+                              {elem $resource 1}}}}}
+                  {if
+                     {&&
+                        $resource
+                        {!
+                           {find_elem $resources $resource}}}
+                     {push_back $resources $resource}
+                     {push_back $list_item_strings $resource}}}}}
+         {set
+            [num_panel_dirs]
+            {size
+               [list_items]}}
+         {insert_elems
+            [list_items]
+            [num_panel_dirs]
+            $resources}
+         {panels.lst set_data $list_item_strings}})
+   (SELECT_MSG
+      {if
+         {== $component panels.lst}
+         {do
+            ($item
+               {elem
+                  [list_items]
+                  {panels.lst selected_pos}})
+            {if_else
+               {<
+                  {panels.lst selected_pos}
+                  [num_panel_dirs]}
+               {system_exec
+                  {sprint
+                     "cmd /c start ../../system/run/milo_r.exe "
+                     {$item get_path_name}}}
+               {system_exec
+                  {sprint
+                     "cmd /c start ../../system/run/milo_r.exe "
+                     $item}}}}})
+   (BUTTON_DOWN_MSG
+      {if_else
+         {== $action kAction_Cancel}
+         {ui pop_screen}
+         kDataUnhandled})}
+{new
+   UIScreen
+   panel_select_screen
+   (panels panel_select_panel)
+   (focus panel_select_panel)
+   (is_system_cheat TRUE)}
