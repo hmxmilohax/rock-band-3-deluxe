@@ -1,0 +1,471 @@
+;welcome to jnacks hell
+;update, its not so bad no more
+
+;todo, implement this with the new stuffs
+#define DX_MTV_SET_POS_HANDLER
+(
+   (dx_set_mtv_pos
+      {if_else {modifier_mgr is_modifier_active mod_fakejuke} ;check if fake jukebox mode is enabled
+         {Group.grp set_local_pos 0 -30 -136} ;if it is, hard set the location of the mtv overlay for style
+         {Group.grp set_local_pos $mtvpos_0 $mtvpos_1 $mtvpos_2} ;otherwise put it in the custom location
+      }
+   )
+)
+
+#define DTA_ARRAY_READER
+(
+   {if {> {size $songdtareader} 0}
+      {if {find_exists $songdtareader loading_phrase}
+         {set $dx_loading_tip_var {elem {find $songdtareader loading_phrase} 1}}
+      }
+      {if {find_exists $songdtareader name}
+         {set $namevar {elem {find $songdtareader name} 1}}
+      }
+      {if {find_exists $songdtareader artist}
+         {set $artistvar {sprintf {localize dx_mtv_1} {elem {find $songdtareader artist} 1}}}
+      }
+      {if {find_exists $songdtareader year_released}
+         {set $yearvar {elem {find $songdtareader year_released} 1}}
+      }
+      {if {find_exists $songdtareader album_name}
+         {set $albumvar {elem {find $songdtareader album_name} 1}}
+      }
+      {if {find_exists $songdtareader game_origin}
+         {set $sourcevar {elem {find $songdtareader game_origin} 1}}
+      }
+      {if {== $sourcevar rb1_dlc}
+         {set $sourcevar dlc}
+      }
+      {if {== $sourcevar DOWNLOADED}
+         {set $sourcevar customs}
+      }
+      {if {&& {== $sourcevar rb2} {find_exists $songdtareader ugc}}
+         {set $sourcevar customs}
+      }
+      {if {find_exists $songdtareader genre}
+         {set $genrevar {elem {find $songdtareader genre} 1}}
+      }
+      {if {find_exists $songdtareader sub_genre}
+         {set $subgenrevar {elem {find $songdtareader sub_genre} 1}}
+      }
+      {if {find_exists $songdtareader master}
+         {set $mastervar {elem {find $songdtareader master} 1}}
+      }
+      {if {find_exists $songdtareader author}
+         {set $authorvar {elem {find $songdtareader author} 1}}
+      }
+      {if {find_exists $songdtareader strings_author}
+         {set $stringsauthorvar {elem {find $songdtareader strings_author} 1}}
+      }
+      {if {find_exists $songdtareader keys_author}
+         {set $keysauthorvar {elem {find $songdtareader keys_author} 1}}
+      }
+      {if {|| {find_exists $songdtareader song_key} {find_exists $songdtareader vocal_tonic_note}}
+         {if {find_exists $songdtareader vocal_tonic_note}
+            {set $dx_vocal_tonic_note_var {elem {find $songdtareader vocal_tonic_note} 1}}
+         }
+         {if {find_exists $songdtareader song_key} ;song_key will take priority over vocal_tonic_note if it exists
+            {set $dx_vocal_tonic_note_var {elem {find $songdtareader song_key} 1}}
+         }
+         {if_else {find_exists $songdtareader song_tonality}
+            {set $dx_song_tonality_var {elem {find $songdtareader song_tonality} 1}}
+            {set $dx_song_tonality_var 0} ;default to major key if song_tonality is not defined
+         }
+         {if_else $dx_vocal_tonic_note_var
+            {switch $dx_vocal_tonic_note_var
+               (0 {set $dx_song_key_var "c"})
+               (1 {set $dx_song_key_var "c_sharp"})
+               (2 {set $dx_song_key_var "d"})
+               (3 {set $dx_song_key_var "d_sharp"})
+               (4 {set $dx_song_key_var "e"})
+               (5 {set $dx_song_key_var "f"})
+               (6 {set $dx_song_key_var "f_sharp"})
+               (7 {set $dx_song_key_var "g"})
+               (8 {set $dx_song_key_var "g_sharp"})
+               (9 {set $dx_song_key_var "a"})
+               (10 {set $dx_song_key_var "a_sharp"})
+               (11 {set $dx_song_key_var "b"})
+            }
+            ; TODO: figure out why vocal_tonic_note 0 is not being read
+            {set $dx_song_key_var "c"}
+         }
+         {if_else {== $dx_song_tonality_var 0}
+            {set $dx_song_key_var {sprint $dx_song_key_var "_major"}}
+            {set $dx_song_key_var {sprint $dx_song_key_var "_minor"}}
+         }
+      }
+      {dx_rank_var_finder guitar 139 176 221 267 333 409}
+      {dx_rank_var_finder drum 124 151 178 242 345 448}
+      {dx_rank_var_finder bass 135 181 228 293 364 436}
+      {dx_rank_var_finder vocals 132 175 218 279 353 427}
+      {dx_rank_var_finder band 163 215 243 267 292 345}
+      {dx_rank_var_finder keys 153 211 269 327 385 443}
+      {dx_rank_var_finder real_keys 153 211 269 327 385 443}
+      {dx_rank_var_finder real_guitar 150 205 264 323 382 442}
+      {dx_rank_var_finder real_bass 150 208 267 325 384 442}
+   }
+)
+#define MTV_DTA_READER
+(
+   {if $dx_author_finder_is_enabled
+      ;init vars
+      {set $dx_path_failed FALSE}
+      {set $tempreadarray ()}
+      {resize $tempreadarray 0}
+      {set $songdtareader ()}
+      {resize $songdtareader 0}
+      ;init base filepath
+      {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+      ;if base file path exists
+      {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+         ;set it
+         {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}} ;a dlc dta
+          ;check if we are on disc
+          {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"}}
+            ;set on disc path
+            {set $filepath "songs/songs.dta"} ;on disc
+            ;we have to assume ps3 hw can see all, because file_exists doesnt work outside of the ark there
+            {if_else $dx_ps3hw
+               {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+               {set $dx_path_failed TRUE}
+            }
+         }
+      }
+      ;man idk why but ps3 hw cannot display a package_name for rb1, thus this mess
+      {if $dx_ps3hw
+         {foreach $entry
+            (
+               29fingers sayitaintso inbloom ithinkimparanoid
+               timewehad missqueen hereitgoesagain creep
+               blooddoll waveofmutilation shouldistay maps
+               gimmeshelter brainpower sabotage blitzkriegbop
+               celebrityskin imsosick whenyouwereyoung
+               blackholesun wanteddeadoralive learntofly seven
+               orangecrush mainoffender thehandthatfeeds
+               daylatedollarshort epic suffragettecity
+               ballroomblitz deadonarrival pleasure
+               trainkeptarollin areyougonnabemygirl paranoid
+               timmy welcomehome gowiththeflow danicalifornia
+               nightmare dontfearthereaper reptilia
+               electricversion vasoline detroitrockcity
+               cantletgo nexttoyou cherubrock tomsawyer
+               entersandman greengrass outside highwaystar
+               foreplaylongtime flirtinwithdisaster igetby
+               runtothehills wontgetfooled
+            )
+            {if {== $entry {symbol {meta_performer song}}}
+               {set $filepath "songs/rb1_songs.dta"}
+            }
+         }
+      }
+      {if {! $dx_path_failed}
+         #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
+         {if {&& {!= $filepath "songs/rb1_songs.dta"} {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+            {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
+            {if {has_substr $filepath BLUS30050}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLUS30147}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLUS30463}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLES00986}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00986/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLES00385}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00385/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if {has_substr $filepath BLES00228}
+               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00228/USRDIR/" $packagename "/songs/songs.dta"}}
+            }
+            {if_else {|| $dx_ps3hw {file_exists $ps3_base_path}}
+               {set $filepath $ps3_base_path}
+               {set $dx_path_failed TRUE}
+            }
+         }
+         #endif
+         #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
+         {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+            {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}}}}
+            {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
+            {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
+            {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
+            {search_replace $filepath "_song/" "/" $filepath}
+            ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
+         }
+         #endif
+
+         {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {== $filepath "songs/rb1_songs.dta"} $dx_ps3hw {file_exists $filepath}} #endif
+            {set $songdtareader {read_file $filepath}}
+            {set $dx_path_failed TRUE}
+         }
+
+         {if_else {> {size $songdtareader} 0}
+            {foreach $entry $songdtareader
+               {if {== {elem $entry 0} {symbol {meta_performer song}}}
+                  {set $songdtareader $entry}
+                  DTA_ARRAY_READER
+               }
+            }
+            {set $dx_path_failed TRUE}
+         }
+
+         {set $songdtareader ()}
+         {resize $songdtareader 0}
+         {if {! $dx_path_failed}
+            {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
+               {set $songdtareader {find $syscfg missing_song_data {symbol {meta_performer song}}}}
+               {if {> {size $songdtareader} 0}
+                  DTA_ARRAY_READER
+               }
+            }
+         }
+      }
+   }
+)
+#define CREATE_MTV_LINE
+(
+   {dx_mtv_hud_label {sprint "dx_mtv_label_" $this_total_lines} $dx_mtv_text_size $dx_mtv_text_font $dx_mtv_text_alignment $dx_mtv_text_kerning $dx_mtv_pos_x $dx_mtv_pos_z {- $dx_mtv_pos_y {* 0.78 {- $this_total_lines 1}}} $dx_mtv_color_r $dx_mtv_color_g $dx_mtv_color_b $mtv_destroy}
+)
+#define THIS_MTV_LBL
+(
+   {sprint "dx_mtv_label_" $this_total_lines ".lbl"}
+)
+#define MOD_STRING
+(
+   ;localized sprintf string
+   song_string
+   ;2 arguments
+   {{song_mgr get_meta_data {meta_performer song}} title}
+   {localize $this_mod}
+)
+#define DX_MTV_FORMATTER_HANDLER
+(
+   (mtv_formatter
+      {do
+         ;index starts at 1 (this time)
+         ($this_total_lines 1)
+         ($this_mod FALSE)
+         ;destroy all current instances when running
+         {set $mtv_destroy TRUE}
+         ;iterate through existing labels and destroy them
+         {foreach_int $i 1 15
+            {if {exists {sprint "dx_mtv_label_" $i ".lbl"}}
+               {delete {sprint "dx_mtv_label_" $i ".lbl"}}
+            }
+         }
+         ;create the first of many mtv overlay lines, defined above
+         CREATE_MTV_LINE
+         ;first cond is for song name and modifiers
+         {cond
+            ;check for various modifiers. The order is in priority.
+            ;Autoplay should always be first, for example.
+            ({&& {modifier_mgr is_modifier_active mod_auto_play} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+               {set $this_mod mod_auto_play}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_fakejuke}
+               {THIS_MTV_LBL set_song_name {meta_performer song}}
+            )
+            ({modifier_mgr is_modifier_active mod_auto_kick}
+               {set $this_mod mod_auto_kick}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_fastermode}
+               {THIS_MTV_LBL set_token_fmt
+                  ;localized sprintf string
+                  speed_string_mode
+                  ;3 arguments
+                  {{song_mgr get_meta_data {meta_performer song}} title}
+                  {localize mod_fastermode}
+                  {int {'+' 0.5 {'*' $speedmod 100}}}
+               }
+               {set $acceleration_label THIS_MTV_LBL} ;specify the label to update only it on speed change
+            )
+            ({&& {!= $speedmod 1.0} {! {modifier_mgr is_modifier_active mod_fastermode}}}
+               {THIS_MTV_LBL set_token_fmt
+                  ;localized sprintf string
+                  speed_string
+                  ;2 arguments
+                  {{song_mgr get_meta_data {meta_performer song}} title}
+                  {int {'+' 0.5 {'*' $speedmod 100}}}
+               }
+            )
+            ({modifier_mgr is_modifier_active mod_perfection}
+               ;sets locale string for use with define
+               {set $this_mod mod_perfection}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_brutalmode}
+               {set $this_mod mod_brutalmode}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_precision}
+               {set $this_mod mod_precision}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ({modifier_mgr is_modifier_active mod_chmode}
+               {set $this_mod mod_chmode}
+               {THIS_MTV_LBL set_token_fmt MOD_STRING}
+            )
+            ;cond fallback
+            ;if none above in cond detected, just set the name as is
+            {THIS_MTV_LBL set_song_name {meta_performer song}}
+         }
+         ;move up the song title a little bit for style
+         {THIS_MTV_LBL set text_size {* $dx_mtv_text_size 1.15}}
+         ;move on to next line
+         {++ $this_total_lines}
+         ;these are pretty straight forward for a bit
+         ;make new line, fill it
+         {if {|| $dx_mtv_line_artist {modifier_mgr is_modifier_active mod_fakejuke}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_artist_name_from_shortname {meta_performer song}}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_year {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt year_string {{song_mgr get_meta_data {meta_performer song}} year_released}}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_album $albumvar}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt stringify $albumvar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_genre {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt {{song_mgr get_meta_data {meta_performer song}} genre}}
+            {++ $this_total_lines}
+         }
+         ;only add subgenre line if it is unique against normal genre
+         {if {&& $dx_mtv_line_sub_genre {!= $subgenrevar {{song_mgr get_meta_data {meta_performer song}} genre}} $subgenrevar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt $subgenrevar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_game_origin $sourcevar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt $sourcevar}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_author $authorvar {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            ;mtv overlay happens faster than track panel enter so we need to check here first
+            {beatmatch foreach_active_player $player
+               {switch {$player instrument}
+                  (real_guitar {set $real_guitarplayeractive true})
+                  (real_bass {set $real_bassplayeractive true})
+                  (keys {set $keysplayeractive true})
+                  (real_keys {set $real_keysplayeractive true})
+                  kDataUnhandled
+               }
+            }
+            {cond
+               ;if protar is active but not keys
+               (
+                  {&&
+                     {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
+                     $stringsauthorvar
+                     {!= $real_keysplayeractive true}
+                     {!= $keysplayeractive true}
+                  }
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar ", " {localize strings_author} ": " $stringsauthorvar}}
+               )
+               ;if keys are active but not protar
+               (
+                  {&&
+                     {!= $real_bassplayeractive true}
+                     {!= $real_guitarplayeractive true}
+                     $keysauthorvar
+                     {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
+                  }
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar ", " {localize keys_author} ": " $keysauthorvar}}
+               )
+               ;if both keys and protar is active
+               (
+                  {&&
+                     {|| {== $real_bassplayeractive true} {== $real_guitarplayeractive true}}
+                     $stringsauthorvar
+                     $keysauthorvar
+                     {|| {== $real_keysplayeractive true} {== $keysplayeractive true}}
+                  }
+                  ;set the first line with the normal author
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar}}
+                  ;make a new line and populate with protar + keys authors
+                  {++ $this_total_lines}
+                  CREATE_MTV_LINE
+                  {THIS_MTV_LBL set_token_fmt {sprint {localize strings_author} ": " $stringsauthorvar ", " {localize keys_author} ": " $keysauthorvar}}
+               )
+               ;cond fallback
+               ;if we only have one author, only print it
+               {THIS_MTV_LBL set_token_fmt {sprint {localize author} ": " $authorvar}}
+            }
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_song_key $dx_song_key_var {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt keyof_string {localize $dx_song_key_var}}
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_section {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt {beatmatch get_section_at_ms {{beatmatch main_performer} progress_ms}}}
+            {set $current_section_label THIS_MTV_LBL} ;specify the label to update only it on section change
+            {++ $this_total_lines}
+         }
+         {if {&& $dx_mtv_line_bpm {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+            CREATE_MTV_LINE
+            {THIS_MTV_LBL set_token_fmt bpm_report $dx_bpm_counter}
+            {set $bpm_label THIS_MTV_LBL} ;specify the label to update only it on bpm change
+            {++ $this_total_lines}
+         }
+         ;this is a hack and i should fix this better later
+         {set $mtv_destroy FALSE}
+
+         ;hide the old stinky label
+         {artist.lbl set_token_fmt os_blnk}
+      }
+   )
+)
+#define MTV_WRITER_CHOOSER
+(
+   {if {! {gamemode in_mode trainer}}
+      {if {&& $dx_author_finder_is_enabled {! $dx_path_failed}}
+         {unless $dx_path_failed
+            {do
+               {unless $dx_mtv_dta_reader_once
+                  {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
+                  MTV_DTA_READER
+               }
+               {if
+                  {&&
+                     {! $artistvar}
+                     {! $namevar}
+                  }
+                  {set $dx_path_failed TRUE}
+               }
+               {if {exists artist.lbl}
+                  #ifndef HX_XBOX
+                  DX_CURRENT_SONG_TXT_WRITER
+                  DX_CURRENT_SONG_JSON_WRITER
+                  #endif
+                  {$this mtv_formatter}
+               }
+            }
+         }
+      }
+      {if $dx_path_failed
+         {if
+            {exists song.lbl}
+            {song.lbl set_song_name $short_name}
+         }
+         {if
+            {exists artist.lbl}
+            {artist.lbl set_artist_name_from_shortname $short_name}
+         }
+      }
+   }
+)

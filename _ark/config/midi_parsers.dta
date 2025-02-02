@@ -37,7 +37,7 @@
          }
       }
    }
-   #include ../dx/countdown/dx_countdown_midi_parsers.dta
+   #include ../dx/track/countdown/dx_countdown_midi_parsers.dta
    #include ../dx/macros/dx_midi_parsers.dta
    {new
       MidiParser
@@ -2124,6 +2124,20 @@
                   $mp.val
                   {beat_to_seconds
                      {- $mp.start 1}}}})}
+      {new
+      MidiParser
+      end_of_song
+      (track_name EVENTS)
+      (text
+         {if
+            {&&
+               {== $mp.val end}
+               $banddirector}
+            {$banddirector
+               set_end
+               {beat_to_seconds $mp.start}}
+            {set $add_end_shot FALSE}
+            {set $dx_end_of_song $mp.start}})}
       {do
          ($ver
             {do
@@ -2377,7 +2391,9 @@
                         {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
                      }
                      {set [enabled] TRUE}
-                  })
+                  }
+                  {if {! $dx_venue_lights} {set [enabled] FALSE}}
+               )
                (text
                   {if
                      {&&
@@ -2423,7 +2439,9 @@
                         {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
                      }
                      {set [enabled] FALSE}
-                  })
+                  }
+                  {if {! $dx_venue_lights} {set [enabled] FALSE}}
+               )
                (term
                   {if
                      [legacy_presets]
@@ -2673,15 +2691,35 @@
                (text
                   {if
                      [enabled]
+                     ;add a final end shot so the clean up doesnt add camera spam
                      {if
-                        {has_substr
-                           $mp.val
-                           "coop_"}
-                        {$banddirector
-                           add_symbol_key
-                           shot_5
-                           $mp.val
-                           {beat_to_seconds $mp.start}}}
+                        {&&
+                           {! $add_end_shot}
+                           {||
+                              {has_substr $mp.val "directed_"}
+                              {has_substr $mp.val "coop_"}
+                           }
+                        }
+                        {set $add_end_shot TRUE}
+                        {if
+                           {has_substr
+                              $mp.val
+                              "directed_"}
+                           {$banddirector
+                              add_symbol_key
+                              shot_5
+                              $mp.val
+                              {beat_to_seconds $dx_end_of_song}}}
+                        {if
+                           {has_substr
+                              $mp.val
+                              "coop_"}
+                           {$banddirector
+                              add_symbol_key
+                              shot_5
+                              $mp.val
+                              {beat_to_seconds $dx_end_of_song}}}
+                     }
                      {if
                         {has_substr
                            $mp.val
@@ -2690,19 +2728,16 @@
                            add_symbol_key
                            shot_5
                            $mp.val
+                           {beat_to_seconds $mp.start}}}
+                     {if
+                        {has_substr
+                           $mp.val
+                           "coop_"}
+                        {$banddirector
+                           add_symbol_key
+                           shot_5
+                           $mp.val
                            {beat_to_seconds $mp.start}}}})}}}}
-   {new
-      MidiParser
-      end_of_song
-      (track_name EVENTS)
-      (text
-         {if
-            {&&
-               {== $mp.val end}
-               $banddirector}
-            {$banddirector
-               set_end
-               {beat_to_seconds $mp.start}}})}
    {new
       MidiParser
       trainer_events_pro_drums

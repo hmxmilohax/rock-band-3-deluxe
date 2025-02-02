@@ -1,18 +1,9 @@
-{func
-   dx_current_section_fetcher
-   ;runs in beatmatcher, do not add log
-   ;{dx_log_writer beatmatch {sprint "func: dx_current_section_fetcher"}}
-   ;{dx_log_writer beatmatch
-   ;   {sprintf "Executed dx_current_section_fetcher - time: %.4fms"
-   ;      {time
-            {if {&& $dx_mtvup $dx_section_mtv_line}
-               {set $dx_current_section {localize {beatmatch get_section_at_ms {{beatmatch main_performer} progress_ms}}}}
-               {{{gamemode get track_panel} find mtv_overlay} mtv_formatter}
-            }
-   ;      }
-   ;   }
-   ;}
-}
+#define DX_GEMTRACKDIR
+;must be used in beatmatch foreach $player, used for find_obj
+({{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}})
+#define DX_VOCALDIR
+;must be used in beatmatch foreach $player, used for find_obj
+({{get_track_panel} loaded_dir} vocals)
 {func
    dx_set_song_speed
    ;{dx_log_writer info {sprint "func: dx_set_song_speed"}}
@@ -51,99 +42,24 @@
    ;}
 }
 {func
-   dx_mtv_time_remaining_handler ;using length_ms from song_mgr and dx_ms_to_time_str func
-   ;{dx_log_writer beatmatch {sprint "func: dx_mtv_time_remaining_handler"}}
-   ;{dx_log_writer beatmatch
-   ;   {sprintf "Executed dx_mtv_time_remaining_handler - time: %.4fms"
-   ;      {time
-            {if {&& $dx_mtvup {exists beatmatch}}
-               {switch $dx_time_remaining
-                  (off 
-                     {do
-                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing FALSE} ;hide timer and do nothing else
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.1336) ;in approximately 8 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
-                  (down
-                     {do
-                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}} ;grab current song length in ms
-                        {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
-                        {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
-                        {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
-                        {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
-                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
-                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing TRUE} ;show timer
-                        {switch $dx_disp_total_time ;check whether total time should be displayed
-                           (TRUE
-                              {if_else $dx_time_remain_dbg
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" $brutal_number_0 $brutal_number_1 $brutal_number_2 $brutal_number_3 $dx_crowd_0 $dx_crowd_1 $dx_crowd_2 $dx_crowd_3}} ;temp brutal debug
-                                 ;{{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
-                              }
-                           )
-                           (FALSE
-                              {if_else $dx_time_remain_dbg
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
-                              }
-                           )
-                        }
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.0668) ;in approximately 4 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
-                  (up
-                     {do
-                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {{song_mgr get_meta_data {meta_performer song}} length_ms}} ;grab current song length in ms
-                        ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
-                        {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
-                        {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
-                        {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
-                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
-                        {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing TRUE} ;show timer
-                        {switch $dx_disp_total_time ;check whether total time should be displayed
-                           (TRUE
-                              {if_else $dx_time_remain_dbg
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
-                              }
-                           )
-                           (FALSE
-                              {if_else $dx_time_remain_dbg
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
-                                 {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
-                              }
-                           )
-                        }
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.0668) ;in approximately 4 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
-                  {do
-                     {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_top.lbl} set showing FALSE} ;hide timer and do nothing else
-                     {script_task
-                        kTaskUISeconds
-                        (delay 0.1336) ;in approximately 8 frames, call this function again
-                        (script {dx_mtv_time_remaining_handler})
-                     }
-                  }
-
-               }
-                  ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+   dx_update_and_hide_guitar_fx
+   {if {< $dx_selected_guitar_fx 5}
+      {beatmatch foreach_active_player $player ;applies the selected guitar fx to the player
+         {if {== {$player instrument} guitar}
+            {if_else {>= $dx_selected_guitar_fx 5}
+               {set $test_guitar_fx 4}
+               {set $test_guitar_fx $dx_selected_guitar_fx}
             }
-   ;      }
-   ;   }
-   ;}
+            {handle ($player update_guitar_fx)}
+            {set_this {find_obj DX_GEMTRACKDIR effect_selector}}
+            {if {! $this_get_effect_scale}
+            {set $this_get_effect_scale TRUE}
+            {set $vanilla_effect_selector_0 {$this set_local_scale_index 0 {$this get_local_scale_index 0}}}
+            {set $vanilla_effect_selector_1 {$this set_local_scale_index 1 {$this get_local_scale_index 1}}}
+            {set $vanilla_effect_selector_2 {$this set_local_scale_index 2 {$this get_local_scale_index 2}}}
+          }
+            {$this set_local_scale 0 0 0}
+         }
+      }
+   }
 }

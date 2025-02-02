@@ -2,7 +2,7 @@
 cd "%~dp0"
 set "xenia_path="
 set "base_xex_path="
-set "config_file=dx_config.ini"
+set "config_file=dx_build_config.ini"
 
 for /f "tokens=1,* delims== " %%A in (%config_file%) do (
     if "%%A"=="xenia_path" set "xenia_path=%%~B"

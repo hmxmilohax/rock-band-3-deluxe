@@ -4,6 +4,7 @@
          ($options
             {array 0})
          {push_back $options os_ingame_hud}
+         {push_back $options os_track_hud}
          {push_back $options os_menu_options}
          {push_back $options os_quick_chat}
          {push_back $options os_functional_options}
@@ -41,6 +42,8 @@
       {switch {$component selected_sym}
          (os_ingame_hud
             {$this show_state dxState_InGameHUD})
+         (os_track_hud
+            {$this show_state dxState_TrackHUD})
          (os_menu_options
             {$this show_state dxState_MenuOptions})
          (os_quick_chat
@@ -76,6 +79,8 @@
       ($options
          {array 0})
       #ifndef HX_WII
+      {push_back $options {if_else $dx_song_select_rings os_song_rings_on os_song_rings_off}}
+      {push_back $options {if_else $dx_more_info_toggle os_more_info_toggle_on os_more_info_toggle_off}}
       {switch $dx_instrument_icons
          (rb3 {push_back $options os_icons_rb3})
          (rb4 {push_back $options os_icons_rb4})
@@ -107,6 +112,30 @@
    )
    (SELECT_MSG
       {switch {$component selected_sym}
+         ((os_song_rings_on os_song_rings_off)
+            {set $dx_song_select_rings {! $dx_song_select_rings}}
+            {if_else $dx_song_select_rings
+               {set $dx_tracked_changed os_song_rings_on}
+               {set $dx_tracked_changed os_song_rings_off}
+            }
+            {dx_state_pos_tracker}
+            DX_MENU_OPTIONS_DATA
+            {if {== {ui current_screen} song_select_screen}
+               {song_select_panel refresh_selected_song}
+            }
+         )
+         ((os_more_info_toggle_on os_more_info_toggle_off)
+            {set $dx_more_info_toggle {! $dx_more_info_toggle}}
+            {if_else $dx_more_info_toggle
+               {set $dx_tracked_changed os_more_info_toggle_on}
+               {set $dx_tracked_changed os_more_info_toggle_off}
+            }
+            {dx_state_pos_tracker}
+            DX_MENU_OPTIONS_DATA
+            {if {== {ui current_screen} song_select_screen}
+               {song_select_panel refresh_selected_song}
+            }
+         )
          (os_menu_theme
             {$this show_state dxState_MenuTheme})
          (os_menu_color
@@ -561,6 +590,7 @@
          (0.5 {push_back $options os_dx_mic_od_3})
          (0.3 {push_back $options os_dx_mic_od_4})
          (0.1 {push_back $options os_dx_mic_od_5})
+         {push_back $options os_dx_mic_od_unknown}
       }
       {push_back $options {if_else $dx_additional_parts os_additional_parts_on os_additional_parts_off}}
       {push_back $options {if_else $dx_song_delay os_songdelay_on os_songdelay_off}}
@@ -571,7 +601,8 @@
          (off {push_back $options os_intro_off})
       }
       {push_back $options {if_else $dx_splash_screen os_splash_on os_splash_off}}
-      {push_back $options {if_else $dx_confirm_song_count os_confirm_songcount_on os_confirm_songcount_off}}
+      ;remove high song count warn
+      ;{push_back $options {if_else $dx_confirm_song_count os_confirm_songcount_on os_confirm_songcount_off}}
       #ifdef RB3E
       {switch $dx_connected_server
          (none {push_back $options os_server_online})
@@ -608,7 +639,7 @@
             DX_FUNCTIONAL_OPTIONS_DATA
             {set $previous_state dxState_FunctionalOptions}
          )
-         ((os_dx_mic_od_1 os_dx_mic_od_2 os_dx_mic_od_3 os_dx_mic_od_4 os_dx_mic_od_5)
+         ((os_dx_mic_od_1 os_dx_mic_od_2 os_dx_mic_od_3 os_dx_mic_od_4 os_dx_mic_od_5 os_dx_mic_od_unkown)
             {set $dx_mic_deploy_sens
                {switch $dx_mic_deploy_sens
                   (0.9 0.7)
@@ -616,6 +647,7 @@
                   (0.5 0.3)
                   (0.3 0.1)
                   (0.1 0.9)
+                  0.9
                }
             }
             {dx_state_pos_tracker}
@@ -759,6 +791,7 @@
       {push_back $options print_objects}
       {push_back $options print_platform}
       {push_back $options {if_else $dx_time_remain_dbg os_time_remain_dbg_on os_time_remain_dbg_off}}
+      {push_back $options {if_else $dx_judgment_dbg os_judgment_dbg_on os_judgment_dbg_off}}
       {push_back $options os_cycleaspect} 
 
       {dx_state_setup dxState_Debug FALSE}
@@ -832,6 +865,16 @@
             {if_else $dx_time_remain_dbg
                {set $dx_tracked_changed os_time_remain_dbg_on}
                {set $dx_tracked_changed os_time_remain_dbg_off}
+            }
+            {dx_state_pos_tracker}
+            DX_DEBUG_DATA
+            {set $previous_state dxState_Debug}
+         )
+         ((os_judgment_dbg_on os_judgment_dbg_off)
+            {set $dx_judgment_dbg {! $dx_judgment_dbg}}
+            {if_else $dx_judgment_dbg
+               {set $dx_tracked_changed os_judgment_dbg_on}
+               {set $dx_tracked_changed os_judgment_dbg_off}
             }
             {dx_state_pos_tracker}
             DX_DEBUG_DATA
@@ -1029,6 +1072,7 @@
       (dx_random os_auto_endurance_random)
       (FALSE os_auto_endurance_off)
    }
+   {if_else $dx_insta_win os_insta_win_on os_insta_win_off}
    {if_else $dx_bot_1 os_dx_bot_1_on os_dx_bot_1_off}
    {if_else $dx_bot_2 os_dx_bot_2_on os_dx_bot_2_off}
    {if_else $dx_bot_3 os_dx_bot_3_on os_dx_bot_3_off}
@@ -1077,6 +1121,10 @@
                (dx_random FALSE)
                (FALSE dx_selected)
             }}
+            {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
+         )
+         ((os_insta_win_on os_insta_win_off)
+            {set $dx_insta_win {! $dx_insta_win}}
             {options_audio.lst set_data (DX_BOT_SETTINGS_DATA)}
          )
          ((os_dx_bot_1_on os_dx_bot_1_off)
@@ -1132,9 +1180,9 @@
 (
    {switch $dx_set_ui_pos_tracked_ui
       (mtv
-         {set $dx_set_ui_pos_0 $mtvpos_0}
-         {set $dx_set_ui_pos_1 $mtvpos_1}
-         {set $dx_set_ui_pos_2 $mtvpos_2}
+         {set $dx_set_ui_pos_0 $dx_mtv_pos_x}
+         {set $dx_set_ui_pos_1 $dx_mtv_pos_z}
+         {set $dx_set_ui_pos_2 $dx_mtv_pos_y}
       )
       (speed_control
          {set $dx_set_ui_pos_0 $speed_controlpos_0}
@@ -1176,6 +1224,21 @@
          {set $dx_set_ui_pos_1 $solo_boxpos_1}
          {set $dx_set_ui_pos_2 $solo_boxpos_2}
       )
+      (highway_overdrive_text
+         {set $dx_set_ui_pos_0 $dx_track_overdrive_x}
+         {set $dx_set_ui_pos_1 $dx_track_overdrive_z}
+         {set $dx_set_ui_pos_2 $dx_track_overdrive_y}
+      )
+      (highway_streak_text
+         {set $dx_set_ui_pos_0 $dx_track_streak_x}
+         {set $dx_set_ui_pos_1 $dx_track_streak_z}
+         {set $dx_set_ui_pos_2 $dx_track_streak_y}
+      )
+      (highway_username_text
+         {set $dx_set_ui_pos_0 $dx_track_username_x}
+         {set $dx_set_ui_pos_1 $dx_track_username_z}
+         {set $dx_set_ui_pos_2 $dx_track_username_y}
+      )
       kDataUnhandled
    }
    {if $findme
@@ -1187,7 +1250,7 @@
 #define DX_RESET_HUD_AXIS_POS
 (
    {switch $dx_set_ui_pos_tracked_ui
-      (mtv {set $dx_set_ui_pos_0 0})
+      (mtv {set $dx_set_ui_pos_0 16.80})
       (speed_control {set $dx_set_ui_pos_0 46})
       (all_item {set $dx_set_ui_pos_0 0})
       (score {set $dx_set_ui_pos_0 191})
@@ -1195,9 +1258,12 @@
       (scoreboard {set $dx_set_ui_pos_0 8})
       (star_display {set $dx_set_ui_pos_0 0})
       (solo_box {set $dx_set_ui_pos_0 0})
+      (highway_overdrive_text {set $dx_set_ui_pos_0 0})
+      (highway_streak_text {set $dx_set_ui_pos_0 2})
+      (highway_username_text {set $dx_set_ui_pos_0 0})
    }
    {switch $dx_set_ui_pos_tracked_ui
-      (mtv {set $dx_set_ui_pos_1 0})
+      (mtv {set $dx_set_ui_pos_1 57})
       (speed_control {set $dx_set_ui_pos_1 0})
       (all_item {set $dx_set_ui_pos_1 0})
       (score {set $dx_set_ui_pos_1 0})
@@ -1205,9 +1271,12 @@
       (scoreboard {set $dx_set_ui_pos_1 0})
       (star_display {set $dx_set_ui_pos_1 0})
       (solo_box {set $dx_set_ui_pos_1 0})
+      (highway_overdrive_text {set $dx_set_ui_pos_1 -5})
+      (highway_streak_text {set $dx_set_ui_pos_1 -5})
+      (highway_username_text {set $dx_set_ui_pos_1 0})
    }
    {switch $dx_set_ui_pos_tracked_ui
-      (mtv {set $dx_set_ui_pos_2 0})
+      (mtv {set $dx_set_ui_pos_2 13.78})
       (speed_control {set $dx_set_ui_pos_2 -5})
       (all_item {set $dx_set_ui_pos_2 0})
       (score {set $dx_set_ui_pos_2 175})
@@ -1215,6 +1284,9 @@
       (scoreboard {set $dx_set_ui_pos_2 -16})
       (star_display {set $dx_set_ui_pos_2 0})
       (solo_box {set $dx_set_ui_pos_2 0})
+      (highway_overdrive_text {set $dx_set_ui_pos_2 -2.5})
+      (highway_streak_text {set $dx_set_ui_pos_2 -2})
+      (highway_username_text {set $dx_set_ui_pos_2 -5.5})
    }
 )
 
@@ -1222,11 +1294,11 @@
 (
    {switch $dx_set_ui_pos_tracked_ui
       (mtv
-         {set $mtvpos_0 $dx_set_ui_pos_0}
-         {set $mtvpos_1 $dx_set_ui_pos_1}
-         {set $mtvpos_2 $dx_set_ui_pos_2}
+         {set $dx_mtv_pos_x $dx_set_ui_pos_0}
+         {set $dx_mtv_pos_z $dx_set_ui_pos_1}
+         {set $dx_mtv_pos_y $dx_set_ui_pos_2}
          {if $dx_mtvup
-            {{{gamemode get track_panel} find mtv_overlay} dx_set_mtv_pos}
+            {{{gamemode get track_panel} find mtv_overlay} mtv_formatter}
          }
       )
       (speed_control
@@ -1281,13 +1353,7 @@
          {set $crowd_meterpos_0 $dx_set_ui_pos_0}
          {set $crowd_meterpos_1 $dx_set_ui_pos_1}
          {set $crowd_meterpos_2 $dx_set_ui_pos_2}
-         {if
-            {&&
-               {|| {gamemode in_mode practice} {gamemode in_mode qp_practice}}
-               {exists beatmatch}
-            }
-            {coop_track_panel dx_set_crowd_meter_pos}
-         }
+         ;this doesnt do anything
       )
       (scoreboard
          {set $scoreboardpos_0 $dx_set_ui_pos_0}
@@ -1299,7 +1365,7 @@
                {! {gamemode in_mode trainer}}
                {exists beatmatch}
             }
-            {coop_track_panel dx_set_scoreboard_pos}
+            {dx_set_scoreboard_pos}
          }
       )
       (star_display
@@ -1312,20 +1378,52 @@
                {! {gamemode in_mode trainer}}
                {exists beatmatch}
             }
-            {coop_track_panel dx_set_star_display_pos}
+            {dx_set_star_display_pos}
          }
       )
       (solo_box
          {set $solo_boxpos_0 $dx_set_ui_pos_0}
          {set $solo_boxpos_1 $dx_set_ui_pos_1}
          {set $solo_boxpos_2 $dx_set_ui_pos_2}
-         {if
-            {&&
-               {! {gamemode in_mode practice}}
-               {! {gamemode in_mode trainer}}
-               {exists beatmatch}
+         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+            {beatmatch foreach_active_player $player
+               {dx_set_solo_box_pos $player $solo_boxpos_0 $solo_boxpos_1 $solo_boxpos_2}
             }
-            {coop_track_panel dx_set_solo_box_pos}
+         }
+      )
+      (highway_overdrive_text
+         {set $dx_track_overdrive_x $dx_set_ui_pos_0}
+         {set $dx_track_overdrive_z $dx_set_ui_pos_1}
+         {set $dx_track_overdrive_y $dx_set_ui_pos_2}
+         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+            {beatmatch foreach_active_player $player
+               {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b FALSE}
+            }
+         }
+      )
+      (highway_streak_text
+         {set $dx_track_streak_x $dx_set_ui_pos_0}
+         {set $dx_track_streak_z $dx_set_ui_pos_1}
+         {set $dx_track_streak_y $dx_set_ui_pos_2}
+         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+            {beatmatch foreach_active_player $player
+               {if {!= {$player instrument} vocals}
+                  {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b FALSE}
+               }
+            }
+         }
+      )
+      (highway_username_text
+         {set $dx_track_username_x $dx_set_ui_pos_0}
+         {set $dx_track_username_z $dx_set_ui_pos_1}
+         {set $dx_track_username_y $dx_set_ui_pos_2}
+         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+            {beatmatch foreach_active_player $player
+               {if {!= {$player instrument} vocals}
+                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b FALSE}
+                  {dx_show_track_username $dx_track_username $player}
+               }
+            }
          }
       )
       kDataUnhandled
@@ -1514,6 +1612,9 @@
             (scoreboard dxState_ScoreElements)
             (star_display dxState_ScoreElements)
             (solo_box dxState_InGameHUD)
+            (highway_username_text dxState_TrackHighwayUsername)
+            (highway_overdrive_text dxState_TrackHighwayOverdrive)
+            (highway_streak_text dxState_TrackHighwayStreak)
             dxState_MiloFind
          }
       }
