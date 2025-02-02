@@ -90,4 +90,4 @@ From here, you can make any personal modifications to the game or build it yours
 
 [RB3DXBuildPkgPS3](https://github.com/InvoxiPlayGames/RB3DXBuildPkgPS3) - For building an RB3DX PKG for PS3
 
-[Wiimmfi ISO Patcher](https://wiimmfi.de/patcher/iso) - For self building an RB3DX image for wii. Binary locally in repo due to clean download restraints
+[Wiimmfi ISO Patcher](https://wiimmfi.de/patcher/iso) - For self building an RB3DX image for Wii. Binary locally in repo due to clean download restraints
