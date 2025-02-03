@@ -992,7 +992,10 @@ def main():
                         json_file = Path(json_path)
                         if json_file.is_file():
                             with json_file.open('r', encoding='utf-8') as file:
-                                json_data = file.read()
+                                try:
+                                    json_data = file.read()
+                                except:
+                                    print("Error reading json data")
                             if json_data:
                                 data_source = 'local'
                                 from_web = False
@@ -1003,7 +1006,10 @@ def main():
                     json_file = Path(json_path)
                     if json_file.is_file():
                         with json_file.open('r', encoding='utf-8') as file:
-                            json_data = file.read()
+                            try:
+                                json_data = file.read()
+                            except:
+                                print("Error reading json data")
                         if json_data:
                             data_source = 'local'
                             from_web = False
