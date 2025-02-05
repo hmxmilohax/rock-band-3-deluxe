@@ -25,10 +25,10 @@ with open(gen_version_path, "r") as f:
 with open(gen_version_path, "w") as f:
     for line in gen_version_content:
         if line.startswith("f.write(f'(message_motd"):
-            f.write('f.write(f\'(message_motd "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\n\')\n')
+            f.write('f.write(f\'(message_motd "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\')\n')
         elif line.startswith("f.write(f'(message_motd_signin"):
-            f.write('f.write(f\'(message_motd_signin "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\n\')\n')
+            f.write('f.write(f\'(message_motd_signin "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\')\n')
         elif line.startswith("f.write(f'(message_motd_noconnection"):
-            f.write('f.write(f\'(message_motd_noconnection "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\n\')\n')
+            f.write('f.write(f\'(message_motd_noconnection "Rock Band 3 Deluxe {version} Carregado! Obrigado por jogar!")\')\n')
         else:
-            f.write(f"{line}\n")
+            f.write(f"{line}")
