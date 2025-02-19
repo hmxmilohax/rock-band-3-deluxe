@@ -460,10 +460,18 @@
          {if {&& {! {song.lst is_scrolling}} {== {{music_library get_highlighted_node} get_node_type} kNodeSong} $probeforfinder}
             {if {|| {file_exists {sprint {song_mgr song_path {{music_library get_highlighted_node} get_token}} "/../../gen/songs.dtb"}} {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}}
                {set $probeforfinder FALSE}
-               {$this dx_authorfinder}
+               {if {exists author_thread} {delete author_thread}}
+               {thread_task kTaskSeconds
+                  (name author_thread)
+                  (script {$this dx_authorfinder})
+               }
             }
          }
       }
+      ;{if_else {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
+         {set $dx_song_mounted TRUE}
+      ;   {set $dx_song_mounted FALSE}
+      ;}
    )
    (dx_more_info_load
       {if {song.lst is_scrolling}
@@ -474,16 +482,27 @@
       {if {&& {! {song.lst is_scrolling}} {== {{music_library get_highlighted_node} get_node_type} kNodeSong} $probeforfinder}
          {if {|| {file_exists {sprint {song_mgr song_path {{music_library get_highlighted_node} get_token}} "/../../gen/songs.dtb"}} {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}}
             {set $probeforfinder FALSE}
-            {$this dx_authorfinder}
+            {if {exists author_thread} {delete author_thread}}
+            {thread_task kTaskSeconds
+               (name author_thread)
+               (script {$this dx_authorfinder})
+            }
          }
       }
    )
    (dx_authorpoll
       ($shortname)
-      {dx_author_finder_var_reset}
-      {meta_performer set_song {symbol $shortname}}
-      {set $dx_song_data_processed FALSE}
-      {preload_panel dx_load_tip_and_author_finder}
+      {thread_task kTaskSeconds
+         (script
+            {dx_author_finder_var_reset}
+            {meta_performer set_song {{music_library get_highlighted_node} get_token}}
+            {set $dx_song_data_processed FALSE}
+            {if_else $dx_song_mounted
+               {preload_panel dx_load_tip_and_author_finder}
+               {$task loop}
+            }
+         )
+      }
    )
    (dx_authorfinder
       {set $dx_song_data_processed FALSE}
@@ -493,8 +512,8 @@
             {if {exists author_finder}
                {delete author_finder}
             }
-            {script_task kTaskUISeconds
-               (delay 0.75)
+            {thread_task kTaskUISeconds
+               (delay 0.5)
                (name author_finder)
                (script
                   {dx_author_finder_var_reset}
@@ -1087,41 +1106,17 @@
       }
       {$this refresh_selected_song}
    )
-   #define DX_PLAY_SET_SONG
-   (
-      {do
-         {set $poopie ()}
-         {resize $poopie 0}
-         {push_back $poopie {{music_library get_highlighted_node} get_token}}
-         {set $poopie {array $poopie}}
-         {set $picked_song {elem $poopie 0}}
-         {song.lst refresh}
-         {set $num {random_int 0 {song.lst num_data}}}
-         {song.lst set_selected_simulate_scroll $num}
-         {set $dx_song_picked TRUE}
-      }
-   )
-   #define DX_PLAY_ROLL_SONG
-   (
-      {do
-         {song.lst refresh}
-         {set $num {random_int 0 {song.lst num_data}}}
-         {song.lst set_selected_simulate_scroll $num}
-      }
-   )
    (pick_a_song
       {do
-         {set $num_tries 8}
-         {set $dx_song_picked FALSE}
-         {foreach_int $i 0 $num_tries
-            {if_else {&& {! $dx_song_picked} {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
-               DX_PLAY_SET_SONG
-               DX_PLAY_ROLL_SONG
-            }
-            {if {&& {== $num_tries $i} {! $dx_song_picked}}
-               {set $picked_song {random_elem $rb3_songlist}}
+         {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+            {set $picked_song {symbol {{music_library get_highlighted_node} get_token}}}
+            {do
+               {song.lst refresh}
+               {set $num {random_int 0 {song.lst num_data}}}
+               {song.lst set_selected_simulate_scroll $num}
             }
          }
+         {dx_log_writer info $picked_song}
          $picked_song
       }
    )
