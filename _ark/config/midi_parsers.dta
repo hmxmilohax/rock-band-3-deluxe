@@ -41,6 +41,13 @@
          $is_ugc_plus
       }
    }
+   {func is_ver_29
+      {&&
+         {exists meta_performer}
+         {exists song_mgr}
+         {=={{song_mgr get_meta_data {meta_performer song}} version} 29} ;Dx To reduce my lines of code I added this new variable that checks if this is ver 29
+      }
+   }
    #include ../dx/track/countdown/dx_countdown_midi_parsers.dta
    #include ../dx/macros/dx_midi_parsers.dta
    {new
@@ -2273,7 +2280,39 @@
                   }
                )
                (post_procs
-                  (bloom.pp bright.pp clean_trails.pp contrast_a.pp desat_blue.pp desat_posterize_trails.pp film_16mm.pp 'film_b+w.pp' film_blue_filter.pp film_contrast.pp film_contrast_blue.pp film_contrast_green.pp film_contrast_red.pp film_sepia_ink.pp film_silvertone.pp flicker_trails.pp horror_movie_special.pp photo_negative.pp photocopy.pp posterize.pp ProFilm_a.pp ProFilm_b.pp ProFilm_mirror_a.pp ProFilm_psychedelic_blue_red.pp shitty_tv.pp space_woosh.pp video.pp video_a.pp video_bw.pp video_security.pp video_trails.pp))
+                  (bloom.pp
+                     bright.pp
+                     clean_trails.pp
+                     contrast_a.pp
+                     desat_blue.pp
+                     desat_posterize_trails.pp
+                     film_16mm.pp
+                     'film_b+w.pp'
+                     film_blue_filter.pp
+                     film_contrast.pp
+                     film_contrast_blue.pp
+                     film_contrast_green.pp
+                     film_contrast_red.pp
+                     film_sepia_ink.pp
+                     film_silvertone.pp
+                     flicker_trails.pp
+                     horror_movie_special.pp
+                     photo_negative.pp
+                     photocopy.pp
+                     posterize.pp
+                     ProFilm_a.pp
+                     ProFilm_b.pp
+                     ProFilm_mirror_a.pp
+                     ProFilm_psychedelic_blue_red.pp
+                     shitty_tv.pp
+                     space_woosh.pp
+                     video.pp
+                     video_a.pp
+                     video_bw.pp
+                     video_security.pp
+                     video_trails.pp
+                  )
+               )
                (text
                   {if
                      {&&
@@ -2474,7 +2513,21 @@
                   {set
                      [start_offset]
                      0.25}
-                  {set [allow_keys] {is_ugc_plus}}
+                  {set 
+                     [allow_keys]
+                     {||
+                        {is_ver_29} ;This activates the function if it is version 29 or ugc_plus
+                        {is_ugc_plus}
+                     }
+                  }
+                  {if
+                     {&&
+                        {! {file_exists {sprint "songs/updates/" {meta_performer song} "/wearethechampions2_update.mid"}}} ; dx - Check if this has any updates and is version 30
+                        {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
+                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30} ; dx - This wasn't working, now I should check the spotlights.
+                     }
+                     {set [allow_keys] TRUE}
+                  }   
                )
                (allowed_notes
                   (37 38 39 40 41))
@@ -2652,7 +2705,12 @@
                (track_name VENUE)
                (enabled TRUE)
                (init
-                  {set [enabled] {is_ugc_plus}}
+                  {set [enabled] 
+                     {||
+                        {is_ugc_plus}
+                        {is_ver_29} ;This activates the function if it is version 29 or ugc_plus
+                     }
+                  }
                   {if
                      {&&
                         {! {file_exists {sprint "songs/updates/" {meta_performer song} "/wearethechampions2_update.mid"}}}
@@ -2670,6 +2728,57 @@
                      }
                      {if {has_substr $mp.val "coop_"}
                         {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds $mp.start}}
+                     }
+                  }
+               )
+            }
+            {new MidiParser ; This should only be used for updates. Support for customs could be added. Currently, this will not analyze lights or pp effects, so if you want to change something, the venue track should be there.
+               world_camera_parser_rbn3 
+               (track_name VENUE_BG) 
+               (enabled TRUE)
+               (init {set [enabled] {is_ver_29}})
+               (term {if [enabled] {$banddirector midi_shot5_cleanup}})
+               (text
+                  {if [enabled] ; Replace the cuts in the bg variant, there should only be bass, guitar, vocals and drums cuts on this track
+                     {if {has_substr $mp.val "directed_"}
+                        {$banddirector add_symbol_key shot_bg $mp.val {beat_to_seconds $mp.start}}
+                     }
+                     {if {has_substr $mp.val "coop_"}
+                        {$banddirector add_symbol_key shot_bg $mp.val {beat_to_seconds $mp.start}}
+                     }
+                  }
+               )
+            }
+            {new MidiParser
+               world_camera_parser_rbn3
+               (track_name VENUE_GK)
+               (enabled TRUE)
+               (init {set [enabled] {is_ver_29}})
+               (term {if [enabled] {$banddirector midi_shot5_cleanup}})
+               (text
+                  {if [enabled] ; Replace the cuts in the gk variant, there should only be keys, guitar, vocals and drums cuts on this track
+                     {if {has_substr $mp.val "directed_"}
+                        {$banddirector add_symbol_key shot_gk $mp.val {beat_to_seconds $mp.start}}
+                     }
+                     {if {has_substr $mp.val "coop_"}
+                        {$banddirector add_symbol_key shot_gk $mp.val {beat_to_seconds $mp.start}}
+                     }
+                  }
+               )
+            }
+            {new MidiParser
+               world_camera_parser_rbn3
+               (track_name VENUE_BK)
+               (enabled TRUE)
+               (init {set [enabled] {is_ver_29}})
+               (term {if [enabled] {$banddirector midi_shot5_cleanup}})
+               (text
+                  {if [enabled] ; Replace the cuts in the bk variant, there should only be keys, bass, vocals and drums cuts on this track
+                     {if {has_substr $mp.val "directed_"}
+                        {$banddirector add_symbol_key shot_bk $mp.val {beat_to_seconds $mp.start}}
+                     }
+                     {if {has_substr $mp.val "coop_"}
+                        {$banddirector add_symbol_key shot_bk $mp.val {beat_to_seconds $mp.start}}
                      }
                   }
                )
