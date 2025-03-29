@@ -65,7 +65,7 @@
                   {set $remote_trackspeed_keys FALSE}
                   {session send_msg_to_all {'`' ({set $remote_trackspeed_keys {',' $trackspeed_keys}}) kNetReliable}}
                )
-               (real_bass
+               (real_keys
                   {set $remote_trackspeed_real_keys FALSE}
                   {session send_msg_to_all {'`' ({set $remote_trackspeed_real_keys {',' $trackspeed_real_keys}}) kNetReliable}}
                )
@@ -147,106 +147,142 @@
 }
 
 {func dx_track_update_lengths
-
+   {beatmatch foreach_active_player $player
+      {set_this {find_obj DX_GEMTRACKDIR}}
+      {switch {$player instrument}
+         (guitar 
+            {dx_track_set_length_mult $this $tracklength_guitar}
+         )
+         (bass 
+            {dx_track_set_length_mult $this $tracklength_bass}
+         )
+         ((drum real_drum) 
+            {dx_track_set_length_mult $this $tracklength_drum}
+         )
+         (keys
+            {dx_track_set_length_mult $this $tracklength_keys}
+         )
+         (real_guitar
+            {dx_track_set_length_mult $this $tracklength_real_guitar}
+         )
+         (real_bass 
+            {dx_track_set_length_mult $this $tracklength_real_bass}
+         )
+         (vocals kDataUnhandled)
+      }
+   }
 }
 
 {func dx_track_set_length_mult ($trackdir $mult)
    {set_this $trackdir}
 
-   {dx_log_writer insane {sprint "Updating track length for " $trackdir}}
-   {set $sizeframe {track_size.anim frame}}
-
-   ; Setting track length is a destructive operation so we backup the old track_size animation here
-   {if_else {exists track_size_backup.anim}
-      ; Restore vanilla parameters before making changes
+   ; Delay the first set to avoid the track freaking out on first load
+   {if_else {exists mark_of_the_beast}
       {do
-         {dx_log_writer insane {sprint "Restoring anim object"}}
-         {track_size.anim copy track_size_backup.anim kCopyDeep}
+         {dx_log_writer insane {sprint "Updating track length for " $trackdir}}
+         {set $sizeframe {track_size.anim frame}}
+
+         ; Setting track length is a destructive operation so we backup the old track_size animation here
+         {if_else {exists track_size_backup.anim}
+            ; Restore vanilla parameters before making changes
+            {do
+               {dx_log_writer insane {sprint "Restoring anim object"}}
+               {track_size.anim copy track_size_backup.anim kCopyDeep}
+            }
+            ; This is the first time this track has been altered, so parameters are vanilla; back them up
+            {do
+               {dx_log_writer insane {sprint "Making new anim object"}}
+               {set $copied {new PropAnim track_size_backup.anim}}
+               {$copied set_name "track_size_backup.anim" $this}
+               {$copied copy track_size.anim kCopyDeep}
+            }
+         }
+
+         ; It's easier to delete/recreate the extension meshes than to keep them updated
+         ; Also means this function doesn't need to set instrument highway textures correctly, just copy the up to date mat
+         {if {exists flat_curve_extended.mesh}
+            {delete flat_curve_extended.mesh}
+         }
+         {if {exists overdrive_plane_extended.mesh}
+            {overdrive.anim remove_keys overdrive_plane_extended.mesh}
+            {delete overdrive_plane_extended.mesh}
+         }
+         {if {exists peakstate_plane_extended.mesh}
+            {overdrive.amim remove_keys peakstate_plane_extended.mesh}
+            {delete peakstate_plane_extended.mesh}
+         }
+         
+         {if {!= $mult 1}
+
+            ; Set a "fade anchor" at the strikeline, since the environ fade parameters are based off of distance from camera
+            {dx_multiply_keyframes_anchor_track track_size.anim track.env (fade_start) $mult game.cam (position)}
+            {dx_multiply_keyframes_anchor_track track_size.anim track.env (fade_end) $mult game.cam (position)}
+            {dx_multiply_keyframes_anchor_track track_size.anim track_gems.env (fade_start) $mult game.cam (position)}
+            {dx_multiply_keyframes_anchor_track track_size.anim track_gems.env (fade_end) $mult game.cam (position)}
+
+            {if {> $mult 1}
+               {dx_multiply_keyframes track_size.anim game.cam (far_plane) $mult}
+
+               ; When using higher track lengths, the track meshes aren't long enough
+               ; Duplicate the meshes and shift
+               {if {> $mult 2}
+                  {set $copied {new Mesh flat_curve_extended.mesh}}
+                  {$copied set_name "flat_curve_extended.mesh" $this}
+                  {$copied copy flat_curve.mesh kCopyShallow}
+                  {stationary_back.grp add_object flat_curve_extended.mesh}
+                  {flat_curve_extended.mesh set_local_pos 0 319.7348 0}
+
+                  {set $copied {new Mesh peakstate_plane_extended.mesh}}
+                  {$copied set_name "peakstate_plane_extended.mesh" $this}
+                  {$copied copy peakstate_plane.mesh kCopyShallow}
+                  {stationary_back.grp add_object peakstate_plane_extended.mesh}
+                  {peakstate_plane_extended.mesh set showing TRUE}
+                  {peakstate_plane_extended.mesh set_local_pos 0 319.7348 0.01}
+
+                  {dx_transplant_keyframes overdrive.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
+                  {dx_transplant_keyframes peakstate_fade.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
+                  {dx_transplant_keyframes bassgroove.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
+
+                  {set $copied {new Mesh overdrive_plane_extended.mesh}}
+                  {$copied set_name "overdrive_plane_extended.mesh" $this}
+                  {$copied copy overdrive_plane.mesh kCopyShallow}
+                  {stationary_back.grp add_object overdrive_plane_extended.mesh}
+                  {overdrive_plane_extended.mesh set showing TRUE}
+                  {overdrive_plane_extended.mesh set_local_pos 0 319.7348 0.02}
+
+                  {dx_transplant_keyframes overdrive.anim overdrive_plane.mesh overdrive_plane_extended.mesh}
+               }
+            }
+            {dx_multiply_keyframes track_size.anim $trackdir (top_y) $mult}
+
+            ; Move the solo box/popups
+            {track_size.anim foreach_keyframe player_feedback (position)
+               $frame
+               $value
+               {set $z {elem $value 2}}
+               ; Some simple math since the height doesn't change linearly (this is still inaccurate but it's good enough)
+               {*= $z {/ {sqrt {* 1.5 {+ $mult 0.5}}} 1.5}}
+               {set_elem $value 2 $z}
+               {track_size.anim set_key_val player_feedback (position) $frame $value}
+            }
+         }
+         {track_rails_guitar.mesh set_local_scale 1 $mult 1}
+         {track_rails_drum.mesh set_local_scale 1 $mult 1}
+         {track_rails_keyboard.mesh set_local_scale 1 $mult 1}
+         {track_rails_proguitar.mesh set_local_scale 1 $mult 1}
+
+         ; Set the frame of the animation to force an update
+         {track_size.anim set_frame $sizeframe}
       }
-      ; This is the first time this track has been altered, so parameters are vanilla; back them up
       {do
-         {dx_log_writer insane {sprint "Making new anim object"}}
-         {set $copied {new PropAnim track_size_backup.anim}}
-         {$copied set_name "track_size_backup.anim" $this}
-         {$copied copy track_size.anim kCopyDeep}
-      }
-   }
-
-   ; It's easier to delete/recreate the extension meshes than to keep them updated
-   ; Also means this function doesn't need to set instrument highway textures correctly, just copy the up to date mat
-   {if {exists flat_curve_extended.mesh}
-      {delete flat_curve_extended.mesh}
-   }
-   {if {exists overdrive_plane_extended.mesh}
-      {overdrive.anim remove_keys overdrive_plane_extended.mesh}
-      {delete overdrive_plane_extended.mesh}
-   }
-   {if {exists peakstate_plane_extended.mesh}
-      {overdrive.amim remove_keys peakstate_plane_extended.mesh}
-      {delete peakstate_plane_extended.mesh}
-   }
-   
-   {if {!= $mult 1}
-
-      ; Set a "fade anchor" at the strikeline, since the environ fade parameters are based off of distance from camera
-      {dx_multiply_keyframes_anchor_track track_size.anim track.env (fade_start) $mult game.cam (position)}
-      {dx_multiply_keyframes_anchor_track track_size.anim track.env (fade_end) $mult game.cam (position)}
-      {dx_multiply_keyframes_anchor_track track_size.anim track_gems.env (fade_start) $mult game.cam (position)}
-      {dx_multiply_keyframes_anchor_track track_size.anim track_gems.env (fade_end) $mult game.cam (position)}
-
-      {if {> $mult 1}
-         {dx_multiply_keyframes track_size.anim game.cam (far_plane) $mult}
-
-         ; When using higher track lengths, the track meshes aren't long enough
-         ; Duplicate the meshes and shift
-         {if {> $mult 2}
-            {set $copied {new Mesh flat_curve_extended.mesh}}
-            {$copied set_name "flat_curve_extended.mesh" $this}
-            {$copied copy flat_curve.mesh kCopyShallow}
-            {stationary_back.grp add_object flat_curve_extended.mesh}
-            {flat_curve_extended.mesh set_local_pos 0 319.7348 0}
-
-            {set $copied {new Mesh peakstate_plane_extended.mesh}}
-            {$copied set_name "peakstate_plane_extended.mesh" $this}
-            {$copied copy peakstate_plane.mesh kCopyShallow}
-            {stationary_back.grp add_object peakstate_plane_extended.mesh}
-            {peakstate_plane_extended.mesh set showing TRUE}
-            {peakstate_plane_extended.mesh set_local_pos 0 319.7348 0.01}
-
-            {dx_transplant_keyframes overdrive.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
-            {dx_transplant_keyframes peakstate_fade.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
-            {dx_transplant_keyframes bassgroove.anim peakstate_plane.mesh peakstate_plane_extended.mesh}
-
-            {set $copied {new Mesh overdrive_plane_extended.mesh}}
-            {$copied set_name "overdrive_plane_extended.mesh" $this}
-            {$copied copy overdrive_plane.mesh kCopyShallow}
-            {stationary_back.grp add_object overdrive_plane_extended.mesh}
-            {overdrive_plane_extended.mesh set showing TRUE}
-            {overdrive_plane_extended.mesh set_local_pos 0 319.7348 0.02}
-
-            {dx_transplant_keyframes overdrive.anim overdrive_plane.mesh overdrive_plane_extended.mesh}
+         {new Object mark_of_the_beast}
+         {script_task kTaskSeconds (delay 0.5)
+            (script
+               {dx_track_set_length_mult $trackdir $mult}
+            )
          }
       }
-      {dx_multiply_keyframes track_size.anim $trackdir (top_y) $mult}
-
-      ; Move the solo box/popups
-      {track_size.anim foreach_keyframe player_feedback (position)
-         $frame
-         $value
-         {set $z {elem $value 2}}
-         ; Some simple math since the height doesn't change linearly (this is still inaccurate but it's good enough)
-         {*= $z {/ {sqrt {* 1.5 {+ $mult 0.5}}} 1.5}}
-         {set_elem $value 2 $z}
-         {track_size.anim set_key_val player_feedback (position) $frame $value}
-      }
    }
-   {track_rails_guitar.mesh set_local_scale 1 $mult 1}
-   {track_rails_drum.mesh set_local_scale 1 $mult 1}
-   {track_rails_keyboard.mesh set_local_scale 1 $mult 1}
-   {track_rails_proguitar.mesh set_local_scale 1 $mult 1}
-
-   ; Set the frame of the animation to force an update
-   {track_size.anim set_frame $sizeframe}
 }
 
 ; Multiplies all of the keyframes in a PropAnim

@@ -1,0 +1,120 @@
+#define DX_SET_SPEEDS_DATA
+(
+   {$current_list set_data
+      (
+         ;if we are inside our special menu item, we want to blank out the other lines so it looks nice
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_track_lengths}
+      )
+   }
+)
+
+#define DX_PRINT_TRACK_LENGTH_GUITAR
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_guitar} {int {+ 0.5 {* $tracklength_guitar 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_BASS
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_bass} {int {+ 0.5 {* $tracklength_bass 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_DRUM
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_drum} {int {+ 0.5 {* $tracklength_drum 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_KEYS
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_keys} {int {+ 0.5 {* $tracklength_keys 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_REAL_GUITAR
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_guitar} {int {+ 0.5 {* $tracklength_real_guitar 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_REAL_BASS
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_bass} {int {+ 0.5 {* $tracklength_real_bass 100}}}}}
+)
+#define DX_PRINT_TRACK_LENGTH_REAL_KEYS
+(
+   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 7} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_keys} {int {+ 0.5 {* $tracklength_real_keys 100}}}}}
+)
+#define DX_TRACK_LENGTH_DATA
+(
+   {$current_list set_data
+      (
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk all_instruments}
+         DX_PRINT_TRACK_LENGTH_GUITAR
+         DX_PRINT_TRACK_LENGTH_BASS
+         DX_PRINT_TRACK_LENGTH_DRUM
+         DX_PRINT_TRACK_LENGTH_KEYS
+         DX_PRINT_TRACK_LENGTH_REAL_GUITAR
+         DX_PRINT_TRACK_LENGTH_REAL_BASS
+         DX_PRINT_TRACK_LENGTH_REAL_KEYS
+      )
+   }
+)
+
+(dxState_TrackLengths
+   (view
+      options_audio
+   )
+   (enter
+      {if {! {session is_in_game}}
+         {$this show_message}
+         {$this setup_message_text dx_track_lengths_desc FALSE}
+         {set $dx_no_message_sound TRUE}
+      }
+      {set $dx_list_item_selected FALSE}
+      {set $dx_list_pos 0}
+      {set $current_list options_audio.lst}
+      {if_else {$this in_game}
+         {$current_list set_type overshell_menu_ingame}
+         {$current_list set_type overshell_menu}
+      }
+      {$current_list restart_highlight_matanim}
+      {$current_list refresh}
+      DX_TRACK_LENGTH_DATA
+   )
+   ;(SCROLL_MSG
+   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
+   ;)
+   (BUTTON_DOWN_MSG
+      {if_else
+         $dx_list_item_selected
+         {switch $action
+            ((kAction_Confirm kAction_Cancel)
+               {set $dx_list_item_selected FALSE}
+               DX_TRACK_LENGTH_DATA
+            )
+            ((kAction_Up kAction_Right)
+               {dx_modify_tracklength $dx_list_pos 0.05}
+               DX_TRACK_LENGTH_DATA
+            )
+            ((kAction_Down kAction_Left)
+               {dx_modify_tracklength $dx_list_pos -0.05}
+               DX_TRACK_LENGTH_DATA
+            )
+            kDataUnhandled
+         }
+         {switch $action
+            (kAction_Confirm
+               {set $dx_list_item_selected TRUE}
+               {set $dx_list_pos {$current_list selected_data}}
+               DX_TRACK_LENGTH_DATA
+            )
+            (kAction_Right
+               {dx_modify_tracklength {$current_list selected_data} 0.05}
+               DX_TRACK_LENGTH_DATA
+            )
+            (kAction_Left
+               {dx_modify_tracklength {$current_list selected_data} -0.05}
+               DX_TRACK_LENGTH_DATA
+            )
+            kDataUnhandled
+         }
+      }
+   )
+   (on_cancel
+      DX_OS_CLOSE_MSG
+      {$this show_state dxState_DeluxeSettings}
+   )
+)
+
