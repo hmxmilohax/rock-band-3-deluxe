@@ -689,7 +689,7 @@
       {lyric_display.grp set_trans_parent draw_order.grp}
 
       {new UIColor lyric_highlight.color}
-      {lyric_highlight.color set color {pack_color 0.5 0.5 1}}
+      {lyric_highlight.color set color {pack_color 0 1 1}}
       {new UIColor lyric_normal.color}
       {lyric_normal.color set color {pack_color 1 1 1}}
 
@@ -713,12 +713,13 @@
          {$curlabel set_trans_parent lyric_display.grp}
          {$curlabel set_showing TRUE}
          {$curlabel set_token_fmt {sprint ""}}
-         {$curlabel set alt_style_enabled FALSE}
+         {$curlabel set alt_style_enabled TRUE}
          {$curlabel set alt_text_size 1}
          {$curlabel set alt_text_color lyric_highlight.color}
          {$curlabel set alt_font_resource_name pentatonic_outline}
          {$curlabel set markup TRUE}
-         {$curlabel set color_override lyric_normal.color}
+         {$curlabel set alt_mat_variation 'Pentatonic_outline_(5_00)4x_ploff'} ; This allows for syllable highlighting
+         ;{$curlabel set color_override lyric_normal.color}
       }
 
       ;{lyric_current.lbl set alt_style_enabled TRUE}
@@ -801,18 +802,20 @@
 ; $dx_lyric_display_phrases is populated by the lyric_display parser in dx_midi_parsers.dta
 
 
-{func dx_concat_syllables ($time $syllables)
-   {set $buf "<color=200,200,255,255>"}
+{func dx_concat_syllables ($highlight $syllables)
+   {set $buf "<alt>"}
    {set $tag_terminated FALSE}
+   {set $syl_id 0}
    {foreach $syl $syllables
-      {if {&& {< $time {elem $syl 0}} {! $tag_terminated}}
-         {set $buf {strcat $buf "</color>"}}
+      {if {&& {< $highlight $syl_id} {! $tag_terminated}}
+         {set $buf {strcat $buf "</alt>"}}
          {set $tag_terminated TRUE}
       }
       {set $buf {strcat $buf {elem $syl 1}}}
+      {++ $syl_id}
    }
    {unless $tag_terminated 
-      {set $buf {strcat $buf "</color>"}}
+      {set $buf {strcat $buf "</alt>"}}
    }
    $buf
 }
@@ -858,7 +861,7 @@
    {lyric_fadingout.lbl set_token_fmt {lyric_current.lbl get text_token}}
    {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
       {lyric_upcoming.lbl set_token_fmt {sprint ""}}
-      {lyric_upcoming.lbl set_token_fmt {dx_concat_syllables {dx_get_current_time_beats} {elem {dx_get_next_lyric_phrase} 1}}}
+      {lyric_upcoming.lbl set_token_fmt {dx_concat_syllables -1 {elem {dx_get_next_lyric_phrase} 1}}}
    }
    {lyric_transition.anim animate (range 0 1) (period 0.45) (units kTaskUISeconds)}
    {dx_lyric_display_update_syllable}
@@ -866,9 +869,9 @@
 
 ; This is so fucking nightmarish god damn
 {func dx_lyric_display_update_syllable ()
+   {lyric_current.lbl set_token_fmt {dx_concat_syllables $dx_lyric_display_current_syl_idx {elem {dx_get_current_lyric_phrase} 1}}}
    {++ $dx_lyric_display_current_syl_idx}
    {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
-   {lyric_current.lbl set_token_fmt {dx_concat_syllables {dx_get_current_time_beats} {elem {dx_get_current_lyric_phrase} 1}}}
    {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
    {if_else {>= $dx_lyric_display_current_syl_idx {size $syllables_array}}
       {dx_schedule_beats {elem {dx_get_next_lyric_phrase} 0} {quote {dx_lyric_display_advance_phrase}}}
