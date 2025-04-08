@@ -82,3 +82,61 @@
       ;{dx_log_writer info {sprint "drum trainer checker - " $dx_trainer_real_drum}}
    )
 }
+{func dx_lyric_display_push_phrase ($time)
+   {push_back $dx_lyric_display_phrases $_current_lyric_phrase}
+   {set $_current_lyric_phrase {array ($time ())}}
+}
+{new
+   MidiParser
+   lyric_display
+   (track_name 'PART VOCALS')
+   (enabled TRUE)
+   (allowed_notes (105))
+   (init
+      {set $iwanttologstuff TRUE}
+      {dx_log_writer insane {sprint "Lyric display parser initialized"}}
+      {set $dx_lyric_display_phrases {array ()}}
+      {set $_current_lyric_phrase {array (0 ())}}
+   )
+   (midi
+      {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
+      {dx_lyric_display_push_phrase $mp.start}
+   )
+   (lyric
+      {unless {== $mp.data "+"}
+         {set $lyriclist {elem $_current_lyric_phrase 1}}
+         {dx_log_writer insane {sprint "Syllables already in $lyriclist: " {size $lyriclist}}}
+         {if {> {size $lyriclist} 0}
+            {dx_log_writer insane {sprint "Getting previous lyric"}}
+            {set $prevlyric {elem $lyriclist {- {size $lyriclist} 1}}}
+            {dx_log_writer insane {sprint "Prev lyric: " $prevlyric}}
+            {if_else {> {- $mp.start {elem $prevlyric 0}} 2} ; Split by 2 beat delays
+               {dx_lyric_display_push_phrase $mp.start}
+               {if {> {size $lyriclist} 10} ; Split if phrase contains more than 10 syllables TODO: use the length of text instead
+                  {dx_lyric_display_push_phrase $mp.start}
+               }
+            }
+         }
+         {set $buf {sprint $mp.data}}
+         {dx_log_writer insane {sprint "Lyric event at " $mp.start ": " $buf}}
+         {set $talkie {has_substr $buf "#"}}
+         {search_replace $buf "#" "" $buf}
+         {search_replace $buf "^" "" $buf}
+         {if_else {|| {has_substr $buf "-"} {has_substr $buf "="}}
+            {do
+               {search_replace $buf "-" "" $buf}
+               {search_replace $buf "=" "-" $buf}
+               {set $word FALSE}
+            }
+            {do
+               {set $buf {sprint $buf " "}}
+               {set $word TRUE}
+            }
+         }
+         {if $talkie
+            {set $buf {sprint "<it>" $buf "</it>"}}
+         }
+         {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf)}}
+      }
+   )
+}

@@ -681,3 +681,206 @@
    ;   }
    ;}
 }
+{func dx_create_lyric_display ()
+   ; Only do this once
+   {unless {exists lyric_display.grp}
+      {new Group lyric_display.grp}
+      {draw_order.grp add_object lyric_display.grp}
+      {lyric_display.grp set_trans_parent draw_order.grp}
+
+      {new UIColor lyric_highlight.color}
+      {lyric_highlight.color set color {pack_color 0.5 0.5 1}}
+      {new UIColor lyric_normal.color}
+      {lyric_normal.color set color {pack_color 1 1 1}}
+
+      {new BandLabel lyric_current.lbl}
+      {new BandLabel lyric_upcoming.lbl}
+      {lyric_upcoming.lbl set alpha 0.75}
+      {lyric_upcoming.lbl set_local_pos 0 0 -0.75}
+      {lyric_upcoming.lbl set_local_scale 0.5 0.5 0.5}
+      {new BandLabel lyric_fadingout.lbl}
+      {lyric_fadingout.lbl set alpha 0}
+      {lyric_fadingout.lbl set_local_pos 0 0 0.75}
+      {lyric_fadingout.lbl set_local_scale 0.5 0.5 0.5}
+
+      {set $lyricdisplay_labels (lyric_current.lbl lyric_fadingout.lbl lyric_upcoming.lbl)}
+      {foreach $curlabel $lyricdisplay_labels
+         {$curlabel set resource_name pentatonic_outline}
+         {$curlabel set width 40}
+         {$curlabel set height 500}
+         {$curlabel set text_size 1}
+         {$curlabel set alignment kMiddleCenter}
+         {$curlabel set_trans_parent lyric_display.grp}
+         {$curlabel set_showing TRUE}
+         {$curlabel set_token_fmt {sprint ""}}
+         {$curlabel set alt_style_enabled FALSE}
+         {$curlabel set alt_text_size 1}
+         {$curlabel set alt_text_color lyric_highlight.color}
+         {$curlabel set alt_font_resource_name pentatonic_outline}
+         {$curlabel set markup TRUE}
+         {$curlabel set color_override lyric_normal.color}
+      }
+
+      ;{lyric_current.lbl set alt_style_enabled TRUE}
+      {lyric_display.grp add_object lyric_fadingout.lbl}
+      {lyric_display.grp add_object lyric_upcoming.lbl}
+      {lyric_display.grp add_object lyric_current.lbl}
+      {lyric_display.grp set_showing TRUE}
+      {lyric_display.grp set_local_pos 0 33 8.5} ; x z y??????
+
+      ; Animations
+
+      {new PropAnim lyric_transition.anim}
+
+      ; lyric_current.lbl anims
+      {lyric_transition.anim add_keys lyric_current.lbl (position) kPropVector3}
+      {lyric_transition.anim set_key_val lyric_current.lbl (position) 0 (0 0 -0.75)}
+      {lyric_transition.anim set_key_val lyric_current.lbl (position) 1 (0 0 0)}
+      {lyric_transition.anim set_interp_type lyric_current.lbl (position) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_current.lbl (scale) kPropVector3}
+      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 0 (0.5 0.5 0.5)}
+      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 1 (1 1 1)}
+      {lyric_transition.anim set_interp_type lyric_current.lbl (scale) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_current.lbl (alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 0 0.75}
+      {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 1 1}
+      {lyric_transition.anim set_interp_type lyric_current.lbl (alpha) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_current.lbl (alt_alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 0 0.75}
+      {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 1 1}
+      {lyric_transition.anim set_interp_type lyric_current.lbl (alt_alpha) kPropHermite}
+
+      ; lyric_upcoming.lbl anims
+      {lyric_transition.anim add_keys lyric_upcoming.lbl (alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 0 0}
+      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 1 0.75}
+      {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alpha) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_upcoming.lbl (alt_alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 0 0}
+      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 1 0.75}
+      {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alt_alpha) kPropHermite}
+
+      ; lyric_fadeout.lbl anims
+      {lyric_transition.anim add_keys lyric_fadingout.lbl (position) kPropVector3}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 0 (0 0 0)}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 1 (0 0 0.5)}
+      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (position) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_fadingout.lbl (scale) kPropVector3}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 0 (1 1 1)}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 1 (0.5 0.5 0.5)}
+      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (scale) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_fadingout.lbl (alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 0 1}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 1 0}
+      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alpha) kPropHermite}
+
+      {lyric_transition.anim add_keys lyric_fadingout.lbl (alt_alpha) kPropFloat}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 0 1}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 1 0}
+      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alt_alpha) kPropHermite}
+
+      {lyric_display.grp add_object lyric_transition.anim}
+
+      {lyric_transition.anim set rate kTaskUISeconds}
+      {lyric_transition.anim set_frame 1}
+   }
+}
+
+; All of the lyric data is stored in $dx_lyric_display_phrases
+; $dx_lyric_display_phrases is a array of phrases: with this format:
+;     (start_time (syllables) end_time)
+; Each of these syllables have this format:
+;     (time "text")
+; Example phrase: (10 ((11 "Hel-") (11.5 "lo")) 12)
+; $dx_lyric_display_phrases is populated by the lyric_display parser in dx_midi_parsers.dta
+
+
+{func dx_concat_syllables ($time $syllables)
+   {set $buf "<color=200,200,255,255>"}
+   {set $tag_terminated FALSE}
+   {foreach $syl $syllables
+      {if {&& {< $time {elem $syl 0}} {! $tag_terminated}}
+         {set $buf {strcat $buf "</color>"}}
+         {set $tag_terminated TRUE}
+      }
+      {set $buf {strcat $buf {elem $syl 1}}}
+   }
+   {unless $tag_terminated 
+      {set $buf {strcat $buf "</color>"}}
+   }
+   $buf
+}
+
+; Make sure $script is contained in a {quote} call
+{func dx_schedule_beats ($time $script)
+   {set $dx_schedule_beats_idx {+ $dx_schedule_beats_idx 1}}
+   {dx_log_writer insane {sprint "Scheduled task for " $time ", " {- $time {dx_get_current_time_beats}} " beats in the future"}}
+   {if {> {dx_get_current_time_beats} $time}
+      {set $time {dx_get_current_time_beats}}; If something is scheduled for the past, we're behind. Execute the script immediately
+   }
+   {thread_task
+      kTaskBeats
+      (name {sprint "Scheduled task for beat " $time " id#" $dx_schedule_beats_idx})
+      (delay {- $time {dx_get_current_time_beats}})
+      (script
+         {dx_log_writer insane {sprint "Schedule hit"}}
+         {eval $script}
+      )
+   }
+}
+
+
+
+{func dx_get_current_time_beats ()
+   {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}
+}
+{func dx_get_current_lyric_phrase ()
+   {elem $dx_lyric_display_phrases $dx_lyric_display_current_idx}
+}
+
+{func dx_get_next_lyric_phrase ()
+   {if_else {>= $dx_lyric_display_current_idx {- {size $dx_lyric_display_phrases} 1}}
+      (9999999999 ()) ; Hack: Just return an empty phrase that has a rediculously far start time on the last phrase
+      {elem $dx_lyric_display_phrases {+ $dx_lyric_display_current_idx 1}}
+   }
+}
+
+{func dx_lyric_display_advance_phrase ()
+   {++ $dx_lyric_display_current_idx}
+   {set $dx_lyric_display_current_syl_idx -1}
+   {dx_log_writer insane {sprint "Advancing lyric display to " $dx_lyric_display_current_idx}}
+   {lyric_fadingout.lbl set_token_fmt {lyric_current.lbl get text_token}}
+   {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
+      {lyric_upcoming.lbl set_token_fmt {sprint ""}}
+      {lyric_upcoming.lbl set_token_fmt {dx_concat_syllables {dx_get_current_time_beats} {elem {dx_get_next_lyric_phrase} 1}}}
+   }
+   {lyric_transition.anim animate (range 0 1) (period 0.45) (units kTaskUISeconds)}
+   {dx_lyric_display_update_syllable}
+}
+
+; This is so fucking nightmarish god damn
+{func dx_lyric_display_update_syllable ()
+   {++ $dx_lyric_display_current_syl_idx}
+   {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
+   {lyric_current.lbl set_token_fmt {dx_concat_syllables {dx_get_current_time_beats} {elem {dx_get_current_lyric_phrase} 1}}}
+   {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
+   {if_else {>= $dx_lyric_display_current_syl_idx {size $syllables_array}}
+      {dx_schedule_beats {elem {dx_get_next_lyric_phrase} 0} {quote {dx_lyric_display_advance_phrase}}}
+      {dx_schedule_beats {elem {elem $syllables_array $dx_lyric_display_current_syl_idx} 0} {quote {dx_lyric_display_update_syllable}}}
+   }
+}
+
+{func dx_lyric_display_start ()
+   {set $vocal_track_out TRUE}
+   {set $dx_lyric_display_current_idx -1}
+   {lyric_current.lbl set_token_fmt {sprint ""}}
+   {lyric_upcoming.lbl set_token_fmt {sprint ""}}
+   {lyric_fadingout.lbl set_token_fmt {sprint ""}}
+   {dx_lyric_display_advance_phrase}
+}
