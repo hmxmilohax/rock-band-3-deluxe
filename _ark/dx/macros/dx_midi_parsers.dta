@@ -128,9 +128,13 @@
          ;}
          {set $buf {sprint $mp.data}}
          {dx_log_writer insane {sprint "Lyric event at " $mp.start ": " $buf}}
-         {set $talkie {has_substr $buf "#"}}
+         {set $talkie {|| {has_substr $buf "#"} {has_substr $buf "^"}}}
          {search_replace $buf "#" "" $buf}
          {search_replace $buf "^" "" $buf}
+         {search_replace $buf "%" "" $buf}
+         {search_replace $buf "*" "" $buf}
+         {search_replace $buf "_" " " $buf}
+         {search_replace $buf "§" " " $buf}
          {if_else {|| {has_substr $buf "-"} {has_substr $buf "="}}
             {do
                {search_replace $buf "-" "" $buf}
@@ -143,14 +147,19 @@
             }
          }
          {+= $_lyric_char_count {strlen $buf}}
+         {set $slashsplit {has_substr $buf "/"}}
+         {search_replace $buf "/" "" $buf}
          {if $talkie
             {set $buf {sprint "<it>" $buf "</it>"}}
          }
-         {if {> $_lyric_char_count {if_else {|| $word $prev_word} 50 60}} ; Make it more likely to split phrases on a word rather than a syllable
+         {if {> $_lyric_char_count {if_else {|| $word $prev_word} 55 65}} ; Make it more likely to split phrases on a word rather than a syllable
             {dx_lyric_display_push_phrase $mp.start}
          }
          {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf)}}
          {set $prev_word $word}
+         {if $slashsplit
+            {dx_lyric_display_push_phrase $mp.start}
+         }
       }
    )
 }
