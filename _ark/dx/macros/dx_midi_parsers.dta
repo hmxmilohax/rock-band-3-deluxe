@@ -82,10 +82,28 @@
       ;{dx_log_writer info {sprint "drum trainer checker - " $dx_trainer_real_drum}}
    )
 }
+{func dx_get_latest_phrase ()
+   {elem $dx_lyric_display_phrases {- {size $dx_lyric_display_phrases} 1}}
+}
+{func dx_get_last_syllable ($phrase)
+   {set $sylcount {size {elem $phrase 1}}}
+   {if_else {> $sylcount 0}
+      {elem {elem $phrase 1} {- $sylcount 1}}
+      kDataUnhandled
+   }
+}
+{func dx_get_max_phrase_time ($phrase)
+   {if_else {dx_get_last_syllable $phrase}
+      {elem {dx_get_last_syllable $phrase} 0}
+      {elem $phrase 0}
+   }
+}
+; $time refers to the start time of the next phrase
 {func dx_lyric_display_push_phrase ($time)
    {set $syllist {elem $_current_lyric_phrase 1}}
-   {if {> {size $syllist} 0} ; Remove the space from the last syllable
-      {set $lastsyl {elem $syllist {- {size $syllist} 1}}}
+   {set $lastsyl {dx_get_last_syllable $_current_lyric_phrase}}
+   {dx_log_writer insane {sprint "last syllable: " $lastsyl}}
+   {if $lastsyl ; Remove the space from the last syllable
       {set $syl_str {elem $lastsyl 1}}
       {search_replace $syl_str " " "" $syl_str}
       {set_elem $lastsyl 1 $syl_str}
@@ -102,7 +120,7 @@
    (allowed_notes (105))
    (init
       {set $iwanttologstuff TRUE}
-      {dx_log_writer insane {sprint "Lyric display parser initialized"}}
+      ; {dx_log_writer insane {sprint "Lyric display parser initialized"}}
       {set $dx_lyric_display_phrases {array ()}}
       {set $_current_lyric_phrase {array (0 ())}}
       {set $_lyric_char_count 0}
@@ -114,7 +132,7 @@
    (lyric
       {unless {== $mp.data "+"}
          {set $lyriclist {elem $_current_lyric_phrase 1}}
-         {dx_log_writer insane {sprint "Syllables already in $lyriclist: " {size $lyriclist}}}
+         ; {dx_log_writer insane {sprint "Syllables already in $lyriclist: " {size $lyriclist}}}
          ;{if {> {size $lyriclist} 0}
          ;   {dx_log_writer insane {sprint "Getting previous lyric"}}
          ;   {set $prevlyric {elem $lyriclist {- {size $lyriclist} 1}}}
@@ -133,8 +151,10 @@
          {search_replace $buf "^" "" $buf}
          {search_replace $buf "%" "" $buf}
          {search_replace $buf "*" "" $buf}
+         {search_replace $buf "+" "" $buf}
          {search_replace $buf "_" " " $buf}
-         {search_replace $buf "ยง" " " $buf}
+         {search_replace $buf "ง" " " $buf}
+         {set $buf {fix_special_chars $buf}}
          {if_else {|| {has_substr $buf "-"} {has_substr $buf "="}}
             {do
                {search_replace $buf "-" "" $buf}
@@ -160,6 +180,14 @@
          {if $slashsplit
             {dx_lyric_display_push_phrase $mp.start}
          }
+      }
+   )
+   (term
+      {set $phrasecount {size $dx_lyric_display_phrases}}
+      {if {> $phrasecount 0}
+         {set $lasttime {dx_get_max_phrase_time $_current_lyric_phrase}}
+         {dx_lyric_display_push_phrase {+ $lasttime 1}}
+         {dx_lyric_display_push_phrase {+ $lasttime 2}}
       }
    )
 }
