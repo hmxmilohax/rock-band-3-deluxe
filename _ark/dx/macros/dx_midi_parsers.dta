@@ -92,6 +92,13 @@
       kDataUnhandled
    }
 }
+{func dx_get_last_syllable_idx ($phrase)
+   {set $sylcount {size {elem $phrase 1}}}
+   {if_else {> $sylcount 0}
+      {- $sylcount 1}
+      -1
+   }
+}
 {func dx_get_max_phrase_time ($phrase)
    {if_else {dx_get_last_syllable $phrase}
       {elem {dx_get_last_syllable $phrase} 0}
@@ -102,6 +109,14 @@
 {func dx_lyric_display_push_phrase ($time)
    {set $syllist {elem $_current_lyric_phrase 1}}
    {set $lastsyl {dx_get_last_syllable $_current_lyric_phrase}}
+   {set $nextlyrics {array ()}}
+   {if $lastsyl ; MidiParser doesn't read lyric events and phrase events that are at the same time in the right order
+      {if {>= {elem $lastsyl 0} $time}
+         {push_back $nextlyrics $lastsyl}
+         {remove_elem {elem $_current_lyric_phrase 1} $lastsyl}
+         {set $lastsyl {dx_get_last_syllable $_current_lyric_phrase}}
+      }
+   }
    {dx_log_writer insane {sprint "last syllable: " $lastsyl}}
    {if $lastsyl ; Remove the space from the last syllable
       {set $syl_str {elem $lastsyl 1}}
@@ -109,7 +124,7 @@
       {set_elem $lastsyl 1 $syl_str}
    }
    {push_back $dx_lyric_display_phrases $_current_lyric_phrase}
-   {set $_current_lyric_phrase {array ($time ())}}
+   {set $_current_lyric_phrase {array ($time $nextlyrics)}}
    {set $_lyric_char_count 0}
 }
 {new
@@ -124,10 +139,14 @@
       {set $dx_lyric_display_phrases {array ()}}
       {set $_current_lyric_phrase {array (0 ())}}
       {set $_lyric_char_count 0}
+      {set $last_phrase_time -1}
    )
    (midi
-      {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
-      {dx_lyric_display_push_phrase $mp.start}
+      {if {!= $last_phrase_time $mp.start} ; Filter out duplicate phrases because rb2 got quirky with note 106
+         {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
+         {dx_lyric_display_push_phrase $mp.start}
+         {set $last_phrase_time $mp.start}
+      }
    )
    (lyric
       {unless {== $mp.data "+"}
