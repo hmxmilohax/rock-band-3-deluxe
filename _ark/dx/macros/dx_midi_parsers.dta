@@ -100,16 +100,16 @@
    }
 }
 {func dx_get_max_phrase_time ($phrase)
-   {if_else {dx_get_last_syllable $phrase}
-      {elem {dx_get_last_syllable $phrase} 2}
+   {max {if_else {dx_get_last_syllable $phrase}
+      {elem {dx_get_last_syllable $phrase} 0}
       {elem $phrase 0}
-   }
+   } {elem $phrase 2}}
 }
 {func dx_lyric_display_push_dummy_phrase ($time)
-   {push_back $dx_lyric_display_phrases {array ($time () 0 "dummy phrase")}}
+   {push_back $dx_lyric_display_phrases {array ($time () $time 0 "dummy phrase")}}
 }
 ; $time refers to the start time of the next phrase
-{func dx_lyric_display_push_phrase ($time)
+{func dx_lyric_display_push_phrase ($time $end)
    {set $syllist {elem $_current_lyric_phrase 1}}
    {set $lastsyl {dx_get_last_syllable $_current_lyric_phrase}}
    {set $nextlyrics {array ()}}
@@ -132,7 +132,7 @@
       {dx_lyric_display_push_dummy_phrase {+ {dx_get_max_phrase_time $_current_lyric_phrase} 4}}
       {dx_lyric_display_push_dummy_phrase {- $time 4}}
    }
-   {set $_current_lyric_phrase {array ($time $nextlyrics)}}
+   {set $_current_lyric_phrase {array ($time $nextlyrics $end)}}
    {set $_lyric_char_count 0}
 }
 {new
@@ -145,14 +145,14 @@
       {set $iwanttologstuff TRUE}
       ; {dx_log_writer insane {sprint "Lyric display parser initialized"}}
       {set $dx_lyric_display_phrases {array ()}}
-      {set $_current_lyric_phrase {array (0 ())}}
+      {set $_current_lyric_phrase {array (0 () 0)}}
       {set $_lyric_char_count 0}
       {set $last_phrase_time -1}
    )
    (midi
       {if {!= $last_phrase_time $mp.start} ; Filter out duplicate phrases because rb2 got quirky with note 106
          {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
-         {dx_lyric_display_push_phrase $mp.start}
+         {dx_lyric_display_push_phrase $mp.start $mp.end}
          {set $last_phrase_time $mp.start}
       }
    )
@@ -199,13 +199,13 @@
          {if $talkie
             {set $buf {sprint "<it>" $buf "</it>"}}
          }
-         {if {> $_lyric_char_count {if_else {&& $word {! $prev_word}} 80 95}} ; Make it more likely to split phrases on a word rather than a syllable
-            {dx_lyric_display_push_phrase $mp.start}
+         {if {> $_lyric_char_count {if_else {&& $word {! $prev_word}} 120 130}} ; Make it more likely to split phrases on a word rather than a syllable
+            {dx_lyric_display_push_phrase $mp.start $mp.start}
          }
-         {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf $mp.end)}}
+         {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf)}}
          {set $prev_word $word}
          {if $slashsplit
-            {dx_lyric_display_push_phrase $mp.start}
+            {dx_lyric_display_push_phrase $mp.start $mp.start}
          }
       }
    )
@@ -213,8 +213,8 @@
       {set $phrasecount {size $dx_lyric_display_phrases}}
       {if {> $phrasecount 0}
          {set $lasttime {dx_get_max_phrase_time $_current_lyric_phrase}}
-         {dx_lyric_display_push_phrase {+ $lasttime 1}}
-         {dx_lyric_display_push_phrase {+ $lasttime 2}}
+         {dx_lyric_display_push_phrase {+ $lasttime 1} {+ $lasttime 2}} 
+         {dx_lyric_display_push_phrase {+ $lasttime 2} {+ $lasttime 2}}
       }
    )
 }

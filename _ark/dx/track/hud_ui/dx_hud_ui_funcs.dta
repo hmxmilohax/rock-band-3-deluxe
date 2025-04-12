@@ -695,24 +695,31 @@
 {func dx_create_lyric_display ()
    ; Only do this once
    {unless {exists lyric_display.grp}
+
+      {set $dx_lyric_display_upcoming_scale 0.5}
+      {set $dx_lyric_display_upcoming_offset -0.75}
+
+      {set $dx_lyric_display_fading_scale 0.75}
+      {set $dx_lyric_display_fading_offset 0.75}
+
       {new Group lyric_display.grp}
       {draw_order.grp add_object lyric_display.grp}
       {lyric_display.grp set_trans_parent draw_order.grp}
 
       {new UIColor lyric_highlight.color}
       {lyric_highlight.color set color {pack_color 0 0.98 0.68}}
-      {new UIColor lyric_normal.color}
-      {lyric_normal.color set color {pack_color 1 1 1}}
+      ;{new UIColor lyric_normal.color}
+      ;{lyric_normal.color set color {pack_color 1 1 1}}
 
       {new BandLabel lyric_current.lbl}
       {new BandLabel lyric_upcoming.lbl}
       {lyric_upcoming.lbl set alpha 0.75}
-      {lyric_upcoming.lbl set_local_pos 0 0 -0.75}
-      {lyric_upcoming.lbl set_local_scale 0.5 0.5 0.5}
+      {lyric_upcoming.lbl set_local_pos 0 0 $dx_lyric_display_upcoming_offset}
+      {lyric_upcoming.lbl set_local_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale}
       {new BandLabel lyric_fadingout.lbl}
       {lyric_fadingout.lbl set alpha 0}
-      {lyric_fadingout.lbl set_local_pos 0 0 0.75}
-      {lyric_fadingout.lbl set_local_scale 0.5 0.5 0.5}
+      {lyric_fadingout.lbl set_local_pos 0 0 $dx_lyric_display_fading_offset}
+      {lyric_fadingout.lbl set_local_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale}
 
       {set $lyricdisplay_labels (lyric_current.lbl lyric_fadingout.lbl lyric_upcoming.lbl)}
       {foreach $curlabel $lyricdisplay_labels
@@ -747,12 +754,12 @@
 
       ; lyric_current.lbl anims
       {lyric_transition.anim add_keys lyric_current.lbl (position) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_current.lbl (position) 0 (0 0 -0.75)}
+      {lyric_transition.anim set_key_val lyric_current.lbl (position) 0 (0 0 $dx_lyric_display_upcoming_offset)}
       {lyric_transition.anim set_key_val lyric_current.lbl (position) 1 (0 0 0)}
       {lyric_transition.anim set_interp_type lyric_current.lbl (position) kPropHermite}
 
       {lyric_transition.anim add_keys lyric_current.lbl (scale) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 0 (0.5 0.5 0.5)}
+      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 0 ($dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale)}
       {lyric_transition.anim set_key_val lyric_current.lbl (scale) 1 (1 1 1)}
       {lyric_transition.anim set_interp_type lyric_current.lbl (scale) kPropHermite}
 
@@ -780,12 +787,12 @@
       ; lyric_fadeout.lbl anims
       {lyric_transition.anim add_keys lyric_fadingout.lbl (position) kPropVector3}
       {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 0 (0 0 0)}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 1 (0 0 0.5)}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 1 (0 0 $dx_lyric_display_fading_offset)}
       {lyric_transition.anim set_interp_type lyric_fadingout.lbl (position) kPropHermite}
 
       {lyric_transition.anim add_keys lyric_fadingout.lbl (scale) kPropVector3}
       {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 0 (1 1 1)}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 1 (0.5 0.5 0.5)}
+      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 1 ($dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale)}
       {lyric_transition.anim set_interp_type lyric_fadingout.lbl (scale) kPropHermite}
 
       {lyric_transition.anim add_keys lyric_fadingout.lbl (alpha) kPropFloat}
@@ -832,6 +839,21 @@
    $buf
 }
 
+{func dx_apply_phrase ($label $highlight $phrase)
+   {$label set_token_fmt {dx_concat_syllables $highlight {elem $phrase 1}}}
+   {set $phrase_length {elem $phrase 3}}
+   {$label set text_size 1}
+   {$label set alt_text_size 1}
+   {set $max_width 80}
+   {if {== {rnd aspect} 1}
+      {set $max_width 65}
+   }
+   {if {> $phrase_length $max_width}
+      {$label set text_size {/ $max_width $phrase_length}}
+      {$label set alt_text_size {/ $max_width $phrase_length}}
+   }
+}
+
 ; Make sure $script is contained in a {quote} call
 {func dx_schedule_beats ($time $script)
    {set $dx_schedule_beats_idx {+ $dx_schedule_beats_idx 1}}
@@ -871,9 +893,11 @@
    {set $dx_lyric_display_current_syl_idx -1}
    ; {dx_log_writer insane {sprint "Advancing lyric display to " $dx_lyric_display_current_idx}}
    {lyric_fadingout.lbl set_token_fmt {lyric_current.lbl get text_token}}
+   {lyric_fadingout.lbl set text_size {lyric_current.lbl get text_size}}
+   {lyric_fadingout.lbl set alt_text_size {lyric_current.lbl get alt_text_size}}
    {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
       {lyric_upcoming.lbl set_token_fmt {sprint ""}}
-      {lyric_upcoming.lbl set_token_fmt {dx_concat_syllables -1 {elem {dx_get_next_lyric_phrase} 1}}}
+      {dx_apply_phrase lyric_upcoming.lbl -1 {dx_get_next_lyric_phrase}}
    }
    {lyric_transition.anim animate (range 0 1) (period 0.3) (units kTaskUISeconds)}
    {dx_lyric_display_update_syllable}
@@ -881,7 +905,7 @@
 
 ; This is so fucking nightmarish god damn
 {func dx_lyric_display_update_syllable ()
-   {lyric_current.lbl set_token_fmt {dx_concat_syllables $dx_lyric_display_current_syl_idx {elem {dx_get_current_lyric_phrase} 1}}}
+   {dx_apply_phrase lyric_current.lbl $dx_lyric_display_current_syl_idx {dx_get_current_lyric_phrase}}
    {++ $dx_lyric_display_current_syl_idx}
    {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
    ; {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
