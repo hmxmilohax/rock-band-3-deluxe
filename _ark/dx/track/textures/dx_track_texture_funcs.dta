@@ -142,9 +142,15 @@
 {func
    color_me_milo_lite
    {dx_log_writer info {sprint "color_me_milo_lite"}}
+   
    {beatmatch foreach_active_player $player
       {unless {== {$player instrument} vocals}
-         {if_else {&& {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_highway"}}} {modifier_mgr is_modifier_active mod_remote_texture_sync}}
+         {if_else
+            {&&
+               {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_highway"}}}
+               {modifier_mgr is_modifier_active mod_remote_texture_sync}
+               {! {{$player get_user} is_local}}
+            }
             {do
                {set $current_highway {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_highway"}}}}
                {set $current_streak {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_streak"}}}}
@@ -165,23 +171,75 @@
             }
          }
          {set_this {find_obj DX_GEMTRACKDIR}}
-         ;{if {exists $this_highway_tex} {delete $this_highway_tex}}
-         ;{if {exists $this_streak_tex} {delete $this_streak_tex}}
-         ;{if {exists $this_overdrive_tex} {delete $this_overdrive_tex}}
-         ;{if {exists $this_rails_tex} {delete $this_rails_tex}}
+         
          {set $this_highway_tex {sprint "dx_highway" {{$player get_user} get_slot_num} ".tex"}}
+         {if {exists $this_highway_tex} {delete $this_highway_tex}}
          {new Tex $this_highway_tex}
+         
          {set $this_streak_tex {sprint "dx_streak" {{$player get_user} get_slot_num} ".tex"}}
+         {if {exists $this_streak_tex} {delete $this_streak_tex}}
          {new Tex $this_streak_tex}
+
          {set $this_overdrive_tex {sprint "dx_overdrive" {{$player get_user} get_slot_num} ".tex"}}
+         {if {exists $this_overdrive_tex} {delete $this_overdrive_tex}}
          {new Tex $this_overdrive_tex}
+         
          {set $this_rails_tex {sprint "dx_rails" {{$player get_user} get_slot_num} ".tex"}}
+         {if {exists $this_rails_tex} {delete $this_rails_tex}}
          {new Tex $this_rails_tex}
+         
+         ;hacky way to restore default textures
+         {if {== $current_highway none}
+            {set $this_highway_tex
+               {switch {$player instrument}
+                  ((guitar real_guitar) watermark_bass.tex)
+                  ((bass real_bass) watermark_guitar.tex)
+                  ((drum real_drum) watermark_drum.tex)
+                  (keys watermark_keys.tex)
+                  (real_keys track_lanes_keyboard.tex)
+               }
+            }
+         }
+         
+         {if {== $current_streak none}
+            {set $this_streak_tex
+               {switch {$player instrument}
+                  ((guitar real_guitar) spotlight_bass_track.tex)
+                  ((bass real_bass) spotlight_bass_track.tex)
+                  ((drum real_drum) spotlight_drums_track.tex)
+                  (keys spotlight_keys_track.tex)
+                  (real_keys spotlight_prokeys_track.tex)
+               }
+            }
+         }
+         
+         {if {== $current_overdrive none}
+            {set $this_overdrive_tex
+               {switch {$player instrument}
+                  ((guitar real_guitar) spotlight_bass_track_emissive.tex)
+                  ((bass real_bass) spotlight_guitar_track_emmissive.tex)
+                  ((drum real_drum) spotlight_drums_track_emissive.tex)
+                  (keys spotlight_keys_track_emissive.tex)
+                  (real_keys spotlight_prokeys_track_emissive.tex)
+               }
+            }
+         }
+         
+         {if {== $current_rails none}
+            {set $this_rails_tex
+               {switch {$player instrument}
+                  ((guitar bass drum real_drum keys) rails.tex)
+                  ((real_guitar real_bass) rails_rg.tex)
+                  (real_keys rails_keyboard.tex)
+               }
+            }
+         }
          
          {track_rails_kb.mat set diffuse_tex $this_rails_tex}
          {rails.mat set diffuse_tex $this_rails_tex}
-         ;{$this_rails_tex set_bitmap {sprint "dx/custom_textures/rails/rails_track/" $current_rails ".png"}}
-         {dx_custom_texture_setter rails rails_track $this_rails_tex $current_rails}
+         ;{unless {== $current_rails none} {$this_rails_tex set_bitmap {sprint "dx/custom_textures/rails/rails_track/" $current_rails ".png"}}}
+         {unless {== $current_rails none} {dx_custom_texture_setter rails rails_track $this_rails_tex $current_rails}}
+         
          {if_else {== {$player instrument} real_keys}
             {do
                {surface_keys.mat set diffuse_tex $this_highway_tex}
@@ -237,26 +295,29 @@
             }
             {do
                {surface.mat set diffuse_tex $this_highway_tex}
-               {overdrive_plane.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
-               {if_else {|| {== {$player instrument} bass} {== {$player instrument} real_bass}}
-                  {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
-                  {peakstate_plane.mat set diffuse_tex $this_streak_tex}
-               }
-               {overdrive_plane.mat set diffuse_tex $this_overdrive_tex}
                ;{$this_highway_tex set_bitmap {sprint "dx/custom_textures/highways/" $current_highway ".png"}}
-               {dx_custom_texture_setter FALSE highways $this_highway_tex $current_highway}
-               {$this_overdrive_tex iterate_refs $ref {$ref set diffuse_tex $this_overdrive_tex}}
-               {$this_overdrive_tex iterate_refs $ref {$ref set emissive_map $this_overdrive_tex}}
-               {$this_overdrive_tex iterate_refs $ref {$ref set normal_map $this_overdrive_tex}}
-               {$this_overdrive_tex iterate_refs $ref {$ref set intensify TRUE}}
+               {unless {== $current_highway none} {dx_custom_texture_setter FALSE highways $this_highway_tex $current_highway}}
                {$this_highway_tex iterate_refs $ref {$ref set diffuse_tex $this_highway_tex}}
                {$this_highway_tex iterate_refs $ref {$ref set emissive_map $this_highway_tex}}
                {$this_highway_tex iterate_refs $ref {$ref set normal_map $this_highway_tex}}
                {$this_highway_tex iterate_refs $ref {$ref set emissive_multiplier 0.8}}
+            
+               {if_else {|| {== {$player instrument} bass} {== {$player instrument} real_bass}}
+                  {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
+                  {peakstate_plane.mat set diffuse_tex $this_streak_tex}
+               }
+               {unless {== $current_streak none} {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}}
+               
+               {overdrive_plane.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
+               {overdrive_plane.mat set diffuse_tex $this_overdrive_tex}
+               {unless {== $current_overdrive none} {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}}
+               {$this_overdrive_tex iterate_refs $ref {$ref set diffuse_tex $this_overdrive_tex}}
+               {$this_overdrive_tex iterate_refs $ref {$ref set emissive_map $this_overdrive_tex}}
+               {$this_overdrive_tex iterate_refs $ref {$ref set normal_map $this_overdrive_tex}}
+               {$this_overdrive_tex iterate_refs $ref {$ref set intensify TRUE}}
+               
                ;{$this_streak_tex set_bitmap {sprint "dx/custom_textures/streaks/" $current_streak ".png"}}
                ;{$this_overdrive_tex set_bitmap {sprint "dx/custom_textures/overdrive/" $current_overdrive ".png"}}
-               {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}
-               {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
 
             }
          }
