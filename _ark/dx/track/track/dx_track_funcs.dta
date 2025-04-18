@@ -195,6 +195,179 @@
    }
 }
 
+{func dx_track_update_countdown ($trackdir)
+   #ifndef HX_WII
+   {set_this $trackdir}
+   {if_else {exists countdown.grp}
+      {do
+         {countdown.grp set_countdown_state hidden}
+      }
+      {do
+         {new Group countdown.grp 
+            (countdown_state {$this get countdown_state}) ; hidden -> showing -> getready -> fading
+            (set_countdown_state ($newstate)
+               {$this set countdown_state $newstate}
+               {set_this {$this dir}}
+               {if {== $newstate hidden}
+                  {countdown_fade.anim stop_animation}
+                  {countdown_fade.anim set_frame 0}
+               }
+               {switch $newstate
+                  ((showing) ; Circle timer
+                     {countdown_bg.mesh set showing TRUE}
+                     {countdown_meter.mesh set showing TRUE}
+                     {countdown_timer.lbl set showing TRUE}
+                     {countdown_getready_bg.mesh set showing FALSE}
+                     {countdown_getready.lbl set showing FALSE}
+                  )
+                  ((getready fading) ; Rectangular "Get Ready!"
+                     {countdown_bg.mesh set showing FALSE}
+                     {countdown_meter.mesh set showing FALSE}
+                     {countdown_timer.lbl set showing FALSE}
+                     {countdown_getready_bg.mesh set showing TRUE}
+                     {countdown_getready.lbl set showing TRUE}
+                  )
+               }
+            )
+            (set_timer_count ($text)
+               {set_this {$this dir}}
+               {if_else {> {countdown_timer.lbl get_string_width {sprint $text}} 0.8}
+                  {set $scale {/ 0.8 {countdown_timer.lbl get_string_width {sprint $text}}}}
+                  {set $scale 1.0}
+               }
+               {countdown_timer.lbl set_token_fmt {sprint $text}}
+               {countdown_timer.lbl set_local_scale $scale $scale $scale}
+            )
+            (get_fade_anim {{$this dir} find countdown_fade.anim})
+            (get_wipe_anim {{$this dir} find countdown_meter_wipe.anim})
+            (get_pulse_anim {{$this dir} find countdown_beat_pulse.anim})
+         }
+         
+         {countdown.grp set showing TRUE}
+         {if_else {$this is_a VocalTrackDir}
+            {do
+               {vocals.grp add_object countdown.grp}
+               {countdown.grp set_local_scale 1.4 1.4 1.4}
+               {countdown.grp set_local_pos 0 0 -0.9}
+               {countdown.grp set_trans_parent vocals.grp}
+            }
+            {do
+               {meters.grp add_object countdown.grp}
+               {countdown.grp set_local_scale 5 5 5}
+               {countdown.grp set_local_pos 0 0 10}
+               {countdown.grp set_trans_parent $this}
+               ;{countdown.grp set trans_constraint kConstraintBillboardXYZ}
+               ;{countdown.grp set trans_target game.cam}
+               ;{countdown.grp set preserve_scale TRUE}
+            }
+         }
+
+         ; TODO: find a way to share these textures
+         {if {! {exists countdown_bg.tex}}
+            {set $track_shared {square_smasher_bright.tex dir}}
+
+            {new Tex countdown_bg.tex}
+            {countdown_bg.tex set_bitmap "dx/custom_textures/_additional_textures/countdown_circle.png"}
+            {countdown_bg.tex set_name "countdown_bg.tex" $track_shared}
+            {new Tex countdown_meter_wipe.tex}
+            {countdown_meter_wipe.tex set_bitmap "dx/custom_textures/_additional_textures/countdown_circle_meter_wipe.png"}
+            {countdown_meter_wipe.tex set_name "countdown_meter_wipe.tex" $track_shared}
+            {new Tex countdown_getready_bg.tex}
+            {countdown_getready_bg.tex set_bitmap "dx/custom_textures/_additional_textures/generic_box.png"}
+            {countdown_getready_bg.tex set_name "countdown_getready_bg.tex" $track_shared}
+         }
+
+         {new Mat countdown_bg.mat}
+         {countdown_bg.mat set diffuse_tex countdown_bg.tex}
+         {countdown_bg.mat set blend kBlendSrcAlpha}
+         {countdown_bg.mat set z_mode kZModeTransparent}
+
+         {new Mat countdown_meter.mat}
+         {countdown_meter.mat set diffuse_tex countdown_meter_wipe.tex}
+         {countdown_meter.mat set tex_wrap kTexWrapClamp}
+         {countdown_meter.mat set tex_gen kTexGenXfm}
+         {countdown_meter.mat set blend kBlendSrcAlpha}
+         {countdown_meter.mat set z_mode kZModeTransparent}
+
+         {new Mat countdown_getready_bg.mat}
+         {countdown_getready_bg.mat set diffuse_tex countdown_getready_bg.tex}
+         {countdown_getready_bg.mat set tex_wrap kTexWrapClamp}
+         {countdown_getready_bg.mat set blend kBlendSrcAlpha}
+         {countdown_getready_bg.mat set z_mode kZModeTransparent}
+
+         {new Mesh countdown_meter.mesh}
+         {dx_generate_ring_mesh countdown_meter.mesh 32 0.6 0.4}
+         {countdown_meter.mesh set mat countdown_meter.mat}
+         {countdown_meter.mesh set_local_pos 0 -0.01 0}
+         {countdown_meter.mesh set_trans_parent countdown.grp}
+         {countdown_meter.mesh set_local_rot 0 -90 0}
+         {countdown.grp add_object countdown_meter.mesh}
+
+         {new Mesh countdown_bg.mesh}
+         {countdown_bg.mesh set mat countdown_bg.mat}
+         {dx_generate_quad_mesh countdown_bg.mesh 1 1}
+         {countdown_bg.mesh set_trans_parent countdown.grp}
+         {countdown.grp add_object countdown_bg.mesh}
+
+         {new BandLabel countdown_timer.lbl}
+         {countdown_timer.lbl set resource_name pentatonic}
+         {countdown_timer.lbl set_local_pos -0.015 0 0}
+         {countdown_timer.lbl set alignment kMiddleCenter}
+         {countdown_timer.lbl set_token_fmt {sprint "50"}}
+         {countdown_timer.lbl set width 20}
+         {countdown_timer.lbl set height 20}
+         {countdown_timer.lbl set text_size 0.72}
+         {countdown_timer.lbl set_trans_parent countdown.grp}
+         {countdown.grp add_object countdown_timer.lbl}
+
+         {new BandLabel countdown_getready.lbl}
+         {countdown_getready.lbl set resource_name pentatonic}
+         {countdown_getready.lbl set_local_pos -0.015 0 0}
+         {countdown_getready.lbl set alignment kMiddleCenter}
+         {countdown_getready.lbl set_token_fmt get_ready}
+         {countdown_getready.lbl set width 200}
+         {countdown_getready.lbl set height 200}
+         {countdown_getready.lbl set text_size 0.5}
+         {countdown_getready.lbl set_trans_parent countdown.grp}
+
+         {new Mesh countdown_getready_bg.mesh}
+         {countdown_getready_bg.mesh set mat countdown_getready_bg.mat}
+         {dx_generate_3patch_mesh countdown_getready_bg.mesh {+ {countdown_getready.lbl get_string_width {localize get_ready}} 0.15} 0.6}
+         {countdown_getready_bg.mesh set_trans_parent countdown.grp}
+         {countdown.grp add_object countdown_getready_bg.mesh}
+         {countdown.grp add_object countdown_getready.lbl}
+
+         {new PropAnim countdown_fade.anim}
+         {countdown_fade.anim add_keys countdown_bg.mat (alpha) kPropFloat}
+         {countdown_fade.anim set_key_val countdown_bg.mat (alpha) 0 0}
+         {countdown_fade.anim set_key_val countdown_bg.mat (alpha) 1 1}
+         {countdown_fade.anim add_keys countdown_timer.lbl (alpha) kPropFloat}
+         {countdown_fade.anim set_key_val countdown_timer.lbl (alpha) 0 0}
+         {countdown_fade.anim set_key_val countdown_timer.lbl (alpha) 1 1}
+         {countdown_fade.anim add_keys countdown_getready.lbl (alpha) kPropFloat}
+         {countdown_fade.anim set_key_val countdown_getready.lbl (alpha) 0 0}
+         {countdown_fade.anim set_key_val countdown_getready.lbl (alpha) 1 1}
+         {countdown_fade.anim add_keys countdown_getready_bg.mat (alpha) kPropFloat}
+         {countdown_fade.anim set_key_val countdown_getready_bg.mat (alpha) 0 0}
+         {countdown_fade.anim set_key_val countdown_getready_bg.mat (alpha) 1 1}
+         {countdown_fade.anim add_keys countdown_meter.mat (alpha) kPropFloat}
+         {countdown_fade.anim set_key_val countdown_meter.mat (alpha) 0 0}
+         {countdown_fade.anim set_key_val countdown_meter.mat (alpha) 0.25 0}
+         {countdown_fade.anim set_key_val countdown_meter.mat (alpha) 1 1}
+
+         {countdown_fade.anim set_frame 0}
+
+         {new PropAnim countdown_meter_wipe.anim}
+         {countdown_meter_wipe.anim add_keys countdown_meter.mat (tex_xfm x) kPropFloat}
+         {countdown_meter_wipe.anim set_key_val countdown_meter.mat (tex_xfm x) 0 0.01}
+         {countdown_meter_wipe.anim set_key_val countdown_meter.mat (tex_xfm x) 1 -0.504}
+
+         {countdown.grp set_countdown_state hidden}
+      }
+   }
+   #endif
+}
+
 {func dx_track_set_length_mult ($trackdir $mult)
    {set_this $trackdir}
 

@@ -1,0 +1,112 @@
+; do not run on Wii
+{func dx_generate_ring_mesh ($mesh $circle_segments $outer_radius $inner_radius)
+   {$mesh set keep_mesh_data TRUE}
+   {$mesh set mutable kMutableAll}
+
+   {$mesh set num_faces {* $circle_segments 2}} ; Quads
+   {$mesh set num_verts {* {+ $circle_segments 1} 2}} ; Outer vertices and inner vertices
+
+   {set $angle_step {/ 360 $circle_segments}}
+
+   {foreach_int $i 0 {+ $circle_segments 1}
+      {set $inner_vert_idx {* $i 2}}
+      {set $outer_vert_idx {+ {* $i 2} 1}}
+      {set $theta {* $i $angle_step}}
+      {set $circ_x {* {cos $theta} $outer_radius}}
+      {set $circ_z {* {sin $theta} $outer_radius}}
+      {set $inner_x {* {cos $theta} $inner_radius}}
+      {set $inner_z {* {sin $theta} $inner_radius}}
+      {set $progress {/ $i $circle_segments}}
+      {set $x_uv {* $progress 0.5}}
+      {$mesh set_vert_pos $outer_vert_idx $circ_x 0 $circ_z}
+      {$mesh set_vert_pos $inner_vert_idx $inner_x 0 $inner_z}
+      {$mesh set_vert_uv $outer_vert_idx $x_uv 0}
+      {$mesh set_vert_uv $inner_vert_idx $x_uv 1.0}
+   }
+
+   {foreach_int $i 0 $circle_segments
+      {set $inner_vert_idx {* $i 2}}
+      {set $outer_vert_idx {+ {* $i 2} 1}}
+      {set $next_inner_vert_idx {+ {* $i 2} 2}}
+      {set $next_outer_vert_idx {+ {* $i 2} 3}}
+      {set $face1_idx {* $i 2}}
+      {set $face2_idx {+ {* $i 2} 1}}
+      {$mesh set_face $face1_idx $outer_vert_idx $next_outer_vert_idx $inner_vert_idx}
+      {$mesh set_face $face2_idx $next_outer_vert_idx $next_inner_vert_idx $inner_vert_idx}
+   }
+}
+
+{func dx_generate_quad_mesh ($mesh $width $height)
+   {set $half_width {/ $width 2}}
+   {set $half_height {/ $height 2}}
+   {set $neg_half_width {* $half_width -1}}
+   {set $neg_half_height {* $half_height -1}}
+
+   {$mesh set keep_mesh_data TRUE}
+   {$mesh set mutable kMutableAll}
+
+   {$mesh set num_verts 4}
+   {$mesh set num_faces 2}
+
+   {$mesh set_vert_pos 0  $neg_half_width 0 $half_height}
+   {$mesh set_vert_pos 1  $neg_half_width 0 $neg_half_height}
+   {$mesh set_vert_pos 2  $half_width 0 $neg_half_height}
+   {$mesh set_vert_pos 3  $half_width 0 $half_height}
+
+   {$mesh set_vert_uv 0  0 0}
+   {$mesh set_vert_uv 1  0 1}
+   {$mesh set_vert_uv 2  1 1}
+   {$mesh set_vert_uv 3  1 0}
+
+   {$mesh set_face 0  0 1 2}
+   {$mesh set_face 1  3 0 2}
+}
+
+{func dx_generate_3patch_mesh ($mesh $width $height)
+   {set $edge_patch_size {/ 1.0 3.0}}
+   {set $edge_offset {* $height $edge_patch_size}}
+
+   {set $half_width {/ $width 2}}
+   {set $half_height {/ $height 2}}
+   {set $neg_half_width {* $half_width -1}}
+   {set $neg_half_height {* $half_height -1}}
+
+   {$mesh set keep_mesh_data True}
+   {$mesh set mutable kMutableAll}
+   
+   {$mesh set num_verts 8}
+   {$mesh set num_faces 6}
+
+   {$mesh set_vert_pos 0  $neg_half_width 0 $half_height}
+   {$mesh set_vert_pos 1  $neg_half_width 0 $neg_half_height}
+
+   {$mesh set_vert_pos 2  {+ $neg_half_width $edge_offset} 0 $half_height}
+   {$mesh set_vert_pos 3  {+ $neg_half_width $edge_offset} 0 $neg_half_height}
+
+   {$mesh set_vert_pos 4  {- $half_width $edge_offset} 0 $half_height}
+   {$mesh set_vert_pos 5  {- $half_width $edge_offset} 0 $neg_half_height}
+
+   {$mesh set_vert_pos 6  $half_width 0 $half_height}
+   {$mesh set_vert_pos 7  $half_width 0 $neg_half_height}
+
+   {$mesh set_vert_uv 0  0 0}
+   {$mesh set_vert_uv 1  0 1}
+
+   {$mesh set_vert_uv 2  $edge_patch_size 0}
+   {$mesh set_vert_uv 3  $edge_patch_size 1}
+
+   {$mesh set_vert_uv 4  {- 1 $edge_patch_size} 0}
+   {$mesh set_vert_uv 5  {- 1 $edge_patch_size} 1}
+
+   {$mesh set_vert_uv 6  1 0}
+   {$mesh set_vert_uv 7  1 1}
+
+   {$mesh set_face 0  2 0 1}
+   {$mesh set_face 1  2 1 3}
+
+   {$mesh set_face 2  4 2 3}
+   {$mesh set_face 3  4 3 5}
+
+   {$mesh set_face 4  6 4 5}
+   {$mesh set_face 5  6 5 7}
+}
