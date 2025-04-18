@@ -275,51 +275,35 @@
 )
 
 {func dx_check_beat ($player $instrument $input) ; input = beats until player has to play again
-   #ifndef HX_WII
-   {if_else {|| {== $instrument vocals} {== $instrument harm}}
-      {set_this {find_obj DX_VOCALDIR}}
-      {set_this {find_obj DX_GEMTRACKDIR}}
-   }
-   ; Not a switch statement because I want to use the order of execution.
-   {if {== {countdown.grp countdown_state} hidden}
-      {countdown.grp set_countdown_state showing}
-      {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
-      {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $input 8}) (units kTaskBeats)}
-   }
-   {if {== {countdown.grp countdown_state} showing}
-      {countdown.grp set_timer_count {int {ceil {/ $input 4}}}}
-      {if {<= $input 8}
-         {countdown.grp set_countdown_state getready}
+   {if {>= $input 0}
+      {if_else {|| {== $instrument vocals} {== $instrument harm}}
+         {set_this {find_obj DX_VOCALDIR}}
+         {set_this {find_obj DX_GEMTRACKDIR}}
       }
-   }
-   {if {== {countdown.grp countdown_state} getready}
-      {if {<= $input 6}
-         {countdown.grp set_countdown_state fading}
-         {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
+      ; Not a switch statement because I want to use the order of execution.
+      {if {== {countdown.grp countdown_state} hidden}
+         {countdown.grp set_countdown_state showing}
+         {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
+         {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $input 8}) (units kTaskBeats)}
+         {dx_hide_everything $player $instrument}
       }
-   }
-   {if {<= $input 0}
-      {set_var {sprint "delay_tracked_" $instrument} FALSE}
-      {set_var {sprint "current_tracked_beat_" $instrument} {+ {eval {var {sprint "current_tracked_beat_" $instrument}}} 1}}
-      {countdown.grp set_countdown_state hidden}
-   }
-   #else
-   {if {== $input 1.0}
-      {if {eval {var {sprint "solo_box_up_" $instrument}}}
-         {dx_restore_solo_box $player $instrument}
-      }
-      {dx_clean_solo_box $player $instrument}
-   }
-   {if {== $input 8.0}
-      {if {eval {var {sprint "solo_box_up_" $instrument}}}
-         {dx_hide_solo_box $player $instrument}
-         {if {! {|| {== $instrument vocals} {== $instrument harm}}}
+      {if {== {countdown.grp countdown_state} showing}
+         {countdown.grp set_timer_count {int {ceil {/ $input 4}}}}
+         {if {<= $input 8}
+            {countdown.grp set_countdown_state getready}
             {dx_restore_everything $player $instrument}
          }
       }
+      {if {== {countdown.grp countdown_state} getready}
+         {if {<= $input 6}
+            {countdown.grp set_countdown_state fading}
+            {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
+         }
+      }
+      {if {<= $input 0}
+         {set_var {sprint "delay_tracked_" $instrument} FALSE}
+         {set_var {sprint "current_tracked_beat_" $instrument} {+ {eval {var {sprint "current_tracked_beat_" $instrument}}} 1}}
+         {countdown.grp set_countdown_state hidden}
+      }
    }
-   {if {&& {> $input 8.0} {== {mod $input 4} 0}}
-      ON_LEGACY_BEAT_FUNCS
-   }
-   #endif
 }
