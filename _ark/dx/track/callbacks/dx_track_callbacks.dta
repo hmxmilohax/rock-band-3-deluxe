@@ -42,10 +42,11 @@
       (curr_ms 0)
       (diff none)
       (gem_id 0)
+      (total_notes 0)
       (hit ;when a note is hit
          ($gem_id)
          ;store gem_id as fast as possible
-         {set [gem_id] $gem_id}
+         {set [gem_id] $gem_id} ;0-indexed
          {if {exists {sprint "perfect_task_" [track_instrument]}} {delete {sprint "perfect_task_" [track_instrument]}}}
          {thread_task kTaskBeats
             (name {sprint "perfect_task_" [track_instrument]})
@@ -55,10 +56,12 @@
                   {set [curr_ms] {'-' {beatmatch get_song_ms} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
+                  ;[note_time] is also used in a commented debug line
+                  {set [note_time] {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} [gem_id]}}
                   ;failsafe, ensure the size of our tracker is the same as the reported total note count
-                  {if {== {eval {var {sprint [track_instrument] "_note_tracker_2_size"}}} {[player] get_gem_count}}
+                  {if {== [total_notes] {[player] get_gem_count}}
                      {if {>= [gem_id] 0}
-                        {set [accuracy] {'-' [curr_ms] {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} [gem_id]}}}
+                        {set [accuracy] {'-' [curr_ms] [note_time]}}
                      }
                   }
                   {$this perfects_indicator [accuracy]}
@@ -108,7 +111,7 @@
       (timing 0)
       (accuracy 0)
       (negative 0)
-      (total 0)
+      (total_offset 0)
       (perfects 0)
       (perfects_indicator
          ($accuracy)
@@ -116,6 +119,15 @@
             {if_else {> {+ [num_gems_miss] [num_gems_hit] [num_gems_pass]} 10}
                {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] hide}
                {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] invalid}
+            }
+            {if $dx_judgment_dbg
+               {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
+               {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
+               {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
+               {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
+               {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint $sprinting}}}
+               {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Total notes in tracker: " [total_notes] " GetGemCount: " {[player] get_gem_count} " GemID: " [gem_id]}}}
+               ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "GemID: " [gem_id] " GemID time: " [note_time] " Hit time: " [curr_ms]}}}
             }
          }
          {if {!= $accuracy -8675309}
@@ -167,7 +179,7 @@
                ;      {{{{{coop_track_panel find gem_track_resources} find smasher_plate_guitar} find gem_smasher0} find stop_burn.trig} trigger}
                ;   )
                ;}
-               {set [total] {+ [total] [offset]}}
+               {set [total_offset] {+ [total_offset] [offset]}}
                ;debug, show values
                {if $dx_judgment_dbg
                   {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
@@ -175,7 +187,8 @@
                   {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
                   {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
                   {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint $sprinting}}}
-                  {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " {- [offset] $dx_window_offset} " Avg: " {- {/ [total] [num_gems_hit]} $dx_window_offset}}}}
+                  {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Accuracy: " {- [offset] $dx_window_offset} "\nAvg: " {- {/ [total_offset] [num_gems_hit]} $dx_window_offset}}}}
+                  ;{{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprint "Note time (ms): " [note_time] "\nHit time: " [curr_ms]}}}
                }
             }
          }
@@ -189,6 +202,7 @@
    {{sprint "fc_" $instrument "_callback"} set player $player}
    {{sprint "fc_" $instrument "_callback"} set slot $slot}
    {{sprint "fc_" $instrument "_callback"} set diff {{$player get_user} get_difficulty_sym}}
+   {{sprint "fc_" $instrument "_callback"} set total_notes {eval {var {sprint $instrument "_note_tracker_2_size"}}}}
 }
 {new Object dx_streak_callback
    (hit {$this update_streak})
