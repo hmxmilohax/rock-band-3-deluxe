@@ -95,7 +95,7 @@
    (mp.up FALSE)
    (idle)
    (allowed_notes
-      (96 97 98 99 100 101)
+      (96 97 98 99 100 101 120) ;120: BRE
    )
    (midi
       {unless $first_real_guitar_gem_tracked
@@ -210,11 +210,11 @@
    (allowed_notes
       #ifdef RB3E
       {if_else {modifier_mgr is_modifier_active mod_double_bass}
-         (24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 95 96 97 98 99 100 103)
-         (24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 96 97 98 99 100 103)
+         (95 96 97 98 99 100 103 120)
+         (96 97 98 99 100 103 120)
       }
       #else
-      (24 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 96 97 98 99 100 103)
+      (96 97 98 99 100 103 120)
       #endif
    )
    (midi
@@ -251,10 +251,10 @@
                   {set $drum_note_tracker_2_size {size $drum_note_tracker_2}} 
                
                   ;{if {== $drum_note_tracker_2_size 1}
-                  ;   ;{dx_log_writer countdown {sprint "NoteID,Time,End,dx_last_note_started_drum,mp.start,mp.end,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
+                  ;   {dx_log_writer countdown {sprint "NoteID,Time,End,dx_last_note_started_drum,mp.start,mp.end,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
                   ;}
                   ;{if {<= $drum_note_tracker_2_size 4000}
-                  ;   ;{dx_log_writer countdown {sprint $drum_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $dx_last_note_started_drum "," $mp.start "," $mp.end "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}
+                  ;   {dx_log_writer countdown {sprint $drum_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $dx_last_note_started_drum "," $mp.start "," $mp.end "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}
                   ;}
                   {set $dx_last_note_started_drum {int $mp.start}}
                   {if {|| {== $mp.val 95} {== $mp.val 96}}
@@ -320,7 +320,7 @@
    (mp.up FALSE)
    (idle)
    (allowed_notes
-      (96 97 98 99 100 103 120)
+      (96 97 98 99 100 103 120) ;103: solo, 120: BRE
    )
    (midi
       {unless $first_bass_gem_tracked
@@ -404,7 +404,7 @@
    (mp.up FALSE)
    (idle)
    (allowed_notes
-      (96 97 98 99 100 101)
+      (96 97 98 99 100 101 103 120) ;120: BRE
    )
    (midi
       {unless $first_real_bass_gem_tracked
@@ -488,17 +488,18 @@
    (mp.up FALSE)
    (idle)
    (allowed_notes
-      (96 97 98 99 100 103 120)
+      (96 97 98 99 100 120) ;120: lowest BRE
    )
    (midi
-      {$this rt_compute_space}
+      ;{$this rt_compute_space}
       {unless $first_keys_gem_tracked
          {set $first_keys_gem_tracked TRUE}
          {set $first_note_done_keys FALSE}
-         ;{dx_log_writer countdown {sprint "NoteID,Time,End,mp.start,mp.end,dx_batch_start_tick_keys,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
+         ;{dx_log_writer countdown {sprint "NoteID,Time,End,mp.start,mp.end,dx_batch_start_beat_keys,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
          {set $tracked_break_num_keys 0}
          {set [dx_batch_start_beat_keys] -1}
          {set [batch_notes_keys] {array ()}}
+         {set [log_enabled_keys] TRUE}
          {set $first_keys_gem_beat {int $mp.start}}
          {if {> $first_keys_gem_beat 16}
             {push_back $keys_note_tracker ("delay_0" 0 $first_keys_gem_beat)}
@@ -519,77 +520,83 @@
          ;Thanks ChatGPT
          ; Only parse KEYS notes 96–100
          {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "starting parsing note"}}}
-            ;{if {<= $keys_note_tracker_2_size 4000}
-            ;   ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint $keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
-            ;}
+            {if [log_enabled_keys]
+               {set [log_enabled_keys] {if_else {< {beat_to_seconds $mp.start} 60}
+                                        TRUE
+                                        FALSE}
+               }
+            }
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "starting parsing note"}}}
+            {if {<= $keys_note_tracker_2_size 4000}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint $keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
+            }
 
             ; If this note starts a new batch
-            {if {> {- $mp.start [dx_batch_start_beat_keys]}}
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_keys]} " notes"}}}
+            {if {> {- $mp.start [dx_batch_start_beat_keys]} 0.02}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_keys]} " notes"}}}
                
                ; Process previous batch (if any)
                {if {> {size [batch_notes_keys]} 0}
                   {set [diff_end_found_keys] FALSE}
                   {if {> {size [batch_notes_keys]} 1}
-                     ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
+                     ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
                      {set $first_end {elem {elem [batch_notes_keys] 0} 1}}
                      {foreach $n [batch_notes_keys] 
-                        ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
                         {if {!= {elem $n 1} $first_end}
                            {set [diff_end_found_keys] TRUE}
                         }
                      }
-                     ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
+                     ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
                   }
 
                   ; Push all notes if there's a differing end
                   {if_else {== [diff_end_found_keys] TRUE}
                      {foreach $n [batch_notes_keys] {do
-                        ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
                         {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                      }}
                      {do
                         {set $n {elem [batch_notes_keys] 0}}
-                        ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
                         {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                      }
                   }
                   
                   {set $keys_note_tracker_2_size {size $keys_note_tracker_2}}
-                  ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
                }
 
                ; Start new batch
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "set [dx_batch_start_beat_keys] to " $mp.start}}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set [dx_batch_start_beat_keys] to " $mp.start}}}
                {set [dx_batch_start_beat_keys] $mp.start}
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "[dx_batch_start_beat_keys] = " [dx_batch_start_beat_keys] ", set [batch_notes_keys] to empty array"}}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[dx_batch_start_beat_keys] = " [dx_batch_start_beat_keys] ", set [batch_notes_keys] to empty array"}}}
                {set [batch_notes_keys] {array ()}} ; Clear batch
             }
 
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "push back $dx_keys_note to [batch_notes_keys]"}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "push back $dx_keys_note to [batch_notes_keys]"}}}
             {set [dx_do_add_note_keys] TRUE}
             {if {> {size [batch_notes_keys]} 0}
                {foreach $n [batch_notes_keys]
-                  ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
                   {if {== {elem $n 2} $mp.val}
-                     ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}}
+                     ;{dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}
                      {set [dx_do_add_note_keys] FALSE}
                   }
                }
             }
             {if {== [dx_do_add_note_keys] TRUE} 
                {set $dx_keys_note {array ($mp.start $mp.end $mp.val)}}
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "$dx_keys_note = " $dx_keys_note}}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "$dx_keys_note = " $dx_keys_note}}}
                {push_back [batch_notes_keys] $dx_keys_note}
             }
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "[batch_notes_keys] = " [batch_notes_keys]}}}
-            ;{if {&& {> {size [batch_notes_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} ;{dx_log_writer countdown {sprint "[batch_notes_keys].0 = " {elem [batch_notes_keys] 0}}}}}
-            ;{if {&& {> {size [batch_notes_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} ;{dx_log_writer countdown {sprint "[batch_notes_keys].0.0 = " {elem {elem [batch_notes_keys] 0} 0}}}}}
-            ;{if {&& {> {size [batch_notes_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} ;{dx_log_writer countdown {sprint "[batch_notes_keys].0.1 = " {elem {elem [batch_notes_keys] 0} 1}}}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[batch_notes_keys] = " [batch_notes_keys]}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0 = " {elem [batch_notes_keys] 0}}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0.0 = " {elem {elem [batch_notes_keys] 0} 0}}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0.1 = " {elem {elem [batch_notes_keys] 0} 1}}}}
             
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "Currently " {size [batch_notes_keys]} " notes in cache"}}}
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "finished parsing note"}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "Currently " {size [batch_notes_keys]} " notes in cache"}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "finished parsing note"}}}
          }
       }
    )
@@ -600,32 +607,32 @@
          {if {> {size [batch_notes_keys]} 0}
             {set [diff_end_found_keys] FALSE}
             {if {> {size [batch_notes_keys]} 1}
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
                {set $first_end {elem {elem [batch_notes_keys] 0} 1}}
                {foreach $n [batch_notes_keys] 
-                  ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
                   {if {!= {elem $n 1} $first_end}
                      {set [diff_end_found_keys] TRUE}
                   }
                }
-               ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
             }
 
             ; Push all notes if there's a differing end
             {if_else {== [diff_end_found_keys] TRUE}
                {foreach $n [batch_notes_keys] {do
-                  ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
                   {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                }}
                {do
                   {set $n {elem [batch_notes_keys] 0}}
-                  ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
                   {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                }
             }
             
             {set $keys_note_tracker_2_size {size $keys_note_tracker_2}}
-            ;{if {< {beat_to_seconds $mp.start} 60} ;{dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
          }
       }
    )
@@ -680,10 +687,10 @@
    (mp.up FALSE)
    (idle)
    (allowed_notes
-      (48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 115 116)
+      (48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 115 116 120) ;115: solo, 116: glissando, 120: BRE
    )
    (midi
-      {$this rt_compute_space}
+      ;{$this rt_compute_space}
       {unless $first_real_keys_gem_tracked
          {set $first_real_keys_gem_tracked TRUE}
          {set [dx_batch_start_beat_real_keys] -1}
@@ -691,6 +698,7 @@
          {set $tracked_break_num_real_keys 0}
          {set $dx_last_note_started_real_keys 0} ; cache note start time
          {set $first_real_keys_gem_beat {int $mp.start}}
+         {set [log_enabled_real_keys] TRUE}
          {if {> $first_real_keys_gem_beat 16}
             {push_back $real_keys_note_tracker ("delay_0" 0 $first_real_keys_gem_beat)}
             {set $real_keys_note_tracker {array $real_keys_note_tracker}}
@@ -709,114 +717,120 @@
       {if $dx_perfects_indicator
          ;Thanks again ChatGPT
          ; Parse the 25-note range (limited by the allowed_notes attribute) 
-         {if {&& {!= $mp.val 115} {!= $mp.val 116}}
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "starting parsing note"}}}
+         {if {&& {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
+            {if [log_enabled_real_keys] 
+               {set [log_enabled_real_keys] {if_else {< {beat_to_seconds $mp.start} 60}
+                                             TRUE
+                                             FALSE}
+               }
+            }
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "starting parsing note"}}}
             ;{if {<= $real_keys_note_tracker_2_size 4000}
-            ;   {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint $real_keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_real_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint $real_keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_real_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
             ;}
 
             ; If this note starts a new batch
             {if {> {- $mp.start [dx_batch_start_beat_real_keys]} 0.02} ;changed from an equality check; fix for ever so slightly desynchronised notes, eg. https://rhythmverse.co/songfile/61304c77b01252.88654892
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_real_keys]} " notes"}}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_real_keys]} " notes"}}}
                
                ; Process previous batch (if any)
                {if {> {size [batch_notes_real_keys]} 0}
                   {set [diff_end_found_real_keys] FALSE}
                   {if {> {size [batch_notes_real_keys]} 1}
-                     {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
+                     ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
                      {set $first_end {elem {elem [batch_notes_real_keys] 0} 1}}
                      {foreach $n [batch_notes_real_keys] 
-                        {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
                         {if {!= {elem $n 1} $first_end}
                            {set [diff_end_found_real_keys] TRUE}
                         }
                      }
-                     {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
+                     ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
                   }
 
                   ; Push all notes if there's a differing end
                   {if_else {== [diff_end_found_real_keys] TRUE}
                      {foreach $n [batch_notes_real_keys] {do
-                        {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
                         {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                      }}
                      {do
                         {set $n {elem [batch_notes_real_keys] 0}}
-                        {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
                         {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                      }
                   }
                   
                   {set $real_keys_note_tracker_2_size {size $real_keys_note_tracker_2}}
-                  {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
                }
 
                ; Start new batch
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "set [dx_batch_start_beat_real_keys] to " $mp.start}}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set [dx_batch_start_beat_real_keys] to " $mp.start}}}
                {set [dx_batch_start_beat_real_keys] $mp.start}
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "[dx_batch_start_beat_real_keys] = " [dx_batch_start_beat_real_keys] ", set [batch_notes_real_keys] to empty array"}}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[dx_batch_start_beat_real_keys] = " [dx_batch_start_beat_real_keys] ", set [batch_notes_real_keys] to empty array"}}}
                {set [batch_notes_real_keys] {array ()}} ; Clear batch
             }
 
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "push back $dx_real_keys_note to [batch_notes_real_keys]"}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "push back $dx_real_keys_note to [batch_notes_real_keys]"}}}
             {set [dx_do_add_note_real_keys] TRUE}
             {if {> {size [batch_notes_real_keys]} 0}
                {foreach $n [batch_notes_real_keys]
-                  {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
                   {if {== {elem $n 2} $mp.val}
-                     {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}}
+                     ;{dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}
                      {set [dx_do_add_note_real_keys] FALSE}
                   }
                }
             }
             {if {== [dx_do_add_note_real_keys] TRUE} 
                {set $dx_real_keys_note {array ($mp.start $mp.end $mp.val)}}
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "$dx_real_keys_note = " $dx_real_keys_note}}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "$dx_real_keys_note = " $dx_real_keys_note}}}
                {push_back [batch_notes_real_keys] $dx_real_keys_note}
             }
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "[batch_notes_real_keys] = " [batch_notes_real_keys]}}}
-            {if {&& {> {size [batch_notes_real_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0 = " {elem [batch_notes_real_keys] 0}}}}}
-            {if {&& {> {size [batch_notes_real_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.0 = " {elem {elem [batch_notes_real_keys] 0} 0}}}}}
-            {if {&& {> {size [batch_notes_real_keys]} 0} {< {* {beat_to_seconds $mp.start} 1000} 48000} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.1 = " {elem {elem [batch_notes_real_keys] 0} 1}}}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[batch_notes_real_keys] = " [batch_notes_real_keys]}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0 = " {elem [batch_notes_real_keys] 0}}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.0 = " {elem {elem [batch_notes_real_keys] 0} 0}}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.1 = " {elem {elem [batch_notes_real_keys] 0} 1}}}}
             
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "Currently " {size [batch_notes_real_keys]} " notes in cache"}}}
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "finished parsing note"}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "Currently " {size [batch_notes_real_keys]} " notes in cache"}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "finished parsing note"}}}
          }
       }
    )
    (term 
-      {dx_log_writer countdown {sprint "TERM"}}
+      ;{dx_log_writer countdown {sprint "TERM"}}
       {if $dx_perfects_indicator
          ; Add any hanging notes to the real_keys_note_tracker_2
          {if {> {size [batch_notes_real_keys]} 0}
             {set [diff_end_found_real_keys] FALSE}
             {if {> {size [batch_notes_real_keys]} 1}
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
                {set $first_end {elem {elem [batch_notes_real_keys] 0} 1}}
                {foreach $n [batch_notes_real_keys] 
-                  {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
                   {if {!= {elem $n 1} $first_end}
                      {set [diff_end_found_real_keys] TRUE}
                   }
                }
-               {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
             }
 
             ; Push all notes if there's a differing end
             {if_else {== [diff_end_found_real_keys] TRUE}
                {foreach $n [batch_notes_real_keys] {do
-                  {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
                   {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                }}
                {do
                   {set $n {elem [batch_notes_real_keys] 0}}
-                  {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
                   {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                }
             }
             
             {set $real_keys_note_tracker_2_size {size $real_keys_note_tracker_2}}
-            {if {< {beat_to_seconds $mp.start} 60} {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
          }
       }
    )
@@ -875,7 +889,7 @@
       (105 106)
    )
    (midi
-      {$this rt_compute_space}
+      ;{$this rt_compute_space}
       {unless $first_vocals_gem_tracked
          {set $first_vocals_gem_tracked TRUE}
          {set $tracked_break_num_vocals 0}
@@ -950,7 +964,7 @@
       (105 106)
    )
    (midi
-      {$this rt_compute_space}
+      ;{$this rt_compute_space}
       {unless $first_harm_gem_tracked
          {set $first_harm_gem_tracked TRUE}
          {set $tracked_break_num_harm 0}
