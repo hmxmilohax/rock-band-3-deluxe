@@ -242,36 +242,129 @@
       }
    }
 }
-{func
-   dx_blink_gold_star_on
-   {if {&& {! {modifier_mgr is_modifier_active mod_nohud}} $dx_gold_star_progress $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
-      {set $star_num_frame 0}
-      {set $dx_num_stars {{{coop_track_panel find scoreboard} find star_display} get num_stars}}
-      {if {>= $dx_num_stars 5.0}
-         {cond
-            ({> $dx_num_stars 5.9} {set $star_num_frame 9})
-            ({> $dx_num_stars 5.8} {set $star_num_frame 8})
-            ({> $dx_num_stars 5.7} {set $star_num_frame 7})
-            ({> $dx_num_stars 5.6} {set $star_num_frame 6})
-            ({> $dx_num_stars 5.5} {set $star_num_frame 5})
-            ({> $dx_num_stars 5.4} {set $star_num_frame 4})
-            ({> $dx_num_stars 5.3} {set $star_num_frame 3})
-            ({> $dx_num_stars 5.2} {set $star_num_frame 2})
-            ({> $dx_num_stars 5.1} {set $star_num_frame 1})
-            ({>= $dx_num_stars 5.0} {set $star_num_frame 0})
+
+{func dx_init_gold_flash ()
+   {new Object gold_star_handler
+      (show_stars
+         {set_this {{coop_track_panel find scoreboard} find star_display}}
+         {gold_star_flash.grp set showing TRUE}
+      )
+      (hide_stars
+         {set_this {{coop_track_panel find scoreboard} find star_display}}
+         {gold_star_flash.grp set showing FALSE}
+      )
+      (set_star_progress ($progress)
+         {set_this {{coop_track_panel find scoreboard} find star_display}}
+         {set $actual_scale {* $dx_star_mesh_scale $progress}}
+         {set $unfilled {- 1.0 $progress}}
+         {set $height {* 1.859 $dx_star_mesh_scale}}
+         {$this iterate RndDir $dir {do
+            {if {!= {$dir name} "star_indicator"}
+               {{$dir find gold_star_flash.mesh} set_local_scale_index 2 $actual_scale}
+               {{$dir find gold_star_flash.mesh} set_local_pos_index 2 {* $height {* $unfilled -1}}}
+               {{$dir find gold_star_flash_border.mesh} set_local_pos_index 2 {* {* {- 0.5 $unfilled} $height} 2}}
+            }
+         }}
+         {if {> $progress 0}
+            {gold_star_flash.mat set (tex_xfm y_scale) $progress}
+            {gold_star_flash.mat set (tex_xfm y) {/ {- 0.5 {* $progress 0.5}} $progress}}
          }
-         {unless $star_transition_ran ;i dont want it to set a new frame until we blink off
-            {set $star_transition_ran TRUE}
-            {{coop_track_panel find dx_star_base.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find {sprint "dx_star_gold_" $star_num_frame ".tex"}}}}
-            {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find {sprint "dx_star_gold_" $star_num_frame ".tex"}}}}
-            {if {> $star_num_frame 0}
-               {{coop_track_panel find {sprint "dx_star_gold_" {- $star_num_frame 1} ".tex"}} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find {sprint "dx_star_gold_" $star_num_frame ".tex"}}}}
-               {{coop_track_panel find {sprint "dx_star_gold_" {+ $star_num_frame 1} ".tex"}} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find {sprint "dx_star_gold_" $star_num_frame ".tex"}}}}
+      )
+      (start_anim
+         {set_this {{coop_track_panel find scoreboard} find star_display}}
+         {gold_star_flash.anim animate (loop 0 1) (period 2) (units kTaskBeats)}
+      )
+      (stop_anim
+         {set_this {{coop_track_panel find scoreboard} find star_display}}
+         {gold_star_flash.anim stop_animation}
+      )
+   }
+   {set_this {{coop_track_panel find scoreboard} find star_display}}
+   {new Group gold_star_flash.grp}
+   {stars.grp add_object gold_star_flash.grp}
+   {new Mat gold_star_flash.mat}
+   {gold_star_flash.mat set diffuse_tex dx_star_gold_flash.tex}
+   {gold_star_flash.mat set blend kBlendSrcAlpha}
+   {gold_star_flash.mat set tex_gen kTexGenXfm}
+   {gold_star_flash.mat set stencil_mode kStencilWrite}
+   {gold_star_flash.mat set z_mode kZModeTransparent}
+   {gold_star_flash.mat set alpha_cut TRUE}
+   {gold_star_flash.mat set alpha_threshold 15}
+   {new Mat gold_star_flash_border.mat}
+   {gold_star_flash_border.mat set diffuse_tex plain.tex}
+   {gold_star_flash_border.mat set stencil_mode kStencilTest}
+   {gold_star_flash_border.mat set color {pack_color 0.98 0.95 0.51}}
+   {gold_star_flash_border.mat set alpha 0.75}
+   {gold_star_flash_border.mat set z_mode kZModeTransparent}
+   {gold_star_flash_border.mat set blend kBlendSrcAlpha}
+   {$this iterate RndDir $dir {do
+      {if {!= {$dir name} "star_indicator"}
+         {dx_create_gold_flash $dir {$this find gold_star_flash.mat} {$this find gold_star_flash.grp} {$this find gold_star_flash_border.mat}}
+      }
+   }}
+   {new PropAnim gold_star_flash.anim}
+
+   {gold_star_flash.anim add_keys gold_star_flash.mat (alpha) kPropFloat}
+   {gold_star_flash.anim set_key_val gold_star_flash.mat (alpha) 0 1}
+   {gold_star_flash.anim set_key_val gold_star_flash.mat (alpha) 1 0}
+   ;{gold_star_flash.anim set_interp_type gold_star_flash.mat (alpha) kPropEaseIn}
+
+   {gold_star_flash.anim add_keys gold_star_flash_border.mat (alpha) kPropFloat}
+   {gold_star_flash.anim set_key_val gold_star_flash_border.mat (alpha) 0 0.75}
+   {gold_star_flash.anim set_key_val gold_star_flash_border.mat (alpha) 1 0}
+   ;{gold_star_flash.anim set_interp_type gold_star_flash_border.mat (alpha) kPropEaseIn}
+
+   {set $dx_gold_flash_spawned TRUE}
+}
+
+{func dx_create_gold_flash ($stardir $starmat $stargrp $bordermat)
+   {set_this $stardir}
+   {new Mesh gold_star_flash.mesh}
+   {gold_star_flash.mesh copy star_frame_gold.mesh kCopyShallow}
+   {gold_star_flash.mesh set mat $starmat}
+   {gold_star_flash.mesh set showing TRUE}
+   {$stargrp add_object gold_star_flash.mesh}
+   {set $dx_star_mesh_scale {gold_star_flash.mesh get_local_scale_index 0}}
+   {new Mesh gold_star_flash_border.mesh}
+   #ifndef HX_WII
+   {dx_generate_quad_mesh gold_star_flash_border.mesh {* 1.859 $dx_star_mesh_scale} 0.17}
+   {gold_star_flash_border.mesh set mat $bordermat}
+   {gold_star_flash_border.mesh set showing TRUE}
+   {gold_star_flash_border.mesh set_trans_parent star.grp}
+   {gold_star_flash_border.mesh set_local_scale 2 2 2}
+   {$stargrp add_object gold_star_flash_border.mesh}
+   #endif
+}
+
+{func
+   dx_update_gold_flash
+   {set_this coop_track_panel}
+   {if {&& {! {modifier_mgr is_modifier_active mod_nohud}} $dx_gold_star_progress $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
+      {set $dx_num_stars {{{coop_track_panel find scoreboard} find star_display} get num_stars}}
+      {if_else {&& {>= $dx_num_stars 5.0} {! {>= $dx_num_stars 6.0}}} ; We don't need the stars to flash when you achieve golds
+         {do
+            {if {! $dx_gold_flash_on}
+               {if {! $dx_gold_flash_spawned}
+                  {dx_init_gold_flash}
+               }
+               {set $dx_gold_flash_on TRUE}
+               {gold_star_handler show_stars}
+               {gold_star_handler start_anim}
+            }
+            {gold_star_handler set_star_progress {- $dx_num_stars 5.0}}
+         }
+         {do
+            {if $dx_gold_flash_on
+               {set $dx_gold_flash_on FALSE}
+               {gold_star_handler hide_stars}
+               {gold_star_handler stop_anim}
             }
          }
       }
    }
 }
+
+
 {func
    dx_blink_gold_star_off
    {if {&& $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}} {>= $dx_num_stars 5.0}}

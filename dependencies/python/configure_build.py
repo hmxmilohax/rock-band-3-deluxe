@@ -48,7 +48,13 @@ match sys.platform:
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
         ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
-        ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
+        match args.platform:
+            case "ps3":
+                ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
+            case "xbox":
+                ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
+            case "wii":
+                ninja.variable("superfreq", "dependencies\\windows\\superfreq_wii.exe")
         ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
         ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
         ninja.variable("dtacheck", "dependencies\\windows\\dtacheck.exe")
@@ -58,7 +64,13 @@ match sys.platform:
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
         ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
-        ninja.variable("superfreq", "dependencies/macos/superfreq")
+        match args.platform:
+            case "ps3":
+                ninja.variable("superfreq", "dependencies/macos/superfreq")
+            case "xbox":
+                ninja.variable("superfreq", "dependencies/macos/superfreq")
+            case "wii":
+                ninja.variable("superfreq", "dependencies/macos/superfreq_wii")
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
         # dtacheck needs to be compiled for mac
@@ -69,7 +81,13 @@ match sys.platform:
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
         ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
-        ninja.variable("superfreq", "dependencies/linux/superfreq")
+        match args.platform:
+            case "ps3":
+                ninja.variable("superfreq", "dependencies/linux/superfreq")
+            case "xbox":
+                ninja.variable("superfreq", "dependencies/linux/superfreq")
+            case "wii":
+                ninja.variable("superfreq", "dependencies/linux/superfreq_wii")
         ninja.variable("arkhelper", "dependencies/linux/arkhelper")
         ninja.variable("dtab", "dependencies/linux/dtab")
         ninja.variable("dtacheck", "dependencies/linux/dtacheck")
