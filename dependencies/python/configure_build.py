@@ -40,6 +40,7 @@ else:
 ninja = ninja_syntax.Writer(open("build.ninja", "w+"))
 
 # configure tools
+# TODO: clean this up
 ark_dir = Path("obj", args.platform, "ark")
 match sys.platform:
     case "win32":
@@ -120,7 +121,7 @@ match args.platform:
 
 ninja.rule(
     "sfreq",
-    "$superfreq png2tex -l error --miloVersion 26 --platform $platform $in $out",
+    "$superfreq png2tex -l error --miloVersion 26 --platform $platform $in $out $flags",
     description="SFREQ $in"
 )
 
@@ -159,14 +160,36 @@ def ark_file_filter(file: Path):
 # build ark files
 ark_files = []
 
+mip_entries = {
+    #Path("_ark", "dx", "custom_textures", "gems"): 4,
+    Path("_ark", "dx", "custom_textures", "_additional_textures", "countdown_circle.png"): 4,
+    Path("_ark", "dx", "custom_textures", "_additional_textures", "countdown_circle_meter_wipe.png"): 4,
+}
+
+# (dark): i love O(n*m) complexity
+def find_mip_entry(path: Path):
+    for key, value in mip_entries.items():
+        if path.is_relative_to(key):
+            return value
+
+    return None
+
 for f in filter(ark_file_filter, Path("_ark").rglob("*")):
     match f.suffixes:
         case [".png"]:
             output_directory = Path("obj", args.platform, "ark").joinpath(
                 *f.parent.parts[1:]
             )
+
+            variables = {}
+            mip_level = find_mip_entry(f)
+
+            if mip_level != None:
+                variables["flags"] = "--mipmaps %d" % mip_level
+
             match args.platform:
                 case "ps3":
+                    variables["platform"] = "x360"
                     target_filename = Path("gen", f.stem + ".png_ps3")
                     xbox_filename = Path("gen", f.stem + ".png_xbox")
                     xbox_directory = Path("obj", args.platform, "raw").joinpath(
@@ -174,24 +197,26 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
                     )
                     xbox_output = xbox_directory.joinpath(xbox_filename)
                     ps3_output = output_directory.joinpath(target_filename)
-                    ninja.build(str(xbox_output), "sfreq", str(f), variables={"platform": "x360"})
+                    ninja.build(str(xbox_output), "sfreq", str(f), variables=variables)
                     ninja.build(str(ps3_output), "bswap", str(xbox_output))
                     ark_files.append(str(ps3_output))
                 case "xbox":
+                    variables["platform"] = "x360"
                     target_filename = Path("gen", f.stem + ".png_xbox")
                     xbox_directory = Path("obj", args.platform, "ark").joinpath(
                         *f.parent.parts[1:]
                     )
                     xbox_output = xbox_directory.joinpath(target_filename)
-                    ninja.build(str(xbox_output), "sfreq", str(f), variables={"platform": "x360"})
+                    ninja.build(str(xbox_output), "sfreq", str(f), variables=variables)
                     ark_files.append(str(xbox_output))
                 case "wii":
+                    variables["platform"] = "wii"
                     target_filename = Path("gen", f.stem + ".png_wii")
                     wii_directory = Path("obj", args.platform, "ark").joinpath(
                         *f.parent.parts[1:]
                     )
                     wii_output = wii_directory.joinpath(target_filename)
-                    ninja.build(str(wii_output), "sfreq", str(f), variables={"platform": "wii"})
+                    ninja.build(str(wii_output), "sfreq", str(f), variables=variables)
                     ark_files.append(str(wii_output))
 
         case [".dta"]:
