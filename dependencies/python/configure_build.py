@@ -210,7 +210,7 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
                     ninja.build(str(xbox_output), "sfreq", str(f), variables=variables)
                     ark_files.append(str(xbox_output))
                 case "wii":
-                    variables["platform"] = "wii"
+                    variables = {"platform": "wii"}
                     target_filename = Path("gen", f.stem + ".png_wii")
                     wii_directory = Path("obj", args.platform, "ark").joinpath(
                         *f.parent.parts[1:]
