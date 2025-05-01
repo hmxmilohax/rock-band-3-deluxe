@@ -1,18 +1,3 @@
-#define DX_OS_OPEN_MSG
-(
-   ;opens player message panel on current player
-   {if {! {session is_in_game}}
-      {if {$this is_message_hiding} {$this show_message}}                  
-      {set $dx_no_message_sound TRUE}} ;prevents message sound from playing in menus
-)
-#define DX_OS_CLOSE_MSG
-(
-   ;closes player message panel on current player
-   {if {! {session is_in_game}}
-      {unless {$this is_message_hiding} {$this hide_message}}
-      {set $dx_menu_message ""}
-      {set $dx_no_message_sound FALSE}} ;re-allows message sound to play after closing
-)
 #define DX_MENU_SCROLL_DESC ;used to show a description for each item on a list
 (
    {if {! {session is_in_game}}
@@ -202,32 +187,33 @@
       {overshell update_all}
    )
    (mod_nolanes
-      {if {modifier_mgr is_modifier_active mod_rb4_lanes}
-         {modifier_mgr toggle_modifier_enabled mod_rb4_lanes}
-      }
+      {disable_modifier mod_rb4_lanes}
       {modifier_mgr toggle_modifier_enabled mod_nolanes}
       {set $nolanes {! $nolanes}}
       {overshell update_all}
    )
    (mod_brutalmode
       {unless {modifier_mgr is_modifier_active mod_brutalmode}
-         {$this show_state dxState_BrutalWarn}
+         {set $in_dx_settings TRUE}
+         {set $this_state dxState_BrutalWarn}
+         {$this show_state kState_OptionsExtras}
       }
       {if {modifier_mgr is_modifier_active mod_brutalmode}
          {do
             {modifier_mgr toggle_modifier_enabled $modifier}
             {set $dx_stars_needs_reset TRUE}
             {set $dx_multiplier_ring_needs_reset TRUE}
+            {leave_dx_settings}
             {$this leave_options}
             {overshell update_all}
-            {ui goto_screen meta_loading_main_screen}
+            {if {session_mgr is_local}
+               {ui sync_screen meta_loading_main_screen 0}
+            }
          }
       }
    )
    (mod_rb4_lanes
-      {if {modifier_mgr is_modifier_active mod_nolanes}
-         {modifier_mgr toggle_modifier_enabled mod_nolanes}
-      }
+      {disable_modifier mod_nolanes}
       {modifier_mgr toggle_modifier_enabled mod_rb4_lanes}
       {overshell update_all}
    )
@@ -245,7 +231,9 @@
          {dx_passive_messenger_symbol {sprint {localize dx_track_speed_locked}}}
          {do
             {set $dx_track_speed_from_modifiers TRUE}
-            {$this show_state dxState_TrackSpeeds}
+            {set $in_dx_settings TRUE}
+            {set $this_state dxState_TrackSpeeds}
+            {$this show_state kState_OptionsExtras}
          }
       }
    )
@@ -256,26 +244,23 @@
       }
       {unless {{$this get_session_mgr} is_online_enabled}
          {unless {modifier_mgr is_modifier_active mod_fakejuke}
-            {$this show_state dxState_FakeJukeWarn}
+            {set $in_dx_settings TRUE}
+            {set $this_state dxState_FakeJukeWarn}
+            {$this show_state kState_OptionsExtras}
          }
          {if {modifier_mgr is_modifier_active mod_fakejuke}
             {do
                {modifier_mgr toggle_modifier_enabled $modifier}
-               {if {modifier_mgr is_modifier_active mod_auto_play}
-                  {modifier_mgr toggle_modifier_enabled mod_auto_play}
-               }
-               {if {modifier_mgr is_modifier_active mod_nohud}
-                  {modifier_mgr toggle_modifier_enabled mod_nohud}
-               }
-               {if {modifier_mgr is_modifier_active mod_nopause}
-                  {modifier_mgr toggle_modifier_enabled mod_nopause}
-               }
-               {if {modifier_mgr is_modifier_active mod_dx_no_overdrive}
-                  {modifier_mgr toggle_modifier_enabled mod_dx_no_overdrive}
-               }
+               {disable_modifier mod_auto_play}
+               {disable_modifier mod_nohud}
+               {disable_modifier mod_nopause}
+               {disable_modifier mod_dx_no_overdrive}
+               {leave_dx_settings}
                {$this leave_options}
                {overshell update_all}
-               {ui goto_screen meta_loading_main_screen}
+               {if {session_mgr is_local}
+                  {ui sync_screen meta_loading_main_screen 0}
+               }
             }
          }
       }
@@ -287,7 +272,9 @@
       }
       {unless {{$this get_session_mgr} is_online_enabled}
          {unless {modifier_mgr is_modifier_active mod_auto_play}
-            {$this show_state dxState_AutoPlayWarn}
+            {set $in_dx_settings TRUE}
+            {set $this_state dxState_AutoPlayWarn}
+            {$this show_state kState_OptionsExtras}
          }
          {if {modifier_mgr is_modifier_active mod_auto_play}
             {do
@@ -298,9 +285,12 @@
                   {modifier_mgr toggle_modifier_enabled mod_nohud}
                   {modifier_mgr toggle_modifier_enabled mod_nopause}
                }
+               {leave_dx_settings}
                {$this leave_options}
                {overshell update_all}
-               {ui goto_screen meta_loading_main_screen}
+               {if {session_mgr is_local}
+                  {ui sync_screen meta_loading_main_screen 0}
+               }
             }
          }
       }
@@ -311,14 +301,18 @@
          {session_mgr disconnect}
          {modifier_mgr toggle_modifier_enabled $modifier}
          {if {$this in_game}
-            {$this show_state dxState_ModifierSongLoad}
+            {set $in_dx_settings TRUE}
+            {set $this_state dxState_ModifierSongLoad}
+            {$this show_state kState_OptionsExtras}
          }
          {overshell update_all}
       }
    )
    (mod_chmode
       {unless {modifier_mgr is_modifier_active mod_chmode}
-         {$this show_state dxState_CHModeWarn}
+         {set $in_dx_settings TRUE}
+         {set $this_state dxState_CHModeWarn}
+         {$this show_state kState_OptionsExtras}
       }
       {if {modifier_mgr is_modifier_active mod_chmode}
          {do
@@ -328,32 +322,42 @@
             {if {== $dx_rails none}
                {set $dx_rails "rock band 3"}
             }
+            {leave_dx_settings}
             {$this leave_options}
             {overshell update_all}
-            {ui goto_screen meta_loading_main_screen}
+            {if {session_mgr is_local}
+               {ui sync_screen meta_loading_main_screen 0}
+            }
          }
       }
    )
    (mod_calibration
       {unless
          {modifier_mgr is_modifier_active mod_calibration}
-         {$this show_state dxState_CalibrationWarn}
+         {set $in_dx_settings TRUE}
+         {set $this_state dxState_CalibrationWarn}
+         {$this show_state kState_OptionsExtras}
       }
       {if
          {modifier_mgr is_modifier_active mod_calibration}
          {do
             {modifier_mgr toggle_modifier_enabled $modifier}
             {set $dx_multiplier_ring_needs_reset TRUE}
+            {leave_dx_settings}
             {$this leave_options}
             {overshell update_all}
-            {ui goto_screen meta_loading_main_screen}
+            {if {session_mgr is_local}
+               {ui sync_screen meta_loading_main_screen 0}
+            }
          }
       }
    )
    (mod_precision
       {unless
          {modifier_mgr is_modifier_active mod_precision}
-         {$this show_state dxState_PrecisionWarn}
+         {set $in_dx_settings TRUE}
+         {set $this_state dxState_PrecisionWarn}
+         {$this show_state kState_OptionsExtras}
       }
       {if
          {modifier_mgr is_modifier_active mod_precision}
@@ -364,9 +368,12 @@
                {set $dx_rails "rock band 3"}
             }
             {modifier_mgr toggle_modifier_enabled $modifier}
+            {leave_dx_settings}
             {$this leave_options}
             {overshell update_all}
-            {ui goto_screen meta_loading_main_screen}
+            {if {session_mgr is_local}
+               {ui sync_screen meta_loading_main_screen 0}
+            }
          }
       }
    )

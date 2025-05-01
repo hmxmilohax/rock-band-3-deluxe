@@ -1,654 +1,333 @@
-#define DX_PRINT_SONG_SPEED
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_song_speed} {int {+ 0.5 {* $leaderspeed 100}}}}}
-)
-#define DX_SET_SPEEDS_DATA
-(
-   {$current_list set_data
-      (
+{push_back $dx_settings_main
+   (dxState_SetSpeeds
+      (view
          ;if we are inside our special menu item, we want to blank out the other lines so it looks nice
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_track_speeds}
-         DX_PRINT_SONG_SPEED
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_song_speed} {int {+ 0.5 {* $leaderspeed 100}}}}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk os_acceleration_mode}
       )
-   }
-)
-(dxState_SetSpeeds
-   (view
-      options_extras
-   )
-   (enter
-      
-      ;setup/reset the list tracking info
-      {set $dx_list_item_selected FALSE}
-      {set $dx_list_pos 0}
-      {set $current_list options_extras.lst}
-      {if_else {$this in_game}
-         {$current_list set_type overshell_menu_ingame}
-         {$current_list set_type overshell_menu}
-      }
-      {$current_list restart_highlight_matanim}
-      {$current_list refresh}
-      DX_SET_SPEEDS_DATA
-   )
-   ;(SCROLL_MSG
-   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   ;)
-   ;these two options are selectable and act normal with a destination trail
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_track_speeds
-            {$this show_state dxState_TrackSpeeds})
-         (os_acceleration_mode
-            {$this show_state dxState_AccelerationMode})
-      }
-   )
-   ;this is handling the dynamic "slider" replacement
-   (BUTTON_DOWN_MSG
-      {if_else
-         $dx_list_item_selected
-         ;we selected an object so now only track up/down
-         {switch
-            $action
-            ;if we confirm or back out of the internal selection shell, go back up to the normal level and refresh the list
-            ((kAction_Confirm kAction_Cancel)
-               {set $dx_list_item_selected FALSE}
-               DX_SET_SPEEDS_DATA
-            )
-            ;if we pressed Up or Down while inside a selected list item
-            ((kAction_Down kAction_Up)
-               {switch {$current_list selected_data}
-                  (1
-                     {if
-                        ;set minimum and maximum for up and down presses for this variable
-                        {switch $action
-                           (kAction_Down {> $leaderspeed 1}) ;minimum
-                           (kAction_Up {< $leaderspeed 2.45}) ;maximum
-                        }
-                        ;actually set our variable, based on the pressed action
-                        {set $leaderspeed
-                           {switch $action
-                              (kAction_Down {- $leaderspeed 0.05})
-                              (kAction_Up {+ $leaderspeed 0.05})
-                           }
-                        }
-                     }
-                     ;track our current list position for hiding other list elements while we have selected this one
-                     {set $dx_list_pos 1}
-                  )
-                  kDataUnhandled
-               }
-               ;refresh the list
-               DX_SET_SPEEDS_DATA
-            )
-            kDataUnhandled
-         }
-         ;we havent specifically selected anything, we are only hovering on a list item
-         {switch
-            $action
-            ;check if we are selecting on the special item that drills down a level
-            (kAction_Confirm
-               {switch {$current_list selected_data}
-                  (1
-                     ;refresh the list but this time tell the game we are a level deeper to hide other options
-                     {set $dx_list_item_selected TRUE}
-                     {set $dx_list_pos {$current_list selected_data}}
-                     DX_SET_SPEEDS_DATA
-                  )
-                  kDataUnhandled
-               }
-            )
-            ;if we pressed left or right while hovering on a specific list item
-            ((kAction_Left kAction_Right)
-               {switch {$current_list selected_data}
-                  (1
-                     {if
-                        ;set minimum and maximum for left and right presses for this variable
-                        {switch $action
-                           (kAction_Left {> $leaderspeed 1}) ;minimum
-                           (kAction_Right {< $leaderspeed 2.45}) ;maximum
-                        }
-                        ;actually set our variable, based on the pressed action
-                        {set $leaderspeed
-                           {switch $action
-                              (kAction_Left {- $leaderspeed 0.05})
-                              (kAction_Right {+ $leaderspeed 0.05})
-                           }
-                        }
-                     }
-                     ;track our current list position for hiding other list elements while we have selected this one
-                     {set $dx_list_pos 1}
-                  )
-                  kDataUnhandled
-               }
-               ;refresh the list
-               DX_SET_SPEEDS_DATA
-            )
-            kDataUnhandled
-         }
-      }
-   )
-   (on_cancel
-      {$this show_state dxState_DeluxeSettings}
-   )
-)
-
-#define DX_PRINT_TRACK_SPEED_GUITAR
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_guitar} {int {+ 0.5 {* $trackspeed_guitar 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_BASS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_bass} {int {+ 0.5 {* $trackspeed_bass 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_DRUM
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_drum} {int {+ 0.5 {* $trackspeed_drum 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_KEYS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_keys} {int {+ 0.5 {* $trackspeed_keys 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_REAL_GUITAR
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_guitar} {int {+ 0.5 {* $trackspeed_real_guitar 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_REAL_BASS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_bass} {int {+ 0.5 {* $trackspeed_real_bass 100}}}}}
-)
-#define DX_PRINT_TRACK_SPEED_REAL_KEYS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 7} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trkspd_real_keys} {int {+ 0.5 {* $trackspeed_real_keys 100}}}}}
-)
-#define DX_TRACK_SPEED_DATA
-(
-   {$current_list set_data
-      (
-         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk all_instruments}
-         DX_PRINT_TRACK_SPEED_GUITAR
-         DX_PRINT_TRACK_SPEED_BASS
-         DX_PRINT_TRACK_SPEED_DRUM
-         DX_PRINT_TRACK_SPEED_KEYS
-         DX_PRINT_TRACK_SPEED_REAL_GUITAR
-         DX_PRINT_TRACK_SPEED_REAL_BASS
-         DX_PRINT_TRACK_SPEED_REAL_KEYS
+      (message os_spds_desc)
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
       )
-   }
-)
-(dxState_TrackSpeeds
-   (view
-      options_audio
-   )
-   (enter
-      
-      {modifier_scroll.sbd set_showing TRUE}
-      {modifier_scroll.sbd set scrollbar_list options_audio.lst}
-      {if {! {session is_in_game}}
-         {$this show_message}
-         {$this setup_message_text dx_track_speed_desc FALSE}
-         {set $dx_no_message_sound TRUE}
-      }
-      {set $dx_list_item_selected FALSE}
-      {set $dx_list_pos 0}
-      {set $current_list options_audio.lst}
-      {if_else {$this in_game}
-         {$current_list set_type overshell_menu_ingame}
-         {$current_list set_type overshell_menu}
-      }
-      {$current_list restart_highlight_matanim}
-      {$current_list refresh}
-      DX_TRACK_SPEED_DATA
-   )
-   ;(SCROLL_MSG
-   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   ;)
-   (BUTTON_DOWN_MSG
-      {if_else
-         $dx_list_item_selected
-         {switch
-            $action
-            ((kAction_Confirm kAction_Cancel)
-               {set $dx_list_item_selected FALSE}
-               DX_TRACK_SPEED_DATA
-            )
-            ((kAction_Down kAction_Up)
-               {switch {$current_list selected_data}
-                  (0
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_guitar 0.55})
-                           (kAction_Up {< $trackspeed_guitar 2.55})
-                        }
-                        {set $trackspeed_guitar
-                           {switch $action
-                              (kAction_Down {- $trackspeed_guitar 0.05})
-                              (kAction_Up {+ $trackspeed_guitar 0.05})
-                           }
-                        }
-                        {set $trackspeed_bass
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_drum
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_keys
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_keys
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_guitar
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_bass
-                           $trackspeed_guitar
-                        }
-                     }
-                     {set $dx_list_pos 0}
-                  )
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_guitar 0.55})
-                           (kAction_Up {< $trackspeed_guitar 2.55})
-                        }
-                        {set $trackspeed_guitar
-                           {switch $action
-                              (kAction_Down {- $trackspeed_guitar 0.05})
-                              (kAction_Up {+ $trackspeed_guitar 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_bass 0.55})
-                           (kAction_Up {< $trackspeed_bass 2.55})
-                        }
-                        {set $trackspeed_bass
-                           {switch $action
-                              (kAction_Down {- $trackspeed_bass 0.05})
-                              (kAction_Up {+ $trackspeed_bass 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_drum 0.55})
-                           (kAction_Up {< $trackspeed_drum 2.55})
-                        }
-                        {set $trackspeed_drum
-                           {switch $action
-                              (kAction_Down {- $trackspeed_drum 0.05})
-                              (kAction_Up {+ $trackspeed_drum 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_keys 0.55})
-                           (kAction_Up {< $trackspeed_keys 2.55})
-                        }
-                        {set $trackspeed_keys
-                           {switch $action
-                              (kAction_Down {- $trackspeed_keys 0.05})
-                              (kAction_Up {+ $trackspeed_keys 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  (5
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_real_guitar 0.55})
-                           (kAction_Up {< $trackspeed_real_guitar 2.55})
-                        }
-                        {set $trackspeed_real_guitar
-                           {switch $action
-                              (kAction_Down {- $trackspeed_real_guitar 0.05})
-                              (kAction_Up {+ $trackspeed_real_guitar 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 5}
-                  )
-                  (6
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_real_bass 0.55})
-                           (kAction_Up {< $trackspeed_real_bass 2.55})
-                        }
-                        {set $trackspeed_real_bass
-                           {switch $action
-                              (kAction_Down {- $trackspeed_real_bass 0.05})
-                              (kAction_Up {+ $trackspeed_real_bass 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 6}
-                  )
-                  (7
-                     {if
-                        {switch $action
-                           (kAction_Down {> $trackspeed_real_keys 0.55})
-                           (kAction_Up {< $trackspeed_real_keys 2.55})
-                        }
-                        {set $trackspeed_real_keys
-                           {switch $action
-                              (kAction_Down {- $trackspeed_real_keys 0.05})
-                              (kAction_Up {+ $trackspeed_real_keys 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 7}
-                  )
-                  kDataUnhandled
-               }
-               DX_TRACK_SPEED_DATA
-            )
-            kDataUnhandled
-         }
-         {switch
-            $action
-            (kAction_Confirm
-               {set $dx_list_item_selected TRUE}
-               {set $dx_list_pos {$current_list selected_data}}
-               DX_TRACK_SPEED_DATA
-            )
-            ((kAction_Left kAction_Right)
-               {switch {$current_list selected_data}
-                  (0
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_guitar 0.55})
-                           (kAction_Right {< $trackspeed_guitar 2.55})
-                        }
-                        {set $trackspeed_guitar
-                           {switch $action
-                              (kAction_Left {- $trackspeed_guitar 0.05})
-                              (kAction_Right {+ $trackspeed_guitar 0.05})
-                           }
-                        }
-                        {set $trackspeed_bass
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_drum
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_keys
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_keys
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_guitar
-                           $trackspeed_guitar
-                        }
-                        {set $trackspeed_real_bass
-                           $trackspeed_guitar
-                        }
-                     }
-                     {set $dx_list_pos 0}
-                  )
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_guitar 0.55})
-                           (kAction_Right {< $trackspeed_guitar 2.55})
-                        }
-                        {set $trackspeed_guitar
-                           {switch $action
-                              (kAction_Left {- $trackspeed_guitar 0.05})
-                              (kAction_Right {+ $trackspeed_guitar 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_bass 0.55})
-                           (kAction_Right {< $trackspeed_bass 2.55})
-                        }
-                        {set $trackspeed_bass
-                           {switch $action
-                              (kAction_Left {- $trackspeed_bass 0.05})
-                              (kAction_Right {+ $trackspeed_bass 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_drum 0.55})
-                           (kAction_Right {< $trackspeed_drum 2.55})
-                        }
-                        {set $trackspeed_drum
-                           {switch $action
-                              (kAction_Left {- $trackspeed_drum 0.05})
-                              (kAction_Right {+ $trackspeed_drum 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_keys 0.55})
-                           (kAction_Right {< $trackspeed_keys 2.55})
-                        }
-                        {set $trackspeed_keys
-                           {switch $action
-                              (kAction_Left {- $trackspeed_keys 0.05})
-                              (kAction_Right {+ $trackspeed_keys 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  (5
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_real_guitar 0.55})
-                           (kAction_Right {< $trackspeed_real_guitar 2.55})
-                        }
-                        {set $trackspeed_real_guitar
-                           {switch $action
-                              (kAction_Left {- $trackspeed_real_guitar 0.05})
-                              (kAction_Right {+ $trackspeed_real_guitar 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 5}
-                  )
-                  (6
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_real_bass 0.55})
-                           (kAction_Right {< $trackspeed_real_bass 2.55})
-                        }
-                        {set $trackspeed_real_bass
-                           {switch $action
-                              (kAction_Left {- $trackspeed_real_bass 0.05})
-                              (kAction_Right {+ $trackspeed_real_bass 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 6}
-                  )
-                  (7
-                     {if
-                        {switch $action
-                           (kAction_Left {> $trackspeed_real_keys 0.55})
-                           (kAction_Right {< $trackspeed_real_keys 2.55})
-                        }
-                        {set $trackspeed_real_keys
-                           {switch $action
-                              (kAction_Left {- $trackspeed_real_keys 0.05})
-                              (kAction_Right {+ $trackspeed_real_keys 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 7}
-                  )
-                  kDataUnhandled
-               }
-               DX_TRACK_SPEED_DATA
-            )
-            kDataUnhandled
-         }
-      }
-   )
-   (on_cancel
-      DX_OS_CLOSE_MSG
-      {modifier_scroll.sbd set_showing FALSE}
-      {modifier_scroll.sbd set scrollbar_list modifiers.lst}
-      {if_else $dx_track_speed_from_modifiers
+      (enter
+         {set $dx_pos_interval_list (0.01 0.02 0.05 0.10 0.15 0.20 0.25 0.30)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
          {do
-            {$this show_modifiers}
-            {set $dx_track_speed_from_modifiers FALSE}
-         }
-         {if_else {$this in_game}
-            {$this show_state dxState_DeluxeSettings}
-            {$this show_state dxState_SetSpeeds}
-         }
-      }
-   )
-)
-
-#define DX_PRINT_MAX_SPEED
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_max_speed} {int {+ 0.5 {* $speedmod_cap 100}}}}}
-)
-#define DX_ACCELERATION_MODE_DATA
-(
-   {$current_list set_data
-      (
-         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk {if_else {modifier_mgr is_modifier_active mod_fastermode} os_fastermode_on os_fastermode_off}}
-         DX_PRINT_MAX_SPEED
-      )
-   }
-)
-(dxState_AccelerationMode
-   (view
-      options_end_game
-   )
-   (enter
-      
-      {set $dx_list_item_selected FALSE}
-      {set $dx_list_pos 0}
-      {set $current_list options_end_game.lst}
-      {if_else {$this in_game}
-         {$current_list set_type overshell_menu_ingame}
-         {$current_list set_type overshell_menu}
-      }
-      {$current_list restart_highlight_matanim}
-      {$current_list refresh}
-      DX_ACCELERATION_MODE_DATA
-   )
-   ;(SCROLL_MSG
-   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   ;)
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_fastermode_off
-            {unless {modifier_mgr is_modifier_active mod_fastermode}
-               {modifier_mgr toggle_modifier_enabled mod_fastermode}
-            }
-            DX_ACCELERATION_MODE_DATA
-         )
-         (os_fastermode_on
-            {if {modifier_mgr is_modifier_active mod_fastermode}
-               {modifier_mgr toggle_modifier_enabled mod_fastermode}
-            }
-            DX_ACCELERATION_MODE_DATA
-         )
-      }
-   )
-   (BUTTON_DOWN_MSG
-      {if_else
-         $dx_list_item_selected
-         {switch
-            $action
-            ((kAction_Confirm kAction_Cancel)
-               {set $dx_list_item_selected FALSE}
-               DX_ACCELERATION_MODE_DATA
-            )
-            ((kAction_Down kAction_Up)
-               {switch {$current_list selected_data}
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Down {> $speedmod_cap 1.05})
-                           (kAction_Up {< $speedmod_cap 2.45})
-                        }
-                        {set $speedmod_cap
-                           {switch $action
-                              (kAction_Down {- $speedmod_cap 0.05})
-                              (kAction_Up {+ $speedmod_cap 0.05})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  kDataUnhandled
+            ($arr {find $dx_settings_main $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
                }
-               DX_ACCELERATION_MODE_DATA
-            )
-            kDataUnhandled
+            }
+            {$current_list set_data $data}
          }
-         {switch
-            $action
-            (kAction_Confirm
-               {switch {$current_list selected_data}
-                  (1
+      )
+      #define LIST_SONG_SPEED_DIREC
+      (
+         {if
+            {&&
+               {!= {$current_list selected_data} 0}
+               {!= {$current_list selected_data} 2}
+            }
+            {switch {$current_list selected_data}
+               ;(1 {set $this_var dx_pos_remapper_array_number})
+               (1 {set $this_var leaderspeed})
+            }
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if {> {eval {var {sprint $this_var}}} 1.00}
+                     {set_var {sprint $this_var} {- {eval {var $this_var}} 0.05}}
+                  }
+               )
+               ((kAction_Right kAction_Up)
+                  {if {< {eval {var {sprint $this_var}}} 2.45}
+                     {set_var {sprint $this_var} {+ {eval {var $this_var}} 0.05}}
+                  }
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
+                  {dx_state dxState_TrackSpeeds}
+                  {if_else {== {$current_list selected_data} 2} ;if we click reset
+                     {dx_state dxState_AccelerationMode}
+                     {do
+                        {set $dx_list_item_selected TRUE}
+                        {set $dx_list_pos {$current_list selected_data}}
+                     }
+                  }
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_DeluxeSettings}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_SONG_SPEED_DIREC)
+         (kAction_Up LIST_SONG_SPEED_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_SONG_SPEED_DIREC)
+         (kAction_Right LIST_SONG_SPEED_DIREC)
+      )
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_TrackSpeeds
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_breakneck}
+         ;{if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "interval_" $dx_pos_remapper_array_number}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk all_instruments}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_guitar} {int {+ 0.5 {* $trackspeed_guitar 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_bass} {int {+ 0.5 {* $trackspeed_bass 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_drum} {int {+ 0.5 {* $trackspeed_drum 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_keys} {int {+ 0.5 {* $trackspeed_keys 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_real_guitar} {int {+ 0.5 {* $trackspeed_real_guitar 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 7} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_real_bass} {int {+ 0.5 {* $trackspeed_real_bass 100}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 8} {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_trkspd_real_keys} {int {+ 0.5 {* $trackspeed_real_keys 100}}}}}
+      )
+      #define SET_TRACK_SPEED_CHECK
+      (
+         {auto_vocals.chk set checked
+            {||
+               {>= $trackspeed_guitar 1.50}
+               {>= $trackspeed_bass 1.50}
+               {>= $trackspeed_drum 1.50}
+               {>= $trackspeed_keys 1.50}
+               {>= $trackspeed_real_bass 1.50}
+               {>= $trackspeed_real_keys 1.50}
+               {>= $trackspeed_real_guitar 1.50}
+            }
+         }
+      )
+      #define DX_RESET_TRACK_SPEED
+      (
+         {do
+            ($data {if_else {> $trackspeed_guitar 1.0} 1.0 1.50})
+            {foreach $entry (guitar bass drum keys real_guitar real_bass real_keys)
+               {set_var {sprint "trackspeed_" $entry} $data}
+            }
+         }
+         SET_TRACK_SPEED_CHECK
+      )
+      (message
+         dx_track_lengths_desc
+      )
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
+         {auto_vocals.chk set_showing FALSE}
+      )
+      (enter
+         {set $dx_pos_interval_list (0.01 0.02 0.05 0.10 0.15 0.20 0.25 0.30)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+         {do
+            ($arr {find $dx_settings_main $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
+               }
+            }
+            {$current_list set_data $data}
+         }
+         {auto_vocals.chk set_showing TRUE}
+      )
+      #define APPLY_TRACK_SPEED_TO_ALL
+      (
+         {set $trackspeed_bass
+            $trackspeed_guitar
+         }
+         {set $trackspeed_drum
+            $trackspeed_guitar
+         }
+         {set $trackspeed_keys
+            $trackspeed_guitar
+         }
+         {set $trackspeed_real_keys
+            $trackspeed_guitar
+         }
+         {set $trackspeed_real_guitar
+            $trackspeed_guitar
+         }
+         {set $trackspeed_real_bass
+            $trackspeed_guitar
+         }
+      )
+      #define LIST_TRACK_SPEED_DIREC
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               ;(1 {set $this_var dx_pos_remapper_array_number})
+               (1 {set $this_var trackspeed_guitar})
+               (2 {set $this_var trackspeed_guitar})
+               (3 {set $this_var trackspeed_bass})
+               (4 {set $this_var trackspeed_drum})
+               (5 {set $this_var trackspeed_keys})
+               (6 {set $this_var trackspeed_real_guitar})
+               (7 {set $this_var trackspeed_real_bass})
+               (8 {set $this_var trackspeed_real_keys})
+            }
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if {> {eval {var {sprint $this_var}}} 0.55}
+                     {set_var {sprint $this_var} {- {eval {var $this_var}} 0.05}}
+                  }
+                  {if {== {$current_list selected_data} 1}
+                     APPLY_TRACK_SPEED_TO_ALL
+                  }
+                  SET_TRACK_SPEED_CHECK
+               )
+               ((kAction_Right kAction_Up)
+                  {if {< {eval {var {sprint $this_var}}} 2.55}
+                     {set_var {sprint $this_var} {+ {eval {var $this_var}} 0.05}}
+                  }
+                  {if {== {$current_list selected_data} 1}
+                     APPLY_TRACK_SPEED_TO_ALL
+                  }
+                  SET_TRACK_SPEED_CHECK
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
+                  {do
+                     DX_RESET_TRACK_SPEED
+                  }
+                  {do
                      {set $dx_list_item_selected TRUE}
                      {set $dx_list_pos {$current_list selected_data}}
-                     DX_ACCELERATION_MODE_DATA
-                  )
-                  kDataUnhandled
+                  }
                }
-            )
-            ((kAction_Left kAction_Right)
-               {switch {$current_list selected_data}
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Left {> $speedmod_cap 1.05})
-                           (kAction_Right {< $speedmod_cap 2.45})
-                        }
-                        {set $speedmod_cap
-                           {switch $action
-                              (kAction_Left {- $speedmod_cap 0.05})
-                              (kAction_Right {+ $speedmod_cap 0.05})
-                           }
-                        }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {do
+                  {if_else $dx_track_speed_from_modifiers
+                     {do
+                        {leave_dx_settings}
+                        {$this show_modifiers}
+                        {set $dx_track_speed_from_modifiers FALSE}
                      }
-                     {set $dx_list_pos 1}
-                  )
-                  kDataUnhandled
+                     {if_else {$this in_game}
+                        {dx_state dxState_DeluxeSettings}
+                        {dx_state dxState_SetSpeeds}
+                     }
+                  }
+                  {auto_vocals.chk set_showing FALSE}
                }
-               DX_ACCELERATION_MODE_DATA
-            )
-            kDataUnhandled
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_TRACK_SPEED_DIREC)
+         (kAction_Up LIST_TRACK_SPEED_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_TRACK_SPEED_DIREC)
+         (kAction_Right LIST_TRACK_SPEED_DIREC)
+      )
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_AccelerationMode
+      (view
+         ;if we are inside our special menu item, we want to blank out the other lines so it looks nice
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk {if_else {modifier_mgr is_modifier_active mod_fastermode} os_fastermode_on os_fastermode_off}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprintf {localize os_max_speed} {int {+ 0.5 {* $speedmod_cap 100}}}}}
+      )
+      (message os_acceleration_mode_desc)
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
+      )
+      (enter
+         {set $dx_pos_interval_list (0.01 0.02 0.05 0.10 0.15 0.20 0.25 0.30)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+         {do
+            ($arr {find $dx_settings_main $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
+               }
+            }
+            {$current_list set_data $data}
          }
-      }
+      )
+      #define LIST_ACCEL_DIREC
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               ;(1 {set $this_var dx_pos_remapper_array_number})
+               (1 {set $this_var speedmod_cap})
+            }
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if {> {eval {var {sprint $this_var}}} 1.0}
+                     {set_var {sprint $this_var} {- {eval {var $this_var}} 0.05}}
+                  }
+               )
+               ((kAction_Right kAction_Up)
+                  {if {< {eval {var {sprint $this_var}}} 2.45}
+                     {set_var {sprint $this_var} {+ {eval {var $this_var}} 0.05}}
+                  }
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
+                  {modifier_mgr toggle_modifier_enabled mod_fastermode}
+                  {do
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                  }
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_SetSpeeds}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_ACCEL_DIREC)
+         (kAction_Up LIST_ACCEL_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_ACCEL_DIREC)
+         (kAction_Right LIST_ACCEL_DIREC)
+      )
    )
-   (on_cancel
-      {$this show_state dxState_SetSpeeds}
-   )
-)
+}

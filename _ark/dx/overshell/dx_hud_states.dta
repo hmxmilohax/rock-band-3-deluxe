@@ -1,86 +1,45 @@
-#define DX_INGAME_HUD_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options os_mtv}
-
-      {push_back $options {if_else $dx_lyric_display_enabled os_lyric_display_on os_lyric_display_off}}
-      
-      {push_back $options
-         {switch $dx_crowd_meter_state
-            (dx_on os_vis_on)
-            (dx_off os_vis_off)
-            (dx_disabled os_vis_disabled)
+{push_back $dx_settings_main
+   (dxState_InGameHUD
+      (view
+         os_mtv
+         {if_else $dx_lyric_display_enabled os_lyric_display_on os_lyric_display_off}
+         os_lyric_highlight_color
+         {if_else {== $dx_crowd_meter_state dx_on} os_vis_on 0}
+         {if_else {== $dx_crowd_meter_state dx_off} os_vis_off 0}
+         {if_else {== $dx_crowd_meter_state dx_disabled} os_vis_disabled 0}
+         {if_else $dx_gold_star_progress os_star_gold_fill_on os_star_gold_fill_off}
+         os_star_display_pos
+         os_solo_box_pos
+         os_song_timer
+         #ifndef HX_WII
+         os_song_progress
+         #endif
+         {switch $dx_streak_counter
+            (single os_streak_counter_single)
+            (multi os_streak_counter_multi)
+            (off os_streak_counter_off)
          }
-      }
-      {push_back $options {if_else $dx_gold_star_progress os_star_gold_fill_on os_star_gold_fill_off}}
-      ;{push_back $options os_score} ;removed because only position remained in submenu
-
-      ;{push_back $options os_scoreboard_pos}
-      {push_back $options os_star_display_pos}
-
-      {push_back $options os_solo_box_pos}
-
-      {push_back $options os_song_timer}
-      #ifndef HX_WII
-      {push_back $options os_song_progress}
-      #endif
-      {switch $dx_streak_counter
-         (single {push_back $options os_streak_counter_single})
-         (multi {push_back $options os_streak_counter_multi})
-         (off {push_back $options os_streak_counter_off})
-      }
-
-      {push_back $options os_practice_hud}
-
-      ;-----func----------state name------message
-      {dx_state_setup dxState_InGameHUD TRUE}
-   }
-)
-(dxState_InGameHUD
-   (view
-      DX_INGAME_HUD_DATA
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      DX_MENU_DESC
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_star_gold_fill_on os_star_gold_fill_off)
-            {set $dx_gold_star_progress {! $dx_gold_star_progress}}
-            {if_else $dx_gold_star_progress
-               {set $dx_tracked_changed os_star_gold_fill_on}
-               {set $dx_tracked_changed os_star_gold_fill_off}
-            }
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
-            {set $previous_state dxState_InGameHUD}
-         )
+         os_practice_hud
+      )
+      (select
+         (os_star_gold_fill {set $dx_gold_star_progress {! $dx_gold_star_progress}})
          (os_scoreboard_pos
             {set $dx_set_ui_pos_tracked_ui scoreboard}
-            {$this show_state dxState_PositionRemapper})
+            {dx_state dxState_PositionRemapper}
+         )
          (os_star_display_pos
             {set $dx_set_ui_pos_tracked_ui star_display}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
-         (os_practice_hud
-            {$this show_state dxState_ScreenElements_Practice}
+         (os_practice_hud {dx_state dxState_ScreenElements_Practice})
+         (os_mtv {dx_state dxState_MTVElements})
+         (os_lyric_display {set $dx_lyric_display_enabled {! $dx_lyric_display_enabled}})
+         (os_lyric_highlight_color
+            {set $dx_set_ui_rgb_tracked_ui lyric_highlight}
+            {dx_state dxState_rgbcolormenu}
          )
-         (os_mtv
-            {$this show_state dxState_MTVElements})
-         ((os_lyric_display_off os_lyric_display_on)
-            {set $dx_lyric_display_enabled {! $dx_lyric_display_enabled}}
-            {set $dx_tracked_changed {if_else $dx_lyric_display_enabled os_lyric_display_on os_lyric_display_off}}
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
-         )
-         ((os_vis_off os_vis_on os_vis_disabled)
+         #define CROWD_METER_SELECT
+         (
             {set $dx_crowd_meter_state
                {switch $dx_crowd_meter_state
                   (dx_on dx_off)
@@ -88,1251 +47,313 @@
                   (dx_disabled dx_on)
                }
             }
-            {set $dx_tracked_changed
-               {switch $dx_crowd_meter_state
-                  (dx_on os_vis_on)
-                  (dx_off os_vis_off)
-                  (dx_disabled os_vis_disabled)
-               }
-            }
             {dx_toggle_fail_feedback}
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
          )
-         (os_score
-            {$this show_state dxState_ScoreElements}
-         )
-         (os_song_timer
-            {$this show_state dxState_SongTimerElements}
-         )
-         (os_song_progress
-            {$this show_state dxState_ProgressBarElements}
-         )
+         (os_vis_off CROWD_METER_SELECT)
+         (os_vis_on CROWD_METER_SELECT)
+         (os_vis_disabled CROWD_METER_SELECT)
+         (os_song_timer {dx_state dxState_SongTimerElements})
+         (os_song_progress {dx_state dxState_ProgressBarElements})
          (os_solo_box_pos
             {set $dx_set_ui_pos_tracked_ui solo_box}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
-         (os_streak_counter_single
-            {set $dx_streak_counter multi}
-            {set $dx_tracked_changed os_streak_counter_multi}
-            ;{if {$this in_game}
-            ;   {dx_reset_time_remaining_position}
-            ;   {do
-            ;      {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-            ;      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-            ;   }
-            ;}
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
-            {set $previous_state dxState_InGameHUD}
-         )
-         (os_streak_counter_multi
-            {set $dx_streak_counter off}
-            {set $dx_tracked_changed os_streak_counter_off}
-            ;{if {$this in_game}
-            ;   {dx_reset_time_remaining_position}
-            ;   {do
-            ;      {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing FALSE}} ;ensure that it is visible at a base level
-            ;      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing FALSE} ;ensure that it is visible at a base level
-            ;   }
-            ;}
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
-            {set $previous_state dxState_InGameHUD}
-         )
-         (os_streak_counter_off
-            {set $dx_streak_counter single}
-            {set $dx_tracked_changed os_streak_counter_single}
-            ;{if {$this in_game}
-            ;   {dx_reset_time_remaining_position}
-            ;   {do
-            ;      {{{coop_track_panel find scoreboard} find tracker_band_display} iterate Mesh $m {$m set_showing TRUE}} ;ensure that it is visible at a base level
-            ;      {{{{coop_track_panel find scoreboard} find tracker_band_display} find tg_main_text_middle.lbl} set_showing TRUE} ;ensure that it is visible at a base level
-            ;   }
-            ;}
-            {dx_state_pos_tracker}
-            DX_INGAME_HUD_DATA
-            {set $previous_state dxState_InGameHUD}
-         )
-         kDataUnhandled
-      }
-      {set $in_state FALSE}
-      DX_INGAME_HUD_DATA
-      {set $previous_state dxState_InGameHUD}
+         (os_streak_counter_single {set $dx_streak_counter multi})
+         (os_streak_counter_multi {set $dx_streak_counter off})
+         (os_streak_counter_off {set $dx_streak_counter single})
+      )
+      (cancel {dx_state dxState_Advanced})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_Advanced}
-   )
-)
+}
 
-#define DX_TRACK_OVERSHELL_DATA
-(
-   {do
-      ($options
-         {array 0})
-
-      #ifndef HX_WII
-      {push_back $options os_track_lengths}
-      #endif
-
-      {push_back $options os_angle}
-
-      {push_back $options os_popups}
-
-      {push_back $options {if_else $dx_dim_remote_players os_dim_remote_players_on os_dim_remote_players_off}}
-
-      {push_back $options {if_else $dx_force_remote_vox os_force_remote_vox_on os_force_remote_vox_off}}
-
-      {push_back $options {if_else $dx_fail_flash os_fail_flash_on os_fail_flash_off}}
-
-      #ifdef HX_WII
-      {push_back $options {if_else $dx_fc_glow os_wii_fc_glow_on os_wii_fc_glow_off}}
-      #else
-      {switch $dx_fctype
-         (ring {push_back $options os_fc_ring})
-         (glow {push_back $options os_fc_glow})
-         (both {push_back $options os_fc_both})
-         (off {push_back $options os_fc_off})
-      }
-      #endif
-
-      {push_back $options os_highway_text}
-
-      {push_back $options os_trackconfig}
-
-      ;-----func----------state name------message
-      {dx_state_setup dxState_TrackHUD TRUE}
-   }
-)
-(dxState_TrackHUD
-   (view
-      DX_TRACK_OVERSHELL_DATA
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      DX_MENU_DESC
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_track_lengths
-            {$this show_state dxState_TrackLengths}
-         )
-         (os_trackconfig
-            {$this show_state dxState_TrackConfig}
-         )
-         ((os_fail_flash_on os_fail_flash_off)
-            {set $dx_fail_flash {! $dx_fail_flash}}
-            {if_else $dx_fail_flash
-               {set $dx_tracked_changed os_fail_flash_on}
-               {set $dx_tracked_changed os_fail_flash_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
-         )
-         ((os_high_score_on os_high_score_off)
-            {set $dx_high_score_report {! $dx_high_score_report}}
-            {if_else $dx_high_score_report
-               {set $dx_tracked_changed os_high_score_on}
-               {set $dx_tracked_changed os_high_score_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-         )
-         (os_angle
-            {$this show_state dxState_AngleMenu}
-         )
-         (os_popups
-            {$this show_state dxState_TrackPopups}
-         )
-         (os_highway_text
-            {$this show_state dxState_TrackHighwayText}
-         )
-         ((os_force_remote_vox_on os_force_remote_vox_off)
+{push_back $dx_settings_main
+   (dxState_TrackHUD
+      (view
+         #ifndef HX_WII
+         os_track_lengths
+         #endif
+         os_angle
+         os_popups
+         {if_else $dx_dim_remote_players os_dim_remote_players_on os_dim_remote_players_off}
+         {if_else $dx_force_remote_vox os_force_remote_vox_on os_force_remote_vox_off}
+         {if_else $dx_fail_flash os_fail_flash_on os_fail_flash_off}
+         #ifdef HX_WII
+         {if_else $dx_fc_glow os_wii_fc_glow_on os_wii_fc_glow_off}
+         #else
+         {if_else {== $dx_fctype ring} os_fc_ring 0}
+         {if_else {== $dx_fctype ring} os_fc_glow 0}
+         {if_else {== $dx_fctype ring} os_fc_both 0}
+         {if_else {== $dx_fctype ring} os_fc_off 0}
+         #endif
+         os_highway_text
+         os_trackconfig
+      )
+      (message pos_remap_desc)
+      (select
+         (os_track_lengths {dx_state dxState_TrackLengths})
+         (os_trackconfig {dx_state dxState_TrackConfig})
+         (os_angle {dx_state dxState_AngleMenu})
+         (os_popups {dx_state dxState_TrackPopups})
+         (os_highway_text {dx_state dxState_TrackHighwayText})
+         (os_wii_fc_glow {set $dx_fc_glow {! $dx_fc_glow}})
+         (os_dim_remote_players {set $dx_dim_remote_players {! $dx_dim_remote_players}})
+         (os_fail_flash {set $dx_fail_flash {! $dx_fail_flash}})
+         (os_high_score {set $dx_high_score_report {! $dx_high_score_report}})
+         (os_force_remote_vox
             {set $dx_force_remote_vox {! $dx_force_remote_vox}}
-            {if_else $dx_force_remote_vox
-               {set $dx_tracked_changed os_force_remote_vox_on}
-               {set $dx_tracked_changed os_force_remote_vox_off}
-            }
             {if {&& {$this in_game} $dx_active_vocals} {coop_track_panel dx_force_remote_vox}}
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
          )
          (os_fc_both
             {set $dx_fctype ring}
-            {set $dx_tracked_changed os_fc_ring}
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
             {set $dx_fc_ring TRUE}
             {set $dx_fc_glow FALSE}
-            ;{if {&& $dx_customizer {$this in_game}}
-            ;   {coop_track_panel track_texture_reset_handler}
-            ;   FORCE_REMOVE_GOLD_STATE
-            ;}
          )
          (os_fc_ring
             {set $dx_fctype glow}
-            {set $dx_tracked_changed os_fc_glow}
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
             {set $dx_fc_ring FALSE}
             {set $dx_fc_glow TRUE}
-            ;{if {&& $dx_customizer {$this in_game}}
-            ;   ADD_GOLD_STATE
-            ;   FRAME_CATCHER
-            ;}
          )
          (os_fc_glow
             {set $dx_fctype off}
-            {set $dx_tracked_changed os_fc_off}
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
             {set $dx_fc_ring FALSE}
             {set $dx_fc_glow FALSE}
-            ;{if {&& $dx_customizer {$this in_game}}
-            ;   {coop_track_panel track_texture_reset_handler}
-            ;   ADD_GOLD_STATE
-            ;}
          )
          (os_fc_off
             {set $dx_fctype both}
-            {set $dx_tracked_changed os_fc_both}
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
             {set $dx_fc_ring TRUE}
             {set $dx_fc_glow TRUE}
-            ;{if {&& $dx_customizer {$this in_game}}
-            ;   {coop_track_panel track_texture_reset_handler}
-            ;   ADD_GOLD_STATE
-            ;}
          )
-         ((os_wii_fc_glow_on os_wii_fc_glow_off)
-            {set $dx_fc_glow {! $dx_fc_glow}}
-            {if_else $dx_fc_glow
-               {set $dx_tracked_changed os_wii_fc_glow_on}
-               {set $dx_tracked_changed os_wii_fc_glow_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
-         )
-         ((os_dim_remote_players_on os_dim_remote_players_off)
-            {set $dx_dim_remote_players {! $dx_dim_remote_players}}
-            {if_else $dx_dim_remote_players
-               {set $dx_tracked_changed os_dim_remote_players_on}
-               {set $dx_tracked_changed os_dim_remote_players_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERSHELL_DATA
-            {set $previous_state dxState_TrackHUD}
-         )
-         kDataUnhandled
-      }
-      {set $in_state FALSE}
-      DX_TRACK_OVERSHELL_DATA
-      {set $previous_state dxState_TrackHUD}
+      )
+      (cancel {dx_state dxState_Advanced})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
+}
+{push_back $dx_settings_main
+   (dxState_TrackPopups
+      (view
+         {if_else $dx_note_streak_popups os_note_streak_on os_note_streak_off}
+         {if_else $dx_od_ready_popups os_od_ready_on os_od_ready_off}
+         #ifndef HX_WII
+         {if_else $dx_diff_popups os_diff_on os_diff_off}
+         #endif
+         {if_else $dx_high_score_report os_high_score_on os_high_score_off}
+         {if_else $dx_countdown_enabled os_countdown_on os_countdown_off}
+         {if_else {== $dx_hide_on_countdown single} os_hide_on_countdown_single 0}
+         {if_else {== $dx_hide_on_countdown multi} os_hide_on_countdown_multi 0}
+         {if_else {== $dx_hide_on_countdown off} os_hide_on_countdown_disable 0}
+         {if_else $dx_end_song_feedback os_end_song_feedback_on os_end_song_feedback_off}
+         {if_else $dx_you_rock os_you_rock_on os_you_rock_off}
+      )
+      (select
+         (os_high_score {set $dx_high_score_report {! $dx_high_score_report}})
+         (os_note_streak {set $dx_note_streak_popups {! $dx_note_streak_popups}})
+         (os_od_ready {set $dx_od_ready_popups {! $dx_od_ready_popups}})
+         (os_diff {set $dx_diff_popups {! $dx_diff_popups}})
+         (os_countdown {set $dx_countdown_enabled {! $dx_countdown_enabled}})
+         (os_end_song_feedback {set $dx_end_song_feedback {! $dx_end_song_feedback}})
+         (os_you_rock {set $dx_you_rock {! $dx_you_rock}})
+         (os_hide_on_countdown_disable {set $dx_hide_on_countdown single})
+         (os_hide_on_countdown_multi {set $dx_hide_on_countdown off})
+         (os_hide_on_countdown_single {set $dx_hide_on_countdown multi})
+      )
+      (cancel {dx_state dxState_TrackHUD})
    )
-   (on_cancel
-      {$this show_state dxState_Advanced}
-   )
-)
+}
 
-#define DX_TRACK_POPUP_DATA
-(
-   {do
-      ($options
-         {array 0})
-
-      {push_back $options {if_else $dx_note_streak_popups os_note_streak_on os_note_streak_off}}
-
-      {push_back $options {if_else $dx_od_ready_popups os_od_ready_on os_od_ready_off}}
-
-      #ifndef HX_WII
-
-      {push_back $options {if_else $dx_diff_popups os_diff_on os_diff_off}}
-
-      #endif
-
-      {push_back $options {if_else $dx_high_score_report os_high_score_on os_high_score_off}}
-
-      {push_back $options {if_else $dx_countdown_enabled os_countdown_on os_countdown_off}}
-
-      {switch $dx_hide_on_countdown
-         (single {push_back $options os_hide_on_countdown_single})
-         (multi {push_back $options os_hide_on_countdown_multi})
-         (off {push_back $options os_hide_on_countdown_off})
-      }
-
-      {push_back $options {if_else $dx_end_song_feedback os_end_song_feedback_on os_end_song_feedback_off}}
-
-      {push_back $options {if_else $dx_you_rock os_you_rock_on os_you_rock_off}}      
-      
-      ;-----func----------state name------message
-      {dx_state_setup dxState_TrackPopups TRUE}
-   }
-)
-(dxState_TrackPopups
-   (view
-      DX_TRACK_POPUP_DATA
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      DX_MENU_DESC
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_high_score_on os_high_score_off)
-            {set $dx_high_score_report {! $dx_high_score_report}}
-            {if_else $dx_high_score_report
-               {set $dx_tracked_changed os_high_score_on}
-               {set $dx_tracked_changed os_high_score_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-         )
-         ((os_note_streak_on os_note_streak_off)
-            {set $dx_note_streak_popups {! $dx_note_streak_popups}}
-            {if_else $dx_note_streak_popups
-               {set $dx_tracked_changed os_note_streak_on}
-               {set $dx_tracked_changed os_note_streak_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_od_ready_on os_od_ready_off)
-            {set $dx_od_ready_popups {! $dx_od_ready_popups}}
-            {if_else $dx_od_ready_popups
-               {set $dx_tracked_changed os_od_ready_on}
-               {set $dx_tracked_changed os_od_ready_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_diff_on os_diff_off)
-            {set $dx_diff_popups {! $dx_diff_popups}}
-            {if_else $dx_diff_popups
-               {set $dx_tracked_changed os_diff_on}
-               {set $dx_tracked_changed os_diff_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_countdown_on os_countdown_off)
-            {set $dx_countdown_enabled {! $dx_countdown_enabled}}
-            {if_else $dx_countdown_enabled
-               {set $dx_tracked_changed os_countdown_on}
-               {set $dx_tracked_changed os_countdown_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_hide_on_countdown_single os_hide_on_countdown_multi os_hide_on_countdown_off)
-            {set $dx_hide_on_countdown
-               {switch $dx_hide_on_countdown
-                  (off single)
-                  (single multi)
-                  (multi off)
-               }
-            }
-            {switch $dx_hide_on_countdown
-               (single {set $dx_tracked_changed os_hide_on_countdown_single})
-               (multi {set $dx_tracked_changed os_hide_on_countdown_multi})
-               (off {set $dx_tracked_changed os_hide_on_countdown_off})
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_end_song_feedback_on os_end_song_feedback_off)
-            {set $dx_end_song_feedback {! $dx_end_song_feedback}}
-            {if_else $dx_end_song_feedback
-               {set $dx_tracked_changed os_end_song_feedback_on}
-               {set $dx_tracked_changed os_end_song_feedback_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         ((os_you_rock_on os_you_rock_off)
-            {set $dx_you_rock {! $dx_you_rock}}
-            {if_else $dx_you_rock
-               {set $dx_tracked_changed os_you_rock_on}
-               {set $dx_tracked_changed os_you_rock_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_POPUP_DATA
-            {set $previous_state dxState_TrackPopups}
-         )
-         kDataUnhandled
-      }
-      {set $in_state FALSE}
-      DX_TRACK_POPUP_DATA
-      {set $previous_state dxState_TrackPopups}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHUD}
-   )
-)
-
-#define DX_MTV_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {switch $dx_mtv_visibility
-         (always {push_back $options os_mtv_vis_always})
-         (never {push_back $options os_mtv_vis_never})
-         (delayed {push_back $options os_mtv_vis_delayed})
-         (default {push_back $options os_mtv_vis_default})
-      }
-      {push_back $options os_pos}
-      {push_back $options os_currentsong}
-      {push_back $options os_text_options}
-      {dx_state_setup dxState_MTVElements TRUE}
-   }
-)
-(dxState_MTVElements
-   (view
-      DX_MTV_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
+{push_back $dx_settings_main
+   (dxState_MTVElements
+      (view
+         {if_else {== $dx_mtv_visibility always} os_mtv_vis_always 0}
+         {if_else {== $dx_mtv_visibility never} os_mtv_vis_never 0}
+         {if_else {== $dx_mtv_visibility delayed} os_mtv_vis_delayed 0}
+         {if_else {== $dx_mtv_visibility default} os_mtv_vis_default 0}
+         os_pos
+         os_currentsong
+         os_text_options
+      )
+      (select
+         (os_currentsong {dx_state dxState_CurrentSongSetup})
          (os_text_options
             {set $dx_set_ui_label_tracked_ui mtv_overlay}
-            {$this show_state dxState_LabelOptions}
+            {dx_state dxState_LabelOptions}
+         )
+         (os_pos
+            {set $dx_set_ui_pos_tracked_ui mtv}
+            {dx_state dxState_PositionRemapper}
+         )
+         #define MTV_TRIGGER
+         (
+            {if {$this in_game}
+               {if
+                  {&&
+                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
+                  }
+                  {if $dx_mtvup
+                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
+                  }
+               }
+            }
          )
          (os_mtv_vis_default
             {set $dx_mtv_visibility always}
             {set $dx_long_mtv_delay FALSE}
-            {set $dx_tracked_changed os_mtv_vis_always}
-            {if {$this in_game}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {if $dx_mtvup
-                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
-                  }
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
+            MTV_TRIGGER
          )
          (os_mtv_vis_always
             {set $dx_mtv_visibility never}
             {set $dx_long_mtv_delay FALSE}
-            {set $dx_tracked_changed os_mtv_vis_never}
-            {if {$this in_game}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {if $dx_mtvup
-                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
-                  }
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
+            MTV_TRIGGER
          )
          (os_mtv_vis_never
             {set $dx_mtv_visibility delayed}
             {set $dx_long_mtv_delay TRUE}
-            {set $dx_tracked_changed os_mtv_vis_delayed}
-            {if {$this in_game}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {if $dx_mtvup
-                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
-                  }
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
+            MTV_TRIGGER
          )
          (os_mtv_vis_delayed
             {set $dx_mtv_visibility default}
             {set $dx_long_mtv_delay FALSE}
-            {set $dx_tracked_changed os_mtv_vis_default}
-            {if {$this in_game}
-               {if
-                  {&&
-                     {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
-                  }
-                  {if $dx_mtvup
-                     {{{gamemode get track_panel} find mtv_overlay} intro_end}
-                  }
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
+            MTV_TRIGGER
          )
-         ((os_author_finder_on os_author_finder_off)
-            {set $dx_author_finder_is_enabled {! $dx_author_finder_is_enabled}}
-            {if_else $dx_author_finder_is_enabled
-               {set $dx_tracked_changed os_author_finder_on}
-               {set $dx_tracked_changed os_author_finder_off}
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
-            {set $previous_state dxState_MTVElements}
-         )
-         (os_pos
-            {set $dx_set_ui_pos_tracked_ui mtv}
-            {$this show_state dxState_PositionRemapper})
-         ((os_bpm_on os_bpm_off)
-            {set $dx_mtv_line_bpm {! $dx_mtv_line_bpm}}
-            {if_else $dx_mtv_line_bpm
-               {set $dx_tracked_changed os_bpm_on}
-               {set $dx_tracked_changed os_bpm_off}
-            }
-            {dx_state_pos_tracker}
-            DX_MTV_ELEMENTS_DATA
-            {set $previous_state dxState_MTVElements}
-         )
-         (os_currentsong
-            {$this show_state dxState_CurrentSongSetup}
-         )
-      }
-      {set $in_state FALSE}
-      DX_MTV_ELEMENTS_DATA
-      {set $previous_state dxState_MTVElements}
+      )
+      (cancel {dx_state dxState_InGameHUD})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_InGameHUD}
-   )
-)
+}
 
-#define DX_SCORE_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options os_scoreboard_pos}
-      {push_back $options os_star_display_pos}
-      {push_back $options {if_else $dx_gold_star_progress os_star_gold_fill_on os_star_gold_fill_off}}
-      ;{push_back $options os_eltexs} ;depreciated
-      {dx_state_setup dxState_ScoreElements TRUE}
-   }
-)
-(dxState_ScoreElements
-   (view
-      DX_SCORE_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ;(os_eltexs
-         ;   {$this show_state dxState_ScoreTextures})
+{push_back $dx_settings_main
+   (dxState_ScoreElements
+      (view
+         os_scoreboard_pos
+         os_star_display_pos
+         {if_else $dx_gold_star_progress os_star_gold_fill_on os_star_gold_fill_off}
+      )
+      (select
          (os_scoreboard_pos
             {set $dx_set_ui_pos_tracked_ui scoreboard}
-            {$this show_state dxState_PositionRemapper})
+            {dx_state dxState_PositionRemapper})
          (os_star_display_pos
             {set $dx_set_ui_pos_tracked_ui star_display}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
-         ((os_star_gold_fill_on os_star_gold_fill_off)
-            {set $dx_gold_star_progress {! $dx_gold_star_progress}}
-            {if_else $dx_gold_star_progress
-               {set $dx_tracked_changed os_star_gold_fill_on}
-               {set $dx_tracked_changed os_star_gold_fill_off}
-            }
-            {dx_state_pos_tracker}
-            DX_SCORE_ELEMENTS_DATA
-            {set $previous_state dxState_ScoreElements}
-         )
-      }
-      {set $in_state FALSE}
-      DX_SCORE_ELEMENTS_DATA
-      {set $previous_state dxState_ScoreElements}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_InGameHUD}
-   )
-)
-
-#define DX_SONG_TIMER_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {switch $dx_time_remaining_direction
-         (off {push_back $options os_time_remaining_off})
-         (down {push_back $options os_time_remaining_down})
-         (up {push_back $options os_time_remaining_up})
-      }
-      {push_back $options {if_else $dx_disp_total_time os_total_time_on os_total_time_off}}
-      {push_back $options {if_else $dx_time_remaining_pos_top os_time_remaining_on_top_on os_time_remaining_on_top_off}}
-      {dx_state_setup dxState_SongTimerElements TRUE}
-   }
-)
-(dxState_SongTimerElements
-   (view
-      DX_SONG_TIMER_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_time_remaining_off
-            {set $dx_time_remaining_direction down}
-            {set $dx_tracked_changed os_time_remaining_down}
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_TIMER_ELEMENTS_DATA
-            {set $previous_state dxState_SongTimerElements}
-         )
-         (os_time_remaining_down
-            {set $dx_time_remaining_direction up}
-            {set $dx_tracked_changed os_time_remaining_up}
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_TIMER_ELEMENTS_DATA
-            {set $previous_state dxState_SongTimerElements}
-         )
-         (os_time_remaining_up
-            {set $dx_time_remaining_direction off}
-            {set $dx_tracked_changed os_time_remaining_off}
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_TIMER_ELEMENTS_DATA
-            {set $previous_state dxState_SongTimerElements}
-         )
-         ((os_time_remaining_on_top_on os_time_remaining_on_top_off)
-            {set $dx_time_remaining_pos_top {! $dx_time_remaining_pos_top}}
-            {if_else $dx_time_remaining_pos_top
-               {set $dx_tracked_changed os_time_remaining_on_top_on}
-               {set $dx_tracked_changed os_time_remaining_on_top_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_TIMER_ELEMENTS_DATA
-            {set $previous_state dxState_SongTimerElements}
-         )
-         ((os_total_time_on os_total_time_off)
-            {set $dx_disp_total_time {! $dx_disp_total_time}}
-            {if_else $dx_disp_total_time
-               {set $dx_tracked_changed os_total_time_on}
-               {set $dx_tracked_changed os_total_time_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_TIMER_ELEMENTS_DATA
-            {set $previous_state dxState_SongTimerElements}
-         )
-      }
-      {set $in_state FALSE}
-      DX_SONG_TIMER_ELEMENTS_DATA
-      {set $previous_state dxState_SongTimerElements}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_InGameHUD}
-   )
-)
-
-#define DX_SONG_PROGRESSBAR_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options {if_else $dx_song_progress_bar os_bar_time_on os_bar_time_off}}
-      {push_back $options {if_else $dx_overdrive_progress os_bar_overdrive_on os_bar_overdrive_off}}
-      {push_back $options {if_else $dx_solo_progress os_bar_solo_on os_bar_solo_off}}
-      {push_back $options {if_else $dx_bre_progress os_bar_bre_on os_bar_bre_off}}
-      {push_back $options {if_else $dx_icon_progress os_bar_icon_on os_bar_icon_off}}
-      {dx_state_setup dxState_ProgressBarElements TRUE}
-   }
-)
-(dxState_ProgressBarElements
-   (view
-      DX_SONG_PROGRESSBAR_DATA
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_bar_overdrive_on os_bar_overdrive_off)
-            {set $dx_overdrive_progress {! $dx_overdrive_progress}}
-            {if_else $dx_overdrive_progress
-               {set $dx_tracked_changed os_bar_overdrive_on}
-               {set $dx_tracked_changed os_bar_overdrive_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_PROGRESSBAR_DATA
-            {set $previous_state dxState_ProgressBarElements}
-         )
-         ((os_bar_solo_on os_bar_solo_off)
-            {set $dx_solo_progress {! $dx_solo_progress}}
-            {if_else $dx_solo_progress
-               {set $dx_tracked_changed os_bar_solo_on}
-               {set $dx_tracked_changed os_bar_solo_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_PROGRESSBAR_DATA
-            {set $previous_state dxState_ProgressBarElements}
-         )
-         ((os_bar_bre_on os_bar_bre_off)
-            {set $dx_bre_progress {! $dx_bre_progress}}
-            {if_else $dx_bre_progress
-               {set $dx_tracked_changed os_bar_bre_on}
-               {set $dx_tracked_changed os_bar_bre_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_PROGRESSBAR_DATA
-            {set $previous_state dxState_ProgressBarElements}
-         )
-         ((os_bar_icon_on os_bar_icon_off)
-            {set $dx_icon_progress {! $dx_icon_progress}}
-            {if_else $dx_icon_progress
-               {set $dx_tracked_changed os_bar_icon_on}
-               {set $dx_tracked_changed os_bar_icon_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_PROGRESSBAR_DATA
-            {set $previous_state dxState_ProgressBarElements}
-         )
-         ((os_bar_time_on os_bar_time_off)
-            {set $dx_song_progress_bar {! $dx_song_progress_bar}}
-            {if_else $dx_song_progress_bar
-               {set $dx_tracked_changed os_bar_time_on}
-               {set $dx_tracked_changed os_bar_time_off}
-            }
-            ;{if {$this in_game} {dx_reset_time_remaining_position}}
-            {dx_state_pos_tracker}
-            DX_SONG_PROGRESSBAR_DATA
-            {set $previous_state dxState_ProgressBarElements}
-         )
-      }
-      {set $in_state FALSE}
-      DX_SONG_PROGRESSBAR_DATA
-      {set $previous_state dxState_ProgressBarElements}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_InGameHUD}
-   )
-)
-
-#define DX_CURRENT_SONG_SETUP_DATA
-(
-   {do
-      ($options
-         {array 0})
-      ;{push_back $options {if_else $dx_mtv_line_song_title os_song_title_on os_song_title_off}}
-      {push_back $options {if_else $dx_mtv_line_artist os_artist_on os_artist_off}}
-      {push_back $options {if_else $dx_mtv_year os_year_on os_year_off}}
-      ;{push_back $options {if_else $dx_year_on_one_mtv_line os_yearonline_on os_yearonline_off}}
-      {push_back $options {if_else $dx_mtv_line_album os_album_on os_album_off}}
-      {push_back $options {if_else $dx_mtv_line_genre os_genre_on os_genre_off}}
-      {push_back $options {if_else $dx_mtv_line_sub_genre os_sub_genre_on os_sub_genre_off}}
-      {push_back $options {if_else $dx_mtv_line_game_origin os_source_on os_source_off}}
-      {push_back $options {if_else $dx_mtv_line_author os_author_on os_author_off}}
-      {push_back $options {if_else $dx_mtv_line_song_key os_song_key_on os_song_key_off}}
-      {push_back $options {if_else $dx_mtv_line_section os_section_on os_section_off}}
-      {push_back $options {if_else $dx_mtv_line_bpm os_bpm_on os_bpm_off}}
-      {dx_state_setup dxState_CurrentSongSetup FALSE}
-   }
-)
-
-(dxState_CurrentSongSetup
-   (view
-      DX_CURRENT_SONG_SETUP_DATA
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_prefix_on os_prefix_off)
-            {set $dx_currentsong_prefix {! $dx_currentsong_prefix}}
-            {if_else $dx_currentsong_prefix
-               {set $dx_tracked_changed os_prefix_on}
-               {set $dx_tracked_changed os_prefix_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_artist_on os_artist_off)
-            {set $dx_mtv_line_artist {! $dx_mtv_line_artist}}
-            {if_else $dx_mtv_line_artist
-               {set $dx_tracked_changed os_artist_on}
-               {set $dx_tracked_changed os_artist_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_year_on os_year_off)
-            {set $dx_mtv_year {! $dx_mtv_year}}
-            {if_else $dx_mtv_year
-               {set $dx_tracked_changed os_year_on}
-               {set $dx_tracked_changed os_year_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_yearonline_on os_yearonline_off)
-            {set $dx_year_on_one_mtv_line {! $dx_year_on_one_mtv_line}}
-            {if_else $dx_year_on_one_mtv_line
-               {set $dx_tracked_changed os_yearonline_on}
-               {set $dx_tracked_changed os_yearonline_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_album_on os_album_off)
-            {set $dx_mtv_line_album {! $dx_mtv_line_album}}
-            {if_else $dx_mtv_line_album
-               {set $dx_tracked_changed os_album_on}
-               {set $dx_tracked_changed os_album_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_section_on os_section_off)
-            {set $dx_mtv_line_section {! $dx_mtv_line_section}}
-            {if_else $dx_mtv_line_section
-               {set $dx_tracked_changed os_section_on}
-               {set $dx_tracked_changed os_section_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_song_title_on os_song_title_off)
-            {set $dx_mtv_line_song_title {! $dx_mtv_line_song_title}}
-            {if_else $dx_mtv_line_song_title
-               {set $dx_tracked_changed os_song_title_on}
-               {set $dx_tracked_changed os_song_title_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_genre_on os_genre_off)
-            {set $dx_mtv_line_genre {! $dx_mtv_line_genre}}
-            {if_else $dx_mtv_line_genre
-               {set $dx_tracked_changed os_genre_on}
-               {set $dx_tracked_changed os_genre_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_sub_genre_on os_sub_genre_off)
-            {set $dx_mtv_line_sub_genre {! $dx_mtv_line_sub_genre}}
-            {if_else $dx_mtv_line_sub_genre
-               {set $dx_tracked_changed os_sub_genre_on}
-               {set $dx_tracked_changed os_sub_genre_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_source_on os_source_off)
-            {set $dx_mtv_line_game_origin {! $dx_mtv_line_game_origin}}
-            {if_else $dx_mtv_line_game_origin
-               {set $dx_tracked_changed os_source_on}
-               {set $dx_tracked_changed os_source_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_author_on os_author_off)
-            {set $dx_mtv_line_author {! $dx_mtv_line_author}}
-            {if_else $dx_mtv_line_author
-               {set $dx_tracked_changed os_author_on}
-               {set $dx_tracked_changed os_author_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_bpm_on os_bpm_off)
-            {set $dx_mtv_line_bpm {! $dx_mtv_line_bpm}}
-            {if_else $dx_mtv_line_bpm
-               {set $dx_tracked_changed os_bpm_on}
-               {set $dx_tracked_changed os_bpm_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-         ((os_song_key_on os_song_key_off)
-            {set $dx_mtv_line_song_key {! $dx_mtv_line_song_key}}
-            {if_else $dx_mtv_line_song_key
-               {set $dx_tracked_changed os_song_key_on}
-               {set $dx_tracked_changed os_song_key_off}
-            }
-            {dx_state_pos_tracker}
-            DX_CURRENT_SONG_SETUP_DATA
-            {set $previous_state dxState_CurrentSongSetup}
-         )
-      }
-      {set $mtv_destroy TRUE}
-      {if $dx_mtvup
-         {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
-      }
-      {set $mtv_destroy FALSE}
-      {set $in_state FALSE}
-      DX_CURRENT_SONG_SETUP_DATA
-      {set $previous_state dxState_CurrentSongSetup}
-   )
-   (exit
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_MTVElements}
-   )
-)
-
-#define DX_PRINT_TRACK_CONFIG_PITCH
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trk_pitch} {int $dx_pitch}}}
-)
-#define DX_PRINT_TRACK_CONFIG_FOV
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trk_fov} {int $dx_fov}}}
-)
-#define DX_PRINT_TRACK_CONFIG_X_POS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trk_x} {int $dx_x_pos}}}
-)
-#define DX_PRINT_TRACK_CONFIG_Y_POS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trk_y} {int $dx_y_pos}}}
-)
-#define DX_PRINT_TRACK_CONFIG_Z_POS
-(
-   {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4} {!= $dx_list_pos 0}} os_blnk {sprintf {localize os_trk_z} {int $dx_z_pos}}}
-)
-#define DX_BLNK
-(
-   {push_back $options os_blnk}
-)
-#define DX_TRACK_CONFIG_DATA
-(
-   {$current_list set_data
-      (
-         DX_PRINT_TRACK_CONFIG_PITCH
-         DX_PRINT_TRACK_CONFIG_FOV
-         DX_PRINT_TRACK_CONFIG_X_POS
-         DX_PRINT_TRACK_CONFIG_Y_POS
-         DX_PRINT_TRACK_CONFIG_Z_POS
+         (os_star_gold_fill {set $dx_gold_star_progress {! $dx_gold_star_progress}})
       )
-   }
-)
-(dxState_TrackConfig
-   (view
-      options_audio
+      (cancel {dx_state dxState_InGameHUD})
    )
-   (enter
-      
-      {set $dx_list_item_selected FALSE}
-      {set $dx_list_pos 0}
-      {set $current_list options_audio.lst}
-      DX_TRACK_CONFIG_DATA
-   )
-   ;(SCROLL_MSG
-   ;   DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   ;)
-   (BUTTON_DOWN_MSG
-      {if_else
-         $dx_list_item_selected
-         {switch
-            $action
-            ((kAction_Confirm kAction_Cancel)
-               {set $dx_list_item_selected FALSE}
-               DX_TRACK_CONFIG_DATA
-            )
-            ((kAction_Down kAction_Up)
-               {switch {$current_list selected_data}
-                  (0
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_pitch -100})
-                           (kAction_Up {< $dx_pitch 100})
-                        }
-                        {set $dx_pitch
-                           {switch $action
-                              (kAction_Down {- $dx_pitch 1})
-                              (kAction_Up {+ $dx_pitch 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 0}
-                  )
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_fov 0})
-                           (kAction_Up {< $dx_fov 100})
-                        }
-                        {set $dx_fov
-                           {switch $action
-                              (kAction_Down {- $dx_fov 1})
-                              (kAction_Up {+ $dx_fov 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_x_pos -200})
-                           (kAction_Up {< $dx_x_pos 200})
-                        }
-                        {set $dx_x_pos
-                           {switch $action
-                              (kAction_Down {- $dx_x_pos 1})
-                              (kAction_Up {+ $dx_x_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_y_pos -100})
-                           (kAction_Up {< $dx_y_pos 100})
-                        }
-                        {set $dx_y_pos
-                           {switch $action
-                              (kAction_Down {- $dx_y_pos 1})
-                              (kAction_Up {+ $dx_y_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_z_pos -50})
-                           (kAction_Up {< $dx_z_pos 50})
-                        }
-                        {set $dx_z_pos
-                           {switch $action
-                              (kAction_Down {- $dx_z_pos 1})
-                              (kAction_Up {+ $dx_z_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  kDataUnhandled
-               }
-               DX_TRACK_CONFIG_DATA
-               {set $dx_track_config_changed TRUE}
-               {dx_track_configurer}
-            )
-            kDataUnhandled
-         }
-         {switch
-            $action
-            (kAction_Confirm
-               {set $dx_list_item_selected TRUE}
-               {set $dx_list_pos {$current_list selected_data}}
-               DX_TRACK_CONFIG_DATA
-            )
-            ((kAction_Left kAction_Right)
-               {switch {$current_list selected_data}
-                  (0
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_pitch -100})
-                           (kAction_Right {< $dx_pitch 100})
-                        }
-                        {set $dx_pitch
-                           {switch $action
-                              (kAction_Left {- $dx_pitch 1})
-                              (kAction_Right {+ $dx_pitch 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 0}
-                  )
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_fov 0})
-                           (kAction_Right {< $dx_fov 100})
-                        }
-                        {set $dx_fov
-                           {switch $action
-                              (kAction_Left {- $dx_fov 1})
-                              (kAction_Right {+ $dx_fov 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_x_pos -200})
-                           (kAction_Right {< $dx_x_pos 200})
-                        }
-                        {set $dx_x_pos
-                           {switch $action
-                              (kAction_Left {- $dx_x_pos 1})
-                              (kAction_Right {+ $dx_x_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_y_pos -100})
-                           (kAction_Right {< $dx_y_pos 100})
-                        }
-                        {set $dx_y_pos
-                           {switch $action
-                              (kAction_Left {- $dx_y_pos 1})
-                              (kAction_Right {+ $dx_y_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_z_pos -50})
-                           (kAction_Right {< $dx_z_pos 50})
-                        }
-                        {set $dx_z_pos
-                           {switch $action
-                              (kAction_Left {- $dx_z_pos 1})
-                              (kAction_Right {+ $dx_z_pos 1})
-                           }
-                        }
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  kDataUnhandled
-               }
-               DX_TRACK_CONFIG_DATA
-               {set $dx_track_config_changed TRUE}
-               {dx_track_configurer}
-            )
-            kDataUnhandled
-         }
-      }
-   )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHUD}
-   )
-)
+}
 
-(dxState_ScreenElements_Practice
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_all_item}
-         ;{push_back $options os_splash}         
-         {push_back $options os_speed_control}         
-         ;{push_back $options os_score_parts}         
-         ;{push_back $options os_drum_buttons}         
-         ;{push_back $options os_guide_pitch}         
-         {push_back $options os_score_percent}         
-         {push_back $options os_section}         
-         {dx_state_setup dxState_ScreenElements_Practice FALSE}
-      }
-      {overshell_view_chooser}
+{push_back $dx_settings_main
+   (dxState_SongTimerElements
+      (view
+         {if_else {== $dx_time_remaining_direction off} os_time_remaining_disable 0}
+         {if_else {== $dx_time_remaining_direction down} os_time_remaining_down 0}
+         {if_else {== $dx_time_remaining_direction up} os_time_remaining_up 0}
+         {if_else $dx_disp_total_time os_total_time_on os_total_time_off}
+         {if_else $dx_time_remaining_pos_top os_time_remaining_top_on os_time_remaining_top_off}
+      )
+      (select
+         (os_time_remaining_disable {set $dx_time_remaining_direction down})
+         (os_time_remaining_down {set $dx_time_remaining_direction up})
+         (os_time_remaining_up {set $dx_time_remaining_direction off})
+         (os_time_remaining_top {set $dx_time_remaining_pos_top {! $dx_time_remaining_pos_top}})
+         (os_total_time {set $dx_disp_total_time {! $dx_disp_total_time}})
+      )
+      (cancel {dx_state dxState_InGameHUD})
    )
-   (SELECT_MSG
-      {switch {$component selected_sym}
+}
+
+{push_back $dx_settings_main
+   (dxState_ProgressBarElements
+      (view
+         {if_else $dx_song_progress_bar os_bar_time_on os_bar_time_off}
+         {if_else $dx_overdrive_progress os_bar_overdrive_on os_bar_overdrive_off}
+         {if_else $dx_solo_progress os_bar_solo_on os_bar_solo_off}
+         {if_else $dx_bre_progress os_bar_bre_on os_bar_bre_off}
+         {if_else $dx_icon_progress os_bar_icon_on os_bar_icon_off}
+      )
+      (select
+         (os_bar_overdrive {set $dx_overdrive_progress {! $dx_overdrive_progress}})
+         (os_bar_solo {set $dx_solo_progress {! $dx_solo_progress}})
+         (os_bar_bre {set $dx_bre_progress {! $dx_bre_progress}})
+         (os_bar_icon {set $dx_icon_progress {! $dx_icon_progress}})
+         (os_bar_time {set $dx_song_progress_bar {! $dx_song_progress_bar}})
+      )
+      (cancel {dx_state dxState_InGameHUD})
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_CurrentSongSetup
+      (view
+         {if_else $dx_mtv_line_artist os_artist_on os_artist_off}
+         {if_else $dx_mtv_year os_year_on os_year_off}
+         {if_else $dx_mtv_line_album os_album_on os_album_off}
+         {if_else $dx_mtv_line_genre os_genre_on os_genre_off}
+         {if_else $dx_mtv_line_sub_genre os_sub_genre_on os_sub_genre_off}
+         {if_else $dx_mtv_line_game_origin os_source_on os_source_off}
+         {if_else $dx_mtv_line_author os_author_on os_author_off}
+         {if_else $dx_mtv_line_song_key os_song_key_on os_song_key_off}
+         {if_else $dx_mtv_line_section os_section_on os_section_off}
+         {if_else $dx_mtv_line_bpm os_bpm_on os_bpm_off}
+      )
+      (message os_mtv_message_desc)
+      (select
+         #define MTV_REFRESH
+         (
+            {set $mtv_destroy TRUE}
+            {if $dx_mtvup
+               {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+            }
+            {set $mtv_destroy FALSE}
+         )
+         (os_prefix {set $dx_currentsong_prefix {! $dx_currentsong_prefix}} MTV_REFRESH)
+         (os_artist {set $dx_mtv_line_artist {! $dx_mtv_line_artist}} MTV_REFRESH)
+         (os_year {set $dx_mtv_year {! $dx_mtv_year}} MTV_REFRESH)
+         (os_yearonline {set $dx_year_on_one_mtv_line {! $dx_year_on_one_mtv_line}} MTV_REFRESH)
+         (os_album {set $dx_mtv_line_album {! $dx_mtv_line_album}} MTV_REFRESH)
+         (os_section {set $dx_mtv_line_section {! $dx_mtv_line_section}} MTV_REFRESH)
+         (os_song_title {set $dx_mtv_line_song_title {! $dx_mtv_line_song_title}} MTV_REFRESH)
+         (os_genre {set $dx_mtv_line_genre {! $dx_mtv_line_genre}} MTV_REFRESH)
+         (os_sub_genre {set $dx_mtv_line_sub_genre {! $dx_mtv_line_sub_genre}} MTV_REFRESH)
+         (os_source {set $dx_mtv_line_game_origin {! $dx_mtv_line_game_origin}} MTV_REFRESH)
+         (os_author {set $dx_mtv_line_author {! $dx_mtv_line_author}} MTV_REFRESH)
+         (os_bpm {set $dx_mtv_line_bpm {! $dx_mtv_line_bpm}} MTV_REFRESH)
+         (os_song_key {set $dx_mtv_line_song_key {! $dx_mtv_line_song_key}} MTV_REFRESH)
+      )
+      (cancel {dx_state dxState_MTVElements})
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_ScreenElements_Practice
+      (view
+         os_all_item
+         os_speed_control
+         os_score_percent
+         os_section
+      )
+      (select
          (os_all_item
             {set $dx_set_ui_pos_tracked_ui all_item}
-            {$this show_state dxState_PositionRemapper})
+            {dx_state dxState_PositionRemapper}
+         )
          (os_speed_control
             {set $dx_set_ui_pos_tracked_ui speed_control}
-            {$this show_state dxState_PositionRemapper})
+            {dx_state dxState_PositionRemapper}
+         )
          (os_score_percent
             {set $dx_set_ui_pos_tracked_ui score}
-            {$this show_state dxState_PositionRemapper})
+            {dx_state dxState_PositionRemapper}
+         )
          (os_section
             {set $dx_set_ui_pos_tracked_ui section}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
-      }
+      )
+      (cancel {dx_state dxState_InGameHUD})
    )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_InGameHUD}
-   )
-)
+}
 
-#define DX_HIGHWAY_TEXT_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options 
+{push_back $dx_settings_main
+   (dxState_TrackHighwayText
+      (view
          {if_else
             {&&
                {! $dx_track_username}
@@ -1342,29 +363,14 @@
             os_all_on
             os_all_off
          }
-      }
-      {push_back $options os_highway_username}
-      {push_back $options os_highway_overdrive}
-      {push_back $options os_highway_streak}
-      {push_back $options os_highway_perfects}
-      {dx_state_setup dxState_TrackHighwayText TRUE}
-   }
-)
-(dxState_TrackHighwayText
-   (view
-      DX_HIGHWAY_TEXT_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (os_all_on
-            {set $dx_track_username TRUE}
-            {set $dx_track_overdrive TRUE}
-            {set $dx_track_streak TRUE}
-            {set $dx_tracked_changed os_all_off}
+         os_highway_username
+         os_highway_overdrive
+         os_highway_streak
+         os_highway_perfects
+      )
+      (select
+         #define OS_SETUP_TRACK_LABEL
+         (
             {if {$this in_game}
                {beatmatch foreach_active_player $player
                   {if {!= {$player instrument} vocals}
@@ -1375,267 +381,106 @@
                   }
                }
             }
-            {dx_state_pos_tracker}
-            DX_HIGHWAY_TEXT_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayText}
+         )
+         (os_all_on
+            {set $dx_track_username TRUE}
+            {set $dx_track_overdrive TRUE}
+            {set $dx_track_streak TRUE}
+            OS_SETUP_TRACK_LABEL
          )
          (os_all_off
             {set $dx_track_username FALSE}
             {set $dx_track_overdrive FALSE}
             {set $dx_track_streak FALSE}
-            {set $dx_tracked_changed os_all_on}
-            {if {$this in_game}
-               {beatmatch foreach_active_player $player
-                  {if {!= {$player instrument} vocals}
-                     {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                     {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b TRUE}
-                     {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
-                  }
+            OS_SETUP_TRACK_LABEL
+         )
+         (os_highway_perfects {dx_state dxState_TrackPerfects})
+         (os_highway_username {dx_state dxState_TrackHighwayUsername})
+         (os_highway_overdrive {dx_state dxState_TrackHighwayOverdrive})
+         (os_highway_streak {dx_state dxState_TrackHighwayStreak})
+      )
+      (cancel {dx_state dxState_TrackHUD})
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_TrackPerfects
+      (view
+         {if_else $dx_perfects_indicator os_perfects_indicator_on os_perfects_indicator_off}
+         {if_else $dx_perfects_ctr os_perfects_ctr_on os_perfects_ctr_off}
+         {if_else $dx_detailed_hit_stats os_detailed_hit_on os_detailed_hit_off}
+         {if_else $dx_detailed_hit_timing os_hit_timing_on os_hit_timing_off}
+      )
+      (select
+         (os_perfects_indicator {set $dx_perfects_indicator {! $dx_perfects_indicator}})
+         (os_perfects_ctr {set $dx_perfects_ctr {! $dx_perfects_ctr}})
+         (os_detailed_hit {set $dx_detailed_hit_stats {! $dx_detailed_hit_stats}})
+         (os_hit_timing {set $dx_detailed_hit_timing {! $dx_detailed_hit_timing}})
+      )
+      (cancel {dx_state dxState_TrackHighwayText})
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_TrackHighwayUsername
+      (view
+         {if_else $dx_track_username os_highway_username_on os_highway_username_off}
+         {if_else $dx_highway_username_inst os_highway_username_inst_on os_highway_username_inst_off}
+         {if_else $dx_highway_username_sp_inst os_highway_username_sp_inst_on os_highway_username_sp_inst_off}
+         os_pos
+         os_col
+         os_text_options
+      )
+      (select
+         #define OS_HIGHWAY_USER_SETUP
+         (
+            {beatmatch foreach_active_player $player
+               {if {!= {$player instrument} vocals}
+                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
+                  {dx_show_track_username $dx_track_username $player}
                }
             }
-            {dx_state_pos_tracker}
-            DX_HIGHWAY_TEXT_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayText}
-         )
-         (os_highway_perfects
-            {$this show_state dxState_TrackPerfects}
          )
          (os_highway_username
-            {$this show_state dxState_TrackHighwayUsername}
-         )
-         (os_highway_overdrive
-            {$this show_state dxState_TrackHighwayOverdrive}
-         )
-         (os_highway_streak
-            {$this show_state dxState_TrackHighwayStreak}
-         )
-      }
-      {set $in_state FALSE}
-      DX_HIGHWAY_TEXT_ELEMENTS_DATA
-      {set $previous_state dxState_TrackHighwayText}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHUD}
-   )
-)
-
-#define DX_TRACK_PERFECT_DATA
-(
-   {do
-      ($options
-         {array 0})
-
-      {push_back $options {if_else $dx_perfects_indicator os_perfects_indicator_on os_perfects_indicator_off}}
-
-      {push_back $options {if_else $dx_perfects_ctr os_perfects_ctr_on os_perfects_ctr_off}}
-
-      {push_back $options {if_else $dx_detailed_hit_stats os_detailed_hit_on os_detailed_hit_off}}
-
-      {push_back $options {if_else $dx_detailed_hit_timing os_hit_timing_on os_hit_timing_off}}
-      
-      ;-----func----------state name------message
-      {dx_state_setup dxState_TrackPerfects TRUE}
-   }
-)
-(dxState_TrackPerfects
-   (view
-      DX_TRACK_PERFECT_DATA
-      {overshell_view_chooser}
-   )
-   (enter
-      DX_OS_OPEN_MSG
-      DX_MENU_DESC
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC ;updates description with currently selected modifier
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_perfects_indicator_on os_perfects_indicator_off)
-            {set $dx_perfects_indicator {! $dx_perfects_indicator}}
-            {if_else $dx_perfects_indicator
-               {set $dx_tracked_changed os_perfects_indicator_on}
-               {set $dx_tracked_changed os_perfects_indicator_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_PERFECT_DATA
-            {set $previous_state dxState_TrackPerfects}
-         )
-         ((os_perfects_ctr_on os_perfects_ctr_off)
-            {set $dx_perfects_ctr {! $dx_perfects_ctr}}
-            {if_else $dx_perfects_ctr
-               {set $dx_tracked_changed os_perfects_ctr_on}
-               {set $dx_tracked_changed os_perfects_ctr_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_PERFECT_DATA
-            {set $previous_state dxState_TrackPerfects}
-         )
-         ((os_detailed_hit_on os_detailed_hit_off)
-            {set $dx_detailed_hit_stats {! $dx_detailed_hit_stats}}
-            {if_else $dx_detailed_hit_stats
-               {set $dx_tracked_changed os_detailed_hit_on}
-               {set $dx_tracked_changed os_detailed_hit_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_PERFECT_DATA
-            {set $previous_state dxState_TrackPerfects}
-         )
-         ((os_hit_timing_on os_hit_timing_off)
-            {set $dx_detailed_hit_timing {! $dx_detailed_hit_timing}}
-            {if_else $dx_detailed_hit_timing
-               {set $dx_tracked_changed os_hit_timing_on}
-               {set $dx_tracked_changed os_hit_timing_off}
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_PERFECT_DATA
-            {set $previous_state dxState_TrackPerfects}
-         )
-         kDataUnhandled
-      }
-      {set $in_state FALSE}
-      DX_TRACK_PERFECT_DATA
-      {set $previous_state dxState_TrackPerfects}
-   )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHighwayText}
-   )
-)
-
-#define DX_TRACK_USERNAME_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options {if_else $dx_track_username os_highway_username_on os_highway_username_off}}
-      {push_back $options {if_else $dx_highway_username_inst os_highway_username_inst_on os_highway_username_inst_off}}
-      {push_back $options {if_else $dx_highway_username_sp_inst os_highway_username_sp_inst_on os_highway_username_sp_inst_off}}
-      {push_back $options os_pos}
-      {push_back $options os_col}
-      {push_back $options os_text_options}
-      {dx_state_setup dxState_TrackHighwayUsername TRUE}
-   }
-)
-(dxState_TrackHighwayUsername
-   (view
-      DX_TRACK_USERNAME_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_highway_username_on os_highway_username_off)
             {set $dx_track_username {! $dx_track_username}}
-            {if_else $dx_track_username
-               {set $dx_tracked_changed os_highway_username_on}
-               {set $dx_tracked_changed os_highway_username_off}
-            }
-            {beatmatch foreach_active_player $player
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                  {dx_show_track_username $dx_track_username $player}
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_USERNAME_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayUsername}
+            OS_HIGHWAY_USER_SETUP
          )
-         ((os_highway_username_inst_on os_highway_username_inst_off)
+         (os_highway_username_inst
             {set $dx_highway_username_inst {! $dx_highway_username_inst}}
-            {if_else $dx_highway_username_inst
-               {set $dx_tracked_changed os_highway_username_inst_on}
-               {set $dx_tracked_changed os_highway_username_inst_off}
-            }
-            {beatmatch foreach_active_player $player
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                  {dx_show_track_username $dx_track_username $player}
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_USERNAME_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayUsername}
+            OS_HIGHWAY_USER_SETUP
          )
-         ((os_highway_username_sp_inst_on os_highway_username_sp_inst_off)
+         (os_highway_username_sp_inst
             {set $dx_highway_username_sp_inst {! $dx_highway_username_sp_inst}}
-            {if_else $dx_highway_username_sp_inst
-               {set $dx_tracked_changed os_highway_username_sp_inst_on}
-               {set $dx_tracked_changed os_highway_username_sp_inst_off}
-            }
-            {beatmatch foreach_active_player $player
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                  {dx_show_track_username $dx_track_username $player}
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_USERNAME_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayUsername}
+            OS_HIGHWAY_USER_SETUP
          )
          (os_pos
             {set $dx_set_ui_pos_tracked_ui highway_username_text}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
          (os_col
             {set $dx_set_ui_rgb_tracked_ui highway_username_text}
-            {$this show_state dxState_rgbcolormenu}
+            {dx_state dxState_rgbcolormenu}
          )
          (os_text_options
             {set $dx_set_ui_label_tracked_ui highway_username_text}
-            {$this show_state dxState_LabelOptions}
+            {dx_state dxState_LabelOptions}
          )
-      }
-      {set $in_state FALSE}
-      DX_TRACK_USERNAME_ELEMENTS_DATA
-      {set $previous_state dxState_TrackHighwayUsername}
+      )
+      (cancel {dx_state dxState_TrackHighwayText})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHighwayText}
-   )
-)
+}
 
-#define DX_TRACK_OVERDRIVE_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options {if_else $dx_track_overdrive os_highway_overdrive_on os_highway_overdrive_off}}
-      {push_back $options os_pos}
-      {push_back $options os_col}
-      {push_back $options os_text_options}
-      {dx_state_setup dxState_TrackHighwayOverdrive TRUE}
-   }
-)
-(dxState_TrackHighwayOverdrive
-   (view
-      DX_TRACK_OVERDRIVE_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_highway_overdrive_on os_highway_overdrive_off)
+{push_back $dx_settings_main
+   (dxState_TrackHighwayOverdrive
+      (view
+         {if_else $dx_track_overdrive os_highway_overdrive_on os_highway_overdrive_off}
+         os_pos
+         os_col
+         os_text_options
+      )
+      (select
+         (os_highway_overdrive
             {set $dx_track_overdrive {! $dx_track_overdrive}}
-            {if_else $dx_track_overdrive
-               {set $dx_tracked_changed os_highway_overdrive_on}
-               {set $dx_tracked_changed os_highway_overdrive_off}
-            }
             {if {$this in_game}
                {beatmatch foreach_active_player $player
                   {if {!= {$player instrument} vocals}
@@ -1643,65 +488,36 @@
                   }
                }
             }
-            {dx_state_pos_tracker}
-            DX_TRACK_OVERDRIVE_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayOverdrive}
          )
          (os_pos
             {set $dx_set_ui_pos_tracked_ui highway_overdrive_text}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
          (os_col
             {set $dx_set_ui_rgb_tracked_ui highway_overdrive_text}
-            {$this show_state dxState_rgbcolormenu}
+            {dx_state dxState_rgbcolormenu}
          )
          (os_text_options
             {set $dx_set_ui_label_tracked_ui highway_overdrive_text}
-            {$this show_state dxState_LabelOptions}
+            {dx_state dxState_LabelOptions}
          )
-      }
-      {set $in_state FALSE}
-      DX_TRACK_OVERDRIVE_ELEMENTS_DATA
-      {set $previous_state dxState_TrackHighwayOverdrive}
+      )
+      (cancel {dx_state dxState_TrackHighwayText})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHighwayText}
-   )
-)
+}
 
-#define DX_TRACK_STREAK_ELEMENTS_DATA
-(
-   {do
-      ($options
-         {array 0})
-      {push_back $options {if_else $dx_track_streak os_highway_streak_on os_highway_streak_off}}
-      {push_back $options {if_else $dx_track_streak_gh3_delay os_highway_streak_gh3_delay_on os_highway_streak_gh3_delay_off}}
-      {push_back $options os_pos}
-      {push_back $options os_col}
-      {push_back $options os_text_options}
-      {dx_state_setup dxState_TrackHighwayStreak TRUE}
-   }
-)
-(dxState_TrackHighwayStreak
-   (view
-      DX_TRACK_STREAK_ELEMENTS_DATA
-      {overshell_view_chooser}
-   )
-   (SCROLL_MSG
-      DX_MENU_SCROLL_DESC
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_highway_streak_on os_highway_streak_off)
-            {set $dx_track_streak {! $dx_track_streak}}
-            {if_else $dx_track_streak
-               {set $dx_tracked_changed os_highway_streak_on}
-               {set $dx_tracked_changed os_highway_streak_off}
-            }
+{push_back $dx_settings_main
+   (dxState_TrackHighwayStreak
+      (view
+         {if_else $dx_track_streak os_highway_streak_on os_highway_streak_off}
+         {if_else $dx_track_streak_gh3_delay os_highway_streak_gh3_delay_on os_highway_streak_gh3_delay_off}
+         os_pos
+         os_col
+         os_text_options
+      )
+      (select
+         #define OS_SET_LABEL_STREAK
+         (
             {if {$this in_game}
                {beatmatch foreach_active_player $player
                   {if {!= {$player instrument} vocals}
@@ -1709,399 +525,415 @@
                   }
                }
             }
-            {dx_state_pos_tracker}
-            DX_TRACK_STREAK_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayStreak}
          )
-         ((os_highway_streak_gh3_delay_on os_highway_streak_gh3_delay_off)
+         (os_highway_streak
+            {set $dx_track_streak {! $dx_track_streak}}
+            OS_SET_LABEL_STREAK
+         )
+         (os_highway_streak_gh3_delay
             {set $dx_track_streak_gh3_delay {! $dx_track_streak_gh3_delay}}
-            {if_else $dx_track_streak_gh3_delay
-               {set $dx_tracked_changed os_highway_streak_gh3_delay_on}
-               {set $dx_tracked_changed os_highway_streak_gh3_delay_off}
-            }
-            {if {$this in_game}
-               {beatmatch foreach_active_player $player
-                  {if {!= {$player instrument} vocals}
-                     {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
-                  }
-               }
-            }
-            {dx_state_pos_tracker}
-            DX_TRACK_STREAK_ELEMENTS_DATA
-            {set $previous_state dxState_TrackHighwayStreak}
+            OS_SET_LABEL_STREAK
          )
          (os_pos
             {set $dx_set_ui_pos_tracked_ui highway_streak_text}
-            {$this show_state dxState_PositionRemapper}
+            {dx_state dxState_PositionRemapper}
          )
          (os_col
             {set $dx_set_ui_rgb_tracked_ui highway_streak_text}
-            {$this show_state dxState_rgbcolormenu}
+            {dx_state dxState_rgbcolormenu}
          )
          (os_text_options
             {set $dx_set_ui_label_tracked_ui highway_streak_text}
-            {$this show_state dxState_LabelOptions}
+            {dx_state dxState_LabelOptions}
          )
-      }
-      {set $in_state FALSE}
-      DX_TRACK_STREAK_ELEMENTS_DATA
-      {set $previous_state dxState_TrackHighwayStreak}
+      )
+      (cancel {dx_state dxState_TrackHighwayText})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {$this show_state dxState_TrackHighwayText}
-   )
-)
+}
 
-
-#define DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
-(
-   {switch $dx_set_ui_label_tracked_ui
-      (highway_overdrive_text
-         {set $dx_set_ui_text_size $dx_track_overdrive_size}
-         {set $dx_set_ui_text_font $dx_track_overdrive_font}
-         {set $dx_set_ui_text_alignment $dx_track_overdrive_alignment}
-         {set $dx_set_ui_text_kerning $dx_track_overdrive_kerning}
-      )
-      (highway_streak_text
-         {set $dx_set_ui_text_size $dx_track_streak_size}
-         {set $dx_set_ui_text_font $dx_track_streak_font}
-         {set $dx_set_ui_text_alignment $dx_track_streak_alignment}
-         {set $dx_set_ui_text_kerning $dx_track_streak_kerning}
-      )
-      (highway_username_text
-         {set $dx_set_ui_text_size $dx_track_username_size}
-         {set $dx_set_ui_text_font $dx_track_username_font}
-         {set $dx_set_ui_text_alignment $dx_track_username_alignment}
-         {set $dx_set_ui_text_kerning $dx_track_username_kerning}
-      )
-      (mtv_overlay
-         {set $dx_set_ui_text_size $dx_mtv_text_size}
-         {set $dx_set_ui_text_font $dx_mtv_text_font}
-         {set $dx_set_ui_text_alignment $dx_mtv_text_alignment}
-         {set $dx_set_ui_text_kerning $dx_mtv_text_kerning}
-      )
-      kDataUnhandled
-   }
-)
-
-#define DX_RESET_LABEL
-(
-   {switch $dx_set_ui_label_tracked_ui
-      (highway_overdrive_text
-         {set $dx_set_ui_text_size 1}
-         {set $dx_set_ui_text_font pentatonic_outline}
-         {set $dx_set_ui_text_alignment kMiddleCenter}
-         {set $dx_set_ui_text_kerning 0}
-      )
-      (highway_streak_text
-         {set $dx_set_ui_text_size 1.5}
-         {set $dx_set_ui_text_font pentatonic_outline}
-         {set $dx_set_ui_text_alignment kMiddleLeft}
-         {set $dx_set_ui_text_kerning 0}
-      )
-      (highway_username_text
-         {set $dx_set_ui_text_size 2}
-         {set $dx_set_ui_text_font pentatonic_outline}
-         {set $dx_set_ui_text_alignment kMiddleCenter}
-         {set $dx_set_ui_text_kerning 0}
-      )
-      (mtv_overlay
-         {set $dx_set_ui_text_size 1}
-         {set $dx_set_ui_text_font pentatonic_outline}
-         {set $dx_set_ui_text_alignment kBottomRight}
-         {set $dx_set_ui_text_kerning 0}
-      )
-   }
-)
-
-#define DX_APPLY_LABEL
-(
-   {switch $dx_set_ui_label_tracked_ui
-      (highway_overdrive_text
-         {set $dx_track_overdrive_size $dx_set_ui_text_size}
-         {set $dx_track_overdrive_font $dx_set_ui_text_font}
-         {set $dx_track_overdrive_alignment $dx_set_ui_text_alignment}
-         {set $dx_track_overdrive_kerning $dx_set_ui_text_kerning}
-         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
-            {beatmatch foreach_active_player $players
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b TRUE}
-               }
-            }
-         }
-      )
-      (highway_streak_text
-         {set $dx_track_streak_size $dx_set_ui_text_size}
-         {set $dx_track_streak_font $dx_set_ui_text_font}
-         {set $dx_track_streak_alignment $dx_set_ui_text_alignment}
-         {set $dx_track_streak_kerning $dx_set_ui_text_kerning}
-         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
-            {beatmatch foreach_active_player $player
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
-               }
-            }
-         }
-      )
-      (highway_username_text
-         {set $dx_track_username_size $dx_set_ui_text_size}
-         {set $dx_track_username_font $dx_set_ui_text_font}
-         {set $dx_track_username_alignment $dx_set_ui_text_alignment}
-         {set $dx_track_username_kerning $dx_set_ui_text_kerning}
-         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
-            {beatmatch foreach_active_player $player
-               {if {!= {$player instrument} vocals}
-                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                  {dx_show_track_username $dx_track_username $player}
-               }
-            }
-         }
-      )
-      (mtv_overlay
-         {set $dx_mtv_text_size $dx_set_ui_text_size}
-         {set $dx_mtv_text_font $dx_set_ui_text_font}
-         {set $dx_mtv_text_alignment $dx_set_ui_text_alignment}
-         {set $dx_mtv_text_kerning $dx_set_ui_text_kerning}
-         {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
-            {if $dx_mtvup
-               {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
-            }
-         }
-      )
-      kDataUnhandled
-   }
-)
-
-#define DX_LABEL_OPTIONS_DATA
-(
-   {options_audio.lst set_data
-      (
+{push_back $dx_settings_main
+   (dxState_LabelOptions
+      (view
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_reset}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "interval_" $dx_pos_remapper_array_number}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprint {localize os_font_size} ": " $dx_set_ui_text_size}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprint {localize os_kerning}  ": " $dx_set_ui_text_kerning}}
          {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4}} os_blnk {sprint {localize os_alignment}  ": " $dx_set_ui_text_alignment}}
-         {sprint os_font $dx_set_ui_text_font}        
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5}} os_blnk {sprint os_font $dx_set_ui_text_font}}
       )
-   }
-)
-(dxState_LabelOptions
-   (view
-      options_audio
-   )
-   (enter
-      {set $dx_pos_interval_list (0.01 0.1 0.5 1 5 10 50 100)}
-      {set $dx_pos_remapper_array_number 3}
-      {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
-      {set $dx_list_item_selected FALSE}
-      {set $dx_list_pos 0}
-      {if_else {$this in_game}
-         {options_audio.lst set_type overshell_menu_ingame}
-         {options_audio.lst set_type overshell_menu}
-      }
-      {set $dx_align_array (kTopLeft kTopCenter kTopRight kMiddleLeft kMiddleCenter kMiddleRight kBottomLeft kBottomCenter kBottomRight)}
-      {set $dx_align_array_size {size $dx_align_array}}
-      {set $dx_align_array_number 0}
-      {set $dx_font_array (default gangly hamilton monospace_numbers_shadow pentatonic pentatonic_bold pentatonic_boldsmall pentatonic_display pentatonic_outline pentatonic_regularcond pentatonic_regularsmall pentatonic_mononumerals rats relay_black stainless stainless_ext_blk stainless_ext_reg)}
-      {set $dx_font_array_size {size $dx_font_array}}
-      {set $dx_font_array_number 0}
-      {options_audio.lst restart_highlight_matanim}
-      {options_audio.lst refresh}
-      DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
-      DX_LABEL_OPTIONS_DATA
-   )
-   (BUTTON_DOWN_MSG
-      {if_else
-         $dx_list_item_selected
-         {switch
-            $action
-            ((kAction_Confirm kAction_Cancel)
-               {if {!= {options_audio.lst selected_data} 0}
-                  {set $dx_list_item_selected FALSE}
-                  DX_LABEL_OPTIONS_DATA
-               }
+      (message pos_remap_desc)
+      #define DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
+      (
+         {switch $dx_set_ui_label_tracked_ui
+            (highway_overdrive_text
+               {set $dx_set_ui_text_size $dx_track_overdrive_size}
+               {set $dx_set_ui_text_font $dx_track_overdrive_font}
+               {set $dx_set_ui_text_alignment $dx_track_overdrive_alignment}
+               {set $dx_set_ui_text_kerning $dx_track_overdrive_kerning}
             )
-            ((kAction_Down kAction_Up)
-               {switch {options_audio.lst selected_data}
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_pos_remapper_array_number 0})
-                           (kAction_Up {< $dx_pos_remapper_array_number 7})
-                        }
-                        {set $dx_pos_remapper_array_number
-                           {switch $action
-                              (kAction_Down {- $dx_pos_remapper_array_number 1})
-                              (kAction_Up {+ $dx_pos_remapper_array_number 1})
-                           }
-                        }
-                        {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}}
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {set $dx_set_ui_text_size
-                        {switch $action
-                           (kAction_Down {- $dx_set_ui_text_size $dx_pos_current_interval})
-                           (kAction_Up {+ $dx_set_ui_text_size $dx_pos_current_interval})
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {set $dx_set_ui_text_kerning
-                        {switch $action
-                           (kAction_Down {- $dx_set_ui_text_kerning $dx_pos_current_interval})
-                           (kAction_Up {+ $dx_set_ui_text_kerning $dx_pos_current_interval})
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_align_array_number 0})
-                           (kAction_Up {< $dx_align_array_number {- $dx_align_array_size 1}})
-                        }
-                        {set $dx_align_array_number
-                           {switch $action
-                              (kAction_Down {- $dx_align_array_number 1})
-                              (kAction_Up {+ $dx_align_array_number 1})
-                           }
-                        }
-                        {set $dx_set_ui_text_alignment {elem $dx_align_array $dx_align_array_number}}
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  (5
-                     {if
-                        {switch $action
-                           (kAction_Down {> $dx_font_array_number 0})
-                           (kAction_Up {< $dx_font_array_number {- $dx_font_array_size 1}})
-                        }
-                        {set $dx_font_array_number
-                           {switch $action
-                              (kAction_Down {- $dx_font_array_number 1})
-                              (kAction_Up {+ $dx_font_array_number 1})
-                           }
-                        }
-                        {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
-                     }
-                     {set $dx_list_pos 5}
-                  )
-                  kDataUnhandled
-               }
-               DX_APPLY_LABEL
-               DX_LABEL_OPTIONS_DATA
+            (highway_streak_text
+               {set $dx_set_ui_text_size $dx_track_streak_size}
+               {set $dx_set_ui_text_font $dx_track_streak_font}
+               {set $dx_set_ui_text_alignment $dx_track_streak_alignment}
+               {set $dx_set_ui_text_kerning $dx_track_streak_kerning}
+            )
+            (highway_username_text
+               {set $dx_set_ui_text_size $dx_track_username_size}
+               {set $dx_set_ui_text_font $dx_track_username_font}
+               {set $dx_set_ui_text_alignment $dx_track_username_alignment}
+               {set $dx_set_ui_text_kerning $dx_track_username_kerning}
+            )
+            (mtv_overlay
+               {set $dx_set_ui_text_size $dx_mtv_text_size}
+               {set $dx_set_ui_text_font $dx_mtv_text_font}
+               {set $dx_set_ui_text_alignment $dx_mtv_text_alignment}
+               {set $dx_set_ui_text_kerning $dx_mtv_text_kerning}
             )
             kDataUnhandled
          }
-         {switch
-            $action
-            (kAction_Confirm
-               {if {== {options_audio.lst selected_data} 0} ;if we click reset
+         ;{if $findme
+         ;   {set $dx_set_ui_pos_0 {$findme get_local_pos_index 0}}
+         ;   {set $dx_set_ui_pos_1 {$findme get_local_pos_index 1}}
+         ;   {set $dx_set_ui_pos_2 {$findme get_local_pos_index 2}}
+         ;}
+      )
+      #define DX_RESET_LABEL
+      (
+         {switch $dx_set_ui_label_tracked_ui
+            (highway_overdrive_text
+               {set $dx_set_ui_text_size 1}
+               {set $dx_set_ui_text_font pentatonic_outline}
+               {set $dx_set_ui_text_alignment kMiddleCenter}
+               {set $dx_set_ui_text_kerning 0}
+            )
+            (highway_streak_text
+               {set $dx_set_ui_text_size 1.5}
+               {set $dx_set_ui_text_font pentatonic_outline}
+               {set $dx_set_ui_text_alignment kMiddleLeft}
+               {set $dx_set_ui_text_kerning 0}
+            )
+            (highway_username_text
+               {set $dx_set_ui_text_size 2}
+               {set $dx_set_ui_text_font pentatonic_outline}
+               {set $dx_set_ui_text_alignment kMiddleCenter}
+               {set $dx_set_ui_text_kerning 0}
+            )
+            (mtv_overlay
+               {set $dx_set_ui_text_size 1}
+               {set $dx_set_ui_text_font pentatonic_outline}
+               {set $dx_set_ui_text_alignment kBottomRight}
+               {set $dx_set_ui_text_kerning 0}
+            )
+         }
+      )
+
+      #define DX_APPLY_LABEL
+      (
+         {switch $dx_set_ui_label_tracked_ui
+            (highway_overdrive_text
+               {set $dx_track_overdrive_size $dx_set_ui_text_size}
+               {set $dx_track_overdrive_font $dx_set_ui_text_font}
+               {set $dx_track_overdrive_alignment $dx_set_ui_text_alignment}
+               {set $dx_track_overdrive_kerning $dx_set_ui_text_kerning}
+               {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+                  {beatmatch foreach_active_player $players
+                     {if {!= {$player instrument} vocals}
+                        {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b TRUE}
+                     }
+                  }
+               }
+            )
+            (highway_streak_text
+               {set $dx_track_streak_size $dx_set_ui_text_size}
+               {set $dx_track_streak_font $dx_set_ui_text_font}
+               {set $dx_track_streak_alignment $dx_set_ui_text_alignment}
+               {set $dx_track_streak_kerning $dx_set_ui_text_kerning}
+               {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+                  {beatmatch foreach_active_player $player
+                     {if {!= {$player instrument} vocals}
+                        {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
+                     }
+                  }
+               }
+            )
+            (highway_username_text
+               {set $dx_track_username_size $dx_set_ui_text_size}
+               {set $dx_track_username_font $dx_set_ui_text_font}
+               {set $dx_track_username_alignment $dx_set_ui_text_alignment}
+               {set $dx_track_username_kerning $dx_set_ui_text_kerning}
+               {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+                  {beatmatch foreach_active_player $player
+                     {if {!= {$player instrument} vocals}
+                        {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
+                        {dx_show_track_username $dx_track_username $player}
+                     }
+                  }
+               }
+            )
+            (mtv_overlay
+               {set $dx_mtv_text_size $dx_set_ui_text_size}
+               {set $dx_mtv_text_font $dx_set_ui_text_font}
+               {set $dx_mtv_text_alignment $dx_set_ui_text_alignment}
+               {set $dx_mtv_text_kerning $dx_set_ui_text_kerning}
+               {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+                  {if $dx_mtvup
+                     {{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+                  }
+               }
+            )
+            kDataUnhandled
+         }
+         ;{if $findme
+         ;   {$findme set_local_pos $dx_set_ui_pos_0 $dx_set_ui_pos_1 $dx_set_ui_pos_2}
+         ;}
+      )
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_align_array_number 0}
+         {set $dx_font_array_number 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
+      )
+      (enter
+         {set $dx_pos_interval_list (0.01 0.1 0.5 1 5 10 50 100)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+         {set $dx_align_array (kTopLeft kTopCenter kTopRight kMiddleLeft kMiddleCenter kMiddleRight kBottomLeft kBottomCenter kBottomRight)}
+         {set $dx_font_array (default gangly hamilton monospace_numbers_shadow pentatonic pentatonic_bold pentatonic_boldsmall pentatonic_display pentatonic_outline pentatonic_regularcond pentatonic_regularsmall pentatonic_mononumerals rats relay_black stainless stainless_ext_blk stainless_ext_reg)}
+         DX_TRANSLATE_LABEL_VARIABLES_TO_LOCAL
+         {do
+            ($arr {find $dx_settings_main $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
+               }
+            }
+            {$current_list set_data $data}
+         }
+      )
+      #define LIST_LABEL_DIREC
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               (1 {set $this_var dx_pos_remapper_array_number})
+               (2 {set $this_var dx_set_ui_text_size})
+               (3 {set $this_var dx_set_ui_text_kerning})
+               (4 {set $this_var dx_align_array_number})
+               (5 {set $this_var dx_font_array_number})
+            }
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if_else {== $this_var dx_pos_remapper_array_number}
+                     {if {> {eval {var {sprint $this_var}}} 0}
+                        {set_var {sprint $this_var} {- {eval {var $this_var}} 1}}
+                     }
+                     {if_else {== $this_var dx_align_array_number}
+                        {if {> {eval {var {sprint $this_var}}} 0}
+                           {set_var {sprint $this_var} {- {eval {var $this_var}} 1}}
+                        }
+                        {if_else {== $this_var dx_font_array_number}
+                           {if {> {eval {var {sprint $this_var}}} 0}
+                              {set_var {sprint $this_var} {- {eval {var $this_var}} 1}}
+                           }
+                           {if {> {eval {var {sprint $this_var}}} 0}
+                              {set_var {sprint $this_var} {- {eval {var $this_var}} $dx_pos_current_interval}}
+                           }
+                        }
+                     }
+                  }
+               )
+               ((kAction_Right kAction_Up)
+                  {if_else {== $this_var dx_pos_remapper_array_number}
+                     {if {< {eval {var {sprint $this_var}}} 7}
+                        {set_var {sprint $this_var} {+ {eval {var $this_var}} 1}}
+                     }
+                     {if_else {== $this_var dx_align_array_number}
+                        {if {< {eval {var {sprint $this_var}}} 8}
+                           {set_var {sprint $this_var} {+ {eval {var $this_var}} 1}}
+                        }
+                        {if_else {== $this_var dx_font_array_number}
+                           {if {< {eval {var {sprint $this_var}}} 16}
+                              {set_var {sprint $this_var} {+ {eval {var $this_var}} 1}}
+                           }
+                           {set_var {sprint $this_var} {+ {eval {var $this_var}} $dx_pos_current_interval}}
+                        }
+                     }
+                  }
+               )
+            }
+            {if {== $this_var dx_pos_remapper_array_number}
+               {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}}
+            }
+            {if {== $this_var dx_align_array_number}
+               {set $dx_set_ui_text_alignment {elem $dx_align_array $dx_align_array_number}}
+            }
+            {if {== $this_var dx_font_array_number}
+               {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
+            }
+            DX_APPLY_LABEL
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
                   {do
                      DX_RESET_LABEL
                      DX_APPLY_LABEL
-                     DX_LABEL_OPTIONS_DATA
+                  }
+                  {do
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
                   }
                }
-               {if {!= {options_audio.lst selected_data} 0}
-                  {set $dx_list_item_selected TRUE}
-                  {set $dx_list_pos {options_audio.lst selected_data}}
-                  DX_LABEL_OPTIONS_DATA
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state
+                  {switch $dx_set_ui_label_tracked_ui
+                     (highway_overdrive_text dxState_TrackHighwayOverdrive)
+                     (highway_username_text dxState_TrackHighwayUsername)
+                     (highway_streak_text dxState_TrackHighwayStreak)
+                     (mtv_overlay dxState_MTVElements)
+                  }
                }
-            )
-            ((kAction_Left kAction_Right)
-               {switch {options_audio.lst selected_data}
-                  (1
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_pos_remapper_array_number 0})
-                           (kAction_Right {< $dx_pos_remapper_array_number 7})
-                        }
-                        {set $dx_pos_remapper_array_number
-                           {switch $action
-                              (kAction_Left {- $dx_pos_remapper_array_number 1})
-                              (kAction_Right {+ $dx_pos_remapper_array_number 1})
-                           }
-                        }
-                        {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}}
-                     }
-                     {set $dx_list_pos 1}
-                  )
-                  (2
-                     {set $dx_set_ui_text_size
-                        {switch $action
-                           (kAction_Left {- $dx_set_ui_text_size $dx_pos_current_interval})
-                           (kAction_Right {+ $dx_set_ui_text_size $dx_pos_current_interval})
-                        }
-                     }
-                     {set $dx_list_pos 2}
-                  )
-                  (3
-                     {set $dx_set_ui_text_kerning
-                        {switch $action
-                           (kAction_Left {- $dx_set_ui_text_kerning $dx_pos_current_interval})
-                           (kAction_Right {+ $dx_set_ui_text_kerning $dx_pos_current_interval})
-                        }
-                     }
-                     {set $dx_list_pos 3}
-                  )
-                  (4
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_align_array_number 0})
-                           (kAction_Right {< $dx_align_array_number {- $dx_align_array_size 1}})
-                        }
-                        {set $dx_align_array_number
-                           {switch $action
-                              (kAction_Left {- $dx_align_array_number 1})
-                              (kAction_Right {+ $dx_align_array_number 1})
-                           }
-                        }
-                        {set $dx_set_ui_text_alignment {elem $dx_align_array $dx_align_array_number}}
-                     }
-                     {set $dx_list_pos 4}
-                  )
-                  (5
-                     {if
-                        {switch $action
-                           (kAction_Left {> $dx_font_array_number 0})
-                           (kAction_Right {< $dx_font_array_number {- $dx_font_array_size 1}})
-                        }
-                        {set $dx_font_array_number
-                           {switch $action
-                              (kAction_Left {- $dx_font_array_number 1})
-                              (kAction_Right {+ $dx_font_array_number 1})
-                           }
-                        }
-                        {set $dx_set_ui_text_font {elem $dx_font_array $dx_font_array_number}}
-                     }
-                     {set $dx_list_pos 5}
-                  )
-                  kDataUnhandled
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_LABEL_DIREC)
+         (kAction_Up LIST_LABEL_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_LABEL_DIREC)
+         (kAction_Right LIST_LABEL_DIREC)
+      )
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_TrackConfig
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_reset}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk {sprint "interval_" $dx_pos_remapper_array_number}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprintf {localize os_trk_pitch} {int $dx_pitch}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprintf {localize os_trk_fov} {int $dx_fov}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4}} os_blnk {sprintf {localize os_trk_x} {int $dx_x_pos}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5}} os_blnk {sprintf {localize os_trk_y} {int $dx_y_pos}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6}} os_blnk {sprintf {localize os_trk_z} {int $dx_z_pos}}}
+      )
+      #define DX_RESET_TRACK
+      (
+         {dx_passive_messenger_symbol {sprint "unimplemented"}}
+      )
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
+      )
+      (enter
+         {set $dx_pos_interval_list (0.01 0.1 0.5 1 5 10 50 100)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+         {do
+            ($arr {find $dx_settings_main $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
                }
-               DX_APPLY_LABEL
-               DX_LABEL_OPTIONS_DATA
-            )
-            kDataUnhandled
+            }
+            {$current_list set_data $data}
          }
-      }
+      )
+      #define LIST_TRACK_DIREC
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               (1 {set $this_var dx_pos_remapper_array_number})
+               (2 {set $this_var dx_pitch})
+               (3 {set $this_var dx_fov})
+               (4 {set $this_var dx_x_pos})
+               (5 {set $this_var dx_y_pos})
+               (6 {set $this_var dx_z_pos})
+            }
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if_else {== $this_var dx_pos_remapper_array_number}
+                     {if {> {eval {var {sprint $this_var}}} 0}
+                        {set_var {sprint $this_var} {- {eval {var $this_var}} 1}}
+                     }
+                     {if_else {== $this_var dx_pitch}
+                        {if {> {eval {var {sprint $this_var}}} -100}
+                           {set_var {sprint $this_var} {- {eval {var $this_var}} $dx_pos_current_interval}}
+                        }
+                        {if_else {== $this_var dx_fov}
+                           {if {> {eval {var {sprint $this_var}}} 0}
+                              {set_var {sprint $this_var} {- {eval {var $this_var}} $dx_pos_current_interval}}
+                           }
+                           {set_var {sprint $this_var} {- {eval {var $this_var}} $dx_pos_current_interval}}
+                        }
+                     }
+                  }
+               )
+               ((kAction_Right kAction_Up)
+                  {if_else {== $this_var dx_pos_remapper_array_number}
+                     {if {< {eval {var {sprint $this_var}}} 7}
+                        {set_var {sprint $this_var} {+ {eval {var $this_var}} 1}}
+                     }
+                     {if_else {== $this_var dx_pitch}
+                        {if {< {eval {var {sprint $this_var}}} 100}
+                           {set_var {sprint $this_var} {+ {eval {var $this_var}} $dx_pos_current_interval}}
+                        }
+                        {if_else {== $this_var dx_fov}
+                           {if {< {eval {var {sprint $this_var}}} 100}
+                              {set_var {sprint $this_var} {+ {eval {var $this_var}} $dx_pos_current_interval}}
+                           }
+                           {set_var {sprint $this_var} {+ {eval {var $this_var}} $dx_pos_current_interval}}
+                        }
+                     }
+                  }
+               )
+            }
+            {set $dx_track_config_changed TRUE}
+            {dx_track_configurer}
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
+                  {do
+                     DX_RESET_TRACK
+                     {set $dx_track_config_changed TRUE}
+                     {dx_track_configurer}
+                  }
+                  {do
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                  }
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_TrackHUD}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_TRACK_DIREC)
+         (kAction_Up LIST_TRACK_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_TRACK_DIREC)
+         (kAction_Right LIST_TRACK_DIREC)
+      )
    )
-   (exit 
-      DX_OS_CLOSE_MSG
-   )
-   (on_cancel
-      {switch $dx_set_ui_label_tracked_ui
-         (highway_overdrive_text {$this show_state dxState_TrackHighwayOverdrive})
-         (highway_username_text {$this show_state dxState_TrackHighwayUsername})
-         (highway_streak_text {$this show_state dxState_TrackHighwayStreak})
-         (mtv_overlay {$this show_state dxState_MTVElements})
-      }
-   )
-)
+}
