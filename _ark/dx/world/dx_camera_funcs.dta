@@ -23,7 +23,7 @@
    ;   }
    ;}
 }
-#ifdef HX_PS3
+
 {func dx_ultra_shadows
    ($enabled)
    {if $enabled
@@ -44,7 +44,7 @@
       }
    }
 }
-#endif
+
 {func dx_air_guitar
    ($enabled)
    {if $enabled
@@ -70,7 +70,7 @@
 }
 {func dx_char_hider
    ($enabled)
-   {if $enabled
+   {if {&& {== {ui current_screen} game} {exists song_mgr}}
       {ui foreach_screen $screen
          {$screen foreach_panel $panel
             {if {$panel loaded_dir}
@@ -78,7 +78,7 @@
                   {$b iterate BandCharacter $c
                      {switch {$c get instrument_type}
                         (guitar
-                           {if {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part guitar}}
+                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part guitar}}}
                               {$c iterate RndDir $y
                                  {set_this $y}
                                  {$this iterate Mesh $m
@@ -88,7 +88,7 @@
                            }
                         )
                         (bass
-                           {if {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part bass}}
+                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part bass}}}
                               {$c iterate RndDir $y
                                  {set_this $y}
                                  {$this iterate Mesh $m
@@ -98,7 +98,7 @@
                            }
                         )
                         (drum
-                           {if {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part drum}}
+                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part drum}}}
                               {$c iterate RndDir $y
                                  {set_this $y}
                                  {$this iterate Mesh $m
@@ -108,7 +108,7 @@
                            }
                         )
                         (keyboard
-                           {if {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part keys}}
+                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part keys}}}
                               {$c iterate RndDir $y
                                  {set_this $y}
                                  {$this iterate Mesh $m
@@ -118,7 +118,7 @@
                            }
                         )
                         (mic
-                           {if {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part vocals}}
+                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part vocals}}}
                               {$c iterate RndDir $y
                                  {set_this $y}
                                  {$this iterate Mesh $m
@@ -298,17 +298,18 @@
       ({&& {session_mgr is_local} {&& $black_song_transition {! $default_transitions}}}
          {do
             #ifdef HX_XBOX {set $dx_xbox_show_fallback TRUE} #endif
+
             {set_elem {find $syscfg vignettes interstitials preloading_screen #ifdef HX_WII pregame_screen #else game_screen #endif} 1 (TRUE ())}
             {set_elem {find $syscfg vignettes interstitials meta_loading_outro song_select_screen} 1 (TRUE ())}
          }
       )
-      ({&& {session_mgr is_local} {! $default_transitions}}
+      ({&& {session_mgr is_local} {! $black_song_transition} {! $default_transitions}}
          {do
             {set_elem {find $syscfg vignettes interstitials preloading_screen #ifdef HX_WII pregame_screen #else game_screen #endif} 1 {quote (1 {unquote {eval $dx_forced_outro_vignette}})}}
             {set_elem {find $syscfg vignettes interstitials meta_loading_outro song_select_screen} 1 {quote (1 {unquote {eval $dx_forced_outro_vignette}})}}
          }
       )
-      ({|| {&& $default_transitions {! $black_song_transition}} {! {session_mgr is_local}}}
+      ({|| {&& {== {size $dx_forced_outro_vignette} 0} {! $black_song_transition}} {! {session_mgr is_local}}}
          {do
             ;{set $dx_forced_outro_vignette FALSE}
             {set_elem {find $syscfg vignettes interstitials preloading_screen #ifdef HX_WII pregame_screen #else game_screen #endif} 1 {quote ({'||' {meta_performer festival_reward} {!= {gamemode get game_screen} game_screen}} ())}}

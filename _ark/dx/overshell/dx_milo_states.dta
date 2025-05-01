@@ -1,184 +1,191 @@
-(dxState_MiloPanels
-   (view
-      {do
-         ($options
-            {array 0})
-         {ui foreach_screen $screen
-            {$screen foreach_panel $panel
-               {if
-                  {&&
-                     {$panel loaded_dir}
-                     {! {find_elem $options {$panel loaded_dir}}}
+{push_back $dx_settings_main
+   (dxState_MiloPanels
+      (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (enter
+         {do
+            ($options {array 0})
+            {ui foreach_screen $screen
+               {$screen foreach_panel $panel
+                  {if
+                     {&&
+                        {$panel loaded_dir}
+                        {! {find_elem $options {$panel loaded_dir}}}
+                     }
+                     {push_back $options {sprint $panel}}
                   }
-                  {push_back $options {sprint $panel}}
                }
             }
+            {$current_list set_data $options}
          }
-         {if_else {== {size $options} 0}
-            {set $options ('couldnt' 'find' 'panels')}
-            {sort $options}
-         }
-         {dx_state_setup dxState_MiloPanels FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {set $categorizemetrail ()}
-      {resize $categorizemetrail 0}
-      {set $findmetrail ()}
-      {resize $findmetrail 0}
+      )
+      (select
+         (_fallthrough
+            {set $categorizemetrail ()}
+            {resize $categorizemetrail 0}
+            {set $findmetrail ()}
+            {resize $findmetrail 0}
 
-      {set $temp {$component selected_sym}}
-      {set $findme {{sprint $temp} loaded_dir}}
+            {set $temp {$current_list selected_sym}}
+            {set $findme {{sprint $temp} loaded_dir}}
 
-      {push_back $findmetrail $findme}
-      {set $findmetrail {array $findmetrail}}
-      {$this show_state dxState_MiloObjects}
-   )
-   (on_cancel
-      {$this show_state dxState_Debug}
-   )
-)
-(dxState_MiloObjects
-   (view
-      {do
-         ($options
-            {array 0})
-         {if {>= {size $findmetrail} 1}
-            {set $findme
-               {elem $findmetrail {- {size $findmetrail} 1}}
-            }
-         }
-         {$findme iterate Object $p
-            {if {! {find_elem $options {sprintf "%s" {$p class_name}}}}
-               {push_back $options {sprintf "%s" {$p class_name}}}
-            }
-         }
-         {if_else {== {size $options} 0}
-            {set $options ('couldnt' 'find' 'object' 'classes')}
-            {sort $options}
-         }
-         {dx_state_setup dxState_MiloObjects FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {set $categorizeme {$component selected_sym}}
-      {push_back $categorizemetrail $categorizeme}
-      {set $categorizemetrail {array $categorizemetrail}}
-      {$this show_state dxState_MiloFind}
-   )
-   (on_cancel
-      {resize $categorizemetrail {- {size $categorizemetrail} 1}}
-      {if_else {>= {size $categorizemetrail} 1}
-         {$this show_state dxState_MiloFind}
-         {$this show_state dxState_MiloPanels}
-      }
-   )
-)
-(dxState_MiloFind
-   (view
-      {do
-         ($options
-            {array 0})
-         {if {>= {size $findmetrail} 1}
-            {set $findme
-               {elem $findmetrail {- {size $findmetrail} 1}}
-            }
-         }
-         {if {>= {size $categorizeme} 1}
-            {set $categorizeme
-               {elem $categorizemetrail {- {size $categorizemetrail} 1}}
-            }
-         }
-         {$findme iterate Object $p
-            {if {== {$p class_name} $categorizeme}
-               {push_back $options {sprintf "%s" {$p name}}}
-            }
-         }
-         {if_else {== {size $options} 0}
-            {set $options ('couldnt' 'find' 'objects' 'of' 'type')}
-            {sort $options}
-         }
-         {dx_state_setup dxState_MiloFind FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {if
-         {&&
-            {!= $categorizeme EventTrigger}
-            {!= $categorizeme UITrigger}
-            {!= $categorizeme Sfx}
-         }
-         {set $findme {$findme find {$component selected_sym}}}
-      }
-      {if {has_substr $categorizeme Dir}
-         {push_back $findmetrail $findme}
-         {set $findmetrail {array $findmetrail}}
-         {$this show_state dxState_MiloObjects}
-      }
-      {if {has_substr $categorizeme Label} {$this show_state dxState_PositionRemapper}}
-      {switch $categorizeme
-         (AnimFilter kDataUnhandled)
-         (Cam {$this show_state dxState_PositionRemapper})
-         (Environ kDataUnhandled)
-         (EventTrigger {{$findme find {$component selected_sym}} trigger})
-         (UITrigger {{$findme find {$component selected_sym}} trigger})
-         (FXSendEQ kDataUnhandled)
-         (Group {$this show_state dxState_PositionRemapper})
-         (Mat {$this show_state dxState_MiloMat})
-         (BandCharacter
             {push_back $findmetrail $findme}
             {set $findmetrail {array $findmetrail}}
-            {$this show_state dxState_MiloObjects})
-         (AmbientOcclusion {$this show_state dxState_MiloAO})
-         (Character
-            {push_back $findmetrail $findme}
-            {set $findmetrail {array $findmetrail}}
-            {$this show_state dxState_MiloObjects})
-         (BandWardrobe
-            {push_back $findmetrail $findme}
-            {set $findmetrail {array $findmetrail}}
-            {$this show_state dxState_MiloObjects})
-         (BandScoreboard
-            {push_back $findmetrail $findme}
-            {set $findmetrail {array $findmetrail}}
-            {$this show_state dxState_MiloObjects})
-         (BandStarDisplay
-            {push_back $findmetrail $findme}
-            {set $findmetrail {array $findmetrail}}
-            {$this show_state dxState_MiloObjects})
-         (Wind {$this show_state dxState_MiloWind})
-         (BandCamShot kDataUnhandled)
-         (PostProc kDataUnhandled)
-         (MatAnim kDataUnhandled)
-         (Mesh {$this show_state dxState_PositionRemapper})
-         (ParticleSys kDataUnhandled)
-         (PropAnim kDataUnhandled)
-         (RandomGroupSeq kDataUnhandled)
-         (Sfx {{$findme find {$component selected_sym}} play})
-         (SynthFader kDataUnhandled)
-         (SynthSample kDataUnhandled)
-         (Tex kDataUnhandled)
-         (Text {{$findme find {$component selected_sym}} set font default})
-         (TrackWidget kDataUnhandled)
-         (Trans kDataUnhandled)
-         (TransAnim kDataUnhandled)
-         (UIColor kDataUnhandled)
-         (UIGuide kDataUnhandled)
-         (WaitSeq kDataUnhandled)
-         kDataUnhandled
-      }
+            {dx_state dxState_MiloObjects}
+         )
+      )
+      (on_cancel {dx_state dxState_Debug})
    )
-   (on_cancel
-      {resize $findmetrail {- {size $findmetrail} 1}}
-      {if_else {>= {size $findmetrail} 1}
-         {$this show_state dxState_MiloObjects}
-         {$this show_state dxState_MiloPanels}
-      }
+}
+
+{push_back $dx_settings_main
+   (dxState_MiloObjects
+      (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (enter
+         {do
+            ($options {array 0})
+            {if {>= {size $findmetrail} 1}
+               {set $findme
+                  {elem $findmetrail {- {size $findmetrail} 1}}
+               }
+            }
+            {$findme iterate Object $p
+               {if {! {find_elem $options {sprintf "%s" {$p class_name}}}}
+                  {push_back $options {sprintf "%s" {$p class_name}}}
+               }
+            }
+            {if_else {== {size $options} 0}
+               {set $options ('couldnt' 'find' 'object' 'classes')}
+               {sort $options}
+            }
+            {$current_list set_data $options}
+         }
+      )
+      (select
+         (_fallthrough
+            {set $categorizeme {$current_list selected_sym}}
+            {push_back $categorizemetrail $categorizeme}
+            {set $categorizemetrail {array $categorizemetrail}}
+            {dx_state dxState_MiloFind}
+         )
+      )
+      (cancel
+         {do
+            {resize $categorizemetrail {- {size $categorizemetrail} 1}}
+            {if_else {>= {size $categorizemetrail} 1}
+               {dx_state dxState_MiloFind}
+               {dx_state dxState_MiloPanels}
+            }
+         }
+      )
    )
-)
+}
+{push_back $dx_settings_main
+   (dxState_MiloFind
+      (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (enter
+         {do
+            ($options {array 0})
+            {if {>= {size $findmetrail} 1}
+               {set $findme
+                  {elem $findmetrail {- {size $findmetrail} 1}}
+               }
+            }
+            {if {>= {size $categorizeme} 1}
+               {set $categorizeme
+                  {elem $categorizemetrail {- {size $categorizemetrail} 1}}
+               }
+            }
+            {$findme iterate Object $p
+               {if {== {$p class_name} $categorizeme}
+                  {push_back $options {sprintf "%s" {$p name}}}
+               }
+            }
+            {if_else {== {size $options} 0}
+               {set $options ('couldnt' 'find' 'objects' 'of' 'type')}
+               {sort $options}
+            }
+            {$current_list set_data $options}
+         }
+      )
+      (select
+         (_fallthrough
+            {if
+               {&&
+                  {!= $categorizeme EventTrigger}
+                  {!= $categorizeme UITrigger}
+                  {!= $categorizeme Sfx}
+               }
+               {set $findme {$findme find {$current_list selected_sym}}}
+            }
+            {if {has_substr $categorizeme Dir}
+               {push_back $findmetrail $findme}
+               {set $findmetrail {array $findmetrail}}
+               {dx_state dxState_MiloObjects}
+            }
+            {if {has_substr $categorizeme Label} {dx_state dxState_PositionRemapper}}
+            {switch $categorizeme
+               (AnimFilter kDataUnhandled)
+               (Cam {dx_state dxState_PositionRemapper})
+               (Environ kDataUnhandled)
+               (EventTrigger {{$findme find {$current_list selected_sym}} trigger})
+               (UITrigger {{$findme find {$current_list selected_sym}} trigger})
+               (FXSendEQ kDataUnhandled)
+               (Group {dx_state dxState_PositionRemapper})
+               ;(Mat {dx_state dxState_MiloMat})
+               (BandCharacter
+                  {push_back $findmetrail $findme}
+                  {set $findmetrail {array $findmetrail}}
+                  {dx_state dxState_MiloObjects})
+               ;(AmbientOcclusion {dx_state dxState_MiloAO})
+               (Character
+                  {push_back $findmetrail $findme}
+                  {set $findmetrail {array $findmetrail}}
+                  {dx_state dxState_MiloObjects})
+               (BandWardrobe
+                  {push_back $findmetrail $findme}
+                  {set $findmetrail {array $findmetrail}}
+                  {dx_state dxState_MiloObjects})
+               (BandScoreboard
+                  {push_back $findmetrail $findme}
+                  {set $findmetrail {array $findmetrail}}
+                  {dx_state dxState_MiloObjects})
+               (BandStarDisplay
+                  {push_back $findmetrail $findme}
+                  {set $findmetrail {array $findmetrail}}
+                  {dx_state dxState_MiloObjects})
+               (Wind {dx_state dxState_MiloWind})
+               (BandCamShot kDataUnhandled)
+               (PostProc kDataUnhandled)
+               (MatAnim kDataUnhandled)
+               (Mesh {dx_state dxState_PositionRemapper})
+               (ParticleSys kDataUnhandled)
+               (PropAnim kDataUnhandled)
+               (RandomGroupSeq kDataUnhandled)
+               (Sfx {{$findme find {$current_list selected_sym}} play})
+               (SynthFader kDataUnhandled)
+               (SynthSample kDataUnhandled)
+               (Tex kDataUnhandled)
+               (Text {{$findme find {$current_list selected_sym}} set font default})
+               (TrackWidget kDataUnhandled)
+               (Trans kDataUnhandled)
+               (TransAnim kDataUnhandled)
+               (UIColor kDataUnhandled)
+               (UIGuide kDataUnhandled)
+               (WaitSeq kDataUnhandled)
+               kDataUnhandled
+            }
+         )
+      )
+      (cancel
+         {resize $findmetrail {- {size $findmetrail} 1}}
+         {if_else {>= {size $findmetrail} 1}
+            {dx_state dxState_MiloObjects}
+            {dx_state dxState_MiloPanels}
+         }
+      )
+   )
+}
+#ifdef DISABLED
 (dxState_MiloMat
    (view
       {do
@@ -207,8 +214,8 @@
       {overshell_view_chooser}
    )
    (SELECT_MSG
-      {switch {$component selected_sym}
-         (color {$this show_state dxState_MiloRGBColor})
+      {switch {$current_list selected_sym}
+         (color {dx_state dxState_MiloRGBColor})
          (use_environ {$findme set use_environ {! {$findme get use_environ}}})
          (prelit {$findme set prelit {! {$findme get prelit}}})
          (intensify {$findme set intensify {! {$findme get intensify}}})
@@ -229,7 +236,7 @@
       }
    )
    (on_cancel
-      {$this show_state dxState_MiloObjects}
+      {dx_state dxState_MiloObjects}
    )
 )
 
@@ -249,7 +256,7 @@
       {overshell_view_chooser}
    )
    (SELECT_MSG
-      {switch {$component selected_sym}
+      {switch {$current_list selected_sym}
          (prevailing {$findme set prevailing 0 0 0})
          (random {$findme set random 0 0 0})
          (time_loop {$findme set time_loop 0})
@@ -259,7 +266,7 @@
       }
    )
    (on_cancel
-      {$this show_state dxState_MiloObjects}
+      {dx_state dxState_MiloObjects}
    )
 )
 (dxState_MiloAO
@@ -281,7 +288,7 @@
       {overshell_view_chooser}
    )
    (SELECT_MSG
-      {switch {$component selected_sym}
+      {switch {$current_list selected_sym}
          (dont_cast_ao {$findme resize dont_cast_ao 0})
          (dont_receive_ao {$findme resize dont_cast_ao 0})
          (tessellate {$findme resize tessellate 0})
@@ -294,7 +301,7 @@
       }
    )
    (on_cancel
-      {$this show_state dxState_MiloObjects}
+      {dx_state dxState_MiloObjects}
    )
 )
 
@@ -336,11 +343,11 @@
    ;)
    ;these two options are selectable and act normal with a destination trail
    ;(SELECT_MSG
-   ;   {switch {$component selected_sym}
+   ;   {switch {$current_list selected_sym}
    ;      (os_track_speeds
-   ;         {$this show_state dxState_TrackSpeeds})
+   ;         {dx_state dxState_TrackSpeeds})
    ;      (os_acceleration_mode
-   ;         {$this show_state dxState_AccelerationMode})
+   ;         {dx_state dxState_AccelerationMode})
    ;   }
    ;)
    ;this is handling the dynamic "slider" replacement
@@ -545,6 +552,7 @@
       }
    )
    (on_cancel
-      {$this show_state dxState_MiloMat}
+      {dx_state dxState_MiloMat}
    )
 )
+#endif
