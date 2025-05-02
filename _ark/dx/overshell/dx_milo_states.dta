@@ -1,6 +1,54 @@
+#define MOVE_IT
+(
+   {$this iterate Mesh $m {$m set_showing FALSE}}
+   {if {$this in_game}
+      {unless $dx_moved_once
+         #ifdef RB3E
+         {set $list_move_down_number 0}
+         #else
+         {set $list_move_down_number 250}
+         #endif
+         {if_else
+            {&&
+               {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
+               {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
+            }
+            {$this iterate UIList $l
+               {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} $list_move_down_number}} ;move vocal type menu straight down
+            }
+            {$this iterate UIList $l
+               {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
+               {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+            }
+         }
+         {set $dx_moved_once TRUE}
+      }
+   }
+)
+#define MOVE_IT_BACK
+(
+   {$this iterate Mesh $m {$m set_showing TRUE}}
+   {if $dx_moved_once
+      {set $dx_moved_once FALSE}
+      {if_else
+         {&&
+            {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
+            {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
+         }
+         {$this iterate UIList $l
+            {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} $list_move_down_number}}
+         }
+         {$this iterate UIList $l
+            {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+            {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+         }
+      }
+   }
+)
 {push_back $dx_settings_main
    (dxState_MiloPanels
       (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (message none)
       (enter
          {do
             ($options {array 0})
@@ -16,34 +64,53 @@
                }
             }
             {$current_list set_data $options}
-         }
-      )
-      (select
-         (_fallthrough
+            {chars.sbd set scrollbar_list $current_list}
+            {chars.sbd set_showing {! {$this in_game}}}
+            {if_else {$this in_game}
+               {$current_list set_type overshell_menu_ingame}
+               {$current_list set_type overshell_menu}
+            }
             {set $categorizemetrail ()}
             {resize $categorizemetrail 0}
             {set $findmetrail ()}
             {resize $findmetrail 0}
-
-            {set $temp {$current_list selected_sym}}
-            {set $findme {{sprint $temp} loaded_dir}}
-
-            {push_back $findmetrail $findme}
-            {set $findmetrail {array $findmetrail}}
+            MOVE_IT
+         }
+         {set $dx_milo_objects
+            (
+               #include ../reference/dotdot/band_objects.dta
+               #include ../reference/dotdot/rnd_objects.dta
+               #include ../reference/dotdot/synth_objects.dta
+               #include ../reference/dotdot/track_objects.dta
+               #include ../reference/dotdot/ui_objects.dta
+               #include ../reference/dotdot/world_objects.dta
+            )
+         }
+      )
+      (select
+         (_fallthrough
+            {set $findme {{sprint {$current_list selected_sym}} loaded_dir}}
+            {push_back $findmetrail {eval $findme}}
             {dx_state dxState_MiloObjects}
          )
       )
-      (on_cancel {dx_state dxState_Debug})
+      (cancel
+         {do
+            {dx_state dxState_Debug}
+            MOVE_IT_BACK
+         }
+      )
    )
 }
 
 {push_back $dx_settings_main
    (dxState_MiloObjects
       (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (message none)
       (enter
          {do
             ($options {array 0})
-            {if {>= {size $findmetrail} 1}
+            {if {> {size $findmetrail} 1}
                {set $findme
                   {elem $findmetrail {- {size $findmetrail} 1}}
                }
@@ -58,23 +125,28 @@
                {sort $options}
             }
             {$current_list set_data $options}
+            {chars.sbd set scrollbar_list $current_list}
+            {chars.sbd set_showing {! {$this in_game}}}
+            MOVE_IT
          }
       )
       (select
          (_fallthrough
             {set $categorizeme {$current_list selected_sym}}
-            {push_back $categorizemetrail $categorizeme}
-            {set $categorizemetrail {array $categorizemetrail}}
+            {push_back $categorizemetrail {eval $categorizeme}}
             {dx_state dxState_MiloFind}
          )
       )
       (cancel
          {do
-            {resize $categorizemetrail {- {size $categorizemetrail} 1}}
+            {if {> {size $findmetrail} 0}
+               {resize $findmetrail {- {size $findmetrail} 1}}
+            }
             {if_else {>= {size $categorizemetrail} 1}
                {dx_state dxState_MiloFind}
                {dx_state dxState_MiloPanels}
             }
+            MOVE_IT_BACK
          }
       )
    )
@@ -82,6 +154,7 @@
 {push_back $dx_settings_main
    (dxState_MiloFind
       (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (message none)
       (enter
          {do
             ($options {array 0})
@@ -90,11 +163,9 @@
                   {elem $findmetrail {- {size $findmetrail} 1}}
                }
             }
-            {if {>= {size $categorizeme} 1}
                {set $categorizeme
                   {elem $categorizemetrail {- {size $categorizemetrail} 1}}
                }
-            }
             {$findme iterate Object $p
                {if {== {$p class_name} $categorizeme}
                   {push_back $options {sprintf "%s" {$p name}}}
@@ -105,6 +176,9 @@
                {sort $options}
             }
             {$current_list set_data $options}
+            {chars.sbd set scrollbar_list $current_list}
+            {chars.sbd set_showing {! {$this in_game}}}
+            MOVE_IT
          }
       )
       (select
@@ -118,193 +192,207 @@
                {set $findme {$findme find {$current_list selected_sym}}}
             }
             {if {has_substr $categorizeme Dir}
-               {push_back $findmetrail $findme}
-               {set $findmetrail {array $findmetrail}}
+               {push_back $findmetrail {eval $findme}}
                {dx_state dxState_MiloObjects}
             }
-            {if {has_substr $categorizeme Label} {dx_state dxState_PositionRemapper}}
             {switch $categorizeme
-               (AnimFilter kDataUnhandled)
-               (Cam {dx_state dxState_PositionRemapper})
-               (Environ kDataUnhandled)
-               (EventTrigger {{$findme find {$current_list selected_sym}} trigger})
-               (UITrigger {{$findme find {$current_list selected_sym}} trigger})
-               (FXSendEQ kDataUnhandled)
-               (Group {dx_state dxState_PositionRemapper})
-               ;(Mat {dx_state dxState_MiloMat})
-               (BandCharacter
-                  {push_back $findmetrail $findme}
-                  {set $findmetrail {array $findmetrail}}
-                  {dx_state dxState_MiloObjects})
-               ;(AmbientOcclusion {dx_state dxState_MiloAO})
-               (Character
-                  {push_back $findmetrail $findme}
-                  {set $findmetrail {array $findmetrail}}
-                  {dx_state dxState_MiloObjects})
-               (BandWardrobe
-                  {push_back $findmetrail $findme}
-                  {set $findmetrail {array $findmetrail}}
-                  {dx_state dxState_MiloObjects})
-               (BandScoreboard
-                  {push_back $findmetrail $findme}
-                  {set $findmetrail {array $findmetrail}}
-                  {dx_state dxState_MiloObjects})
-               (BandStarDisplay
-                  {push_back $findmetrail $findme}
-                  {set $findmetrail {array $findmetrail}}
-                  {dx_state dxState_MiloObjects})
-               (Wind {dx_state dxState_MiloWind})
-               (BandCamShot kDataUnhandled)
-               (PostProc kDataUnhandled)
-               (MatAnim kDataUnhandled)
-               (Mesh {dx_state dxState_PositionRemapper})
-               (ParticleSys kDataUnhandled)
-               (PropAnim kDataUnhandled)
-               (RandomGroupSeq kDataUnhandled)
+               ;((BandLabel UILabel AppLabel Cam) {dx_state dxState_PositionRemapper})
                (Sfx {{$findme find {$current_list selected_sym}} play})
-               (SynthFader kDataUnhandled)
-               (SynthSample kDataUnhandled)
-               (Tex kDataUnhandled)
-               (Text {{$findme find {$current_list selected_sym}} set font default})
-               (TrackWidget kDataUnhandled)
-               (Trans kDataUnhandled)
-               (TransAnim kDataUnhandled)
-               (UIColor kDataUnhandled)
-               (UIGuide kDataUnhandled)
-               (WaitSeq kDataUnhandled)
-               kDataUnhandled
+               ((UITrigger EventTrigger) {{$findme find {$current_list selected_sym}} trigger})
+               ((Character BandCharacter)
+                  {push_back $findmetrail {eval $findme}}
+                  {dx_state dxState_MiloObjects})
+               ((Wardrobe BandWardrobe)
+                  {push_back $findmetrail {eval $findme}}
+                  {dx_state dxState_MiloObjects}
+               )
+               ((Scoreboard BandScoreboard)
+                  {push_back $findmetrail {eval $findme}}
+                  {dx_state dxState_MiloObjects}
+               )
+               ((StarDisplay BandStarDisplay)
+                  {push_back $findmetrail {eval $findme}}
+                  {dx_state dxState_MiloObjects}
+               )
+               {push_back $findmetrail {eval $findme}}
+               {dx_state dxState_MiloRnd}
             }
+            ;{switch $categorizeme
+            ;   (AnimFilter kDataUnhandled)
+            ;   (Cam {dx_state dxState_PositionRemapper})
+            ;   (Environ kDataUnhandled)
+            ;   (EventTrigger {{$findme find {$current_list selected_sym}} trigger})
+            ;   (UITrigger {{$findme find {$current_list selected_sym}} trigger})
+            ;   (FXSendEQ kDataUnhandled)
+            ;   (Group {push_back $findmetrail {eval $findme}} {dx_state dxState_MiloRnd})
+            ;   (Mat {push_back $findmetrail {eval $findme}} {dx_state dxState_MiloRnd})
+            ;   (BandCharacter
+            ;      {push_back $findmetrail {eval $findme}}
+            ;      {dx_state dxState_MiloObjects})
+            ;   ;(AmbientOcclusion {dx_state dxState_MiloAO})
+            ;   (Character
+            ;      {push_back $findmetrail {eval $findme}}
+            ;      {dx_state dxState_MiloObjects})
+            ;   (BandWardrobe
+            ;      {push_back $findmetrail {eval $findme}}
+            ;      {dx_state dxState_MiloObjects})
+            ;   (BandScoreboard
+            ;      {push_back $findmetrail {eval $findme}}
+            ;      {dx_state dxState_MiloObjects})
+            ;   (BandStarDisplay
+            ;      {push_back $findmetrail {eval $findme}}
+            ;      {dx_state dxState_MiloObjects})
+            ;   (Wind {dx_state dxState_MiloWind})
+            ;   (BandCamShot kDataUnhandled)
+            ;   (PostProc kDataUnhandled)
+            ;   (MatAnim kDataUnhandled)
+            ;   (Mesh {push_back $findmetrail {eval $findme}} {dx_state dxState_MiloRnd})
+            ;   (ParticleSys kDataUnhandled)
+            ;   (PropAnim kDataUnhandled)
+            ;   (RandomGroupSeq kDataUnhandled)
+            ;   (Sfx {{$findme find {$current_list selected_sym}} play})
+            ;   (SynthFader kDataUnhandled)
+            ;   (SynthSample kDataUnhandled)
+            ;   (Tex {push_back $findmetrail {eval $findme}} {dx_state dxState_MiloRnd})
+            ;   (Text {{$findme find {$current_list selected_sym}} set font default})
+            ;   (TrackWidget kDataUnhandled)
+            ;   (Trans kDataUnhandled)
+            ;   (TransAnim kDataUnhandled)
+            ;   (UIColor kDataUnhandled)
+            ;   (UIGuide kDataUnhandled)
+            ;   (WaitSeq kDataUnhandled)
+            ;   kDataUnhandled
+            ;}
          )
       )
       (cancel
-         {resize $findmetrail {- {size $findmetrail} 1}}
+         {if {> {size $categorizemetrail} 0}
+            {resize $categorizemetrail {- {size $categorizemetrail} 1}}
+         }
          {if_else {>= {size $findmetrail} 1}
             {dx_state dxState_MiloObjects}
             {dx_state dxState_MiloPanels}
          }
+         MOVE_IT_BACK
+      )
+   )
+}
+{push_back $dx_settings_main
+   (dxState_MiloRnd
+      (view os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk os_blnk)
+      (enter
+         {do
+            ($found {find_exists $dx_milo_objects $categorizeme editor})
+            ($arr {if_else $found {find $dx_milo_objects $categorizeme editor} ('cant' 'find' 'editor' 'array' 'in' 'objects' 'dta')})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= {sprint $entry} editor}
+                  {if_else {== {type $entry} kDataArray}
+                     {if {!= {sprint {elem $entry 1}} "script"}
+                        ;todo, handle deeper indents
+                        {if {!= {type {elem $entry 1}} kDataArray}
+                           {push_back $data {elem $entry 0}}
+                        }
+                     }
+                     {push_back $data $entry}
+                  }
+               }
+            }
+            {$current_list set_data $data}
+            MOVE_IT
+         }
+      )
+      (message
+         {do
+            ($prop {$current_list selected_sym})
+            ($cur {$findme get $prop})
+            ($message {sprint "Help not found"})
+            {if {find_exists $dx_milo_objects $categorizeme editor $prop help}
+               {set $message {sprint {elem {find $dx_milo_objects $categorizeme editor $prop help} 1}}}
+            }
+            {sprint $message "\n" {sprint $cur}}
+         }
+      )
+      (select
+         (_fallthrough
+            {do
+               ($found {find_exists $dx_milo_objects $categorizeme editor {$current_list selected_sym}})
+               {if $found
+                  {switch {elem {find $dx_milo_objects $categorizeme editor {$current_list selected_sym}} 1}
+                     (bool
+                        {do
+                           ($prop {$current_list selected_sym})
+                           {$findme set $prop {! {$findme get $prop}}}
+                        }
+                     )
+                     (int
+                        {do
+                           ($type FALSE)
+                           ($prop {$current_list selected_sym})
+                           ($cur {$findme get $prop})
+                           {if {find_exists $dx_milo_objects $categorizeme editor $prop range}
+                              {set $type range}
+                           }
+                           {if {find_exists $dx_milo_objects $categorizeme editor $prop list}
+                              {set $type list}
+                           }
+                           {switch $type
+                              (range
+                                 {do
+                                    ($ran_lo {elem {find $dx_milo_objects $categorizeme editor $prop range} 1})
+                                    ($ran_hi {elem {find $dx_milo_objects $categorizeme editor $prop range} 2})
+                                    ($interval {int {/ $ran_hi 8}})
+                                    {if_else {> {+ $cur $interval} $ran_hi}
+                                       {$findme set $prop $ran_lo}
+                                       {$findme set $prop {+ $cur $interval}}
+                                    }
+                                 }
+                              )
+                              (list
+                                 {do
+                                    ($list {array 0})
+                                    ($list_help {array 0})
+                                    {foreach $entry {find $dx_milo_objects $categorizeme editor $prop list}
+                                       {if {!= {sprint $entry} "list"}
+                                          {if_else {== {type $entry} kDataArray}
+                                             {foreach $entry2 $entry
+                                                {push_back $list {elem $entry2 0}}
+                                                {push_back $list_help {elem $entry2 1}}
+                                             }
+                                             {push_back $list $entry}
+                                          }
+                                       }
+                                    }
+                                    {if_else {> {+ $cur 1} {- {size $list} 1}}
+                                       {$findme set $prop 0}
+                                       {$findme set $prop {+ $cur 1}}
+                                    }
+                                    {if {> {size $list_help} 0}
+                                       {dx_passive_messenger_symbol {sprint {elem $list_help $cur}}}
+                                    }
+                                 }
+                              )
+                           }
+                        }
+                     )
+                  }
+               }
+               {if {! $found}
+                  {dx_passive_messenger_symbol {sprint "os_milo failed to find selected property"}}
+               }
+            }
+         )
+      )
+      (cancel
+         {if {> {size $findmetrail} 1}
+            {resize $findmetrail {- {size $findmetrail} 1}}
+         }
+         {dx_state dxState_MiloFind}
+         MOVE_IT_BACK
       )
    )
 }
 #ifdef DISABLED
-(dxState_MiloMat
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options color}
-         {push_back $options use_environ}
-         {push_back $options prelit}
-         {push_back $options intensify}
-         {push_back $options alpha_cut}
-         {push_back $options alpha_write}
-         {push_back $options point_lights}
-         {push_back $options fog}
-         {push_back $options fade_out}
-         {push_back $options color_adjust}
-         {push_back $options recv_proj_lights}
-         {push_back $options recv_point_cube_tex}
-         {push_back $options per_pixel_lit}
-         {push_back $options ps3_force_trilinear}
-         {push_back $options rim_light_under}
-         {push_back $options environ_map_falloff}
-         {push_back $options environ_map_specmask}
-         {push_back $options refract_enabled}
-         {dx_state_setup dxState_MiloMat FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$current_list selected_sym}
-         (color {dx_state dxState_MiloRGBColor})
-         (use_environ {$findme set use_environ {! {$findme get use_environ}}})
-         (prelit {$findme set prelit {! {$findme get prelit}}})
-         (intensify {$findme set intensify {! {$findme get intensify}}})
-         (alpha_cut {$findme set alpha_cut {! {$findme get alpha_cut}}})
-         (alpha_write {$findme set alpha_write {! {$findme get alpha_write}}})
-         (point_lights {$findme set point_lights {! {$findme get point_lights}}})
-         (fog {$findme set fog {! {$findme get fog}}})
-         (fade_out {$findme set fade_out {! {$findme get fade_out}}})
-         (color_adjust {$findme set color_adjust {! {$findme get color_adjust}}})
-         (recv_proj_lights {$findme set recv_proj_lights {! {$findme get recv_proj_lights}}})
-         (recv_point_cube_tex {$findme set recv_point_cube_tex {! {$findme get recv_point_cube_tex}}})
-         (per_pixel_lit {$findme set per_pixel_lit {! {$findme get per_pixel_lit}}})
-         (ps3_force_trilinear {$findme set ps3_force_trilinear {! {$findme get ps3_force_trilinear}}})
-         (rim_light_under {$findme set rim_light_under {! {$findme get rim_light_under}}})
-         (environ_map_falloff {$findme set environ_map_falloff {! {$findme get environ_map_falloff}}})
-         (environ_map_specmask {$findme set environ_map_specmask {! {$findme get environ_map_specmask}}})
-         (refract_enabled {$findme set refract_enabled {! {$findme get refract_enabled}}})
-      }
-   )
-   (on_cancel
-      {dx_state dxState_MiloObjects}
-   )
-)
-
-(dxState_MiloWind
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options prevailing}
-         {push_back $options random}
-         {push_back $options time_loop}
-         {push_back $options space_loop}
-         {push_back $options set_defaults}
-         {push_back $options set_zero}
-         {dx_state_setup dxState_MiloWind FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$current_list selected_sym}
-         (prevailing {$findme set prevailing 0 0 0})
-         (random {$findme set random 0 0 0})
-         (time_loop {$findme set time_loop 0})
-         (space_loop {$findme set space_loop 0})
-         (set_defaults {$findme set_defaults})
-         (set_zero {$findme set_zero})
-      }
-   )
-   (on_cancel
-      {dx_state dxState_MiloObjects}
-   )
-)
-(dxState_MiloAO
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options dont_cast_ao}
-         {push_back $options dont_receive_ao}
-         {push_back $options tessellate}
-         {push_back $options ignore_transparent}
-         {push_back $options ignore_prelit}
-         {push_back $options ignore_hidden}
-         {push_back $options intersect_back_faces}
-         {push_back $options use_mesh_normals}
-         {push_back $options calculate}
-         {dx_state_setup dxState_MiloAO FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$current_list selected_sym}
-         (dont_cast_ao {$findme resize dont_cast_ao 0})
-         (dont_receive_ao {$findme resize dont_cast_ao 0})
-         (tessellate {$findme resize tessellate 0})
-         (ignore_transparent {$findme set ignore_transparent {! {$findme get ignore_transparent}}})
-         (ignore_prelit {$findme set ignore_prelit {! {$findme get ignore_prelit}}})
-         (ignore_hidden {$findme set ignore_hidden {! {$findme get ignore_hidden}}})
-         (intersect_back_faces {$findme set intersect_back_faces {! {$findme get intersect_back_faces}}})
-         (use_mesh_normals {$findme set use_mesh_normals {! {$findme get use_mesh_normals}}})
-         (calculate {$findme calculate})
-      }
-   )
-   (on_cancel
-      {dx_state dxState_MiloObjects}
-   )
-)
-
 #define DX_SET_RBG_COLOR_DATA
 (
    {$current_list set_data
