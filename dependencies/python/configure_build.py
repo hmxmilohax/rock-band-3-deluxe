@@ -76,8 +76,7 @@ match sys.platform:
                 ninja.variable("superfreq", "dependencies/macos/superfreq_wii")
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
-        # dtacheck needs to be compiled for mac
-        ninja.variable("dtacheck", "true")
+        ninja.variable("dtacheck", "dependencies/macos/dtacheck")
     case "linux":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")

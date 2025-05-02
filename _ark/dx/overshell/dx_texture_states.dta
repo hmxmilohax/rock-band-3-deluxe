@@ -1,86 +1,74 @@
-(dxState_TextureMenu
-   (view
-      {do
-         ($options
-            {array 0})
+{push_back $dx_settings_main
+   (dxState_TextureMenu
+      (view
          {if_else $dx_customizer
-            {do
-               {push_back $options leave_customizer}
-               {push_back $options restart_customizer}
-            }
-            {if_else {$this in_game}
-               kDataUnhandled
-               {push_back $options realtime_customize}
+            leave_customizer
+            0
+         }
+         {if_else $dx_customizer
+            restart_customizer
+            0
+         }
+         {if_else {&& {! {$this in_game}} {! $dx_customizer}}
+            realtime_customize
+            0
+         }
+         os_fretboard
+         os_spotlight
+         os_emissive
+         os_setcol
+         os_shading
+         os_gems
+         os_smashers
+         os_flares
+         os_particles
+         os_sus
+         os_lanes
+         os_score_box
+         os_stars
+         os_font_title
+         os_solo_box
+         os_bre
+         os_crowdmeter
+         os_rails
+         os_beat_lines
+         os_odbar
+         os_multiring
+         os_keyboard
+         os_voxhw
+         os_voxarrow
+         os_voxnotes
+         os_voxod
+      )
+      (enter
+         {if $dx_customizer
+            {$this iterate Mesh $m {$m set_showing FALSE}}
+            {unless $dx_moved_once
+               #ifdef RB3E
+               {set $list_move_down_number 0}
+               #else
+               {set $list_move_down_number 250}
+               #endif
+               {if_else
+                  {&&
+                     {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
+                     {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
+                  }
+                  {$this iterate UIList $l
+                     {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} $list_move_down_number}} ;move vocal type menu straight down
+                  }
+                  {$this iterate UIList $l
+                     {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
+                     {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+                  }
+               }
+               {set $dx_moved_once TRUE}
             }
          }
-         ;{if $dx_debug
-         ;   {push_back $options os_milo}
-         ;}
-         {push_back $options os_fretboard}
-         {push_back $options os_spotlight}
-         {push_back $options os_emissive}
-         {push_back $options os_setcol}
-         {push_back $options os_shading}
-         {push_back $options os_gems}
-         {push_back $options os_smashers}
-         {push_back $options os_flares}
-         {push_back $options os_particles}
-         {push_back $options os_sus}
-         {push_back $options os_lanes}
-         {push_back $options os_score_box}
-         {push_back $options os_stars}
-         {push_back $options os_font_title}
-         {push_back $options os_solo_box}
-         {push_back $options os_bre}
-         {push_back $options os_crowdmeter}
-         {push_back $options os_rails}
-         {push_back $options os_beat_lines}
-         {push_back $options os_odbar}
-         {push_back $options os_multiring}
-         {push_back $options os_keyboard}
-         {push_back $options os_voxhw}
-         {push_back $options os_voxarrow}
-         {push_back $options os_voxnotes}
-         {push_back $options os_voxod}
-         {dx_state_setup dxState_TextureMenu FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (enter
-      {if $dx_customizer
-         {$this iterate Mesh $m {$m set_showing FALSE}}
-         {choose_character.mesh set_showing TRUE}
-         {unless $dx_moved_once
-            #ifdef RB3E
-            {set $list_move_down_number 0}
-            #else
-            {set $list_move_down_number 250}
-            #endif
-            {if_else
-               {&&
-                  {user_mgr get_user_from_slot 2} ;check if user on slot 2 exists
-                  {== {{user_mgr get_user_from_slot 2} get_track_type} kTrackVocals}
-               }
-               {$this iterate UIList $l
-                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} $list_move_down_number}} ;move vocal type menu straight down
-               }
-               {$this iterate UIList $l
-                  {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}} ;move 5l type menu up and to the right
-                  {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
-               }
-            }
-            {set $dx_moved_once TRUE}
-         }
-      }
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         (restart_customizer
-            {session end_game kRestart}
-         )
-         (realtime_customize
-            {$this show_state dxState_CustomizerWarn}
-         )
+      )
+      (select
+         (restart_customizer {session end_game kRestart})
+         (realtime_customize {dx_state dxState_CustomizerWarn})
          (leave_customizer
             {do
                {session disconnect}
@@ -99,16 +87,19 @@
                      {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
                   }
                }
-               {overshell update_all}
                {set $dx_customizer FALSE}
-               {ui goto_screen meta_loading_main_screen}
+               {set $dx_moved_once FALSE}
+               {leave_dx_settings}
+               {$this leave_options}
+               {overshell update_all}
+               {if {session_mgr is_local}
+                  {ui sync_screen meta_loading_main_screen 0}
+               }
             }
          )
-         (os_milo
-            {$this show_state dxState_MiloPanels})
-         (os_setcol
-            {$this show_state dxState_ColorSelector}
-         )
+         (os_milo {dx_state dxState_MiloPanels})
+         (os_setcol {dx_state dxState_ColorSelector})
+         (os_shading {dx_state dxState_ShadingMenuWarning})
          ;in each of the cases of these selected options, we must define parameters before we lead to the next state
          ;all images use the same state
          ;$dx_tracked_texture_loader - the name of the folder that contains the texture "dx/custom_textures/highways/*.png"
@@ -120,269 +111,213 @@
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/highways/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_spotlight
             {set $dx_tracked_texture_loader streaks}
             {set $dx_tracked_texture_category FALSE}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/streaks/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_emissive
             {set $dx_tracked_texture_loader overdrive}
             {set $dx_tracked_texture_category FALSE}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/overdrive/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
-         (os_shading
-            {$this show_state dxState_ShadingMenuWarning})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_gems
             {set $dx_tracked_texture_loader gems_default}
             {set $dx_tracked_texture_category gems}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/gems/gems_default/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_smashers
             {set $dx_tracked_texture_loader strikeline_guitar}
             {set $dx_tracked_texture_category strikeline}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/strikeline/strikeline_guitar/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_flares
             {set $dx_tracked_texture_loader flares_guitar_style}
             {set $dx_tracked_texture_category flares}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/flares/flares_guitar_style/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_particles
             {set $dx_tracked_texture_loader particles_spark}
             {set $dx_tracked_texture_category particles}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/particles/particles_spark/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_sus 
             {set $dx_tracked_texture_loader sustains}
             {set $dx_tracked_texture_category FALSE}
             {set $dx_choose_char_scale_x 0.4}
             {set $dx_choose_char_scale_y 0.15}
             {set $dx_texture_array (#include ../custom_textures/sustains/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_score_box
             {set $dx_tracked_texture_loader scoreboard_frame}
             {set $dx_tracked_texture_category score}
             {set $dx_choose_char_scale_x 0.4}
             {set $dx_choose_char_scale_y 0.15}
             {set $dx_texture_array (#include ../custom_textures/score/scoreboard_frame/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_beat_lines
             {set $dx_tracked_texture_loader beat_lines}
             {set $dx_tracked_texture_category rails}
             {set $dx_choose_char_scale_x 0.4}
             {set $dx_choose_char_scale_y 0.15}
             {set $dx_texture_array (#include ../custom_textures/rails/beat_lines/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_stars
             {set $dx_tracked_texture_loader score_star_frame}
             {set $dx_tracked_texture_category stars}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/stars/score_star_frame/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
-         (os_font
+            {dx_state dxState_DTATextureLoader}
+         )
+         (os_font_title
             {set $dx_tracked_texture_loader font}
             {set $dx_tracked_texture_category FALSE}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/font/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_solo_box
             {set $dx_tracked_texture_loader solo_box}
             {set $dx_tracked_texture_category FALSE}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/solo_box/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_bre
             {set $dx_tracked_texture_loader bre_shield}
             {set $dx_tracked_texture_category bre}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/bre/bre_shield/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_rails
             {set $dx_tracked_texture_loader rails_track}
             {set $dx_tracked_texture_category rails}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/rails/rails_track/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_lanes
             {set $dx_tracked_texture_loader gem_mash_green_emmisive}
             {set $dx_tracked_texture_category lanes}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/lanes/gem_mash_green_emmisive/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_odbar
             {set $dx_tracked_texture_loader od_bar_background}
             {set $dx_tracked_texture_category overdrive_bar}
             {set $dx_choose_char_scale_x 0.4}
             {set $dx_choose_char_scale_y 0.1}
             {set $dx_texture_array (#include ../custom_textures/overdrive_bar/od_bar_background/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_multiring
             {set $dx_tracked_texture_loader multiplier_ring_plate_fc}
             {set $dx_tracked_texture_category multiplier_ring}
             {set $dx_choose_char_scale_x 0.6}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/multiplier_ring/multiplier_ring_plate_fc/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_crowdmeter
             {set $dx_tracked_texture_loader crowd_meter_frame}
             {set $dx_tracked_texture_category crowd_meter}
             {set $dx_choose_char_scale_x 0.1}
             {set $dx_choose_char_scale_y 0.5}
             {set $dx_texture_array (#include ../custom_textures/crowd_meter/crowd_meter_frame/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_keyboard
             {set $dx_tracked_texture_loader keyboard_lanes}
             {set $dx_tracked_texture_category keyboard}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/keyboard/keyboard_lanes/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_voxhw
             {set $dx_tracked_texture_loader vocal_highway_bg}
             {set $dx_tracked_texture_category vocal_highway}
             {set $dx_choose_char_scale_x 0.3}
             {set $dx_choose_char_scale_y 0.3}
             {set $dx_texture_array (#include ../custom_textures/vocal_highway/vocal_highway_bg/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_voxarrow
             {set $dx_tracked_texture_loader vocal_arrow}
             {set $dx_tracked_texture_category vocal_arrows}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/vocal_arrows/vocal_arrow/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_voxnotes
             {set $dx_tracked_texture_loader vocal_note_tube}
             {set $dx_tracked_texture_category vocal_note}
             {set $dx_choose_char_scale_x 0.2}
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/vocal_note/vocal_note_tube/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
+            {dx_state dxState_DTATextureLoader}
+         )
          (os_voxod
             {set $dx_tracked_texture_loader vocal_overdrive_now_bar}
             {set $dx_tracked_texture_category vocal_overdrive}
             {set $dx_choose_char_scale_x 0.4}
             {set $dx_choose_char_scale_y 0.2}
             {set $dx_texture_array (#include ../custom_textures/vocal_overdrive/vocal_overdrive_now_bar/_list.dta)}
-            {$this show_state dxState_DTATextureLoader})
-      }
+            {dx_state dxState_DTATextureLoader}
+         )
+      )
+      (cancel
+         {if_else $dx_customizer
+            kDataUnhandled
+            {dx_state #ifdef HX_WII dxState_DeluxeSettings #else dxState_TrackThemeLoader #endif}
+         }
+         ;tell overshell to reset the choose character bitmap to the vanilla image when leaving this state
+         {set $dx_track_to_reset_choose_character_texture TRUE}
+      )
    )
-   (exit 
-      {dx_state_pos_tracker}
-      ;tell overshell to reset the choose character bitmap to the vanilla image when leaving this state
-      {set $dx_track_to_reset_choose_character_texture TRUE}
-   )
-   (on_cancel
-      {if_else $dx_customizer
-         kDataUnhandled
-         {$this show_state #ifdef HX_WII dxState_DeluxeSettings #else dxState_TrackThemeLoader #endif}
-      }
-   )
-)
-#define DX_TEXTURE_LOADER_HANDLER
-(
-   {do
-      ($options
-         {array 0})
-      ;we dont actually use this but might be a good idea later to pull from a pool somehow
-      {set $dx_available_textures
-         (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flares_guitar_style particles_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar sustains)
-      }
-      ;we track if this texture is in a subfolder or not via a category
-      {if_else $dx_tracked_texture_category
-         ;iterate through every found image inside of the ark using file_list
-         {foreach $entry
-            $dx_texture_array
-            ;we have to check if the file name is not empty in order to produce a proper list, as it does return one empty entry
-            ;then populate our list array with everything we found
-            {if {!= $entry ""} {push_back $options $entry}}
-         }
-         ;iterate through every found image using file_list but without a category
-         {foreach $entry
-            $dx_texture_array
-            ;then populate our list array with everything we found
-            {if {!= $entry ""} {push_back $options $entry}}
-         }
-      }
-      ;first reset our external texture list array to be repopulated
-      {set $dx_current_texture_list_array ()}
-      {resize $dx_current_texture_list_array 0}
-      {if_else $dx_tracked_texture_category
-         ;iterate through every found image outside of the ark using file_list, including the category path
-         ;file_list doesnt seem to work on xbox outside of the ark though which is cringe
-         ;i don't recall right now if there is a reason this is setting an array when above inside the ark, we iterate
-         ;todo - look more into this
-         {set $dx_current_texture_list_array
-            #ifdef HX_PS3
-            {file_list {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
-            #endif
-            #ifdef HX_WII
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_wii"}}
-            #endif
-            #ifdef HX_XBOX
-            {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
-            #endif
-         }
-         ;this block populates the array without the category part of the ath
-         {set $dx_current_texture_list_array
-            #ifdef HX_PS3
-            {file_list {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
-            #endif
-            #ifdef HX_WII
-            {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_wii"}}
-            #endif
-            #ifdef HX_XBOX
-            {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
-            #endif
-         }
-      }
-      ;first check to see if we found any textures
-      {if {> {size $dx_current_texture_list_array} 0}
-         ;if we did iterate through them
-         {foreach $entry $dx_current_texture_list_array
-            ;make sure it isnt a null entry
-            {if {!= $entry ""}
-               ;and add them to our list for display
-               {push_back $options $entry}
-            }
-         }
-      }
-      ;if no textures were found inside or outside of the ark, that's a bug and likely the paths used in the variables are incorrect
-      {if {== {size $options} 0} ;if nothing was found at all
-         {set $options (cant find textures 'this is a bug')} ;fill the list so it doesnt crash
-      }
-      {dx_state_setup dxState_DTATextureLoader FALSE}
-   }
-)
+}
 #define SCROLL_TEXTURE_SETTER
 (
    ;Action when a scroll action is performed on the list
    ;Here is where we update the texture preview displayed on screen
    ;store the current highlighted list name
-   {set $dx_list_scroll_texture {$component selected_sym}}
+   {set $dx_list_scroll_texture {$current_list selected_sym}}
    ;these are stored as symbols usually, so we need to strip them whenever we use the fed texture name
    {search_replace $dx_list_scroll_texture "'" "" $dx_list_scroll_texture}
    ;Overshell Texture we manipulate. with the image
-   {choose_character.tex set_bitmap
+   {preview.tex set_bitmap
       ;we track if this texture is in a subfolder or not via a category
       {if_else $dx_tracked_texture_category
          {if_else
@@ -442,183 +377,368 @@
       }
    } ;load selected texture into tex memory
 )
-(dxState_DTATextureLoader
-   (view
-      DX_TEXTURE_LOADER_HANDLER
-      {overshell_view_chooser}
-   )
-   (enter
-      {do
-         ;repopulate the list via checking for textures on entry, as we could be entering from any number of categories
-         {set $in_state FALSE}
-         DX_TEXTURE_LOADER_HANDLER
-         ;snap to the first entry in the list
-         {$current_list set_selected 0}
-         ;setup our preview texture object
-         {game_options.grp add_object choose_character.mesh}
-         ;store the default pos and scale before manipulating it, to restore it later
-         {store_choose_char_size_pos}
-         ;scale and position it based on parameters inherited from the previous OS state
-         {choose_character.mesh set_local_pos_index 2 175}
-         {choose_character.mesh set_local_scale_index 0 $dx_choose_char_scale_x} ;X
-         {choose_character.mesh set_local_scale_index 2 $dx_choose_char_scale_y} ;Y
-         {choose_character.mat set diffuse_tex choose_character.tex}
-         ;attempt to preview the first texture in the list
-         SCROLL_TEXTURE_SETTER
-      }
-      ;if we specifically enter for overdrive textures, we need to apply the user's stored color
-      {if {== $dx_tracked_texture_loader overdrive}
-         {choose_character.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}}
-         {choose_character.tex iterate_refs $ref {$ref set intensify TRUE}}
-      }
-   )
-   (SCROLL_MSG
-      SCROLL_TEXTURE_SETTER
-      ;{$this update}
-   )
-   (SELECT_MSG
-      ;you must remember to add the corresponding "needs_reset" variable when selecting the user's texture.
-      ;this will ensure the texture properly is applied the next track load or in customizer
-      {switch $dx_tracked_texture_loader
-         ;these first ones have sub folders so we don't $dx_refresh_beatmatch on them
-         (overdrive
-            {set $dx_tracked_emissive {$component selected_sym}})
-         (highways
-            {set $dx_tracked_highway {$component selected_sym}})
-         (streaks
-            {set $dx_tracked_spotlight {$component selected_sym}})
-         (scoreboard_frame
-            {set $dx_score_box_needs_reset TRUE}
-            {set $dx_score_box {$component selected_sym}})
-         (beat_lines
-            {set $dx_beat_lines_needs_reset TRUE}
-            {set $dx_beatlines {$component selected_sym}})
-         (score_star_frame
-            {set $dx_stars_needs_reset TRUE}
-            {set $dx_stars {$component selected_sym}})
-         (font
-            {set $dx_font_needs_reset TRUE}
-            {set $dx_font {$component selected_sym}})
-         (solo_box
-            {set $dx_solo_box_needs_reset TRUE}
-            {set $dx_solo_box {$component selected_sym}})
-         (bre_shield
-            {set $dx_bre_needs_reset TRUE}
-            {set $dx_bre {$component selected_sym}})
-         (strikeline_guitar
-            {set $dx_smasher_needs_reset TRUE}
-            {set $dx_smasher {$component selected_sym}})
-         (flares_guitar_style
-            {set $dx_flares_needs_reset TRUE}
-            {set $dx_flares {$component selected_sym}})
-         (particles_spark
-            {set $dx_particles_needs_reset TRUE}
-            {set $dx_particles {$component selected_sym}})
-         (rails_track
-            {set $dx_rails_needs_reset TRUE}
-            {set $dx_rails {$component selected_sym}})
-         (gem_mash_green_emmisive
-            {set $dx_lanes_needs_reset TRUE}
-            {set $dx_lanes {$component selected_sym}})
-         (od_bar_background
-            {set $dx_overdrive_bar_needs_reset TRUE}
-            {set $dx_overdrive_bar {$component selected_sym}})
-         (multiplier_ring_plate_fc
-            {set $dx_multiplier_ring_needs_reset TRUE}
-            {set $dx_multiplier_ring {$component selected_sym}})
-         (crowd_meter_frame
-            {set $dx_crowd_meter_needs_reset TRUE}
-            {set $dx_crowd_meter {$component selected_sym}})
-         (gems_default
-            {set $dx_gem_needs_reset TRUE}
-            {set $dx_gem {$component selected_sym}})
-         (keyboard_lanes
-            {set $dx_keyboard_needs_reset TRUE}
-            {set $dx_keyboard {$component selected_sym}}
-            {set $dx_local_keyboard {$component selected_sym}})
-         (vocal_highway_bg
-            {set $dx_vocal_highway_needs_reset TRUE}
-            {set $dx_vocal_highway {$component selected_sym}}
-            {set $dx_local_vocal_highway {$component selected_sym}})
-         (vocal_arrow
-            {set $dx_vocal_arrow_needs_reset TRUE}
-            {set $dx_vocal_arrow {$component selected_sym}}
-            {set $dx_local_vocal_arrow {$component selected_sym}})
-         (vocal_note_tube
-            {set $dx_vocal_notes_needs_reset TRUE}
-            {set $dx_vocal_notes {$component selected_sym}}
-            {set $dx_local_vocal_notes {$component selected_sym}})
-         (vocal_overdrive_now_bar
-            {set $dx_vocal_overdrive_needs_reset TRUE}
-            {set $dx_vocal_overdrive {$component selected_sym}}
-            {set $dx_local_vocal_overdrive {$component selected_sym}})
-         (sustains
-            {set $dx_sustain_needs_reset TRUE}
-            {set $dx_sustain {$component selected_sym}})
-      }
-      ;$dx_refresh_beatmatch when set to true, will pause beatmatcher before applying the texture.
-      ;otherwise, in-game customizer audio will desync and become hellish
-      ;any above selected options with sub-menus should be included here to not pause the beatmatcher by mistake
-      {if
-         {&&
-            {! {== $dx_tracked_texture_loader overdrive}}
-            {! {== $dx_tracked_texture_loader streaks}}
-            {! {== $dx_tracked_texture_loader highways}}
+{push_back $dx_settings_main
+   (dxState_DTATextureLoader
+      (view
+         os_blank
+         os_blank
+         os_blank
+         os_blank
+         os_blank
+         os_blank
+         os_blank
+      )
+      #define DO_TEXTURE_SEL
+      (
+         {switch $dx_tracked_texture_loader
+            ;you must remember to add the corresponding "needs_reset" variable when selecting the user's texture.
+            ;this will ensure the texture properly is applied the next track load or in customizer
+            ;these first ones have sub folders so we don't $dx_refresh_beatmatch on them
+            (overdrive
+               {set $dx_tracked_emissive {$current_list selected_sym}}
+               {dx_state dxState_InstrumentTextureChooser}
+            )
+            (highways
+               {set $dx_tracked_highway {$current_list selected_sym}}
+               {dx_state dxState_InstrumentTextureChooser}
+            )
+            (streaks
+               {set $dx_tracked_spotlight {$current_list selected_sym}}
+               {dx_state dxState_InstrumentTextureChooser}
+            )
+            (scoreboard_frame
+               {set $dx_score_box_needs_reset TRUE}
+               {set $dx_score_box {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (beat_lines
+               {set $dx_beat_lines_needs_reset TRUE}
+               {set $dx_beatlines {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (score_star_frame
+               {set $dx_stars_needs_reset TRUE}
+               {set $dx_stars {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (font
+               {set $dx_font_needs_reset TRUE}
+               {set $dx_font {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (solo_box
+               {set $dx_solo_box_needs_reset TRUE}
+               {set $dx_solo_box {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (bre_shield
+               {set $dx_bre_needs_reset TRUE}
+               {set $dx_bre {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (strikeline_guitar
+               {set $dx_smasher_needs_reset TRUE}
+               {set $dx_smasher {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (flares_guitar_style
+               {set $dx_flares_needs_reset TRUE}
+               {set $dx_flares {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (particles_spark
+               {set $dx_particles_needs_reset TRUE}
+               {set $dx_particles {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (rails_track
+               {set $dx_rails_needs_reset TRUE}
+               {set $dx_rails {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (gem_mash_green_emmisive
+               {set $dx_lanes_needs_reset TRUE}
+               {set $dx_lanes {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (od_bar_background
+               {set $dx_overdrive_bar_needs_reset TRUE}
+               {set $dx_overdrive_bar {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (multiplier_ring_plate_fc
+               {set $dx_multiplier_ring_needs_reset TRUE}
+               {set $dx_multiplier_ring {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (crowd_meter_frame
+               {set $dx_crowd_meter_needs_reset TRUE}
+               {set $dx_crowd_meter {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (gems_default
+               {set $dx_gem_needs_reset TRUE}
+               {set $dx_gem {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (keyboard_lanes
+               {set $dx_keyboard_needs_reset TRUE}
+               {set $dx_keyboard {$current_list selected_sym}}
+               {set $dx_local_keyboard {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (vocal_highway_bg
+               {set $dx_vocal_highway_needs_reset TRUE}
+               {set $dx_vocal_highway {$current_list selected_sym}}
+               {set $dx_local_vocal_highway {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (vocal_arrow
+               {set $dx_vocal_arrow_needs_reset TRUE}
+               {set $dx_vocal_arrow {$current_list selected_sym}}
+               {set $dx_local_vocal_arrow {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (vocal_note_tube
+               {set $dx_vocal_notes_needs_reset TRUE}
+               {set $dx_vocal_notes {$current_list selected_sym}}
+               {set $dx_local_vocal_notes {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (vocal_overdrive_now_bar
+               {set $dx_vocal_overdrive_needs_reset TRUE}
+               {set $dx_vocal_overdrive {$current_list selected_sym}}
+               {set $dx_local_vocal_overdrive {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
+            (sustains
+               {set $dx_sustain_needs_reset TRUE}
+               {set $dx_sustain {$current_list selected_sym}}
+               {dx_state dxState_TextureMenu}
+            )
          }
-         {set $dx_refresh_beatmatch TRUE}
-      }
-      ;these textures are set per instrument, so do we inter that submenu or go back to the regular texture selector menu
-      {if_else
-         {||
-            {== $dx_tracked_texture_loader overdrive}
-            {== $dx_tracked_texture_loader streaks}
-            {== $dx_tracked_texture_loader highways}
+      )
+      (message
+         {switch $dx_tracked_texture_loader
+            (overdrive {sprintf {localize current_texture} {if_else {== $dx_overdrive_guitar none} {localize rb3} {sprint $dx_overdrive_guitar}}})
+            (highways {sprintf {localize current_texture} {if_else {== $dx_highway_guitar none} {localize rb3}{sprint $dx_highway_guitar}}})
+            (streaks {sprintf {localize current_texture} {if_else {== $dx_streak_guitar none} {localize rb3}{sprint $dx_streak_guitar}}})
+            (scoreboard_frame {sprintf {localize current_texture} {if_else {== $dx_score_box none} {localize rb3}{sprint $dx_score_box}}})
+            (beat_lines {sprintf {localize current_texture} {if_else {== $dx_beatlines none} {localize rb3}{sprint $dx_beatlines}}})
+            (score_star_frame {sprintf {localize current_texture} {if_else {== $dx_stars none} {localize rb3}{sprint $dx_stars}}})
+            (font {sprintf {localize current_texture} {if_else {== $dx_font none} {localize rb3} {sprint $dx_font}}})
+            (solo_box {sprintf {localize current_texture} {if_else {== $dx_solo_box none} {localize rb3} {sprint $dx_solo_box}}})
+            (bre_shield {sprintf {localize current_texture} {if_else {== $dx_bre none} {localize rb3} {sprint $dx_bre}}})
+            (strikeline_guitar {sprintf {localize current_texture} {if_else {== $dx_smasher none} {localize rb3} {sprint $dx_smasher}}})
+            (flares_guitar_style {sprintf {localize current_texture} {if_else {== $dx_flares none} {localize rb3} {sprint $dx_flares}}})
+            (particles_spark {sprintf {localize current_texture} {if_else {== $dx_particles none} {localize rb3} {sprint $dx_particles}}})
+            (rails_track {sprintf {localize current_texture} {if_else {== $dx_rails none} {localize rb3} {sprint $dx_rails}}})
+            (gem_mash_green_emmisive {sprintf {localize current_texture} {if_else {== $dx_lanes none} {localize rb3} {sprint $dx_lanes}}})
+            (od_bar_background {sprintf {localize current_texture} {if_else {== $dx_overdrive_bar none} {localize rb3}{sprint $dx_overdrive_bar}}})
+            (multiplier_ring_plate_fc {sprintf {localize current_texture} {if_else {== $dx_multiplier_ring none} {localize rb3} {sprint $dx_multiplier_ring}}})
+            (crowd_meter_frame {sprintf {localize current_texture} {if_else {== $dx_crowd_meter none} {localize rb3} {sprint $dx_crowd_meter}}})
+            (gems_default {sprintf {localize current_texture} {if_else {== $dx_gem none} {localize rb3} {sprint $dx_gem}}})
+            (keyboard_lanes {sprintf {localize current_texture} {if_else {== $dx_keyboard none} {localize rb3} {sprint $dx_keyboard}}})
+            (vocal_highway_bg {sprintf {localize current_texture} {if_else {== $dx_vocal_highway none} {localize rb3} {sprint $dx_vocal_highway}}})
+            (vocal_arrow {sprintf {localize current_texture} {if_else {== $dx_vocal_arrow none} {localize rb3} {sprint $dx_vocal_arrow}}})
+            (vocal_note_tube {sprintf {localize current_texture} {if_else {== $dx_vocal_notes none} {localize rb3} {sprint $dx_vocal_notes}}})
+            (vocal_overdrive_now_bar {sprintf {localize current_texture} {if_else {== $dx_vocal_overdrive none} {localize rb3} {sprint $dx_vocal_overdrive}}})
+            (sustains {sprintf {localize current_texture} {if_else {== $dx_sustain none} {localize rb3} {sprint $dx_sustain}}})
          }
-         {$this show_state dxState_InstrumentTextureChooser}
-         {$this show_state dxState_TextureMenu}
-      }
+      )
+      (enter
+         {do
+            ($options {array 0})
+            ;we dont actually use this but might be a good idea later to pull from a pool somehow
+            {set $dx_available_textures
+               (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flares_guitar_style particles_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar sustains)
+            }
+            ;we track if this texture is in a subfolder or not via a category
+            {if_else $dx_tracked_texture_category
+               ;iterate through every found image inside of the ark using file_list
+               {foreach $entry
+                  $dx_texture_array
+                  ;we have to check if the file name is not empty in order to produce a proper list, as it does return one empty entry
+                  ;then populate our list array with everything we found
+                  {if {!= $entry ""} {push_back $options $entry}}
+               }
+               ;iterate through every found image using file_list but without a category
+               {foreach $entry
+                  $dx_texture_array
+                  ;then populate our list array with everything we found
+                  {if {!= $entry ""} {push_back $options $entry}}
+               }
+            }
+            ;first reset our external texture list array to be repopulated
+            {set $dx_current_texture_list_array ()}
+            {resize $dx_current_texture_list_array 0}
+            {if_else $dx_tracked_texture_category
+               ;iterate through every found image outside of the ark using file_list, including the category path
+               ;file_list doesnt seem to work on xbox outside of the ark though which is cringe
+               ;i don't recall right now if there is a reason this is setting an array when above inside the ark, we iterate
+               ;todo - look more into this
+               {set $dx_current_texture_list_array
+                  #ifdef HX_PS3
+                  {file_list {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
+                  #endif
+                  #ifdef HX_WII
+                  {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_wii"}}
+                  #endif
+                  #ifdef HX_XBOX
+                  {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_category "/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
+                  #endif
+               }
+               ;this block populates the array without the category part of the ath
+               {set $dx_current_texture_list_array
+                  #ifdef HX_PS3
+                  {file_list {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_ps3"}}
+                  #endif
+                  #ifdef HX_WII
+                  {file_list {sprint "dx/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_wii"}}
+                  #endif
+                  #ifdef HX_XBOX
+                  {file_list {sprint "GAME:/custom_textures/" $dx_tracked_texture_loader "/gen/*.png_xbox"}}
+                  #endif
+               }
+            }
+            ;first check to see if we found any textures
+            {if {> {size $dx_current_texture_list_array} 0}
+               ;if we did iterate through them
+               {foreach $entry $dx_current_texture_list_array
+                  ;make sure it isnt a null entry
+                  {if {!= $entry ""}
+                     ;and add them to our list for display
+                     {push_back $options $entry}
+                  }
+               }
+            }
+            ;if no textures were found inside or outside of the ark, that's a bug and likely the paths used in the variables are incorrect
+            {if {== {size $options} 0} ;if nothing was found at all
+               {set $options (cant find textures 'this is a bug')} ;fill the list so it doesnt crash
+            }
+            ;snap to the first entry in the list
+            {$current_list set_selected 0}
+            ;setup our preview texture object
+            {if {! {exists preview.grp}}
+               {new Group preview.grp}
+               {top_bg.grp add_object preview.grp}
+               {preview.grp set_trans_parent top_bg.grp}
+               {new Tex preview.tex}
+               {new Mesh preview.mesh}
+               {new Mat preview.mat}
+            }
+            {preview.mat set diffuse_tex preview.tex}
+            {preview.mat set blend kBlendSrcAlpha}
+            {preview.mesh set mat preview.mat}
+            {dx_generate_quad_mesh preview.mesh {* $dx_choose_char_scale_x 500} {* $dx_choose_char_scale_y 500}}
+            {preview.mesh set_trans_parent preview.grp}
+            {preview.grp add_object preview.mesh}
+            {preview.grp set_showing TRUE}
+            {preview.grp set_local_pos 7 0 {+ {if_else {$this in_game} 0 235} {* $dx_choose_char_scale_y {if_else {$this in_game} 1 200}}}}
+            {preview.mesh set_showing TRUE}
+            {$current_list set_data $options}
+            {chars.grp set_showing TRUE}
+            {chars.lst set_showing FALSE}
+            {chars.lbl set_showing FALSE}
+            {chars.sbd set_showing {! {$this in_game}}}
+            {chars.sbd set scrollbar_list $current_list}
+            ;stolen from dx_state func, manually set selected last picked sound
+            ;{if {find_exists $dx_state_tracker $this_state}
+            ;   {do
+            ;      ($data 0)
+            ;      {foreach $entry $dx_state_tracker
+            ;         {if {== {elem $entry 0} $this_state}
+            ;            {set $data {elem $entry 1}}
+            ;         }
+            ;      }
+            ;      {foreach $entry $options
+            ;         {if {has_substr $entry $data}
+            ;            {$current_list set_selected $entry}
+            ;         }
+            ;      }
+            ;   }
+            ;  }
+            {switch $dx_tracked_texture_loader
+               (overdrive {$current_list set_selected $dx_overdrive_guitar})
+               (highways {$current_list set_selected $dx_highway_guitar})
+               (streaks {$current_list set_selected $dx_streak_guitar})
+               (scoreboard_frame {$current_list set_selected $dx_score_box})
+               (beat_lines {$current_list set_selected $dx_beatlines})
+               (score_star_frame {$current_list set_selected $dx_stars})
+               (font {$current_list set_selected $dx_font})
+               (solo_box {$current_list set_selected $dx_solo_box})
+               (bre_shield {$current_list set_selected $dx_bre})
+               (strikeline_guitar {$current_list set_selected $dx_smasher})
+               (flares_guitar_style {$current_list set_selected $dx_flares})
+               (particles_spark {$current_list set_selected $dx_particles})
+               (rails_track {$current_list set_selected $dx_rails})
+               (gem_mash_green_emmisive {$current_list set_selected $dx_lanes})
+               (od_bar_background {$current_list set_selected $dx_overdrive_bar})
+               (multiplier_ring_plate_fc {$current_list set_selected $dx_multiplier_ring})
+               (crowd_meter_frame {$current_list set_selected $dx_crowd_meter})
+               (gems_default {$current_list set_selected $dx_gem})
+               (keyboard_lanes {$current_list set_selected $dx_keyboard})
+               (vocal_highway_bg {$current_list set_selected $dx_vocal_highway})
+               (vocal_arrow {$current_list set_selected $dx_vocal_arrow})
+               (vocal_note_tube {$current_list set_selected $dx_vocal_notes})
+               (vocal_overdrive_now_bar {$current_list set_selected $dx_vocal_overdrive})
+               (sustains {$current_list set_selected $dx_sustain})
+            }
+            {$current_list refresh}
+            SCROLL_TEXTURE_SETTER
+         }
+         ;if we specifically enter for overdrive textures, we need to apply the user's stored color
+         {if {== $dx_tracked_texture_loader overdrive}
+            {preview.tex iterate_refs $ref {$ref set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}}
+            {preview.tex iterate_refs $ref {$ref set intensify TRUE}}
+         }
+      )
+      (scroll SCROLL_TEXTURE_SETTER)
+      (select
+         (_fallthrough
+            {if
+               {&&
+                  {!= $dx_tracked_texture_loader overdrive}
+                  {!= $dx_tracked_texture_loader highways}
+                  {!= $dx_tracked_texture_loader streaks}
+               }
+               {set $dx_refresh_beatmatch TRUE}
+            }
+            DO_TEXTURE_SEL
+         )
+      )
+      (exit 
+         {if {exists preview.grp}
+            {delete preview.grp}
+            {delete preview.mesh}
+            {delete preview.tex}
+            {delete preview.mat}
+         }
+      )
+      (cancel {dx_state dxState_TextureMenu})
    )
-   (exit 
-      {dx_state_pos_tracker}
-      ;when we are done in this screen we must restore the mesh to it's original state
-      {restore_choose_char_size_pos}
-      {game_options.grp remove_object choose_character.mesh}
-   )
-   (on_cancel
-      {$this show_state dxState_TextureMenu}
-   )
-)
+}
 
-;glorious variable mess
-(dxState_InstrumentTextureChooser
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options all_instruments}
+{push_back $dx_settings_main
+   (dxState_InstrumentTextureChooser
+      (view
+         all_instruments
          #ifndef HX_WII
-         {push_back $options guitar}
-         {push_back $options bass}
-         {push_back $options drums}
-         {push_back $options keys}
-         {if
+         guitar
+         bass
+         drums
+         keys
+         {if_else
             {||
                {== $dx_tracked_texture_loader streaks}
                {== $dx_tracked_texture_loader overdrive}
             }
-            {push_back $options pro_keys}
+            pro_keys
+            0
          }
          #endif
-         ;{push_back $options pro_guitar}
-         ;{push_back $options pro_bass}
-         ;state hold fixes some edge cases by explicitly storing the correct previous state on a new state setup
-         {set $state_hold $previous_state}
-         {dx_state_setup dxState_InstrumentTextureChooser FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
+      )
+      (select
          ;all_instruments is just a copy paste of the singular ones all lumped together
          ;essentially we check which texture category we are currently changing via $dx_tracked_texture_loader
          ;we turn on the needs reset vars for them so they update
@@ -627,26 +747,29 @@
          (all_instruments
             {switch $dx_tracked_texture_loader
                 (overdrive
-                    {set $dx_overdrive_guitar_needs_reset TRUE} {set $dx_overdrive_guitar $dx_tracked_emissive} {set $dx_local_overdrive_guitar $dx_tracked_emissive}
-                    {set $dx_overdrive_bass_needs_reset TRUE} {set $dx_overdrive_bass $dx_tracked_emissive} {set $dx_local_overdrive_bass $dx_tracked_emissive}
-                    {set $dx_overdrive_drum_needs_reset TRUE} {set $dx_overdrive_drum $dx_tracked_emissive} {set $dx_local_overdrive_drum $dx_tracked_emissive}
-                    {set $dx_overdrive_keys_needs_reset TRUE} {set $dx_overdrive_keys $dx_tracked_emissive} {set $dx_local_overdrive_keys $dx_tracked_emissive}
-                    {set $dx_overdrive_prokeys_needs_reset TRUE} {set $dx_overdrive_prokeys $dx_tracked_emissive} {set $dx_local_overdrive_prokeys $dx_tracked_emissive}
+                    {foreach $elem (guitar bass drum keys prokeys)
+                        {set_var {sprint "dx_overdrive_" $elem "_needs_reset"} TRUE}
+                        {set_var {sprint "dx_overdrive_" $elem} $dx_tracked_emissive}
+                        {set_var {sprint "dx_local_overdrive_" $elem} $dx_tracked_emissive}
+                    }
                 )
                 (highways
-                    {set $dx_highway_guitar_needs_reset TRUE} {set $dx_highway_guitar $dx_tracked_highway} {set $dx_local_highway_guitar $dx_tracked_highway}
-                    {set $dx_highway_bass_needs_reset TRUE} {set $dx_highway_bass $dx_tracked_highway} {set $dx_local_highway_bass $dx_tracked_highway}
-                    {set $dx_highway_drum_needs_reset TRUE} {set $dx_highway_drum $dx_tracked_highway} {set $dx_local_highway_drum $dx_tracked_highway}
-                    {set $dx_highway_keys_needs_reset TRUE} {set $dx_highway_keys $dx_tracked_highway} {set $dx_local_highway_keys $dx_tracked_highway}
+                    {foreach $elem (guitar bass drum keys)
+                        {set_var {sprint "dx_highway_" $elem "_needs_reset"} TRUE}
+                        {set_var {sprint "dx_highway_" $elem} $dx_tracked_highway}
+                        {set_var {sprint "dx_local_highway_" $elem} $dx_tracked_highway}
+                    }
                 )
                 (streaks
-                    {set $dx_streak_guitar_needs_reset TRUE} {set $dx_streak_guitar $dx_tracked_spotlight} {set $dx_local_streak_guitar $dx_tracked_spotlight}
-                    {set $dx_streak_bass_needs_reset TRUE} {set $dx_streak_bass $dx_tracked_spotlight} {set $dx_local_streak_bass $dx_tracked_spotlight}
-                    {set $dx_streak_drum_needs_reset TRUE} {set $dx_streak_drum $dx_tracked_spotlight} {set $dx_local_streak_drum $dx_tracked_spotlight}
-                    {set $dx_streak_prokeys_needs_reset TRUE} {set $dx_streak_prokeys $dx_tracked_spotlight} {set $dx_local_streak_prokeys $dx_tracked_spotlight}
-                    {set $dx_streak_keys_needs_reset TRUE} {set $dx_streak_keys $dx_tracked_spotlight} {set $dx_local_streak_keys $dx_tracked_spotlight}
+                    {foreach $elem (guitar bass drum keys prokeys)
+                        {set_var {sprint "dx_streak_" $elem "_needs_reset"} TRUE}
+                        {set_var {sprint "dx_streak_" $elem} $dx_tracked_spotlight}
+                        {set_var {sprint "dx_local_streak_" $elem} $dx_tracked_spotlight}
+                    }
                 )
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
          (guitar
             {switch $dx_tracked_texture_loader
@@ -654,6 +777,8 @@
                 (highways {set $dx_highway_guitar_needs_reset TRUE} {set $dx_highway_guitar $dx_tracked_highway} {set $dx_local_highway_guitar $dx_tracked_highway})
                 (streaks {set $dx_streak_guitar_needs_reset TRUE} {set $dx_streak_guitar $dx_tracked_spotlight} {set $dx_local_streak_guitar $dx_tracked_spotlight})
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
          (bass
             {switch $dx_tracked_texture_loader
@@ -661,6 +786,8 @@
                 (highways {set $dx_highway_bass_needs_reset TRUE} {set $dx_highway_bass $dx_tracked_highway} {set $dx_local_highway_bass $dx_tracked_highway})
                 (streaks {set $dx_streak_bass_needs_reset TRUE} {set $dx_streak_bass $dx_tracked_spotlight} {set $dx_local_streak_bass $dx_tracked_spotlight})
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
          (drums
             {switch $dx_tracked_texture_loader
@@ -668,6 +795,8 @@
                 (highways {set $dx_highway_drum_needs_reset TRUE} {set $dx_highway_drum $dx_tracked_highway} {set $dx_local_highway_drum $dx_tracked_highway})
                 (streaks {set $dx_streak_drum_needs_reset TRUE} {set $dx_streak_drum $dx_tracked_spotlight} {set $dx_local_streak_drum $dx_tracked_spotlight})
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
          (keys
             {switch $dx_tracked_texture_loader
@@ -675,6 +804,8 @@
                 (highways {set $dx_highway_keys_needs_reset TRUE} {set $dx_highway_keys $dx_tracked_highway} {set $dx_local_highway_keys $dx_tracked_highway})
                 (streaks {set $dx_streak_keys_needs_reset TRUE} {set $dx_streak_keys $dx_tracked_spotlight} {set $dx_local_streak_keys $dx_tracked_spotlight})
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
          (pro_keys
             {switch $dx_tracked_texture_loader
@@ -682,196 +813,68 @@
                 (highways {set $dx_highway_prokeys_needs_reset TRUE} {set $dx_highway_prokeys $dx_tracked_highway} {set $dx_local_highway_prokeys $dx_tracked_highway})
                 (streaks {set $dx_streak_prokeys_needs_reset TRUE} {set $dx_streak_prokeys $dx_tracked_spotlight} {set $dx_local_streak_prokeys $dx_tracked_spotlight})
             }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
          )
-      }
-      ;pause the beatmatcher and set the texture if in in-game customizer
-      {set $dx_refresh_beatmatch TRUE}
-      {$this show_state dxState_TextureMenu}
+      )
+      (cancel
+         {dx_state dxState_TextureMenu}
+      )
    )
-   (exit 
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_TextureMenu}
-   )
-)
+}
 
-(dxState_SustainSelection
-   (view
-      {do
-         ($options
-            {array 0})
-         {push_back $options os_nosus}
-         {push_back $options os_rb2sus}         
-         {push_back $options os_rb3sus}         
-         {push_back $options os_rb4sus}         
-         {dx_state_setup dxState_SustainSelection FALSE}
-      }
-      {overshell_view_chooser}
-   )
-   (SELECT_MSG
-      {switch {$component selected_sym}
+{push_back $dx_settings_main
+   (dxState_SustainSelection
+      (view
+         os_nosus
+         os_rb2sus
+         os_rb3sus
+         os_rb4sus
+      )
+      (select
          (os_rb3sus
             {set $dx_sustain_needs_reset TRUE}
-            {set $dx_sustain rb3})
+            {set $dx_sustain rb3}
+         )
          (os_rb2sus
             {set $dx_sustain_needs_reset TRUE}
-            {set $dx_sustain rb2})
+            {set $dx_sustain rb2}
+         )
          (os_rb4sus
             {set $dx_sustain_needs_reset TRUE}
-            {set $dx_sustain rb4})
+            {set $dx_sustain rb4}
+         )
          (os_nosus
             {set $dx_sustain_needs_reset FALSE}
             {set $dx_sustain empty}
          )
-      }
-      ;pause the beatmatcher and set the texture if in in-game customizer
-      {set $dx_refresh_beatmatch TRUE}
+      )
+      (cancel {dx_state dxState_TextureMenu})
    )
-   (exit 
-      {dx_state_pos_tracker}
-   )   
-   (on_cancel
-      {$this show_state dxState_TextureMenu}
-   )
-)
+}
 
-#define DX_SHADING_MENU_DATA
-(
-   {do 
-      ($options {array 0})
-      {push_back $options {if_else $dx_highway_bass_shading
-         os_dx_hw_bass_shade_on
-         os_dx_hw_bass_shade_off
-      }}
-      {push_back $options {if_else $dx_highway_guitar_shading
-         os_dx_hw_guitar_shade_on
-         os_dx_hw_guitar_shade_off
-      }}
-      {push_back $options {if_else $dx_highway_drum_shading
-         os_dx_hw_drum_shade_on
-         os_dx_hw_drum_shade_off
-      }}
-      {push_back $options {if_else $dx_highway_keys_shading
-         os_dx_hw_keys_shade_on
-         os_dx_hw_keys_shade_off
-      }}
-      {push_back $options {if_else $dx_overdrive_bass_shading
-         os_dx_od_bass_shade_on
-         os_dx_od_bass_shade_off
-      }}
-      {push_back $options {if_else $dx_overdrive_guitar_shading
-         os_dx_od_guitar_shade_on
-         os_dx_od_guitar_shade_off
-      }}
-      {push_back $options {if_else $dx_overdrive_drum_shading
-         os_dx_od_drum_shade_on
-         os_dx_od_drum_shade_off
-      }}
-      {push_back $options {if_else $dx_overdrive_keys_shading
-         os_dx_od_keys_shade_on
-         os_dx_od_keys_shade_off
-      }}
-      {dx_state_setup dxState_ShadingMenu FALSE}
-   }
-)
-
-(dxState_ShadingMenu
-   (view
-      DX_SHADING_MENU_DATA
-      {overshell_view_chooser}
+{push_back $dx_settings_main
+   (dxState_ShadingMenu
+      (view
+         {if_else $dx_highway_bass_shading os_dx_hw_bass_shade_on os_dx_hw_bass_shade_off}
+         {if_else $dx_highway_guitar_shading os_dx_hw_guitar_shade_on os_dx_hw_guitar_shade_off}
+         {if_else $dx_highway_drum_shading os_dx_hw_drum_shade_on os_dx_hw_drum_shade_off}
+         {if_else $dx_highway_keys_shading os_dx_hw_keys_shade_on os_dx_hw_keys_shade_off}
+         {if_else $dx_overdrive_bass_shading os_dx_od_bass_shade_on os_dx_od_bass_shade_off}
+         {if_else $dx_overdrive_guitar_shading os_dx_od_guitar_shade_on os_dx_od_guitar_shade_off}
+         {if_else $dx_overdrive_drum_shading os_dx_od_drum_shade_on os_dx_od_drum_shade_off}
+         {if_else $dx_overdrive_keys_shading os_dx_od_keys_shade_on os_dx_od_keys_shade_off}
+      )
+      (select
+         (os_dx_hw_bass_shade {set $dx_highway_bass_shading {! $dx_highway_bass_shading}})
+         (os_dx_od_bass_shade {set $dx_overdrive_bass_shading {! $dx_overdrive_bass_shading}})
+         (os_dx_hw_guitar_shade {set $dx_highway_guitar_shading {! $dx_highway_guitar_shading}})
+         (os_dx_od_guitar_shade {set $dx_overdrive_guitar_shading {! $dx_overdrive_guitar_shading}})
+         (os_dx_hw_keys_shade {set $dx_highway_keys_shading {! $dx_highway_keys_shading}})
+         (os_dx_od_keys_shade {set $dx_overdrive_keys_shading {! $dx_overdrive_keys_shading}})
+         (os_dx_hw_drum_shade {set $dx_highway_drum_shading {! $dx_highway_drum_shading}})
+         (os_dx_od_drum_shade {set $dx_overdrive_drum_shading {! $dx_overdrive_drum_shading}})
+      )
+      (cancel {dx_state dxState_TextureMenu})
    )
-   (SELECT_MSG
-      {switch {$component selected_sym}
-         ((os_dx_hw_bass_shade_on os_dx_hw_bass_shade_off)
-            {set $dx_highway_bass_shading {! $dx_highway_bass_shading}}
-            {set $dx_tracked_changed {if_else $dx_highway_bass_shading
-               os_dx_hw_bass_shade_on
-               os_dx_hw_bass_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_od_bass_shade_on os_dx_od_bass_shade_off)
-            {set $dx_overdrive_bass_shading {! $dx_overdrive_bass_shading}}
-            {set $dx_tracked_changed {if_else $dx_overdrive_bass_shading
-               os_dx_od_bass_shade_on
-               os_dx_od_bass_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_hw_guitar_shade_on os_dx_hw_guitar_shade_off)
-            {set $dx_highway_guitar_shading {! $dx_highway_guitar_shading}}
-            {set $dx_tracked_changed {if_else $dx_highway_guitar_shading
-               os_dx_hw_guitar_shade_on
-               os_dx_hw_guitar_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_od_guitar_shade_on os_dx_od_guitar_shade_off)
-            {set $dx_overdrive_guitar_shading {! $dx_overdrive_guitar_shading}}
-            {set $dx_tracked_changed {if_else $dx_overdrive_guitar_shading
-               os_dx_od_guitar_shade_on
-               os_dx_od_guitar_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_hw_keys_shade_on os_dx_hw_keys_shade_off)
-            {set $dx_highway_keys_shading {! $dx_highway_keys_shading}}
-            {set $dx_tracked_changed {if_else $dx_highway_keys_shading
-               os_dx_hw_keys_shade_on
-               os_dx_hw_keys_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_od_keys_shade_on os_dx_od_keys_shade_off)
-            {set $dx_overdrive_keys_shading {! $dx_overdrive_keys_shading}}
-            {set $dx_tracked_changed {if_else $dx_overdrive_keys_shading
-               os_dx_od_keys_shade_on
-               os_dx_od_keys_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_hw_drum_shade_on os_dx_hw_drum_shade_off)
-            {set $dx_highway_drum_shading {! $dx_highway_drum_shading}}
-            {set $dx_tracked_changed {if_else $dx_highway_drum_shading
-               os_dx_hw_drum_shade_on
-               os_dx_hw_drum_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-         ((os_dx_od_drum_shade_on os_dx_od_drum_shade_off)
-            {set $dx_overdrive_drum_shading {! $dx_overdrive_drum_shading}}
-            {set $dx_tracked_changed {if_else $dx_overdrive_drum_shading
-               os_dx_od_drum_shade_on
-               os_dx_od_drum_shade_off
-            }}
-            {dx_state_pos_tracker}
-            DX_SHADING_MENU_DATA
-            {set $previous_state dxState_ShadingMenu}
-         )
-      }
-      {set $in_state FALSE}
-      DX_SHADING_MENU_DATA
-      {set $previous_state dxState_ShadingMenu}
-   )
-   (exit
-      {dx_state_pos_tracker}
-   )
-   (on_cancel
-      {$this show_state dxState_TextureMenu}
-   )
-)
+}
