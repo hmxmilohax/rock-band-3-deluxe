@@ -50,6 +50,7 @@ match sys.platform:
         ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies\\python\\gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
+        ninja.rule("generate_theme_data", "python dependencies\\python\\generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
             case "ps3":
                 ninja.variable("superfreq", "dependencies\\windows\\superfreq.exe")
@@ -67,6 +68,7 @@ match sys.platform:
         ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python3 dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
+        ninja.rule("generate_theme_data", "python3 dependencies/python/generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
             case "ps3":
                 ninja.variable("superfreq", "dependencies/macos/superfreq")
@@ -84,6 +86,7 @@ match sys.platform:
         ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
+        ninja.rule("generate_theme_data", "python dependencies/python/generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
             case "ps3":
                 ninja.variable("superfreq", "dependencies/linux/superfreq")
@@ -280,6 +283,15 @@ def generate_file_list(input_path: Path):
     ninja.build(str(dtb), "dtab_serialize", str(dta))
     ninja.build(str(enc), "dtab_encrypt", str(dtb))
 
+def generate_theme_data(input_path: Path):
+    base = input_path.parts[1:]
+    dta = Path("obj", args.platform, "raw").joinpath(*base).joinpath("_themedata.dta")
+    dtb = Path("obj", args.platform, "raw").joinpath(*base).joinpath("gen", "_themedata.dtb")
+    enc = Path("obj", args.platform, "ark").joinpath(*base).joinpath("gen", "_themedata.dtb")
+    ninja.build(str(dta), "generate_theme_data", variables={"dir": str(input_path)}, implicit="_always")
+    ninja.build(str(dtb), "dtab_serialize", str(dta))
+    ninja.build(str(enc), "dtab_encrypt", str(dtb))
+
 generate_file_list(Path("_ark", "dx", "custom_textures", "highways"))
 generate_file_list(Path("_ark", "dx", "custom_textures", "streaks"))
 generate_file_list(Path("_ark", "dx", "custom_textures", "overdrive"))
@@ -304,6 +316,9 @@ generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_highway", "vocal
 generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"))
 generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tube"))
 generate_file_list(Path("_ark", "dx", "custom_textures", "vocal_overdrive", "vocal_overdrive_now_bar"))
+
+generate_file_list(Path("_ark", "dx", "models", "gems"))
+generate_theme_data(Path("_ark", "dx", "models", "gems"))
 
 # build ark
 match args.platform:

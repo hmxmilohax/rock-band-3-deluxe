@@ -1,0 +1,146 @@
+{func dx_get_theme_data
+   ($category $theme)
+   {find $syscfg themedata $category $theme}
+}
+
+{func dx_get_active_widget
+   ($theme $instrument $type $idx)
+   #ifndef HX_WII
+   {if_else {! {find_exists {dx_get_theme_data gems $theme} $instrument}}
+      {elem
+         {dx_get_widget_array $theme $instrument $type}
+         $idx
+      }
+      {symbol
+         {sprint
+            "custom_"
+            {elem
+               {switch $type
+                  (strum (NORMALGEM_SET))
+                  (hopo (HOPOGEM_SET))
+               }
+               $idx
+            }
+         }
+      }
+   }
+   #else
+   {elem
+      {switch $type
+         (strum (NORMALGEM_SET))
+         (hopo (HOPOGEM_SET))
+      }
+      $idx
+   }
+   #endif
+}
+
+{func dx_get_widget_array
+   ($theme $instrument $type)
+   {if_else {! {find_exists {dx_get_theme_data gems $theme} $instrument}}
+      {switch $type
+         (strum (NORMALGEM_SET))
+         (hopo (HOPOGEM_SET))
+      }
+      {elem
+         {find {dx_get_theme_data gems $theme} $instrument $type}
+         1
+      }
+   }
+}
+
+{func dx_is_subdir_loaded
+   ($parentdir $subdirpath)
+   {set $idx -1}
+   {find_elem {$parentdir get_array subdirs} $subdirpath $idx}
+   {!= $idx -1}
+}
+
+{func dx_remove_subdir_path
+   ($dir $path)
+   {dx_log_writer insane {sprint "Removing subdir " $path}}
+   {set $idx {find_elem {$dir get_array subdirs} $path}}
+   {set $subdir {$dir get (subdirs $idx)}}
+   {$dir remove (subdirs $idx)}
+   ;{delete $subdir}
+}
+
+{func dx_load_custom_widget
+   ($trackdir $themewid $real_widget)
+   {set_this $trackdir}
+   {if {exists $real_widget}
+      {dx_log_writer insane
+         {sprint $themewid " -> " $real_widget}
+      }
+      {$real_widget copy $themewid kCopyShallow}
+      ;{$real_widget clear (meshes)}
+      ;{foreach $mesh {$themewid get_array meshes}
+      ;{gem_pieces.grp add_object $mesh}
+      ;{$real_widget insert (meshes {$real_widget size (meshes)}) $mesh}
+      ;}
+      {$real_widget set widget_type kImmediateWidget}
+   }
+}
+
+{func dx_install_gem_theme
+   ($trackdir)
+   {set_this $trackdir}
+   {$trackdir set gem_theme $dx_current_gem_model_theme}
+   {dx_log_writer insane
+      {sprint "Installing track theme " {$trackdir get gem_theme}}
+   }
+   #ifndef HX_WII
+   ; ignore the apparent redundancy here i might add per-track themes at some point
+   {if {!= {$trackdir get gem_theme} default}
+      {unless {$trackdir has (custom_gems_in_group)}
+         {foreach $wid (NORMALGEM_SET HOPOGEM_SET)
+            {set $wid {symbol {sprint "custom_" $wid}}}
+            {guitar_gems.grp add_object $wid}
+         }
+         {$trackdir set custom_gems_in_group TRUE}
+      }
+      {set $iter 0}
+      {foreach $themewid {dx_get_widget_array $dx_current_gem_model_theme guitar strum}
+         {set $real_widget {symbol {sprint "custom_" {elem (NORMALGEM_SET) $iter}}}}
+         {dx_load_custom_widget $trackdir $themewid $real_widget}
+         {++ $iter}
+      }
+      {set $iter 0}
+      {foreach $themewid {dx_get_widget_array $dx_current_gem_model_theme guitar hopo}
+         {set $real_widget {symbol {sprint "custom_" {elem (HOPOGEM_SET) $iter}}}}
+         {dx_load_custom_widget $trackdir $themewid $real_widget}
+         {++ $iter}
+      }
+   }
+   #endif
+}
+
+{func dx_update_model_themes
+   ($trackpanel)
+   {set $gem_model_path
+      {sprint "dx/models/gems/" $dx_current_gem_model_theme "/theme.milo"}
+   }
+   {dx_log_writer insane
+      {sprint "Trying to load gem theme milo: " $gem_model_path}
+   }
+   {unless {dx_is_subdir_loaded {$trackpanel loaded_dir } $gem_model_path}
+      {{$trackpanel loaded_dir} insert (subdirs 0) $gem_model_path}
+   }
+   {$trackpanel iterate
+      GemTrackDir
+      $dir
+      {if
+         {||
+            {! {$dir has (loaded_model_theme)}}
+            {!= {$dir get loaded_model_theme} $gem_model_path}
+         }
+         {if {$dir has (loaded_model_theme)}
+            ;{dx_uninstall_gem_theme $dir}
+            {dx_remove_subdir_path $dir $gem_model_path}
+         }
+         {$dir insert (subdirs 0) $gem_model_path}
+         {$dir set loaded_model_theme $gem_model_path}
+         {dx_install_gem_theme $dir}
+      }
+   }
+}
