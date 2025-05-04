@@ -144,6 +144,9 @@ if args.platform != "wii":
 
 
 def ark_file_filter(file: Path):
+    # macos fucking sucks actually
+    if ".DS_Store" in file.parts:
+        return False
     if file.is_dir():
         return False
     if file.suffix.endswith("_ps3") and args.platform != "ps3":
