@@ -65,14 +65,11 @@
    {find_elem $subdir_array $path $idx}
    ;{dx_log_writer insane {sprint $dir "'s subdirs for some reason: " $subdir_array}}
    ;{dx_log_writer insane {sprint {random_float} " Removing subdir " $path " from " $dir ", idx = " $idx}}
-   {if_else {!= $idx -1}
-      {do
+   {if {!= $idx -1}
+      {do ; do block here because this was an if_else at one point
          {set $subdir {$dir get (subdirs $idx)}}
-         ;{dx_log_writer insane {sprint "the subdir we're about to remove is " $subdir ", is that right?"}}
+         {dx_log_writer insane {sprint "the subdir we're about to remove is " $subdir ", is that right?"}}
          {$dir remove (subdirs $idx)}
-      }
-      {do
-         ;{dx_log_writer insane {sprint {random_float} " could not delete " $path ", not found"}}
       }
    }
    ;{delete $subdir}
@@ -127,12 +124,14 @@
    {set_this $trackdir}
    ;{dx_log_writer insane {sprint "Uninstalling track theme " {$trackdir get gem_theme}}}
    {$trackdir set gem_theme default}
+   #ifndef HX_WII
    {foreach $themewid (NORMALGEM_SET HOPOGEM_SET)
       {set $real_widget {symbol {sprint "custom_" $themewid}}}
       {dx_log_writer insane {sprint "Reverting " $real_widget}}
       {$real_widget set_meshes}
       {$real_widget set widget_type kImmediateWidget}
    }
+   #endif
 }
 
 {func dx_update_model_themes
@@ -141,8 +140,8 @@
    {set $gem_model_path
       {sprint "dx/models/gems/" $dx_current_gem_model_theme "/theme.milo"}
    }
-   ;{dx_log_writer insane {sprint "Trying to load gem theme milo: " $gem_model_path}}
-   {unless {dx_is_subdir_loaded {$trackpanel loaded_dir } $gem_model_path}
+   {unless {&& {!= $dx_current_gem_model_theme default} {dx_is_subdir_loaded {$trackpanel loaded_dir} $gem_model_path}}
+      {dx_log_writer insane {sprint "Trying to load gem theme milo: " $gem_model_path}}
       {{$trackpanel loaded_dir} insert (subdirs 0) $gem_model_path}
       {push_back $dx_loaded_gem_themes $gem_model_path}
    }
