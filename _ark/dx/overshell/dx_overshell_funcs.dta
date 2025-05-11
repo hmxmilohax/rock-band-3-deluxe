@@ -37,6 +37,82 @@
 {func
    dx_check_for_dupe ; function to allow 5L/Pro instruments together but still block same parts from being selected
    ($slot) ; current slot number of the user
+   ;{dx_log_writer info {sprint "func: dx_check_for_dupe" " - Args: " $slot}}
+   ;{dx_log_writer info
+   ;   {sprintf "Executed dx_check_for_dupe - time: %.4fms"
+         {time
+            {do
+               {set $selected_part ; grabs the currently selected part of the user
+                  {switch $slot
+                     (0 $default_slot0)
+                     (1 $default_slot1)
+                     (2 $default_slot2)
+                     (3 $default_slot3)
+                  }
+               }
+               {set $dupe_allowed TRUE} ; allows dupe TRUE by default, any check below will set it to FALSE
+               {switch $selected_part
+                  ((overshell_drums overshell_drums_pro)
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackDrum} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_guitar
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_guitar
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealGuitar} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_bass
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_bass
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealBass} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_keys
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+                  (overshell_real_keys
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {== {$user get_track_type} kTrackRealKeys} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
+               }
+               $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
+            }
+         }
+   ;   }
+   ;}
+   $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
+}
+#ifdef DISABLED ;i tried refactoring and it broke vocal duping
+{func
+   dx_check_for_dupe ; function to allow 5L/Pro instruments together but still block same parts from being selected
+   ($slot) ; current slot number of the user
    {do
       ($selected_part ; grabs the currently selected part of the user
          {switch $slot
@@ -64,11 +140,21 @@
                }
                {set $dupe_allowed FALSE} ; block dupe if another player already has this part
             }
+            {if
+               {==
+                  {$user get_track_type}
+                  {switch $selected_part
+                     ((overshell_vocal_solo overshell_vocal_harmony) kTrackVocals)
+                  }
+               }
+               {set $dupe_allowed TRUE} ; block dupe if another player already has this part
+            }
          }
       }
       $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
    }
 }
+#endif
 {func
    dx_state_pos_tracker
    ($state $pos)
@@ -134,6 +220,7 @@
                {== $this_state dxState_CalibrationWarn}
                {== $this_state dxState_PrecisionWarn}
                {== $this_state dxState_CalibrationInGame}
+               {== $this_state dxState_BotSettings}
                {== $this_state dxState_SaveWarnError}
                {== $this_state dxState_SaveWarnErrorAV}
                {&& {== $this_state dxState_TextureMenu} $dx_customizer {$this in_game}}
@@ -154,7 +241,7 @@
       ;get list items from state array
       {foreach $entry {find $dx_settings_main $this_state view}
          ;view gets included so don't add it to the list
-         {if {&& $entry {!= $entry view}}
+         {if {&& $entry {!= {sprint $entry} "view"}}
             ;generate this list array
             {push_back $this_list_content $entry}
          }
@@ -199,6 +286,12 @@
       {if_else {$this in_game}
          {$current_list set_type overshell_menu_ingame}
          {$current_list set_type overshell_menu}
+      }
+
+      ;this is so lazy, please rewrite bot settings to not use a slider
+      {if {== $this_state dxState_BotSettings}
+         {set $current_list options_audio.lst}
+         {set $dx_picked_view options_audio}
       }
       ;circular breaks things
       ;{set $options_circular {>= {size $this_list_content} 12}}
@@ -314,15 +407,15 @@
    }
    {if {find_exists $dx_settings_main $state enter}
       {foreach $entry {find $dx_settings_main $state enter}
-         {if $entry
+         {if {&& $entry {!= {sprint $entry} "enter"}}
             {eval $entry}
          }
       }
    }
    {if {find_exists $dx_settings_main $state message}
       {foreach $entry {find $dx_settings_main $state message}
-         {if $entry
-            {if_else {== $entry "none"}
+         {if {&& $entry {!= {sprint $entry} "message"}}
+            {if_else {== {sprint $entry} "none"}
                {dx_close_msg}
                {dx_open_msg {eval $entry}}
             }
@@ -376,7 +469,7 @@
          {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
          {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
          {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-         {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon $message}}}
+         {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon {localize $message}}}}
          {unless {session_mgr is_local}
             {session send_msg_to_all
                {'`' 
@@ -386,7 +479,7 @@
                         {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
                         {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
                         {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-                        {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' $message}}}}
+                        {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' {localize $message}}}}}
                      }
                   )
                   kNetReliable
@@ -395,12 +488,12 @@
          }
       }
       {do ;if not in-game, use passive_messages_panel instead to show a chat message
-         {passive_messages_panel queue_message {symbol {sprintf "%s: %s" $user_name $message}}}
+         {passive_messages_panel queue_message {symbol {sprintf "%s: %s" $user_name {localize $message}}}}
          {unless {session_mgr is_local}
             {session send_msg_to_all
                {'`' 
                   (
-                     {passive_messages_panel queue_message {symbol {sprintf "%s: %s" {',' $user_name} {',' $message}}}}
+                     {passive_messages_panel queue_message {symbol {sprintf "%s: %s" {',' $user_name} {',' {localize $message}}}}}
                   )
                   kNetReliable
                }

@@ -10,6 +10,7 @@ out_path = sys.argv[2]
 
 f = open(out_path, "w")
 for file in sorted(directory.glob("*")):
-    f.write(f"'{file.stem}'\n")
+    if file.name != ".DS_Store":
+        f.write(f"'{file.stem}'\n")
 
 f.close()

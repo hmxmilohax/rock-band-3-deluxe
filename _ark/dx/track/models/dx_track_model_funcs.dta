@@ -1,0 +1,198 @@
+{set $dx_loaded_gem_themes ()}
+
+{func dx_get_theme_data
+   ($category $theme)
+   {find $syscfg themedata $category $theme}
+}
+
+{func dx_get_active_widget
+   ($theme $instrument $type $idx)
+   #ifndef HX_WII
+   {if_else {! {find_exists {dx_get_theme_data gems $theme} $instrument}}
+      {elem
+         {dx_get_widget_array $theme $instrument $type}
+         $idx
+      }
+      {symbol
+         {sprint
+            "custom_"
+            {elem
+               {switch $type
+                  (strum (NORMALGEM_SET))
+                  (hopo (HOPOGEM_SET))
+               }
+               $idx
+            }
+         }
+      }
+   }
+   #else
+   {elem
+      {switch $type
+         (strum (NORMALGEM_SET))
+         (hopo (HOPOGEM_SET))
+      }
+      $idx
+   }
+   #endif
+}
+
+{func dx_get_widget_array
+   ($theme $instrument $type)
+   {if_else {! {find_exists {dx_get_theme_data gems $theme} $instrument}}
+      {switch $type
+         (strum (NORMALGEM_SET))
+         (hopo (HOPOGEM_SET))
+      }
+      {elem
+         {find {dx_get_theme_data gems $theme} $instrument $type}
+         1
+      }
+   }
+}
+
+{func dx_is_subdir_loaded
+   ($parentdir $subdirpath)
+   {set $idx -1}
+   {find_elem {$parentdir get_array subdirs} $subdirpath $idx}
+   {!= $idx -1}
+}
+
+{func dx_remove_subdir_path
+   ($dir $path)
+   {set $subdir_array {$dir get_array subdirs}}
+   {set $idx -1}
+   {find_elem $subdir_array $path $idx}
+   ;{dx_log_writer insane {sprint $dir "'s subdirs for some reason: " $subdir_array}}
+   ;{dx_log_writer insane {sprint {random_float} " Removing subdir " $path " from " $dir ", idx = " $idx}}
+   {if {!= $idx -1}
+      {do ; do block here because this was an if_else at one point
+         {set $subdir {$dir get (subdirs $idx)}}
+         {dx_log_writer insane {sprint "the subdir we're about to remove is " $subdir ", is that right?"}}
+         {$dir remove (subdirs $idx)}
+      }
+   }
+   ;{delete $subdir}
+}
+
+{func dx_load_custom_widget
+   ($trackdir $themewid $real_widget)
+   {set_this $trackdir}
+   {if {exists $real_widget}
+      {$real_widget copy $themewid kCopyShallow}
+      ;{$real_widget clear (meshes)}
+      ;{foreach $mesh {$themewid get_array meshes}
+      ;{gem_pieces.grp add_object $mesh}
+      ;{$real_widget insert (meshes {$real_widget size (meshes)}) $mesh}
+      ;}
+      {$real_widget set widget_type kImmediateWidget}
+   }
+}
+
+{func dx_install_gem_theme
+   ($trackdir)
+   {set_this $trackdir}
+   {$trackdir set gem_theme $dx_current_gem_model_theme}
+   ;{dx_log_writer insane {sprint "Installing track theme " {$trackdir get gem_theme}}}
+   #ifndef HX_WII
+   ; ignore the apparent redundancy here i might add per-track themes at some point
+   {if {!= {$trackdir get gem_theme} default}
+      {unless {$trackdir has (custom_gems_in_group)}
+         {foreach $wid (NORMALGEM_SET HOPOGEM_SET)
+            {set $wid {symbol {sprint "custom_" $wid}}}
+            {guitar_gems.grp add_object $wid}
+         }
+         {$trackdir set custom_gems_in_group TRUE}
+      }
+      {set $iter 0}
+      {foreach $themewid {dx_get_widget_array $dx_current_gem_model_theme guitar strum}
+         {set $real_widget {symbol {sprint "custom_" {elem (NORMALGEM_SET) $iter}}}}
+         {dx_load_custom_widget $trackdir $themewid $real_widget}
+         {++ $iter}
+      }
+      {set $iter 0}
+      {foreach $themewid {dx_get_widget_array $dx_current_gem_model_theme guitar hopo}
+         {set $real_widget {symbol {sprint "custom_" {elem (HOPOGEM_SET) $iter}}}}
+         {dx_load_custom_widget $trackdir $themewid $real_widget}
+         {++ $iter}
+      }
+   }
+   #endif
+}
+
+{func dx_uninstall_gem_theme ($trackdir)
+   {set_this $trackdir}
+   ;{dx_log_writer insane {sprint "Uninstalling track theme " {$trackdir get gem_theme}}}
+   {$trackdir set gem_theme default}
+   #ifndef HX_WII
+   {foreach $themewid (NORMALGEM_SET HOPOGEM_SET)
+      {set $real_widget {symbol {sprint "custom_" $themewid}}}
+      {dx_log_writer insane {sprint "Reverting " $real_widget}}
+      {$real_widget set_meshes}
+      {$real_widget set widget_type kImmediateWidget}
+   }
+   #endif
+}
+
+{func dx_update_model_themes
+   ($trackpanel)
+   ;{set $iwanttologstuff TRUE}
+   {set $gem_model_path
+      {sprint "dx/models/gems/" $dx_current_gem_model_theme "/theme.milo"}
+   }
+   {unless {&& {!= $dx_current_gem_model_theme default} {dx_is_subdir_loaded {$trackpanel loaded_dir} $gem_model_path}}
+      {dx_log_writer insane {sprint "Trying to load gem theme milo: " $gem_model_path}}
+      {{$trackpanel loaded_dir} insert (subdirs 0) $gem_model_path}
+      {push_back $dx_loaded_gem_themes $gem_model_path}
+   }
+   {set $active_themes {array ()}}
+   {$trackpanel iterate
+      GemTrackDir
+      $dir
+      {if
+         {||
+            {! {$dir has (loaded_model_theme)}}
+            {!= {$dir get loaded_model_theme} $gem_model_path}
+         }
+         {if {$dir has (loaded_model_theme)}
+            {dx_uninstall_gem_theme $dir}
+            {dx_remove_subdir_path $dir {$dir get loaded_model_theme}}
+         }
+         ;{dx_log_writer insane {sprint "Loading track theme"}}
+         ;{$dir insert (subdirs 0) $gem_model_path}
+         {$dir set loaded_model_theme $gem_model_path}
+         {dx_install_gem_theme $dir}
+      }
+      {unless {contains $active_themes {$dir get loaded_model_theme}}
+         {push_back $active_themes {$dir get loaded_model_theme}}
+      }
+   }
+   ;{dx_log_writer insane {sprint "Loaded gem themes: " $dx_loaded_gem_themes}}
+   ;{dx_log_writer insane {sprint "Active gem themes: " $active_themes}}
+   ;{set $todelete {array 0}}
+   {foreach $loaded $dx_loaded_gem_themes
+      {unless {contains $active_themes $loaded}
+         {$trackpanel iterate Object $obj
+            {if {== {$obj name} dir_locator}
+               {if {== {{$obj dir} get_path_name} $loaded}
+                  ;{dx_log_writer insane {sprint "Deleting " {{$obj dir} get_path_name}}}
+                  ;{push_back $todelete {$obj dir}}
+                  {{$obj dir} delete_loader}
+                  ;{dx_log_writer insane {sprint "Added to queue"}}
+                  ;{if {{$obj dir} proxy_dir}
+                  ;   {dx_log_writer insane {sprint "!!!!!! FUCK !!!!!!"}}
+                  ;}
+               }
+            }
+         }
+         {dx_remove_subdir_path {$trackpanel loaded_dir} $loaded}
+         {remove_elem $dx_loaded_gem_themes $loaded}
+      }
+   }
+   ;{dx_log_writer insane {sprint "To delete: " $todelete}}
+   ;{foreach $del $todelete
+   ;   {dx_log_writer insane {sprint "Actually deleting something" {$del class_name}}}
+   ;   {delete $del}
+   ;}
+   ;{dx_log_writer insane {sprint "Current subdirs: " {{$trackpanel loaded_dir} get_array subdirs}}}
+}

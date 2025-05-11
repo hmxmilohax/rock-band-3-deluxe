@@ -19,6 +19,9 @@
          os_setcol
          os_shading
          os_gems
+         ;#ifndef HX_WII
+         os_gem_models
+         ;#endif
          os_smashers
          os_flares
          os_particles
@@ -99,7 +102,7 @@
          )
          (os_milo {dx_state dxState_MiloPanels})
          (os_setcol {dx_state dxState_ColorSelector})
-         (os_shading {dx_state dxState_ShadingMenuWarning})
+         (os_shading {dx_state dxState_ShadingMenu})
          ;in each of the cases of these selected options, we must define parameters before we lead to the next state
          ;all images use the same state
          ;$dx_tracked_texture_loader - the name of the folder that contains the texture "dx/custom_textures/highways/*.png"
@@ -136,6 +139,13 @@
             {set $dx_choose_char_scale_y 0.4}
             {set $dx_texture_array (#include ../custom_textures/gems/gems_default/_list.dta)}
             {dx_state dxState_DTATextureLoader}
+         )
+         (os_gem_models
+            {set $dx_tracked_model_loader gems}
+            {set $dx_model_array (#include ../models/gems/_list.dta)}
+            {set $dx_model_var dx_current_gem_model_theme}
+            {set $dx_model_reset_var dx_gem_model_needs_reset}
+            {dx_state dxState_DTAModelLoader}
          )
          (os_smashers
             {set $dx_tracked_texture_loader strikeline_guitar}
@@ -482,33 +492,27 @@
                {dx_state dxState_TextureMenu}
             )
             (keyboard_lanes
-               {set $dx_keyboard_needs_reset TRUE}
-               {set $dx_keyboard {$current_list selected_sym}}
-               {set $dx_local_keyboard {$current_list selected_sym}}
+               {set $dx_highway_real_keys {$current_list selected_sym}}
                {dx_state dxState_TextureMenu}
             )
             (vocal_highway_bg
                {set $dx_vocal_highway_needs_reset TRUE}
                {set $dx_vocal_highway {$current_list selected_sym}}
-               {set $dx_local_vocal_highway {$current_list selected_sym}}
                {dx_state dxState_TextureMenu}
             )
             (vocal_arrow
                {set $dx_vocal_arrow_needs_reset TRUE}
                {set $dx_vocal_arrow {$current_list selected_sym}}
-               {set $dx_local_vocal_arrow {$current_list selected_sym}}
                {dx_state dxState_TextureMenu}
             )
             (vocal_note_tube
                {set $dx_vocal_notes_needs_reset TRUE}
                {set $dx_vocal_notes {$current_list selected_sym}}
-               {set $dx_local_vocal_notes {$current_list selected_sym}}
                {dx_state dxState_TextureMenu}
             )
             (vocal_overdrive_now_bar
                {set $dx_vocal_overdrive_needs_reset TRUE}
                {set $dx_vocal_overdrive {$current_list selected_sym}}
-               {set $dx_local_vocal_overdrive {$current_list selected_sym}}
                {dx_state dxState_TextureMenu}
             )
             (sustains
@@ -548,7 +552,7 @@
       )
       (enter
          {do
-            ($options {array 0})
+            ($options {array 0}) 
             ;we dont actually use this but might be a good idea later to pull from a pool somehow
             {set $dx_available_textures
                (overdrive scoreboard_frame score_star_frame font solo_box bre_shield strikeline_guitar flares_guitar_style particles_spark rails_track gem_mash_green_emmisive od_bar_background highways streaks multiplier_ring_plate_fc crowd_meter_frame gems_default keyboard_lanes vocal_highway_bg vocal_arrow vocal_note_tube vocal_overdrive_now_bar sustains)
@@ -721,6 +725,7 @@
 
 {push_back $dx_settings_main
    (dxState_InstrumentTextureChooser
+      (message none)
       (view
          all_instruments
          #ifndef HX_WII
@@ -728,6 +733,8 @@
          bass
          drums
          keys
+         real_guitar
+         real_bass
          {if_else
             {||
                {== $dx_tracked_texture_loader streaks}
@@ -747,24 +754,21 @@
          (all_instruments
             {switch $dx_tracked_texture_loader
                 (overdrive
-                    {foreach $elem (guitar bass drum keys prokeys)
+                    {foreach $elem (guitar bass drum keys real_guitar real_bass real_keys)
                         {set_var {sprint "dx_overdrive_" $elem "_needs_reset"} TRUE}
                         {set_var {sprint "dx_overdrive_" $elem} $dx_tracked_emissive}
-                        {set_var {sprint "dx_local_overdrive_" $elem} $dx_tracked_emissive}
                     }
                 )
                 (highways
-                    {foreach $elem (guitar bass drum keys)
+                    {foreach $elem (guitar bass drum keys real_guitar real_bass)
                         {set_var {sprint "dx_highway_" $elem "_needs_reset"} TRUE}
                         {set_var {sprint "dx_highway_" $elem} $dx_tracked_highway}
-                        {set_var {sprint "dx_local_highway_" $elem} $dx_tracked_highway}
                     }
                 )
                 (streaks
-                    {foreach $elem (guitar bass drum keys prokeys)
+                    {foreach $elem (guitar bass drum keys real_guitar real_bass real_keys)
                         {set_var {sprint "dx_streak_" $elem "_needs_reset"} TRUE}
                         {set_var {sprint "dx_streak_" $elem} $dx_tracked_spotlight}
-                        {set_var {sprint "dx_local_streak_" $elem} $dx_tracked_spotlight}
                     }
                 )
             }
@@ -773,45 +777,63 @@
          )
          (guitar
             {switch $dx_tracked_texture_loader
-                (overdrive {set $dx_overdrive_guitar_needs_reset TRUE} {set $dx_overdrive_guitar $dx_tracked_emissive} {set $dx_local_overdrive_guitar $dx_tracked_emissive})
-                (highways {set $dx_highway_guitar_needs_reset TRUE} {set $dx_highway_guitar $dx_tracked_highway} {set $dx_local_highway_guitar $dx_tracked_highway})
-                (streaks {set $dx_streak_guitar_needs_reset TRUE} {set $dx_streak_guitar $dx_tracked_spotlight} {set $dx_local_streak_guitar $dx_tracked_spotlight})
+                (overdrive {set $dx_overdrive_guitar $dx_tracked_emissive})
+                (highways {set $dx_highway_guitar $dx_tracked_highway})
+                (streaks {set $dx_streak_guitar $dx_tracked_spotlight})
+            }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
+         )
+         (real_guitar
+            {switch $dx_tracked_texture_loader
+                (overdrive {set $dx_overdrive_real_guitar $dx_tracked_emissive})
+                (highways {set $dx_highway_real_guitar $dx_tracked_highway})
+                (streaks {set $dx_streak_real_guitar $dx_tracked_spotlight})
             }
             {set $dx_refresh_beatmatch TRUE}
             {dx_state dxState_TextureMenu}
          )
          (bass
             {switch $dx_tracked_texture_loader
-                (overdrive {set $dx_overdrive_bass_needs_reset TRUE} {set $dx_overdrive_bass $dx_tracked_emissive} {set $dx_local_overdrive_bass $dx_tracked_emissive})
-                (highways {set $dx_highway_bass_needs_reset TRUE} {set $dx_highway_bass $dx_tracked_highway} {set $dx_local_highway_bass $dx_tracked_highway})
-                (streaks {set $dx_streak_bass_needs_reset TRUE} {set $dx_streak_bass $dx_tracked_spotlight} {set $dx_local_streak_bass $dx_tracked_spotlight})
+                (overdrive {set $dx_overdrive_bass $dx_tracked_emissive})
+                (highways {set $dx_highway_bass $dx_tracked_highway})
+                (streaks {set $dx_streak_bass $dx_tracked_spotlight})
+            }
+            {set $dx_refresh_beatmatch TRUE}
+            {dx_state dxState_TextureMenu}
+         )
+         (real_bass
+            {switch $dx_tracked_texture_loader
+                (overdrive {set $dx_overdrive_real_bass $dx_tracked_emissive})
+                (highways {set $dx_highway_real_bass $dx_tracked_highway})
+                (streaks {set $dx_streak_real_bass $dx_tracked_spotlight})
             }
             {set $dx_refresh_beatmatch TRUE}
             {dx_state dxState_TextureMenu}
          )
          (drums
             {switch $dx_tracked_texture_loader
-                (overdrive {set $dx_overdrive_drum_needs_reset TRUE} {set $dx_overdrive_drum $dx_tracked_emissive} {set $dx_local_overdrive_drum $dx_tracked_emissive})
-                (highways {set $dx_highway_drum_needs_reset TRUE} {set $dx_highway_drum $dx_tracked_highway} {set $dx_local_highway_drum $dx_tracked_highway})
-                (streaks {set $dx_streak_drum_needs_reset TRUE} {set $dx_streak_drum $dx_tracked_spotlight} {set $dx_local_streak_drum $dx_tracked_spotlight})
+                (overdrive {set $dx_overdrive_drum $dx_tracked_emissive})
+                (highways {set $dx_highway_drum $dx_tracked_highway})
+                (streaks {set $dx_streak_drum $dx_tracked_spotlight})
             }
             {set $dx_refresh_beatmatch TRUE}
             {dx_state dxState_TextureMenu}
          )
          (keys
             {switch $dx_tracked_texture_loader
-                (overdrive {set $dx_overdrive_keys_needs_reset TRUE} {set $dx_overdrive_keys $dx_tracked_emissive} {set $dx_local_overdrive_keys $dx_tracked_emissive})
-                (highways {set $dx_highway_keys_needs_reset TRUE} {set $dx_highway_keys $dx_tracked_highway} {set $dx_local_highway_keys $dx_tracked_highway})
-                (streaks {set $dx_streak_keys_needs_reset TRUE} {set $dx_streak_keys $dx_tracked_spotlight} {set $dx_local_streak_keys $dx_tracked_spotlight})
+                (overdrive {set $dx_overdrive_keys $dx_tracked_emissive})
+                (highways {set $dx_highway_keys $dx_tracked_highway})
+                (streaks {set $dx_streak_keys $dx_tracked_spotlight})
             }
             {set $dx_refresh_beatmatch TRUE}
             {dx_state dxState_TextureMenu}
          )
          (pro_keys
             {switch $dx_tracked_texture_loader
-                (overdrive {set $dx_overdrive_prokeys_needs_reset TRUE} {set $dx_overdrive_prokeys $dx_tracked_emissive} {set $dx_local_overdrive_prokeys $dx_tracked_emissive})
-                (highways {set $dx_highway_prokeys_needs_reset TRUE} {set $dx_highway_prokeys $dx_tracked_highway} {set $dx_local_highway_prokeys $dx_tracked_highway})
-                (streaks {set $dx_streak_prokeys_needs_reset TRUE} {set $dx_streak_prokeys $dx_tracked_spotlight} {set $dx_local_streak_prokeys $dx_tracked_spotlight})
+                (overdrive {set $dx_overdrive_real_keys $dx_tracked_emissive})
+                (highways {set $dx_highway_real_keys $dx_tracked_highway})
+                (streaks {set $dx_streak_real_keys $dx_tracked_spotlight})
             }
             {set $dx_refresh_beatmatch TRUE}
             {dx_state dxState_TextureMenu}
@@ -874,6 +896,43 @@
          (os_dx_od_keys_shade {set $dx_overdrive_keys_shading {! $dx_overdrive_keys_shading}})
          (os_dx_hw_drum_shade {set $dx_highway_drum_shading {! $dx_highway_drum_shading}})
          (os_dx_od_drum_shade {set $dx_overdrive_drum_shading {! $dx_overdrive_drum_shading}})
+      )
+      (cancel {dx_state dxState_TextureMenu})
+   )
+}
+
+{push_back $dx_settings_main
+   (dxState_DTAModelLoader
+      (view
+         os_blnk
+         os_blnk
+         os_blnk
+         os_blnk
+         os_blnk
+      )
+      (enter
+         {do
+            ($options {array 0})
+            {foreach $entry $dx_model_array
+               {push_back $options $entry}
+            }
+            {$current_list set_selected 0}
+            {$current_list set_data $options}
+            {$current_list refresh}
+         }
+      )
+      (message
+         none
+      )
+      (select
+         (_fallthrough
+            {set_var $dx_model_var {$current_list selected_sym}}
+            {set_var $dx_model_reset_var TRUE}
+            {dx_state dxState_TextureMenu}
+            {if {$this in_game}
+               {dx_update_model_themes {get_track_panel}}
+            }
+         )
       )
       (cancel {dx_state dxState_TextureMenu})
    )

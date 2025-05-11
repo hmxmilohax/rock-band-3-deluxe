@@ -139,463 +139,334 @@
    ;   }
    ;}
 }
-; this function will re-apply the local player's texture setting if it was previously changed by a remote player 
 {func
-   dx_resync_local_textures
-   ($instrument)
-   {do
-      {dx_log_writer info {sprint "dx_resync_local_textures"}}
-      {switch $instrument
-         ((kTrackGuitar kTrackRealGuitar)
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting guitar texture to local setting"}}
-            {unless {== $dx_highway_guitar $dx_local_highway_guitar}
-               {set $dx_highway_guitar $dx_local_highway_guitar}
-               {set $dx_highway_guitar_needs_reset TRUE}
+   color_me_milo_lite
+   {dx_log_writer info {sprint "color_me_milo_lite"}}
+   
+   {user_mgr foreach_user $user
+      {set $player {$user get_player}}
+      {unless {== {$player instrument} vocals}
+         {if_else
+            {&&
+               {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_highway"}}} ; check if we received a remote texture
+               {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_streak"}}}
+               {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_overdrive"}}}
+               {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_rails"}}}
+               {modifier_mgr is_modifier_active mod_remote_texture_sync} ; if user wants texture syncing
+               {! {{$player get_user} is_local}} ; only change texture on remote players
             }
-            {unless {== $dx_streak_guitar $dx_local_streak_guitar}
-               {set $dx_streak_guitar $dx_local_streak_guitar}
-               {set $dx_streak_guitar_needs_reset TRUE}
+            ; apply online user's textures
+            {do
+               {set $current_highway {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_highway"}}}}
+               {set $current_streak {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_streak"}}}}
+               {set $current_overdrive {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_overdrive"}}}}
+               {set $current_rails {eval {var {sprint "dx_remote_slot" {{$player get_user} get_slot_num} "_rails"}}}}
             }
-            {unless {== $dx_overdrive_guitar $dx_local_overdrive_guitar}
-               {set $dx_overdrive_guitar $dx_local_overdrive_guitar}
-               {set $dx_overdrive_guitar_needs_reset TRUE}
+            ; apply local user's textures
+            {do
+               {set $instrument {if_else {== {$player instrument} real_drum} drum {$player instrument}}}
+               {set $current_highway {eval {var {sprint "dx_highway_" $instrument}}}}
+               {set $current_streak {eval {var {sprint "dx_streak_" $instrument}}}}
+               {set $current_overdrive {eval {var {sprint "dx_overdrive_" $instrument}}}}
+               {set $current_rails $dx_rails}
             }
-         )
-         ((kTrackBass kTrackRealBass)
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting bass texture to local setting"}}
-            {unless {== $dx_highway_bass $dx_local_highway_bass}
-               {set $dx_highway_bass $dx_local_highway_bass}
-               {set $dx_highway_bass_needs_reset TRUE}
+         }
+
+         {if ;don't run at all if using default theme and never had custom textures
+            {||
+               {eval {var {sprint "dx_tex_ran_once_slot" {{$player get_user} get_slot_num}}}}
+               {! {== $current_highway none}}
+               {! {== $current_streak none}}
+               {! {== $current_overdrive none}}
+               {! {== $current_rails none}}
+               {&& $dx_song_key_var {modifier_mgr is_modifier_active mod_highlight_key} {== {$player instrument} real_keys}}
             }
-            {unless {== $dx_streak_bass $dx_local_streak_bass}
-               {set $dx_streak_bass $dx_local_streak_bass}
-               {set $dx_streak_bass_needs_reset TRUE}
+            
+            {set_var {sprint "dx_tex_ran_once_slot" {{$player get_user} get_slot_num}} TRUE}
+            {set_this {find_obj DX_GEMTRACKDIR}}
+            
+            {set $this_highway_tex {sprint "dx_highway" {{$player get_user} get_slot_num} ".tex"}}
+            {if {exists $this_highway_tex} {delete $this_highway_tex}}
+            {new Tex $this_highway_tex}
+            
+            {set $this_streak_tex {sprint "dx_streak" {{$player get_user} get_slot_num} ".tex"}}
+            {if {exists $this_streak_tex} {delete $this_streak_tex}}
+            {new Tex $this_streak_tex}
+   
+            {set $this_overdrive_tex {sprint "dx_overdrive" {{$player get_user} get_slot_num} ".tex"}}
+            {if {exists $this_overdrive_tex} {delete $this_overdrive_tex}}
+            {new Tex $this_overdrive_tex}
+            
+            {set $this_rails_tex {sprint "dx_rails" {{$player get_user} get_slot_num} ".tex"}}
+            {if {exists $this_rails_tex} {delete $this_rails_tex}}
+            {new Tex $this_rails_tex}
+            
+            {set $this_rails_bracket_tex {sprint "dx_rails_bracket" {{$player get_user} get_slot_num} ".tex"}}
+            {if {exists $this_rails_bracket_tex} {delete $this_rails_bracket_tex}}
+            {new Tex $this_rails_bracket_tex}
+            
+            ;hacky way to restore default textures
+            {if {== $current_highway none}
+               {set $this_highway_tex
+                  #ifndef HX_WII
+                  {switch {$player instrument}
+                     ((guitar real_guitar) watermark_bass.tex)
+                     ((bass real_bass) watermark_guitar.tex)
+                     ((drum real_drum) watermark_drum.tex)
+                     (keys watermark_keys.tex)
+                     (real_keys track_lanes_keyboard.tex)
+                  }
+                  #else
+                  {if_else {== {$player instrument} real_keys}
+                     track_lanes_keyboard.tex
+                     watermark_bass.tex
+                  }
+                  #endif
+               }
             }
-            {unless {== $dx_overdrive_bass $dx_local_overdrive_bass}
-               {set $dx_overdrive_bass $dx_local_overdrive_bass}
-               {set $dx_overdrive_bass_needs_reset TRUE}
+            
+            {if {== $current_streak none}
+               {set $this_streak_tex
+                  #ifndef HX_WII
+                  {switch {$player instrument}
+                     ((guitar real_guitar) spotlight_bass_track.tex)
+                     ((bass real_bass) spotlight_bass_track.tex)
+                     ((drum real_drum) spotlight_drums_track.tex)
+                     (keys spotlight_keys_track.tex)
+                     (real_keys spotlight_prokeys_track.tex)
+                  }
+                  #else
+                  {if_else {== {$player instrument} real_keys}
+                     spotlight_prokeys_track.tex
+                     spotlight_bass_track.tex
+                  }
+                  #endif
+               }
             }
-         )
-         (kTrackDrum
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting drum texture to local setting"}}
-            {unless {== $dx_highway_drum $dx_local_highway_drum}
-               {set $dx_highway_drum $dx_local_highway_drum}
-               {set $dx_highway_drum_needs_reset TRUE}
+            
+            {if {== $current_overdrive none}
+               {set $this_overdrive_tex
+                  #ifndef HX_WII
+                  {switch {$player instrument}
+                     ((guitar real_guitar) spotlight_bass_track_emissive.tex)
+                     ((bass real_bass) spotlight_guitar_track_emmissive.tex)
+                     ((drum real_drum) spotlight_drums_track_emissive.tex)
+                     (keys spotlight_keys_track_emissive.tex)
+                     (real_keys spotlight_prokeys_track_emissive.tex)
+                  }
+                  #else
+                  spotlight_bass_track_emissive.tex
+                  #endif
+               }
             }
-            {unless {== $dx_streak_drum $dx_local_streak_drum}
-               {set $dx_streak_drum $dx_local_streak_drum}
-               {set $dx_streak_drum_needs_reset TRUE}
+            
+            {if {== $current_rails none}
+               {set $this_rails_tex
+                  {switch {$player instrument}
+                     ((guitar bass drum real_drum keys) rails.tex)
+                     ((real_guitar real_bass) rails_rg.tex)
+                     (real_keys rails_keyboard.tex)
+                  }
+               }
+               {set $this_rails_bracket_tex smasher_plate_bracket.tex}
             }
-            {unless {== $dx_overdrive_drum $dx_local_overdrive_drum}
-               {set $dx_overdrive_drum $dx_local_overdrive_drum}
-               {set $dx_overdrive_drum_needs_reset TRUE}
+            
+            {track_rails_kb.mat set diffuse_tex $this_rails_tex}
+            {rails.mat set diffuse_tex $this_rails_tex}
+            {switch {$player instrument}
+               (bass {{{{{get_track_panel} find gem_track_resources} find smasher_plate_bass} find smasher_plate_bracket.mat} set diffuse_tex $this_rails_bracket_tex})
+               (guitar {{{{{get_track_panel} find gem_track_resources} find smasher_plate_guitar} find smasher_plate_bracket.mat} set diffuse_tex $this_rails_bracket_tex})
+               (keys {{{{{get_track_panel} find gem_track_resources} find smasher_plate_keys} find smasher_plate_bracket.mat} set diffuse_tex $this_rails_bracket_tex})
             }
-         )
-         (kTrackKeys
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting keys texture to local setting"}}
-            {unless {== $dx_highway_keys $dx_local_highway_keys}
-               {set $dx_highway_keys $dx_local_highway_keys}
-               {set $dx_highway_keys_needs_reset TRUE}
+            {smasher_plate_bracket.mat set diffuse_tex $this_rails_bracket_tex}
+            
+            {unless {== $current_rails none}
+               {dx_custom_texture_setter rails rails_track $this_rails_tex $current_rails}
+               {dx_custom_texture_setter rails rails_bracket $this_rails_bracket_tex $current_rails}
+               {$this_rails_bracket_tex iterate_refs $ref {$ref set alpha_cut TRUE}}
             }
-            {unless {== $dx_streak_keys $dx_local_streak_keys}
-               {set $dx_streak_keys $dx_local_streak_keys}
-               {set $dx_streak_keys_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_keys $dx_local_overdrive_keys}
-               {set $dx_overdrive_keys $dx_local_overdrive_keys}
-               {set $dx_overdrive_keys_needs_reset TRUE}
-            }
-         )
-         (kTrackRealKeys
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting real_keys texture to local setting"}}
-            {unless {== $dx_keyboard $dx_local_keyboard}
-               {set $dx_keyboard $dx_local_keyboard}
-               {set $dx_keyboard_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_prokeys $dx_local_streak_prokeys}
-               {set $dx_streak_prokeys $dx_local_streak_prokeys}
-               {set $dx_streak_prokeys_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_prokeys $dx_local_overdrive_prokeys}
-               {set $dx_overdrive_prokeys $dx_local_overdrive_prokeys}
-               {set $dx_overdrive_prokeys_needs_reset TRUE}
-            }
-         )
-         (kTrackVocals
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting vocals texture to local setting"}}
-            {unless {== $dx_vocal_arrow $dx_local_vocal_arrow}
-               {set $vocal_arrow $dx_local_vocal_arrowd}
-               {set $dx_vocal_arrow_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_highway $dx_local_vocal_highway}
-               {set $dx_vocal_highway $dx_local_vocal_highway}
-               {set $dx_vocal_highway_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_notes $dx_local_vocal_notes}
-               {set $dx_vocal_notes $dx_local_vocal_notes}
-               {set $dx_vocal_notes_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_overdrive $dx_local_vocal_overdrive}
-               {set $dx_vocal_overdrive $dx_local_vocal_overdrive}
-               {set $dx_vocal_overdrive_needs_reset TRUE}
-            }
-         )
-         ; checks every instrument texture if playing offline or if modifier was disabled
-         (all
-            {dx_log_writer info {sprint "dx_resync_local_textures: resetting every texture to local setting"}}
-            {unless {== $dx_highway_guitar $dx_local_highway_guitar}
-               {set $dx_highway_guitar $dx_local_highway_guitar}
-               {set $dx_highway_guitar_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_guitar $dx_local_streak_guitar}
-               {set $dx_streak_guitar $dx_local_streak_guitar}
-               {set $dx_streak_guitar_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_guitar $dx_local_overdrive_guitar}
-               {set $dx_overdrive_guitar $dx_local_overdrive_guitar}
-               {set $dx_overdrive_guitar_needs_reset TRUE}
-            }
-            {unless {== $dx_highway_bass $dx_local_highway_bass}
-               {set $dx_highway_bass $dx_local_highway_bass}
-               {set $dx_highway_bass_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_bass $dx_local_streak_bass}
-               {set $dx_streak_bass $dx_local_streak_bass}
-               {set $dx_streak_bass_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_bass $dx_local_overdrive_bass}
-               {set $dx_overdrive_bass $dx_local_overdrive_bass}
-               {set $dx_overdrive_bass_needs_reset TRUE}
-            }
-            {unless {== $dx_highway_drum $dx_local_highway_drum}
-               {set $dx_highway_drum $dx_local_highway_drum}
-               {set $dx_highway_drum_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_drum $dx_local_streak_drum}
-               {set $dx_streak_drum $dx_local_streak_drum}
-               {set $dx_streak_drum_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_drum $dx_local_overdrive_drum}
-               {set $dx_overdrive_drum $dx_local_overdrive_drum}
-               {set $dx_overdrive_drum_needs_reset TRUE}
-            }
-            {unless {== $dx_highway_keys $dx_local_highway_keys}
-               {set $dx_highway_keys $dx_local_highway_keys}
-               {set $dx_highway_keys_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_keys $dx_local_streak_keys}
-               {set $dx_streak_keys $dx_local_streak_keys}
-               {set $dx_streak_keys_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_keys $dx_local_overdrive_keys}
-               {set $dx_overdrive_keys $dx_local_overdrive_keys}
-               {set $dx_overdrive_keys_needs_reset TRUE}
-            }
-            {unless {== $dx_keyboard $dx_local_keyboard}
-               {set $dx_keyboard $dx_local_keyboard}
-               {set $dx_keyboard_needs_reset TRUE}
-            }
-            {unless {== $dx_streak_prokeys $dx_local_streak_prokeys}
-               {set $dx_streak_prokeys $dx_local_streak_prokeys}
-               {set $dx_streak_prokeys_needs_reset TRUE}
-            }
-            {unless {== $dx_overdrive_prokeys $dx_local_overdrive_prokeys}
-               {set $dx_overdrive_prokeys $dx_local_overdrive_prokeys}
-               {set $dx_overdrive_prokeys_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_arrow $dx_local_vocal_arrow}
-               {set $vocal_arrow $dx_local_vocal_arrowd}
-               {set $dx_vocal_arrow_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_highway $dx_local_vocal_highway}
-               {set $dx_vocal_highway $dx_local_vocal_highway}
-               {set $dx_vocal_highway_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_notes $dx_local_vocal_notes}
-               {set $dx_vocal_notes $dx_local_vocal_notes}
-               {set $dx_vocal_notes_needs_reset TRUE}
-            }
-            {unless {== $dx_vocal_overdrive $dx_local_vocal_overdrive}
-               {set $dx_vocal_overdrive $dx_local_vocal_overdrive}
-               {set $dx_vocal_overdrive_needs_reset TRUE}
-            }
-         )
-      }
-   }
-}
-{func
-   dx_apply_remote_textures
-   {if_else {modifier_mgr is_modifier_active mod_remote_texture_sync}
-      {do
-         {user_mgr
-            foreach_user
-            $user
-            {switch {$user get_track_type}
-               ((kTrackGuitar kTrackRealGuitar)
-                  {if_else {$user is_local}
-                     ; if the local player is on guitar, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackGuitar}
-                     ; otherwise apply a new guitar texture if one was received from a remote player
+
+            {if_else {== {$player instrument} real_keys}
+               ;set textures on pro keys
+               {do
+                  {surface_keys.mat set diffuse_tex $this_highway_tex}
+                  {overdrive_plane_prokeys.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
+                  {peakstate_plane_prokeys.mat set diffuse_tex $this_streak_tex}
+                  {overdrive_plane_prokeys.mat set diffuse_tex $this_overdrive_tex}
+                  {$this_overdrive_tex iterate_refs $ref {$ref set intensify TRUE}}
+                  {if_else {&& $dx_song_key_var {modifier_mgr is_modifier_active mod_highlight_key}}
                      {do
-                        {unless {== $dx_remote_highway_guitar $dx_highway_guitar}
-                           {set $dx_highway_guitar $dx_remote_highway_guitar}
-                           {set $dx_highway_guitar_needs_reset TRUE}
-                        }
-                        {unless {> $dx_num_active_strings 1} ; don't apply streaks/overdrive if multiple strings players are active
-                           {do
-                              {unless {== $dx_remote_streak_guitar $dx_streak_guitar}
-                                 {set $dx_streak_guitar $dx_remote_streak_guitar}
-                                 {set $dx_streak_guitar_needs_reset TRUE}
-                              }
-                              {unless {== $dx_remote_overdrive_guitar $dx_overdrive_guitar}
-                                 {set $dx_overdrive_guitar $dx_remote_overdrive_guitar}
-                                 {set $dx_overdrive_guitar_needs_reset TRUE}
+                        {set $key_map $dx_song_key_var}
+                        ; if minor key, set highway to relative major
+                        {if {has_substr {sprint $dx_song_key_var} _minor}
+                           {set $key_map
+                              {switch $dx_song_key_var
+                                 (a_minor c_major)
+                                 (a_sharp_minor c_sharp_major)
+                                 (b_minor d_major)
+                                 (c_minor d_sharp_major)
+                                 (c_sharp_minor e_major)
+                                 (d_minor f_major)
+                                 (d_sharp_minor f_sharp_major)
+                                 (e_minor g_major)
+                                 (f_minor g_sharp_major)
+                                 (f_sharp_minor a_major)
+                                 (g_minor a_sharp_major)
+                                 (g_sharp_minor b_major)
                               }
                            }
                         }
+                        ; revert back to default keyboard textures to match
+                        {if {! {|| {== $current_highway "rock band 3"} {== $current_highway none} $dx_last_song_has_tonic}}
+                           {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex "rock band 3"}
+                           {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex "rock band 3"}
+                           {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex "rock band 3"}
+                           {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex "rock band 3"}
+                        }
+                        ; sets keyboard lanes depending on key of song
+                        {$this_highway_tex set_bitmap {sprint "dx/custom_textures/_additional_textures/pk_song_key/" $key_map ".png"}}
                      }
-                  }
-               )
-               ((kTrackBass kTrackRealBass)
-                  {if_else {$user is_local}
-                     ; if the local player is on bass, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackBass}
-                     ; otherwise apply a new bass texture if one was received from a remote player
                      {do
-                        {unless {== $dx_remote_highway_bass $dx_highway_bass}
-                           {set $dx_highway_bass $dx_remote_highway_bass}
-                           {set $dx_highway_bass_needs_reset TRUE}
-                        }
-                        {unless {> $dx_num_active_strings 1} ; don't apply streaks/overdrive if multiple strings players are active
-                           {do
-                              {unless {== $dx_remote_streak_bass $dx_streak_bass}
-                                 {set $dx_streak_bass $dx_remote_streak_bass}
-                                 {set $dx_streak_bass_needs_reset TRUE}
-                              }
-                              {unless {== $dx_remote_overdrive_bass $dx_overdrive_bass}
-                                 {set $dx_overdrive_bass $dx_remote_overdrive_bass}
-                                 {set $dx_overdrive_bass_needs_reset TRUE}
-                              }
-                           }
-                        }
+                        {if {== $current_highway none} {set $current_highway "rock band 3"}}
+                        {dx_custom_texture_setter keyboard keyboard_lanes $this_highway_tex $current_highway}
+                        {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex $current_highway}
+                        {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex $current_highway}
+                        {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex $current_highway}
+                        {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex $current_highway}
                      }
                   }
-               )
-               (kTrackDrum
-                  {if_else {$user is_local}
-                     ; if the local player is on drums, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackDrum}
-                     ; otherwise apply a new drum texture if one was received from a remote player
-                     {do
-                        {unless {== $dx_remote_highway_drum $dx_highway_drum}
-                           {set $dx_highway_drum $dx_remote_highway_drum}
-                           {set $dx_highway_drum_needs_reset TRUE}
+                  {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}
+                  {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
+               }
+               ;set textures on guitar/bass/keys/drum
+               {do
+                  {unless {== $current_highway none} {dx_custom_texture_setter FALSE highways $this_highway_tex $current_highway}}
+                  ;shading fixer
+                  {do
+                     ($inst {$player instrument})
+                     ($shad
+                        {switch $inst
+                           ((bass real_bass) {eval $dx_highway_bass_shading})
+                           ((guitar real_guitar) {eval $dx_highway_guitar_shading})
+                           ((keys real_keys) {eval $dx_highway_keys_shading})
+                           ((drum real_drum) {eval $dx_highway_drum_shading})
                         }
-                        {unless {== $dx_remote_streak_drum $dx_streak_drum}
-                           {set $dx_streak_drum $dx_remote_streak_drum}
-                           {set $dx_streak_drum_needs_reset TRUE}
+                     )
+                     ($default
+                        {||
+                           {== $current_highway none}
+                           {== $current_highway "rock band 3"}
+                           {== $current_highway "_2_rb3_guitar"}
+                           {== $current_highway "_rb3_bass"}
+                           {== $current_highway "_rb3_drum"}
+                           {== $current_highway "_rb3_keys"}
                         }
-                        {unless {== $dx_remote_overdrive_drum $dx_overdrive_drum}
-                           {set $dx_overdrive_drum $dx_remote_overdrive_drum}
-                           {set $dx_overdrive_drum_needs_reset TRUE}
-                        }
+                     )
+                     ($surf "surface.mat")
+                     ($white_tex {new Tex})
+                     ($white_bitmap {sprint "dx/custom_textures/_additional_textures/generic_white_box.png"})
+                     ($tex {if_else $default $white_tex $this_highway_tex})
+                     ($mult {if_else $shad 0.4 0.8}) ;vanilla mult for shading on this mat is 0.4
+                     {if $default {$white_tex set_bitmap $white_bitmap}}
+
+                     ;blank out (white!!!) diffuse if shading is on
+                     {$surf set diffuse_tex $tex}
+
+                     #ifndef HX_WII
+                     ;always set emissive map!
+                     {$surf set emissive_map $this_highway_tex}
+                     {$surf set normal_map $tex}
+                     {$surf set emissive_multiplier $mult}
+                     #endif
+                     
+                     {if_else {|| {== $inst bass} {== $inst real_bass}}
+                        {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
+                        {peakstate_plane.mat set diffuse_tex $this_streak_tex}
                      }
+                     {unless {== $current_streak none} {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}}
                   }
-               )
-               (kTrackKeys
-                  {if_else {$user is_local}
-                     ; if the local player is on keys, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackKeys}
-                     ; otherwise apply a new keys texture if one was received from a remote player
-                     {do
-                        {unless {== $dx_remote_highway_keys $dx_highway_keys}
-                           {set $dx_highway_keys $dx_remote_highway_keys}
-                           {set $dx_highway_keys_needs_reset TRUE}
+
+                  ;overdrive shading fixer
+                  {do
+                     ($inst {$player instrument})
+                     ($shad
+                        {switch $inst
+                           ((bass real_bass) {eval $dx_overdrive_bass_shading})
+                           ((guitar real_guitar) {eval $dx_overdrive_guitar_shading})
+                           ((keys real_keys) {eval $dx_overdrive_keys_shading})
+                           ((drum real_drum) {eval $dx_overdrive_drum_shading})
                         }
-                        {unless {== $dx_remote_streak_keys $dx_streak_keys}
-                           {set $dx_streak_keys $dx_remote_streak_keys}
-                           {set $dx_streak_keys_needs_reset TRUE}
+                     )
+                     ($default
+                        {||
+                           {== $current_overdrive none}
+                           {== $current_overdrive "rock band 3"}
+                           {== $current_overdrive "_1_rb3_guitar"}
+                           {== $current_overdrive "_rb3_bass"}
+                           {== $current_overdrive "_rb3_drums"}
+                           {== $current_overdrive "_rb3_keys"}
+                           {== $current_overdrive "_rb3_prokeys"}
                         }
-                        {unless {== $dx_remote_overdrive_keys $dx_overdrive_keys}
-                           {set $dx_overdrive_keys $dx_remote_overdrive_keys}
-                           {set $dx_overdrive_keys_needs_reset TRUE}
-                        }
+                     )
+                     ($intense {if_else $default TRUE {! $shad}})
+                     ($surf "overdrive_plane.mat")
+                     ($tex {if_else {|| $default $shad} '' $this_overdrive_tex})
+                  
+                     {$surf set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
+                     {$surf set diffuse_tex $this_overdrive_tex}
+                     {unless {== $current_overdrive none}
+                        {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
                      }
+                     {$surf set diffuse_tex $this_overdrive_tex}
+                     #ifndef HX_WII
+                     {$surf set emissive_map $tex}
+                     {$surf set normal_map $tex}
+                     {$surf set intensify $intense}
+                     #endif
                   }
-               )
-               (kTrackRealKeys
-                  {if_else {$user is_local}
-                     ; if the local player is on pro keys, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackRealKeys}
-                     ; otherwise apply a new pro keys texture if one was received from a remote player
-                     {do
-                        {unless {== $dx_remote_keyboard $dx_keyboard}
-                           {set $dx_keyboard $dx_remote_keyboard}
-                           {set $dx_keyboard_needs_reset TRUE}
-                        }
-                        {unless {== $dx_remote_streak_prokeys $dx_streak_prokeys}
-                           {set $dx_streak_prokeys $dx_remote_streak_prokeys}
-                           {set $dx_streak_prokeys_needs_reset TRUE}
-                        }
-                        {unless {== $dx_remote_overdrive_prokeys $dx_overdrive_prokeys}
-                           {set $dx_overdrive_prokeys $dx_remote_overdrive_prokeys}
-                           {set $dx_overdrive_prokeys_needs_reset TRUE}
-                        }
-                     }
-                  }
-               )
-               (kTrackVocals
-                  {if_else {$user is_local}
-                     ; if the local player is on vocals, run function to (re)apply their own theme if needed
-                     {dx_resync_local_textures kTrackVocals}
-                     ; otherwise apply a new vocals texture if one was received from a remote player
-                     {do
-                        {unless {== $dx_remote_vocal_arrow $dx_vocal_arrow}
-                           {set $dx_vocal_arrow $dx_remote_vocal_arrow}
-                           {set $dx_vocal_arrow_needs_reset TRUE}
-                        }
-                        {unless {== $dx_remote_vocal_highway $dx_vocal_highway}
-                           {set $dx_vocal_highway $dx_remote_vocal_highway}
-                           {set $dx_vocal_highway_needs_reset TRUE}
-                        }
-                        {unless {== $dx_remote_vocal_notes $dx_vocal_notes}
-                           {set $dx_vocal_notes $dx_remote_vocal_notes}
-                           {set $dx_vocal_notes_needs_reset TRUE}
-                        }
-                        {unless {== $dx_remote_vocal_overdrive $dx_vocal_overdrive}
-                           {set $dx_vocal_overdrive $dx_remote_vocal_overdrive}
-                           {set $dx_vocal_overdrive_needs_reset TRUE}
-                        }
-                     }
-                  }
-               )
+                  
+               }
             }
          }
       }
-      {dx_resync_local_textures all}
    }
 }
 ; function to tell remote players what texture(s) the local player has
 {func
    dx_sync_remote_textures
-   ($instrument)
-   {do
-      {dx_log_writer info {sprint "dx_sync_remote_textures"}}
-      {if_else {session_mgr is_local}
-         {dx_resync_local_textures all} ; automatically use local user's own theme if playing offline
-         {do
+   ($instrument $slot)
+   {unless {== $instrument kTrackVocals}
+      {do
+         {dx_log_writer info {sprint "dx_sync_remote_textures slot" $slot}}
+         {set_var {sprint "dx_remote_slot" $slot "_highway"} FALSE}
+         {set_var {sprint "dx_remote_slot" $slot "_streak"} FALSE}
+         {set_var {sprint "dx_remote_slot" $slot "_overdrive"} FALSE}
+         {set_var {sprint "dx_remote_slot" $slot "_rails"} FALSE}
+         {unless {session_mgr is_local}
             {dx_log_writer info {sprint "dx_sync_remote_textures: PREPPING TO SEND TEXTURES"}}
-            {dx_resync_local_textures $instrument} ; makes sure the local user is using their own theme on their instrument
             {switch $instrument
-               ((kTrackGuitar kTrackRealGuitar)
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING GUITAR MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED GUITAR TEXTURES"}}
-                                 {set $dx_remote_highway_guitar {',' $dx_local_highway_guitar}}
-                                 {set $dx_remote_streak_guitar {',' $dx_local_streak_guitar}}
-                                 {set $dx_remote_overdrive_guitar {',' $dx_local_overdrive_guitar}}
-                              }
-                           )
-                           kNetReliable
-                        }
+               (kTrackGuitar {set $instrument guitar})
+               (kTrackRealGuitar {set $instrument real_guitar})
+               (kTrackBass {set $instrument bass})
+               (kTrackRealBass {set $instrument real_bass})
+               (kTrackDrum {set $instrument drum})
+               (kTrackKeys {set $instrument keys})
+               (kTrackRealKeys {set $instrument real_keys})
+               kDataUnhandled
+            }
+            {session send_msg_to_all
+               {'`' 
+                  (
+                     {do
+                        {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED SLOT " {',' $slot} " TEXTURES"}}
+                        {set_var {sprint "dx_remote_slot" {',' $slot} "_highway"} {',' {eval {var {sprint "dx_highway_" $instrument}}}}}
+                        {set_var {sprint "dx_remote_slot" {',' $slot} "_streak"} {',' {eval {var {sprint "dx_streak_" $instrument}}}}}
+                        {set_var {sprint "dx_remote_slot" {',' $slot} "_overdrive"} {',' {eval {var {sprint "dx_overdrive_" $instrument}}}}}
+                        {set_var {sprint "dx_remote_slot" {',' $slot} "_rails"} {',' $dx_rails}}
                      }
-                  }
-               )
-               ((kTrackBass kTrackRealBass)
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING bass MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED bass TEXTURES"}}
-                                 {set $dx_remote_highway_bass {',' $dx_local_highway_bass}}
-                                 {set $dx_remote_streak_bass {',' $dx_local_streak_bass}}
-                                 {set $dx_remote_overdrive_bass {',' $dx_local_overdrive_bass}}
-                              }
-                           )
-                           kNetReliable
-                        }
-                     }
-                  }
-               )
-               (kTrackDrum
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING drum MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED drum TEXTURES"}}
-                                 {set $dx_remote_highway_drum {',' $dx_local_highway_drum}}
-                                 {set $dx_remote_streak_drum {',' $dx_local_streak_drum}}
-                                 {set $dx_remote_overdrive_drum {',' $dx_local_overdrive_drum}}
-                              }
-                           )
-                           kNetReliable
-                        }
-                     }
-                  }
-               )
-               (kTrackKeys
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING keys MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED keys TEXTURES"}}
-                                 {set $dx_remote_highway_keys {',' $dx_local_highway_keys}}
-                                 {set $dx_remote_streak_keys {',' $dx_local_streak_keys}}
-                                 {set $dx_remote_overdrive_keys {',' $dx_local_overdrive_keys}}
-                              }
-                           )
-                           kNetReliable
-                        }
-                     }
-                  }
-               )
-               (kTrackRealKeys
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING prokeys MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED prokeys TEXTURES"}}
-                                 {set $dx_remote_keyboard {',' $dx_local_keyboard}}
-                                 {set $dx_remote_streak_prokeys {',' $dx_local_streak_prokeys}}
-                                 {set $dx_remote_overdrive_prokeys {',' $dx_local_overdrive_prokeys}}
-                              }
-                           )
-                           kNetReliable
-                        }
-                     }
-                  }
-               )
-               (kTrackVocals
-                  {do
-                     {dx_log_writer info {sprint "dx_sync_remote_textures: SENDING vocals MESSAGE"}}
-                     {session send_msg_to_all
-                        {'`' 
-                           (
-                              {do
-                                 {dx_log_writer info {sprint "dx_sync_remote_textures: RECEIVED vocals TEXTURES"}}
-                                 {set $dx_remote_vocal_arrow {',' $dx_local_vocal_arrow}}
-                                 {set $dx_remote_vocal_highway {',' $dx_local_vocal_highway}}
-                                 {set $dx_remote_vocal_notes {',' $dx_local_vocal_notes}}
-                                 {set $dx_remote_vocal_overdrive {',' $dx_local_vocal_overdrive}}
-                              }
-                           )
-                           kNetReliable
-                        }
-                     }
-                  }
-               )
+                  )
+                  kNetReliable
+               }
             }
          }
       }
