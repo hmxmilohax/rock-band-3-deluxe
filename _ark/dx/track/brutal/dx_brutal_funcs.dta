@@ -1,35 +1,38 @@
-{func dx_brutal_mode
-   ($enabled)
-   {if $enabled
-      {dx_brutal_mode_rb4 $enabled}
-   }
-}
-{func dx_brutal_mode_init ;unused
-   ($enabled)
-   ;not only inits brutal mode, but restores bottom_y for track when disabled
-   {beatmatch foreach_active_player $player
-      {if {!= {$player instrument} vocals}
-         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-         {$this set_showing TRUE}
-         {if_else $enabled
-            {dx_brutal_mode $enabled} ;call it now to reset the values, even if bottom_y doesn't stick, the beat handler will set it once the first time it runs
-            {{find_obj DX_GEMTRACKDIR} set bottom_y -26}
-         }
-      }
-   }
-}
-{func dx_cook_crowd ;cook crowd rating for other funcs
-   ($crowd_rating)
+
+{set $dx_brutal_slot_init (FALSE FALSE FALSE FALSE)}
+{set $dx_brutal_distance (-26 -26 -26 -26)}
+{set $dx_health_slot (0.75 0.75 0.75 0.75)} ; whats the default again?
+
+; {func dx_brutal_mode ($enabled)
+;   {if $enabled
+;      {dx_brutal_mode_rb4 $enabled}
+;   }
+;}
+; commented out just in case the idea of "different brutal modes" comes back
+; also as a note i commented out unused code just to make sure its distinct
+
+; {func dx_brutal_mode_init ($enabled) ; unused
+;   ;not only inits brutal mode, but restores bottom_y for track when disabled
+;   {beatmatch foreach_active_player $player
+;      {if {!= {$player instrument} vocals}
+;         {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+;         {$this set_showing TRUE}
+;         {if_else $enabled
+;            {dx_brutal_mode $enabled} ;call it now to reset the values, even if bottom_y doesn't stick, the beat handler will set it once the first time it runs
+;            {{find_obj DX_GEMTRACKDIR} set bottom_y -26}
+;         }
+;      }
+;   }
+;}
+{func dx_cook_crowd ($crowd_rating) ;cook crowd rating for other funcs
    {* 1.25 {- $crowd_rating 0.2}} ;makes it 0.0-1.0
 }
 
-{func dx_get_brutal_number_dx ;pass this routine the *cooked* crowd
-   ($cooked_crowd)
-   {- {* $cooked_crowd 126} 26} ;to increase how much we hide at max, increase the 126
-}
+; {func dx_get_brutal_number_dx ($cooked_crowd) ;pass this routine the *cooked* crowd
+;   {- {* $cooked_crowd 126} 26} ;to increase how much we hide at max, increase the 126
+; }
 
-{func dx_get_brutal_number_rb4 ;pass this routine the *cooked* crowd
-   ($cooked_crowd)
+{func dx_get_brutal_number_rb4 ($cooked_crowd) ;pass this routine the *cooked* crowd
    {do
       ;($cooked_crowd_rating {dx_cook_crowd $crowd_rating}) ;cook the crowd
       ($brutal_no 0) ;placeholder for brutal number
@@ -46,113 +49,92 @@
    $brutal_no
    }
 }
-{func
-   dx_brutal_set_crowd
-   ($slot $rating)
-   {switch $slot
-      (0 {set $dx_crowd_0 {dx_cook_crowd $rating}})
-      (1 {set $dx_crowd_1 {dx_cook_crowd $rating}})
-      (2 {set $dx_crowd_2 {dx_cook_crowd $rating}})
-      (3 {set $dx_crowd_3 {dx_cook_crowd $rating}})
-   }
+{func dx_brutal_set_crowd ($slot $rating)
+   {set_elem $dx_health_slot $slot {dx_cook_crowd $rating}}
    {dx_cook_crowd $rating}
 }
-{func
-   dx_brutal_set_number
-   ($slot $rating)
-   {switch $slot
-      (0 {set $brutal_number_0 {dx_get_brutal_number_rb4 $rating}})
-      (1 {set $brutal_number_1 {dx_get_brutal_number_rb4 $rating}})
-      (2 {set $brutal_number_2 {dx_get_brutal_number_rb4 $rating}})
-      (3 {set $brutal_number_3 {dx_get_brutal_number_rb4 $rating}})
-   }
+{func dx_brutal_set_number ($slot $rating)
+   {set_elem $dx_brutal_distance $slot $rating}
    {dx_get_brutal_number_rb4 $rating}
 }
-{func
-   dx_brutal_get_init
-   ($slot)
-   {switch $slot
-      (0 {set $this_init $dx_brutal0_init})
-      (1 {set $this_init $dx_brutal1_init})
-      (2 {set $this_init $dx_brutal2_init})
-      (3 {set $this_init $dx_brutal3_init})
+
+{func destroy_brutal_line
+   {if {exists $this_brutal_mesh}
+      {delete $this_brutal_mesh}
    }
-   $this_init
-}
-{func
-   dx_brutal_set_init
-   ($slot $set)
-   {switch $slot
-      (0 {set $dx_brutal0_init $set})
-      (1 {set $dx_brutal1_init $set})
-      (2 {set $dx_brutal2_init $set})
-      (3 {set $dx_brutal3_init $set})
+   {if {exists $this_brutal_mat}
+      {delete $this_brutal_mat}
+   }
+   {if {exists $this_brutal_tex}
+      {delete $this_brutal_mat}
    }
 }
-{func
-   dx_brutal_mode_rb4 ;this one does each slot individually and thus takes a lot more repetition
-   ($enabled)
-   {if_else $enabled
-      {beatmatch foreach_active_player $player
-         {unless {== {$player instrument} vocals}
-            {set $this_slot {{$player get_user} get_slot_num}}
-            {set_this {find_obj DX_GEMTRACKDIR}}
-            {set $this_crowd_rating {dx_brutal_set_crowd $this_slot {$player crowd_rating}}}
-            {dx_brutal_set_number $this_slot $this_crowd_rating}
-            {set $this_brutal_number {dx_get_brutal_number_rb4 $this_crowd_rating}}
-            {$this set bottom_y $this_brutal_number}
-            {set $this_brutal_mesh {sprint "brutal" $this_slot ".mesh"}}
-            {set $this_brutal_mat {sprint "brutal" $this_slot ".mat"}}
-            {set $this_brutal_tex {sprint "brutal" $this_slot ".tex"}}
-            {if {! {dx_brutal_get_init $this_slot}}
-               {dx_brutal_set_init $this_slot TRUE}
-               {if {exists $this_brutal_mesh}
-                  {delete $this_brutal_mesh}
-               }
-               {if {exists $this_brutal_mat}
-                  {delete $this_brutal_mat}
-               }
-               {if {exists $this_brutal_tex}
-                  {delete $this_brutal_mat}
-               }
 
-               {new Mesh $this_brutal_mesh}
-               {$this_brutal_mesh set geom_owner _beat.mesh}
+{func draw_brutal_line ($slotnum $line_pos)
+   {set_this {find_obj DX_GEMTRACKDIR}}
+   
+   
+   {if {! {elem $dx_brutal_slot_init $slotnum}}
+      {set $this_brutal_mesh {sprint "brutal" $slotnum ".mesh"}}
+      {set $this_brutal_mat {sprint "brutal" $slotnum ".mat"}}
+      {set $this_brutal_tex {sprint "brutal" $slotnum ".tex"}}
+      {set_elem $dx_brutal_slot_init $slotnum TRUE}
+      {destroy_brutal_line}
 
-               {new Mat $this_brutal_mat}
-               {$this_brutal_mat copy beat_marker.mat kCopyDeep}
-               {$this_brutal_mat set alpha 1}
-               {$this_brutal_mat set prelit FALSE} ; removes the fade on the edges
+      {new Mesh $this_brutal_mesh}
+      {$this_brutal_mesh set geom_owner _beat.mesh}
 
-               ; Not using something like plain.tex because the texture has a gradient on it that hides aliasing
-               {new Tex $this_brutal_tex}
-               {$this_brutal_tex set_bitmap {sprint "dx/custom_textures/_additional_textures/brutal_fade_line.png"}}
-               {$this_brutal_mat set diffuse_tex $this_brutal_tex}
+      {new Mat $this_brutal_mat}
+      {$this_brutal_mat copy beat_marker.mat kCopyDeep}
+      {$this_brutal_mat set alpha 1}
+      {$this_brutal_mat set prelit FALSE} ; removes the fade on the edges
 
-               {$this_brutal_mesh set mat $this_brutal_mat}
-               {stationary_back.grp add_object $this_brutal_mesh}
-            }
-            {$this_brutal_mesh set_local_pos 0 $this_brutal_number 0}
-         }
+      ; Not using something like plain.tex because the texture has a gradient on it that hides aliasing
+      {new Tex $this_brutal_tex}
+      {$this_brutal_tex set_bitmap {sprint "dx/custom_textures/_additional_textures/brutal_fade_line.png"}}
+      {$this_brutal_mat set diffuse_tex $this_brutal_tex}
+
+      {$this_brutal_mesh set mat $this_brutal_mat}
+      {stationary_back.grp add_object $this_brutal_mesh}
+   }
+   {$this_brutal_mesh set_local_pos 0 $line_pos 0}
+}
+
+{func run_brutal_logic ($slotnum $player)
+   {do 
+      {set_this {find_obj DX_GEMTRACKDIR}}
+      ($this_crowd_rating)
+      ($line_pos)
+      {set $this_crowd_rating {dx_brutal_set_crowd $slotnum {$player crowd_rating}}}
+      {set $line_pos {dx_get_brutal_number_rb4 $this_crowd_rating}}
+      ; i hope this is local
+      {dx_brutal_set_number $slotnum $this_crowd_rating}
+      {$this set bottom_y $line_pos}
+   }
+   $line_pos
+}
+
+{func make_the_game_inexplicably_harder_for_the_player ($slotnum $player $active)
+   {if_else $active
+      {do
+         {draw_brutal_line $slotnum {run_brutal_logic $slotnum $player}}
       }
-      {beatmatch foreach_active_player $player
-         {unless {== {$player instrument} vocals}
-            {set $this_slot {{$player get_user} get_slot_num}}
+      {do ; or dont make it harder
+         {if {elem $dx_brutal_slot_init $slotnum} {do
+            ; run it once after disable brutal
             {set_this {find_obj DX_GEMTRACKDIR}}
-            {set $this_brutal_mesh {sprint "brutal" $this_slot ".mesh"}}
-            {set $this_brutal_mat {sprint "brutal" $this_slot ".mat"}}
-            {set $this_brutal_tex {sprint "brutal" $this_slot ".tex"}}
-            {if {exists $this_brutal_mesh}
-               {delete $this_brutal_mesh}
-            }
-            {if {exists $this_brutal_mat}
-               {delete $this_brutal_mat}
-            }
-            {if {exists $this_brutal_tex}
-               {delete $this_brutal_mat}
-            }
-            {dx_brutal_set_init $this_slot TRUE}
-         }
+            {$this set bottom_y -26}
+            {destroy_brutal_line}
+            {set_elem $dx_brutal_slot_init $slotnum FALSE}
+         }}
+      }
+   }
+}
+
+{func dx_brutal_mode ($enabled)
+   {beatmatch foreach_active_player $player
+      {unless {== {$player instrument} vocals}
+         {make_the_game_inexplicably_harder_for_the_player {{$player get_user} get_slot_num} $player $enabled}
       }
    }
 }
