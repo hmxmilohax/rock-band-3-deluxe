@@ -1,0 +1,201 @@
+#define DX_PROGRESS_HEIGHT (0.12)
+#define DX_PROGRESS_HEIGHT_RATIO (0.7890625) ; There is some padding in the bar texture
+
+{func dx_spawn_progress_bar ($parent) {do
+   {set_this $parent}
+
+   {new Object progress_handler
+      (start_anim {do
+         ($curr_seconds {/ {beatmatch get_song_ms} 1000.0}) ;current time in seconds
+         ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
+
+         {progress_anim.anim animate (range 0 1) (period {- $total_seconds $curr_seconds}) (units kTaskSeconds)}
+      })
+
+      (populate_song_phrases {do
+         {set $iwanttologstuff TRUE}
+         {set_this {$this get parent_obj}}
+         {progress_render_fill.grp clear_objects}
+         {progress_render_fill2.grp clear_objects}
+         {progress_render_breaks.grp clear_objects}
+         {foreach $inst {progress_phrase_instances.grp get_array objects}
+            {delete $inst}
+         }
+         {progress_phrase_instances.grp clear_objects}
+         {foreach $entry {dx_get_this_countdown_array}
+            {do
+               ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
+               {if {!= {elem $entry 0} none}
+                  {dx_log_writer insane {sprint "phrase: " $entry}}
+                  {do
+                     ($phrasename {elem $entry 0})
+                     ($start_pos_frac {/ {beat_to_seconds {elem $entry 1}} $total_seconds})
+                     ($end_pos_frac {/ {beat_to_seconds {elem $entry 2}} $total_seconds})
+                     ($phrase_length {- $end_pos_frac $start_pos_frac})
+                     ($meshinst {new Mesh {elem $entry 0}})
+                     {if {< $phrase_length 0.01}
+                        {set $phrase_length {* $phrase_length 2}}
+                     }
+                     {if {startswith $phrasename "bre"}
+                        {set $phrase_length {- 1 $start_pos_frac}}
+                     }
+                     {$meshinst copy progress_generic_quad.mesh kCopyShallow}
+                     {$meshinst set_trans_parent progress_fills.trans}
+                     {$meshinst set_local_pos_index 0 $start_pos_frac}
+                     {$meshinst set_local_scale_index 0 $phrase_length}
+                     {$meshinst set mat {cond
+                        ({startswith $phrasename "overdrive"} progress_overdrive.mat)
+                        ({startswith $phrasename "delay"} progress_break.mat)
+                        ({startswith $phrasename "solo"} progress_solo.mat)
+                        ({startswith $phrasename "bre"} progress_bre.mat)
+                     }}
+                     {progress_phrase_instances.grp add_object $meshinst}
+                     {{cond
+                        ({startswith $phrasename "overdrive"} progress_render_fill2.grp)
+                        ({startswith $phrasename "delay"} progress_render_breaks.grp)
+                        ({startswith $phrasename "solo"} progress_render_fill.grp)
+                        ({startswith $phrasename "bre"} progress_render_fill.grp)
+                     } add_object $meshinst}
+                  }
+               }
+            }
+         }
+      })
+   }
+   {progress_handler set parent_obj $this}
+
+   {new Group progress.grp}
+   {progress.grp set_local_scale 19 16 19}
+   {progress.grp set_local_pos 0 0 -20}
+
+   {new Group progress_render_fill.grp}
+   {progress_render_fill.grp set_trans_parent progress.grp}
+
+   {new Group progress_render_fill2.grp} ; Used for overdrive phrases so the render over solos
+   {progress_render_fill2.grp set_trans_parent progress.grp}
+
+   {new Group progress_render_breaks.grp}
+   {progress_render_breaks.grp set_trans_parent progress.grp}
+
+   {new Group progress_phrase_instances.grp}
+
+   {new Trans progress_leftalign.trans}
+   {progress_leftalign.trans set_local_pos -0.5 0 0}
+   {progress_leftalign.trans set_trans_parent progress.grp}
+   {new Trans progress_fills.trans}
+   {progress_fills.trans set_local_scale 1 1 {* DX_PROGRESS_HEIGHT DX_PROGRESS_HEIGHT_RATIO}}
+   {progress_fills.trans set_trans_parent progress_leftalign.trans}
+
+   ; Spawn meshes and textures
+   {new Mesh progress_frame.mesh}
+   {dx_generate_3patch_mesh_alt progress_frame.mesh 1 DX_PROGRESS_HEIGHT 0.0908203125 8}
+   {new Tex progress_frame.tex}
+   {progress_frame.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/bar_frame.png"}
+   {new Mat progress_frame.mat}
+   {progress_frame.mat set diffuse_tex progress_frame.tex}
+   {progress_frame.mat set blend kBlendSrcAlpha}
+   {progress_frame.mat set z_mode kZModeDisable}
+   {progress_frame.mesh set mat progress_frame.mat}
+   {progress_frame.mesh set_trans_parent progress.grp}
+
+   {new Mesh progress_bg.mesh}
+   {progress_bg.mesh copy progress_frame.mesh kCopyShallow}
+   {new Tex progress_bg.tex}
+   {progress_bg.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/bar_bg.png"}
+   {new Mat progress_bg.mat}
+   {progress_bg.mat set diffuse_tex progress_bg.tex}
+   {progress_bg.mat set blend kBlendSrcAlpha}
+   {progress_bg.mat set z_mode kZModeDisable}
+   {progress_bg.mesh set mat progress_bg.mat}
+   {progress_bg.mesh set_trans_parent progress.grp}
+
+   {new Mesh progress_glass.mesh}
+   {progress_glass.mesh copy progress_frame.mesh kCopyShallow}
+   {new Tex progress_glass.tex}
+   {progress_glass.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/bar_glass.png"}
+   {new Mat progress_glass.mat}
+   {progress_glass.mat set diffuse_tex progress_glass.tex}
+   {progress_glass.mat set blend kBlendSrcAlpha}
+   {progress_glass.mat set z_mode kZModeDisable}
+   {progress_glass.mesh set mat progress_glass.mat}
+   {progress_glass.mesh set_trans_parent progress.grp}
+
+   {new Mesh progress_needle.mesh}
+   {dx_generate_quad_mesh progress_needle.mesh 0.015 DX_PROGRESS_HEIGHT}
+   {new Tex progress_needle.tex}
+   {progress_needle.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/needle.png"}
+   {new Mat progress_needle.mat}
+   {progress_needle.mat set diffuse_tex progress_needle.tex}
+   {progress_needle.mat set blend kBlendSrcAlphaAdd}
+   {progress_needle.mat set z_mode kZModeDisable}
+   {progress_needle.mesh set mat progress_needle.mat}
+   {progress_needle.mesh set_trans_parent progress_leftalign.trans}
+
+   {new Mesh progress_generic_quad.mesh}
+   {dx_generate_quad_mesh_leftalign progress_generic_quad.mesh 1 1}
+
+   {new Mesh progress_nowbar.mesh}
+   {progress_nowbar.mesh copy progress_generic_quad.mesh kCopyShallow}
+   {new Mat progress_nowbar.mat}
+   {progress_nowbar.mat set diffuse_tex plain.tex}
+   {progress_nowbar.mat set blend kBlendSrcAlpha}
+   {progress_nowbar.mat set z_mode kZModeDisable}
+   {progress_nowbar.mat set color {pack_color 0 0.33 0.5}}
+   {progress_nowbar.mesh set mat progress_nowbar.mat}
+   {progress_nowbar.mesh set_trans_parent progress_fills.trans}
+
+   {new Tex progress_overdrive.tex}
+   {progress_overdrive.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/overdrive_phrase.png"}
+   {new Mat progress_overdrive.mat}
+   {progress_overdrive.mat set diffuse_tex progress_overdrive.tex}
+   {progress_overdrive.mat set blend kBlendSrcAlpha}
+   {progress_overdrive.mat set z_mode kZModeDisable}
+   {progress_overdrive.mat set alpha 0.9}
+
+   {new Tex progress_solo.tex}
+   {progress_solo.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/solo_phrase.png"}
+   {new Mat progress_solo.mat}
+   {progress_solo.mat set diffuse_tex progress_solo.tex}
+   {progress_solo.mat set blend kBlendSrcAlpha}
+   {progress_solo.mat set z_mode kZModeDisable}
+
+   {new Tex progress_break.tex}
+   {progress_break.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/break_phrase.png"}
+   {new Mat progress_break.mat}
+   {progress_break.mat set diffuse_tex progress_break.tex}
+   {progress_break.mat set blend kBlendSrcAlpha}
+   {progress_break.mat set z_mode kZModeDisable}
+
+   {new Tex progress_bre.tex}
+   {progress_bre.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/bre_phrase.png"}
+   {new Mat progress_bre.mat}
+   {progress_bre.mat set diffuse_tex progress_bre.tex}
+   {progress_bre.mat set blend kBlendSrcAlpha}
+   {progress_bre.mat set z_mode kZModeDisable}
+
+   ; Setup draw order
+   {progress.grp add_object progress_bg.mesh}
+   {progress.grp add_object progress_render_fill.grp}
+   {progress.grp add_object progress_render_fill2.grp}
+   {progress.grp add_object progress_nowbar.mesh}
+   {progress.grp add_object progress_render_breaks.grp}
+   {progress.grp add_object progress_frame.mesh}
+   {progress.grp add_object progress_glass.mesh}
+   {progress.grp add_object progress_needle.mesh}
+
+   {progress.grp set_trans_parent $parent}
+   {progress.grp set_showing TRUE}
+
+   {new PropAnim progress_anim.anim}
+
+   {progress_anim.anim add_keys progress_needle.mesh (position) kPropVector3}
+   {progress_anim.anim set_key_val progress_needle.mesh (position) 0 (0 0 0)}
+   {progress_anim.anim set_key_val progress_needle.mesh (position) 1 (1 0 0)}
+
+   {progress_anim.anim add_keys progress_nowbar.mesh (scale) kPropVector3}
+   {progress_anim.anim set_key_val progress_nowbar.mesh (scale) 0 (0 1 1)}
+   {progress_anim.anim set_key_val progress_nowbar.mesh (scale) 1 (1 1 1)}
+   {progress.grp add_object progress_anim.anim}
+
+   {$this find progress.grp}
+}}
