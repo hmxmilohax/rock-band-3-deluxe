@@ -1,19 +1,25 @@
 #define DX_PROGRESS_HEIGHT (0.12)
 #define DX_PROGRESS_HEIGHT_RATIO (0.7890625) ; There is some padding in the bar texture
 
-{func dx_spawn_progress_bar ($parent) {do
+{func dx_spawn_progress_bar ($parent $trans_parent) {do
    {set_this $parent}
 
    {new Object progress_handler
-      (start_anim {do
-         ($curr_seconds {/ {beatmatch get_song_ms} 1000.0}) ;current time in seconds
-         ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
+      (start_progress 
+         {set_this {$this get parent_obj}}
+         {progress_anim.anim set_frame 0}
+         {script_task kTaskSeconds (script
+            {do
+               ($curr_seconds {/ {beatmatch get_song_ms} 1000.0}) ;current time in seconds
+               ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
 
-         {progress_anim.anim animate (range 0 1) (period {- $total_seconds $curr_seconds}) (units kTaskSeconds)}
-      })
+               {dx_log_writer insane {sprint "Starting progress bar at " $curr_seconds " / " $total_seconds}}
+               {progress_anim.anim animate (range 0 1) (period {- $total_seconds $curr_seconds}) (units kTaskSeconds)}
+            }
+         )}
+      )
 
       (populate_song_phrases {do
-         {set $iwanttologstuff TRUE}
          {set_this {$this get parent_obj}}
          {progress_render_fill.grp clear_objects}
          {progress_render_fill2.grp clear_objects}
@@ -65,8 +71,9 @@
    {progress_handler set parent_obj $this}
 
    {new Group progress.grp}
-   {progress.grp set_local_scale 19 16 19}
-   {progress.grp set_local_pos 0 0 -20}
+   {progress.grp set_local_rot 0 -90 0}
+   {progress.grp set_local_scale 19 19 19}
+   {progress.grp set_local_pos -12 0 -8.4}
 
    {new Group progress_render_fill.grp}
    {progress_render_fill.grp set_trans_parent progress.grp}
@@ -183,7 +190,7 @@
    {progress.grp add_object progress_glass.mesh}
    {progress.grp add_object progress_needle.mesh}
 
-   {progress.grp set_trans_parent $parent}
+   {progress.grp set_trans_parent $trans_parent}
    {progress.grp set_showing TRUE}
 
    {new PropAnim progress_anim.anim}
