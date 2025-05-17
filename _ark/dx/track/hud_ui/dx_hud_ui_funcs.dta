@@ -822,13 +822,15 @@
    {set $buf "<alt>"}
    {set $tag_terminated FALSE}
    {set $syl_id 0}
-   {foreach $syl $syllables
-      {if {&& {< $highlight $syl_id} {! $tag_terminated}}
-         {set $buf {sprint $buf "</alt>"}}
-         {set $tag_terminated TRUE}
+   {if {== {type $syllables} kDataArray}
+      {foreach $syl $syllables
+         {if {&& {< $highlight $syl_id} {! $tag_terminated}}
+            {set $buf {sprint $buf "</alt>"}}
+            {set $tag_terminated TRUE}
+         }
+         {set $buf {sprint $buf {elem $syl 1}}}
+         {++ $syl_id}
       }
-      {set $buf {sprint $buf {elem $syl 1}}}
-      {++ $syl_id}
    }
    {unless $tag_terminated 
       {set $buf {sprint $buf "</alt>"}}
@@ -898,23 +900,27 @@
    ;{lyric_fadingout.lbl set text_size {lyric_current.lbl get text_size}}
    ;{lyric_fadingout.lbl set alt_text_size {lyric_current.lbl get alt_text_size}}
    {lyric_fadingout.lbl copy lyric_current.lbl kCopyShallow}
-   {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
-      {lyric_upcoming.lbl set_token_fmt {sprint ""}}
-      {dx_apply_phrase lyric_upcoming.lbl -1 {dx_get_next_lyric_phrase}}
+   {if {> {size $dx_lyric_display_phrases} 1}
+      {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
+         {lyric_upcoming.lbl set_token_fmt {sprint ""}}
+         {dx_apply_phrase lyric_upcoming.lbl -1 {dx_get_next_lyric_phrase}}
+      }
+      {lyric_transition.anim animate (range 0 1) (period 0.3) (units kTaskUISeconds)}
+      {dx_lyric_display_update_syllable}
    }
-   {lyric_transition.anim animate (range 0 1) (period 0.3) (units kTaskUISeconds)}
-   {dx_lyric_display_update_syllable}
 }
 
 ; This is so fucking nightmarish god damn
 {func dx_lyric_display_update_syllable
-   {dx_apply_phrase lyric_current.lbl $dx_lyric_display_current_syl_idx {dx_get_current_lyric_phrase}}
-   {++ $dx_lyric_display_current_syl_idx}
-   {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
-   ; {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
-   {if_else {>= $dx_lyric_display_current_syl_idx {size $syllables_array}}
-      {dx_schedule_beats {elem {dx_get_next_lyric_phrase} 0} {quote {dx_lyric_display_advance_phrase}}}
-      {dx_schedule_beats {elem {elem $syllables_array $dx_lyric_display_current_syl_idx} 0} {quote {dx_lyric_display_update_syllable}}}
+   {if {> {size $dx_lyric_display_phrases} 0}
+      {dx_apply_phrase lyric_current.lbl $dx_lyric_display_current_syl_idx {dx_get_current_lyric_phrase}}
+      {++ $dx_lyric_display_current_syl_idx}
+      {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
+      ; {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
+      {if_else {>= $dx_lyric_display_current_syl_idx {size $syllables_array}}
+         {dx_schedule_beats {elem {dx_get_next_lyric_phrase} 0} {quote {dx_lyric_display_advance_phrase}}}
+         {dx_schedule_beats {elem {elem $syllables_array $dx_lyric_display_current_syl_idx} 0} {quote {dx_lyric_display_update_syllable}}}
+      }
    }
 }
 
