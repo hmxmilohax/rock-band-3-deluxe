@@ -662,9 +662,7 @@
          {set $random_tempo_song {song_select_panel pick_a_song}}
          {set $random_album_song {song_select_panel pick_a_song}}
          {set $random_artist_song {song_select_panel pick_a_song}}
-         #ifdef HX_PS3
          {set $random_diff_song {song_select_panel pick_a_song}}
-         #endif
          {set $random_ugc_song {song_select_panel pick_a_song}}
          ;run checks on the songs x num of times
          {foreach $entry $numtimes
@@ -674,9 +672,7 @@
             {$this dx_check_for_inst_song}
             {$this dx_check_for_inst_tempo}
             {$this dx_check_for_inst_artist}
-            #ifdef HX_PS3
             {$this dx_check_for_inst_diff}
-            #endif
             {$this dx_check_for_inst_album}
             {$this dx_check_for_inst_ugc}
          }
@@ -693,11 +689,20 @@
          {set $random_length {{song_mgr get_meta_data $random_length_song} length_ms}}
          {set $random_song_title {{song_mgr get_meta_data $random_song} title}}
          {set $random_tempo {{song_mgr get_meta_data $random_tempo_song} anim_tempo}}
-         #ifdef HX_PS3
          {set $random_diff FALSE}
-         {song_select_panel dx_authorpoll $random_diff_song}
-         {set $random_diff $bandrankvar}
-         #endif
+         {set $random_diff_inst FALSE}
+         {song_select_panel dx_set_diff $random_diff_song}
+         {set $random_diff_inst {random_elem $dx_play_a_show_active_instruments}}
+         {switch $random_diff_inst
+            (guitar {set $random_diff {{song_select_panel find "guitar.idd"} get difficulty}})
+            (real_guitar {set $random_diff {{song_select_panel find "guitar_pro.idd"} get difficulty}})
+            (bass {set $random_diff {{song_select_panel find "bass.idd"} get difficulty}})
+            (real_bass {set $random_diff {{song_select_panel find "bass_pro.idd"} get difficulty}})
+            ((drum real_drum) {set $random_diff {{song_select_panel find "drum.idd"} get difficulty}})
+            (keys {set $random_diff {{song_select_panel find "keys.idd"} get difficulty}})
+            (real_keys {set $random_diff {{song_select_panel find "keys_pro.idd"} get difficulty}})
+            (vocals {set $random_diff {{song_select_panel find "vocals.idd"} get difficulty}})
+         }
          {set $random_artist FALSE}
          {song_select_panel dx_authorpoll $random_artist_song}
          {set $random_artist $artistvar}
@@ -744,12 +749,10 @@
          {push_back $scorechasewritingarray {sprint $random_artist_song}}
          {set $scorechasewritingarray {array $scorechasewritingarray}}
       )
-      #ifdef HX_PS3
       (diff
          {push_back $scorechasewritingarray {sprint $random_diff_song}}
          {set $scorechasewritingarray {array $scorechasewritingarray}}
       )
-      #endif
       (ugc
          {push_back $scorechasewritingarray {sprint $random_ugc_song}}
          {set $scorechasewritingarray {array $scorechasewritingarray}}
@@ -910,28 +913,29 @@
                }
             }
          )
-         #ifdef HX_PS3
          (diff
             {cond
                ({! $play_a_show_found_diff_part}
                   {set $dx_play_a_show_line {localize play_a_show_missing_inst}}
                )
+               {if {== {sprint $random_diff_inst} "drum"}
+                  {set $random_diff_inst drums}
+               }
                {if_else $random_diff
                   {switch $random_diff
-                     (0 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}})
-                     (1 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier2}}})
-                     (2 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier3}}})
-                     (3 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier4}}})
-                     (4 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier6}}})
-                     (5 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier8}}})
-                     (6 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier9}}})
-                     {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize unknown}}}
+                     (0 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1} {localize $random_diff_inst}}})
+                     (1 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier2} {localize $random_diff_inst}}})
+                     (2 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier3} {localize $random_diff_inst}}})
+                     (3 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier4} {localize $random_diff_inst}}})
+                     (4 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier6} {localize $random_diff_inst}}})
+                     (5 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier8} {localize $random_diff_inst}}})
+                     (6 {set $dx_play_a_show_line {sprintf {localize play_a_show_diff_an} {localize generic_tier9} {localize $random_diff_inst}}})
+                     {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize unknown} {localize $random_diff_inst}}}
                   }
-                  {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1}}}
+                  {set $dx_play_a_show_line {sprintf {localize play_a_show_diff} {localize generic_tier1} {localize $random_diff_inst}}}
                }
             }
          )
-         #endif
          (ugc
             {cond
                ({! $play_a_show_found_ugc_part}
@@ -962,7 +966,7 @@
       ;}
    )
    (dx_pick_a_show
-      {set $availarray (year ugc song album artist length #ifdef HX_PS3 diff genre #endif)}
+      {set $availarray (year ugc song album artist length diff genre)}
       {set $avail2array ()}
       {set $avail3array ()}
       {set $avail4array ()}
@@ -1147,11 +1151,9 @@
       (artist
          {$this store_voted_song $random_artist_song}
       )
-      #ifdef HX_PS3
       (diff
          {$this store_voted_song $random_diff_song}
       )
-      #endif
       (ugc
          {$this store_voted_song $random_ugc_song}
       )
