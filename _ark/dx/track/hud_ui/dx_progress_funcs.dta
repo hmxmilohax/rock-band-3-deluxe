@@ -13,10 +13,11 @@
                ($curr_seconds {/ {beatmatch get_song_ms} 1000.0}) ;current time in seconds
                ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
 
-               {dx_log_writer insane {sprint "Starting progress bar at " $curr_seconds " / " $total_seconds}}
+               {set $iwanttologstuff TRUE}
                {progress_anim.anim animate (range 0 1) (period {- $total_seconds $curr_seconds}) (units kTaskSeconds)}
             }
-         )}
+         ) (delay 0) (name "Progress bar task") (once TRUE) 
+         }
       )
 
       (populate_song_phrases {do
@@ -24,7 +25,6 @@
          ($lastnote {dx_get_final_note})
          ($bre kDataUnhandled)
          ($lastnotepauseend $dx_end_of_song)
-         {set $iwanttologstuff TRUE}
          {set_this {$this get parent_obj}}
          {progress_render_fill.grp clear_objects}
          {progress_render_fill2.grp clear_objects}
@@ -38,19 +38,21 @@
                {set $bre $entry}
             }
          }
-         {dx_log_writer insane {sprint "Song has BRE: " $bre}}
-         {dx_log_writer insane {sprint "Final note: " $lastnote}}
-         {dx_log_writer insane {sprint "End of song: " $dx_end_of_song}}
+         ;{dx_log_writer insane {sprint "Song has BRE: " $bre}}
+         ;{dx_log_writer insane {sprint "Final note: " $lastnote}}
+         ;{dx_log_writer insane {sprint "End of song: " $dx_end_of_song}}
          {if $bre {set $lastnotepauseend {elem $bre 1}}}
-         {dx_log_writer insane {sprint "Last note pause until: " $lastnotepauseend " (diff " {- $lastnotepauseend $lastnote} ")"}}
+         ;{dx_log_writer insane {sprint "Last note pause until: " $lastnotepauseend " (diff " {- $lastnotepauseend $lastnote} ")"}}
          {if {>= {- $lastnotepauseend $lastnote} 8}
-            {push_back $countdown_array {array (delay_lastnote $lastnote $lastnotepauseend)}}
+            {if {! {find_exists $countdown_array delay_lastnote}}
+               {push_back $countdown_array {array (delay_lastnote $lastnote $lastnotepauseend)}}
+            }
          }
          {foreach $entry $countdown_array
             {do
                ($total_seconds {beat_to_seconds $dx_end_of_song}) ;grab current song length in seconds
                {if {!= {elem $entry 0} none}
-                  {dx_log_writer insane {sprint "phrase: " $entry}}
+                  ;{dx_log_writer insane {sprint "phrase: " $entry}}
                   {do
                      ($phrasename {elem $entry 0})
                      ($start_pos_frac {/ {beat_to_seconds {elem $entry 1}} $total_seconds})
@@ -108,7 +110,7 @@
    {new Group progress_render_fill.grp}
    {progress_render_fill.grp set_trans_parent progress.grp}
 
-   {new Group progress_render_fill2.grp} ; Used for overdrive phrases so the render over solos
+   {new Group progress_render_fill2.grp} ; Used for overdrive phrases so they render over solos
    {progress_render_fill2.grp set_trans_parent progress.grp}
 
    {new Group progress_render_breaks.grp}
@@ -158,15 +160,16 @@
    {progress_glass.mesh set_trans_parent progress.grp}
 
    {new Mesh progress_needle.mesh}
-   {dx_generate_quad_mesh progress_needle.mesh 0.015 DX_PROGRESS_HEIGHT}
+   {dx_generate_quad_mesh progress_needle.mesh 1 DX_PROGRESS_HEIGHT}
    {new Tex progress_needle.tex}
    {progress_needle.tex set_bitmap "dx/custom_textures/_additional_textures/progress_bar/needle.png"}
    {new Mat progress_needle.mat}
    {progress_needle.mat set diffuse_tex progress_needle.tex}
-   {progress_needle.mat set blend kBlendSrcAlphaAdd}
+   {progress_needle.mat set blend kBlendSrcAlpha}
    {progress_needle.mat set z_mode kZModeDisable}
    {progress_needle.mesh set mat progress_needle.mat}
    {progress_needle.mesh set_trans_parent progress_leftalign.trans}
+   {progress_needle.mesh set_local_scale 0.015 1 1}
 
    {new Mesh progress_generic_quad.mesh}
    {dx_generate_quad_mesh_leftalign progress_generic_quad.mesh 1 1}
@@ -212,7 +215,7 @@
 
    {new BandLabel progress_instrument_icon.lbl}
    {progress_instrument_icon.lbl set resource_name instruments_icons}
-   {progress_instrument_icon.lbl set text_size 0.1}
+   {progress_instrument_icon.lbl set text_size 1}
    {progress_instrument_icon.lbl set fit_type kFitJust}
    {progress_instrument_icon.lbl set alignment kMiddleRight}
    {progress_instrument_icon.lbl set width 50}
@@ -220,17 +223,19 @@
    ;{progress_instrument_icon.lbl set_showing TRUE}
    {progress_instrument_icon.lbl set_trans_parent progress_leftalign.trans}
    {progress_instrument_icon.lbl set_local_pos -0.05 0 0}
+   {progress_instrument_icon.lbl set_local_scale 0.1 0.1 0.1}
    {progress_instrument_icon.lbl set_token_fmt os_blnk}
 
    {new BandLabel progress_timer.lbl}
    {progress_timer.lbl set resource_name pentatonic_outline}
-   {progress_timer.lbl set text_size 0.1}
+   {progress_timer.lbl set text_size 1}
    {progress_timer.lbl set fit_type kFitJust}
    {progress_timer.lbl set alignment kTopRight}
    {progress_timer.lbl set width 50}
    {progress_timer.lbl set height 50}
    {progress_timer.lbl set_trans_parent progress.grp}
-   {progress_timer.lbl set_local_pos 1 0 {* DX_PROGRESS_HEIGHT -0.5}}
+   {progress_timer.lbl set_local_pos 0.5 0 {* DX_PROGRESS_HEIGHT -0.5}}
+   {progress_timer.lbl set_local_scale 0.1 0.1 0.1} ; The Wii doesn't like rendering small font sizes correctly so we use local scale instead
    {progress_timer.lbl set_token_fmt os_blnk}
 
    ; Setup draw order
