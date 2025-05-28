@@ -6,6 +6,7 @@
 
    {new Object progress_handler
       (start_progress 
+         {$this update_vis}      
          {set_this {$this get parent_obj}}
          {progress_anim.anim set_frame 0}
          {script_task kTaskSeconds (script
@@ -20,14 +21,32 @@
          }
       )
 
+      (update_vis
+         {do
+            ($timer_vis {!= $dx_time_remaining_direction off})
+            {set_this {$this get parent_obj}}
+            {progress_content.grp set_showing $dx_song_progress_bar}
+            {if_else $dx_song_progress_bar
+               {progress_timer.lbl set_local_pos 0.5 0 {* DX_PROGRESS_HEIGHT -0.5}}
+               {progress_timer.lbl set_local_pos 0.5 0 {* DX_PROGRESS_HEIGHT 0.5}}
+            }
+            {progress_timer.lbl set_showing $timer_vis}
+            {progress_render_solo.grp set_showing $dx_solo_progress}
+            {progress_render_bre.grp set_showing $dx_bre_progress}
+            {progress_render_overdrive.grp set_showing $dx_overdrive_progress}
+            {progress_instrument_icon.lbl set_showing $dx_icon_progress}
+         }
+      )
+
       (populate_song_phrases {do
          ($countdown_array {dx_get_this_countdown_array})
          ($lastnote {dx_get_final_note})
          ($bre kDataUnhandled)
          ($lastnotepauseend $dx_end_of_song)
          {set_this {$this get parent_obj}}
-         {progress_render_fill.grp clear_objects}
-         {progress_render_fill2.grp clear_objects}
+         {progress_render_solo.grp clear_objects}
+         {progress_render_overdrive.grp clear_objects}
+         {progress_render_bre.grp clear_objects}
          {progress_render_breaks.grp clear_objects}
          {foreach $inst {progress_phrase_instances.grp get_array objects}
             {delete $inst}
@@ -77,10 +96,10 @@
                      }}
                      {progress_phrase_instances.grp add_object $meshinst}
                      {{cond
-                        ({startswith $phrasename "overdrive"} progress_render_fill2.grp)
+                        ({startswith $phrasename "overdrive"} progress_render_overdrive.grp)
                         ({startswith $phrasename "delay"} progress_render_breaks.grp)
-                        ({startswith $phrasename "solo"} progress_render_fill.grp)
-                        ({startswith $phrasename "bre"} progress_render_fill.grp)
+                        ({startswith $phrasename "solo"} progress_render_solo.grp)
+                        ({startswith $phrasename "bre"} progress_render_bre.grp)
                      } add_object $meshinst}
                   }
                }
@@ -107,11 +126,16 @@
    {progress.grp set_local_scale 19 19 19}
    {progress.grp set_local_pos -12 0 -8.0}
 
-   {new Group progress_render_fill.grp}
-   {progress_render_fill.grp set_trans_parent progress.grp}
+   {new Group progress_content.grp}
 
-   {new Group progress_render_fill2.grp} ; Used for overdrive phrases so they render over solos
-   {progress_render_fill2.grp set_trans_parent progress.grp}
+   {new Group progress_render_solo.grp}
+   {progress_render_solo.grp set_trans_parent progress.grp}
+
+   {new Group progress_render_bre.grp}
+   {progress_render_bre.grp set_trans_parent progress.grp}
+
+   {new Group progress_render_overdrive.grp}
+   {progress_render_overdrive.grp set_trans_parent progress.grp}
 
    {new Group progress_render_breaks.grp}
    {progress_render_breaks.grp set_trans_parent progress.grp}
@@ -239,15 +263,17 @@
    {progress_timer.lbl set_token_fmt os_blnk}
 
    ; Setup draw order
-   {progress.grp add_object progress_bg.mesh}
-   {progress.grp add_object progress_render_fill.grp}
-   {progress.grp add_object progress_render_fill2.grp}
-   {progress.grp add_object progress_nowbar.mesh}
-   {progress.grp add_object progress_render_breaks.grp}
-   {progress.grp add_object progress_frame.mesh}
-   {progress.grp add_object progress_glass.mesh}
-   {progress.grp add_object progress_needle.mesh}
-   {progress.grp add_object progress_instrument_icon.lbl}
+   {progress_content.grp add_object progress_bg.mesh}
+   {progress_content.grp add_object progress_render_solo.grp}
+   {progress_content.grp add_object progress_render_bre.grp}
+   {progress_content.grp add_object progress_render_overdrive.grp}
+   {progress_content.grp add_object progress_nowbar.mesh}
+   {progress_content.grp add_object progress_render_breaks.grp}
+   {progress_content.grp add_object progress_frame.mesh}
+   {progress_content.grp add_object progress_glass.mesh}
+   {progress_content.grp add_object progress_needle.mesh}
+   {progress_content.grp add_object progress_instrument_icon.lbl}
+   {progress.grp add_object progress_content.grp}
    {progress.grp add_object progress_timer.lbl}
 
    {progress.grp set_trans_parent $trans_parent}
