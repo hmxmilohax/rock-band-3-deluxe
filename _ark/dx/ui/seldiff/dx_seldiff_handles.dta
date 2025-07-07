@@ -635,6 +635,13 @@
       }
    )
    (dx_refesh_songs
+      ;sort by difficulty so we have a super small chance of hitting headers
+      {set $dx_pas_sort_changed TRUE}
+      {song_select_filter_panel filter_enter}
+      {{music_library get view_settings_provider} select_setting 1}
+      {{music_library get view_settings_provider} select_setting_option 3}
+      {music_library report_sort_and_filters}
+      {song_select_filter_panel filter_exit}
       ;we actually roll for songs 30 times for each line
       ;boy i hope we find one with the instrument you use
       {set $numtimes ()}
@@ -1168,10 +1175,10 @@
       )
    )
    (hold_up
+      {$this dx_play_a_show_is_loading}
       {if {session_mgr is_leader_local}
          {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
       }
-      {song_preview.lbl set text_token {localize play_a_show_refreshing}}
       {set $votingallowed FALSE}
       {set $current_voted_song FALSE}
       {play_countdown_text.lbl set_showing TRUE}
@@ -1192,22 +1199,26 @@
          }
       }
    )
+   (dx_play_a_show_is_loading
+      {song_preview.lbl set text_token {localize play_a_show_pick_songs}}
+      {line1.lbl set text_token {localize loading}}
+      {line2.lbl set text_token {localize loading}}
+      {line3.lbl set text_token {localize loading}}
+      {line4.lbl set text_token {localize loading}}
+      {line5.lbl set text_token {localize loading}}
+      {line6.lbl set text_token {localize loading}}
+   )
    (dx_play_a_show_send_voted
+      {$this dx_play_a_show_is_loading}
       {$this format_vote band}
       {play_header.lbl set text_token {sprint " "}}
       {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
-      {song_preview.lbl set text_token {localize play_a_show_pick_songs}}
       {switch $dx_play_a_show_vote
          (1 {switch $line1eval DX_PLAY_SONG_PICKER})
          (2 {switch $line2eval DX_PLAY_SONG_PICKER})
          (3 {switch $line3eval DX_PLAY_SONG_PICKER})
          (4 {switch $line4eval DX_PLAY_SONG_PICKER})
          (5 {switch $line5eval DX_PLAY_SONG_PICKER})
-         (6
-            {$this dx_refesh_songs}
-            {$this update_preview_song $current_voted_song "dx/custom_textures/_additional_textures/blank_album_art_keep.png" 0}
-            {song_preview.lbl set text_token {localize play_a_show_refreshing}}
-         )
       }
       {set $dx_playlist_array {array $dx_playlist_array}}
       {set $votingallowed FALSE}
@@ -1215,6 +1226,7 @@
          {delete dx_send_vote}
       }
       {$this dx_play_countdown_set_time {localize play_a_show_submitting} ""}
+      {$this dx_play_a_show_is_loading}
       {script_task kTaskSeconds (name dx_send_vote) (delay 1)
          (script
             {$this dx_play_countdown_set_time {localize play_a_show_submitting} 0}
@@ -1291,15 +1303,18 @@
       }
    )
    (dx_play_a_show_recieve_song
-      {if_else {> {size $dx_playlist_array} 0}
-         {do
-            {set $dx_in_show_flow FALSE}
-            {meta_performer set_songs $dx_playlist_array}
-            {set $dx_playing_a_show TRUE}
-            {ui sync_screen {music_library get_next_screen} 0}
-         }
-         {do
-            {dx_passive_messenger_symbol "no songs queued"}
+      {if_else $dx_leaveashow
+         {set $dx_leaveashow FALSE}
+         {if_else {> {size $dx_playlist_array} 0}
+            {do
+               {set $dx_in_show_flow FALSE}
+               {meta_performer set_songs $dx_playlist_array}
+               {set $dx_playing_a_show TRUE}
+               {ui sync_screen {music_library get_next_screen} 0}
+            }
+            {do
+               {dx_passive_messenger_symbol "no songs queued"}
+            }
          }
       }
    )
