@@ -3,14 +3,17 @@
          #ifndef HX_WII os_menu_options #endif
          os_functional_options
          os_pedantic_settings
-         {if_else {session_mgr is_local}
+         {if_else {&& $dx_debug {session_mgr is_local}}
             os_debug
             0
          }
          #ifdef HX_XBOX
          #ifdef RB3E
          #ifndef RB3E_EMULATOR
-         os_reboot
+         {if_else {$this in_game}
+            0
+            os_reboot
+         }
          #endif
          #endif
          #endif
@@ -20,10 +23,10 @@
          (os_pedantic_settings {dx_state dxState_WhoCares})
          (os_functional_options {dx_state dxState_FunctionalOptions})
          (os_debug
-            ;{if_else $dx_debug_first
-            ;   {dx_state dxState_DebugWarn}
+            {if_else $dx_debug_first
+               {dx_state dxState_DebugWarn}
                {dx_state dxState_Debug}
-            ;}
+            }
          )
          (os_reboot {dx_state dxState_RebootWarn})
       )
@@ -242,7 +245,7 @@
          {switch $dx_current_intro_movie
             (deluxe os_intro_deluxe)
             (vanilla os_intro_vanilla)
-            (off os_intro_off)
+            (disabled os_intro_disabled)
          }
          {if_else $dx_splash_screen os_splash_on os_splash_off}
          ;remove high song count warn
@@ -280,8 +283,8 @@
          (os_additional_parts {set $dx_additional_parts {! $dx_additional_parts}})
          (os_songdelay {set $dx_song_delay {! $dx_song_delay}})
          (os_intro_deluxe {set $dx_current_intro_movie vanilla})
-         (os_intro_vanilla {set $dx_current_intro_movie off})
-         (os_intro_off {set $dx_current_intro_movie deluxe})
+         (os_intro_vanilla {set $dx_current_intro_movie disabled})
+         (os_intro_disabled {set $dx_current_intro_movie deluxe})
          (os_splash {set $dx_splash_screen {! $dx_splash_screen}})
          (os_server_online {set $dx_connected_server live})
          (os_server_live {set $dx_connected_server liveless})
@@ -371,7 +374,14 @@
          #ifdef RB3DX_DEV
          os_milo
          #endif
+         do_script
          os_logging
+         os_dumps
+         #ifndef HX_WII
+         os_testsongs  ; Songs folder is removed on Wii
+         #endif
+         os_testfeatures
+         os_uptime
          #ifdef HX_PS3
          {if_else {file_exists DX_HI_MEM_PATH}
             {if_else {> {size {read_file DX_HI_MEM_PATH}} 0}
@@ -384,17 +394,6 @@
             os_dx_himem_off
          }
          #endif
-         do_script
-         os_uptime
-         os_dumplyrics
-         os_dumproot
-         os_dumproot2
-         print_hmx
-         print_objects
-         print_platform
-         {if_else $dx_time_remain_dbg os_time_remain_dbg_on os_time_remain_dbg_off}
-         {if_else $dx_judgment_dbg os_judgment_dbg_on os_judgment_dbg_off}
-         os_cycleaspect
       )
       #ifdef HX_PS3
       (enter
@@ -416,22 +415,77 @@
             {set $dx_debug FALSE}
             {dx_state dxState_Advanced}
          )
-         (os_milo
-            {dx_state dxState_MiloPanels})
+         (os_milo {dx_state dxState_MiloPanels})
+         (do_script
+            {run DX_ACE_PATH}
+         )
+         (os_logging {dx_state dxState_LogSettings})
+         (os_dumps {dx_state dxState_Dumps})
+         (os_testsongs {dx_state dxState_TestSongs})
+         (os_testfeatures {dx_state dxState_TestFeatures})
          (os_uptime
             {dx_uptime_onscreen}
          )
-         (print_hmx
-            {print_hmx_panel}
+         (os_dx_himem_off {dx_state dxState_HimemWarn})
+         (os_dx_himem_on
+            {write_file 
+               {array
+                  (
+                     (dx_high_memory 131000000)
+                     (dx_song_count 8000)
+                  )
+               }
+            }
          )
-         (os_dumplyrics
-            #ifdef HX_PS3
-               {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/lyrics.dta"} $dx_lyric_display_phrases}
-            #endif
-            #ifdef HX_XBOX
-               {write_file "GAME:/lyrics.dta" $dx_lyric_display_phrases}
-            #endif
+         
+      )
+      (cancel
+         {dx_state dxState_Advanced}
+      )
+   )
+
+   (dxState_TestSongs
+      (view
+         dx_calibrationtest
+      )
+      (select
+         (dx_calibrationtest
+            ;{set $dx_test_song TRUE}  ; TODO: Implement score invalidation
+            {meta_performer set_song dx_calibrationtest}
+            {gamemode set_mode qp_coop}
+            {ui sync_screen {music_library get_next_screen} 0}
          )
+      )
+      (cancel {dx_state dxState_Debug})
+   )
+
+   (dxState_TestFeatures
+      (view
+         print_platform
+         {if_else $dx_time_remain_dbg os_time_remain_dbg_on os_time_remain_dbg_off}
+         {if_else $dx_judgment_dbg os_judgment_dbg_on os_judgment_dbg_off}
+         os_cycleaspect
+      )
+      (select
+         (print_platform
+            {dx_passive_messenger_symbol {sprintf "%s" {localize $dx_detected_platform}}}
+         )
+         (os_time_remain_dbg {set $dx_time_remain_dbg {! $dx_time_remain_dbg}})
+         (os_judgment_dbg {set $dx_judgment_dbg {! $dx_judgment_dbg}})
+         (os_cycleaspect {dx_cycle_aspect})
+      )
+      (cancel {dx_state dxState_Debug})
+   )
+
+   (dxState_Dumps
+      (view
+         os_dumproot
+         os_dumproot2
+         print_hmx
+         print_objects
+         os_dumplyrics
+      )
+      (select
          (os_dumproot
             #ifdef HX_PS3
             {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/rootarray.dta"} $syscfg}
@@ -452,8 +506,18 @@
             }
             {dx_passive_messenger rootarray_dumped2}
          )
-         (os_time_remain_dbg {set $dx_time_remain_dbg {! $dx_time_remain_dbg}})
-         (os_judgment_dbg {set $dx_judgment_dbg {! $dx_judgment_dbg}})
+         (print_hmx
+            {print_hmx_panel}
+         )
+         (print_objects {dx_print_objects})
+         (os_dumplyrics
+            #ifdef HX_PS3
+               {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/lyrics.dta"} $dx_lyric_display_phrases}
+            #endif
+            #ifdef HX_XBOX
+               {write_file "GAME:/lyrics.dta" $dx_lyric_display_phrases}
+            #endif
+         )
          (generate_updates_dta
             {set $tempwrite {find_exists $syscfg missing_song_data}}
             {foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
@@ -463,30 +527,8 @@
             {set $tempwrite FALSE}
             {dx_passive_messenger songs_updates_generated}
          )
-         (print_platform
-            {dx_passive_messenger_symbol {sprintf "%s" {localize $dx_detected_platform}}}
-         )
-         (do_script
-            {run DX_ACE_PATH}
-         )
-         (print_objects {dx_print_objects})
-         (os_logging {dx_state dxState_LogSettings})
-         (os_dx_himem_off {dx_state dxState_HimemWarn})
-         (os_dx_himem_on
-            {write_file 
-               {array
-                  (
-                     (dx_high_memory 131000000)
-                     (dx_song_count 8000)
-                  )
-               }
-            }
-         )
-         (os_cycleaspect {dx_cycle_aspect})
       )
-      (cancel
-         {dx_state dxState_Advanced}
-      )
+      (cancel {dx_state dxState_Debug})
    )
 
    (dxState_PositionRemapper
