@@ -1,0 +1,121 @@
+#define SONGS_PER_CACHE_PAGE (500)
+
+{func dx_generate_search_cache
+    {music_library reset_filters}
+    {set $iwanttologstuff TRUE}
+    {set $searchcache_buf {array 0}}
+    {set $searchcache_curfile 1}
+    {set $searchcache_curdata 0}
+    {set $searchcache_numdata {music_library num_data}}
+    ;{set $searchcache_proctime 0}
+    {set $searchcache_count 0}
+    {dx_generate_search_cache_updatepath}
+    {dx_generate_search_cache_loop}
+}
+
+{func dx_generate_search_cache_updatepath
+    {set $searchcache_filepath {dx_search_cache_getpath $searchcache_curfile}}
+}
+
+{func dx_search_cache_getpath ($num)
+    {sprint DX_GAMEDATA_ROOT "dx_searchcache_" $num ".dta"}
+}
+
+{func dx_generate_search_cache_loop
+    {do
+        ($continue TRUE)
+        ($time 0.0)
+        {while $continue
+            ; Time the executation so that we only run this for ~100ms per frame and allow UI to continue updating
+            {+= $time {time {dx_generate_search_cache_iteration}}}
+            {if {> $time 100}
+                {set $continue FALSE}
+            }
+            {if {>= $searchcache_curdata $searchcache_numdata}
+                {set $continue FALSE}
+            }
+        }
+        ;{$temp_status_indicator set_token_fmt {sprint "Generating search cache: " $searchcache_curdata "/" $searchcache_numdata}}
+        {if_else {< $searchcache_curdata $searchcache_numdata}
+            {script_task kTaskUISeconds (delay 0.001) (script
+                {dx_generate_search_cache_loop}
+            )}
+            {do
+                {dx_generate_search_cache_flushbuffer}
+                {dx_generate_search_cache_finalize}
+            }
+        }
+    }
+}
+
+{func dx_generate_search_cache_finalize
+    {set $searchcache_meta
+        {array (
+            (comment "This is the song search cache. Do not edit these files! You can delete them, but make sure to delete all of them when doing so.")
+            (filecount {- $searchcache_curfile 1})
+            (songcount $searchcache_count)
+            (listlength $searchcache_numdata)
+        )}
+    }
+    {write_file {dx_search_cache_getpath "meta"} $searchcache_meta}
+}
+
+{func dx_load_search_cache_meta
+    {set $searchcache_meta {read_file {dx_search_cache_getpath "meta"}}}
+}
+
+{func dx_generate_search_cache_iteration
+    {+= $searchcache_curdata 1}
+    {if {< $searchcache_curdata $searchcache_numdata}
+        {music_library set_highlight_ix $searchcache_curdata}
+        {do
+            ($node {music_library get_highlighted_node})
+            {if {== {$node get_node_type} kNodeSong}
+                ;{song_select_panel dx_authorpoll {$node get_token}}
+                ; Author finder is too slow
+                {push_back $searchcache_buf {array ({$node get_token} {$node title} $searchcache_curdata)}}
+                {+= $searchcache_count 1}
+                {if {>= {size $searchcache_buf} SONGS_PER_CACHE_PAGE}
+                    {dx_generate_search_cache_flushbuffer}
+                }
+            }
+        }
+    }
+}
+
+{func dx_generate_search_cache_flushbuffer
+    {if {> {size $searchcache_buf} 0}
+        {write_file $searchcache_filepath $searchcache_buf}
+        {set $searchcache_buf {array 0}}
+        {+= $searchcache_curfile 1}
+        {dx_generate_search_cache_updatepath}
+    }
+}
+
+{func dx_get_search_cache_entry ($idx)
+    ;{dx_log_writer insane {sprint "Getting search cache entry " $idx}}
+    {do
+        ($filenum {+ {int {/ $idx SONGS_PER_CACHE_PAGE}} 1})
+        ($fileindex {mod $idx SONGS_PER_CACHE_PAGE})
+        {if {!= $filenum $searchcache_current_page}
+            {set $searchcache_current_page $filenum}
+            {set $searchcache_page_data {read_file {dx_search_cache_getpath $filenum}}}
+        }
+        {elem $searchcache_page_data $fileindex}
+    }
+}
+
+{func dx_song_search ($query)
+    {set $search_query $query}
+    {set $iwanttologstuff TRUE}
+    {set $search_results {array 0}}
+    {foreach_int $i 0 {elem {find_exists $searchcache_meta songcount} 1}
+        {do
+            ($entry {dx_get_search_cache_entry $i})
+            ($name {tolower {elem $entry 1}})
+            {if {has_substr $name $query}
+                {push_back $search_results $entry}
+            }
+        }
+    }
+}
