@@ -1,0 +1,150 @@
+{set $focused_input_field 0}
+{func dx_create_input_field ($name)
+    {do
+        ($fielddir {new RndDir $name 
+            (label {object text.lbl})
+            (set_sink ($obj) {$this set sink_obj $obj})
+            (text {$this get buf})
+            (set_text ($text)
+                {$this set buf $text}
+                {$this update_label}
+            )
+            (update_label
+                {text.lbl set_token_fmt stringify {$this get buf}}
+            )
+
+            (keyboard_msg ($key $shift $ctrl $alt)
+                {if {&& {>= $key 32} {<= $key 127}} ; ASCII printable
+                    {$this insert_char {char $key}}
+                }
+                {switch $key
+                    (KB_TAB {dx_keyboard_unfocus})
+                    (KB_BACKSPACE {$this delete_char})
+                    (KB_LEFT {$this shift_caret -1})
+                    (KB_RIGHT {$this shift_caret 1})
+                    (KB_ENTER {$this accept})
+                }
+            )
+
+            ;These two use the caret position
+            (insert_char ($char)
+                {if_else {== [caret] {strlen [buf]}}
+                    {$this set buf {sprint [buf] $char}}
+                    {do
+                        {$this set buf {sprint {substr [buf] 0 [caret]} $char {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
+                    }
+                }
+                {+= [caret] 1}
+                {$this update_label}
+                {$this sync_caret}
+                {$this send_update_msg}
+            )
+            (delete_char
+                {if {> [caret] 0}
+                    {if_else {== [caret] {strlen [buf]}}
+                        {$this set buf {sprint {substr [buf] 0 {- [caret] 1}}}}
+                        {$this set buf {sprint {substr [buf] 0 {- [caret] 1}} {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
+                    }
+                    {-= [caret] 1}
+                    {$this update_label}
+                    {$this sync_caret}
+                    {$this send_update_msg}
+                }
+            )
+
+            (shift_caret ($shift)
+                {+= [caret] $shift}
+                {clamp_eq [caret] 0 {strlen [buf]}}
+                {$this sync_caret}
+            )
+
+            (accept
+                {dx_keyboard_unfocus}
+                {[sink_obj] input_field_accept $this [buf]}
+            )
+
+            (send_update_msg
+                {[sink_obj] input_field_update $this [buf] [focused]}
+            )
+
+            ; Call this if you edit the label's size or font
+            (sync_properties
+                {caret.lbl set resource_name {text.lbl get resource_name}}
+                {caret.lbl set text_size {text.lbl get text_size}}
+            )
+            (sync_caret
+                {do
+                    ($width {text.lbl get_string_width {substr [buf] 0 [caret]}})
+                    {caret.lbl set_local_pos_index 0 $width}
+                }
+            )
+
+            (set_focused
+                {$this set focused TRUE}
+                {$this set caret {strlen [buf]}}
+                {caret.lbl set_showing TRUE}
+                {$this sync_caret}
+                {$this send_update_msg}
+            )
+            (set_unfocused
+                {$this set focused FALSE}
+                {caret.lbl set_showing FALSE}
+                {$this send_update_msg}
+            )
+        })
+        {with $fielddir
+            {new BandLabel text.lbl}
+            {text.lbl set resource_name pentatonic}
+            {text.lbl set text_size 20.5}
+            {text.lbl set fit_type kFitJust}
+            {text.lbl set alignment kMiddleLeft}
+            {text.lbl set width 600}
+            {text.lbl set height 40}
+            {text.lbl set_trans_parent $this}
+            {$this set sink_obj kDataUnhandled}
+            {$this set buf ""}
+            {$this set caret 0}
+            {$this set focused FALSE}
+
+            {new BandLabel caret.lbl}
+            {$this sync_properties}
+            {caret.lbl set fit_type kFitJust}
+            {caret.lbl set alignment kMiddleLeft}
+            {caret.lbl set width 40}
+            {caret.lbl set height 40}
+            {caret.lbl set_token_fmt stringify "|"}
+            {caret.lbl set_trans_parent $this}
+            {caret.lbl set_local_scale 0.4 1 1}
+            {caret.lbl set_showing FALSE}
+
+            {new UIColor caret.color}
+            {caret.color set color {pack_color 1 0 0}}
+            {caret.lbl set color_override caret.color}
+            {$this sync_objects}
+        }
+    }
+}
+
+{func dx_keyboard_handler ($key $shift $ctrl $alt)
+    ;{dx_passive_messenger_symbol {sprint "Key: " $key ", Char: " {char $key}}}
+    {if_else {!= {type $focused_input_field} kDataObject}
+        {do
+            {{ui focus_panel} keyboard_msg $key $shift $ctrl $alt}
+        }
+        {do
+            {$focused_input_field keyboard_msg $key $shift $ctrl $alt}
+        }
+    }
+}
+
+{func dx_keyboard_focus ($field)
+    {set $focused_input_field $field}
+    {$focused_input_field set_focused}
+}
+
+{func dx_keyboard_unfocus
+    {if {== {type $focused_input_field} kDataObject}
+        {$focused_input_field set_unfocused}
+        {set $focused_input_field 0}
+    }
+}
