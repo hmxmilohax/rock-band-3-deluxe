@@ -1,6 +1,7 @@
 #define SONGS_PER_CACHE_PAGE (500)
 
 {func dx_generate_search_cache
+    {dx_hyper_finder check_init}
     {music_library reset_filters}
     {set $iwanttologstuff TRUE}
     {set $searchcache_buf {array 0}}
@@ -26,9 +27,9 @@
         ($continue TRUE)
         ($time 0.0)
         {while $continue
-            ; Time the executation so that we only run this for ~100ms per frame and allow UI to continue updating
-            {+= $time {time {dx_generate_search_cache_iteration}}}
-            {if {> $time 100}
+            ; Time the executation so that we only run this for ~1000ms per frame and allow UI to continue updating
+            {+= $time {time {foreach_int $i 0 20 {dx_generate_search_cache_iteration}}}}
+            {if {> $time 1000}
                 {set $continue FALSE}
             }
             {if {>= $searchcache_curdata $searchcache_numdata}
@@ -73,7 +74,7 @@
             {if {== {$node get_node_type} kNodeSong}
                 ;{song_select_panel dx_authorpoll {$node get_token}}
                 ; Author finder is too slow
-                {push_back $searchcache_buf {array ({$node get_token} {$node title} $searchcache_curdata)}}
+                {push_back $searchcache_buf {array ({$node get_token} ({$node title} {dx_hyper_finder get_artist_from_sort_node $node}) $searchcache_curdata)}}
                 {+= $searchcache_count 1}
                 {if {>= {size $searchcache_buf} SONGS_PER_CACHE_PAGE}
                     {dx_generate_search_cache_flushbuffer}
@@ -112,8 +113,10 @@
     {foreach_int $i 0 {elem {find_exists $searchcache_meta songcount} 1}
         {do
             ($entry {dx_get_search_cache_entry $i})
-            ($name {tolower {elem $entry 1}})
-            {if {has_substr $name $query}
+            ($fields {elem $entry 1})
+            ($name {tolower {elem $fields 0}})
+            ($artist {tolower {elem $fields 1}})
+            {if {|| {has_substr $name $query} {has_substr $artist $query}}
                 {push_back $search_results $entry}
             }
         }

@@ -28,37 +28,33 @@
          {$this set use_specified_cam TRUE}
          {new Group all.grp}
          {$this sync_objects}
-         {dx_load_search_cache_meta}
-         {dx_song_search "you"}
-         {set $resultsdata {array 0}}
-         {set $randomshit 0}
-         {foreach $result $search_results
-            {push_back $result 0}
-            {push_back $resultsdata {quasiquote {do
-               ($res {unquote {array $result}})
-               ($outval {switch $randomshit
-                  (0 {elem $res 1})
-                  (1 "secret second thing")
-                  (2 "secret third thing")
-                  (3 "secret fourth thing")
-               })
-               ;{dx_log_writer insane {sprint "Lambda called for " {elem $res 1} " on iteration " {elem $res 3}}}
-               ;{set_elem $res 3 {+ {elem $res 3} 1}}
-               ;{set_elem $res 3 {mod {elem $res 3} 4}}
-               {+= $randomshit 1}
-               {set $randomshit {mod $randomshit 2}}
-               $outval
-            }}}
+         {dx_log_writer insane "Loading search results..."}
+         {if TRUE
+            {dx_load_search_cache_meta}
+            {dx_song_search "miku"}
+            {set $resultsdata {array 0}}
+            {set $randomshit 0}
+            {foreach $result $search_results
+               ;{push_back $result 0}
+               {do
+                  ($fields {elem $result 1})
+                  {push_back $resultsdata {array (song_artist_fmt {elem $fields 0} {elem $fields 1})}}
+               }
+            }
+            {dx_log_writer insane "Search finished, creating list..."}
          }
          {new BandList results.lst}
-         {results.lst set_type provider_test}
+         {results.lst set_type search_results} ; refer to ui/ui_objects.dta
+         {results.lst mutate_dir}
+         {results.lst set_num_display 12}
          {results.lst set scroll_time 0}
          {results.lst set auto_scroll_pause 0}
          {results.lst set auto_scroll_send_messages FALSE}
          {results.lst set scroll_past_min_display 0}
          {results.lst set scroll_past_max_display 0}
+         {results.lst set_local_pos 63 0.1 159}
 
-         {results.lst set_data $resultsdata}
+         {results.lst set_data $resultsdata 0 FALSE TRUE}
          ;{results.lst set_data ("Song One" "Song Two" "Song Two Episode One" "Song Two Episode Two")}
          {all.grp add_object results.lst}
          {$this set_focus results.lst}
