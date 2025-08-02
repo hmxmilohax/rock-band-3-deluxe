@@ -3,6 +3,7 @@
 {set $dx_search_cache_meta_loaded FALSE}
 
 {func dx_generate_search_cache
+    #ifndef HX_WII
     {dx_hyper_finder check_init}
     {music_library reset_filters}
     {set $iwanttologstuff TRUE}
@@ -14,6 +15,7 @@
     {set $searchcache_count 0}
     {dx_generate_search_cache_updatepath}
     {dx_generate_search_cache_loop}
+    #endif
 }
 
 {func dx_generate_search_cache_updatepath
@@ -61,19 +63,39 @@
         )}
     }
     {write_file {dx_search_cache_getpath "meta"} $searchcache_meta}
+    {set $dx_search_cache_meta_loaded TRUE}
 }
 
 {func dx_load_search_cache_meta
+    #ifndef HX_WII
     {if {! {$dx_search_cache_meta_loaded}}
-        {set $searchcache_meta {read_file {dx_search_cache_getpath "meta"}}}
-        {set $dx_search_cache_meta_loaded TRUE}
+        {if {file_exists {dx_search_cache_getpath "meta"}}
+            {set $searchcache_meta {read_file {dx_search_cache_getpath "meta"}}}
+            {set $dx_search_cache_meta_loaded TRUE}
+        }
     }
+    #endif
+}
+
+{func dx_search_cache_check
+    #ifndef HX_WII
+    {dx_load_search_cache_meta}
+    {if_else $dx_search_cache_meta_loaded
+        {do
+            ($file_numdata {elem {find $searchcache_meta listlength} 1})
+            {== $file_numdata {music_library num_data}}
+        }
+        FALSE
+    }
+    #else
+    TRUE
+    #endif
 }
 
 {func dx_generate_search_cache_iteration
     {+= $searchcache_curdata 1}
     {if {< $searchcache_curdata $searchcache_numdata}
-        {music_library set_highlight_ix $searchcache_curdata}
+        {music_library set_highlight_ix $searchcache_curdata FALSE}
         {do
             ($node {music_library get_highlighted_node})
             {if {== {$node get_node_type} kNodeSong}
@@ -111,6 +133,7 @@
     }
 }
 
+#ifndef HX_WII
 {func dx_song_search ($query)
     {dx_load_search_cache_meta}
     {music_library reset_filters}
@@ -128,3 +151,28 @@
         }
     }
 }
+#else
+{func dx_song_search ($query)
+    {music_library reset_filters}
+    {dx_hyper_finder check_init}
+    {set $search_query $query}
+    {set $search_results {array 0}}
+    {foreach_int $i 0 {music_library num_data}
+        {music_library set_highlight_ix $i FALSE}
+        {do
+            ($node {music_library get_highlighted_node})
+            {if {== {$node get_node_type} kNodeSong}
+                {do
+                    ($uppername {$node title})
+                    ($name {tolower $uppername})
+                    ($upperartist {dx_hyper_finder get_artist_from_sort_node $node})
+                    ($artist {tolower $upperartist})
+                    {if {|| {has_substr $name $query} {has_substr $artist $query}}
+                        {push_back $search_results {array ({$node get_token} ($uppername $upperartist) $i)}}
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

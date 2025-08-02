@@ -173,7 +173,6 @@
                 }
             )
             (has_highlight
-                {dx_log_writer insane {sprint "Highlight " [highlight_start] " - " [highlight_end]}}
                 {if_else {&& {!= [highlight_start] -1} {!= [highlight_end] -1} {!= [highlight_start] [highlight_end]}}
                     {do
                         {if {< [highlight_end] [highlight_start]}
@@ -216,6 +215,24 @@
                 {highlight.mesh set_showing FALSE}
                 {$this send_update_msg}
             )
+
+            (show_virtual_keyboard ($user)
+                {virtual_keyboard show_keyboard
+                    $user
+                    [length_limit]
+                    [virtual_title]
+                    [virtual_desc]
+                    [buf]
+                    $this
+                    kVkNormalEntry  
+                }
+            )
+
+            (VIRTUAL_KEYBOARD_RESULT_MSG
+                {set [buf] $text}
+                {$this update_label}
+                {if $ok {$this accept}}
+            )
         })
         {with $fielddir
             {new BandLabel text.lbl}
@@ -232,6 +249,9 @@
             {$this set focused FALSE}
             {$this set highlight_start -1}
             {$this set highlight_end -1}
+            {$this set length_limit 32} ; Note: only applies to the virtual keyboard at the moment
+            {$this set virtual_title "Input Field"}
+            {$this set virtual_desc "Input some text here! Some developer forgot to populate this lmao"}
 
             {new Mesh highlight.mesh}
             ;{dx_generate_quad_mesh_leftalign highlight.mesh 1 20.5}
@@ -268,7 +288,6 @@
 }
 
 {func dx_keyboard_handler ($key $shift $ctrl $alt)
-    {dx_log_writer insane {sprint "Key: " $key ", Char: " {char $key}}}
     {if_else {!= {type $focused_input_field} kDataObject}
         {do
             {{ui focus_panel} keyboard_msg $key $shift $ctrl $alt}

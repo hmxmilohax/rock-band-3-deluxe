@@ -9,11 +9,37 @@
       }
    )
 }
+{new
+   UIPanel
+   dx_search_cache_outdated_warning_panel
+   (file
+      "../../ui/hints/hint_rb3_welcome.milo")
+   (focus
+      "customize.btn")
+   (enter
+      {customize.btn set_token_fmt stringify "Generate Search Cache"}
+      {continue.btn set_token_fmt cancel}
+      ;{$this disable continue.btn}
+      ;{continue.btn set_showing FALSE}
+      {description.lbl set_token_fmt stringify "Your search cache is outdated idiot!!!!"})
+   (SELECT_MSG
+      {switch $component
+         (customize.btn {dx_generate_search_cache} {ui pop_screen})
+         (continue.btn {ui pop_screen dx_search_cache_outdated_warning_screen} {ui pop_screen dx_search_screen})
+      }
+   )
+}
+{new
+   BandScreen
+   dx_search_cache_outdated_warning_screen
+   (panels dx_search_cache_outdated_warning_panel)
+   (focus dx_search_cache_outdated_warning_panel)}
 {new UIPanel dx_search_panel
    (BUTTON_DOWN_MSG
       {switch $action
          (kAction_Confirm kDataUnhandled)
          (kAction_Cancel {ui pop_screen})
+         (kAction_Option {search.input show_virtual_keyboard $user})
          kDataUnhandled
       }
    )
@@ -21,7 +47,6 @@
    (enter
       {song_select_panel activate_search}
       {if {! {$this loaded_dir}}
-         {set $iwanttologstuff TRUE}
          {new PanelDir search_panel}
          {$this set_loaded_dir search_panel}
          {do
@@ -35,7 +60,11 @@
                {new BandList results.lst}
                {results.lst set_type search_results} ; refer to ui/ui_objects.dta
                {results.lst mutate_dir}
+               #ifndef HX_WII
                {results.lst set_num_display 12}
+               #else
+               {results.lst set_num_display 11} ; The Wii? Come on now...
+               #endif
                {results.lst set scroll_time 0}
                {results.lst set auto_scroll_pause 0}
                {results.lst set auto_scroll_send_messages FALSE}
@@ -45,7 +74,7 @@
                {results.lst set max_display 7}
                {results.lst set_local_pos 69.640 0.1 159}
 
-               ; Set some dummy data in the list so that its DataProvider is setup correctly
+               ; Set some dummy data in the list so that its DataProvider is setup correctly                         ↓ this true is important, it enables localization
                {results.lst set_data ("Song One" "Song Two" "Song Two Episode One" "Song Two Episode Two") 0 FALSE TRUE}
                {all.grp add_object results.lst}
                {new Mesh search_icon.mesh}
@@ -68,6 +97,8 @@
                {dx_create_input_field search.input}
                {search.input set_local_pos -344 0 174}
                {search.input set_sink $panelobj}
+               {search.input set virtual_title {localize song_search}}
+               {search.input set virtual_desc {localize song_search_desc}}
                {all.grp add_object search.input}
 
                {$this set_focus results.lst}
@@ -75,11 +106,30 @@
          }
       }
       {results.lst set showing FALSE}
-      {if $keyboard_ticket
-         {dx_keyboard_focus {$this find search.input}}
-         {search.input keyboard_msg {elem $keyboard_ticket 0} {elem $keyboard_ticket 1} {elem $keyboard_ticket 2} {elem $keyboard_ticket 3}}
-         {set $keyboard_ticket FALSE}
+      {if_else {dx_search_cache_check}
+         {do
+            {if $keyboard_ticket
+               {if_else {== {size $keyboard_ticket} 4}
+                  {do
+                     {dx_keyboard_focus {$this find search.input}}
+                     {search.input keyboard_msg {elem $keyboard_ticket 0} {elem $keyboard_ticket 1} {elem $keyboard_ticket 2} {elem $keyboard_ticket 3}}
+                  }
+                  {do
+                     ; If the keyboard ticket is not 4 elements long, interpret as a virtual keyboard message
+                     {search.input show_virtual_keyboard {elem $keyboard_ticket 0}}
+                  }
+               }
+            }
+         }
+         {do
+            ;{ui pop_screen}
+            {ui push_screen dx_search_cache_outdated_warning_screen}
+         }
       }
+      #ifdef HX_WII
+      {search.input show_virtual_keyboard {elem $keyboard_ticket 0}}
+      #endif
+      {set $keyboard_ticket FALSE}
    )
    (exit
       {music_library push_highlight_to_screen}
@@ -135,10 +185,10 @@
       {$this push_highlight_to_library}
    )
    (push_highlight_to_library
-      {if {> {size $search_results 0}}
+      {if {> {size $search_results} 0}
          {do
-            {music_library set_highlight_ix {elem {elem $search_results {results.lst selected_pos}} 2}}
-            {music_library push_highlight_to_screen}
+            {music_library set_highlight_ix {elem {elem $search_results {results.lst selected_pos}} 2} FALSE}
+            ;{song_select_panel component_scroll {song_select_panel find song.lst} 0} ; Scroll message expects a user but the song select panel never uses it so shhhhhh
          }
       }
    )
@@ -155,7 +205,7 @@
    )
    (component_select ($component $user)
       {meta_performer set_song {elem {elem $search_results {results.lst selected_pos}} 0}}
-      {gamemode set_mode qp_coop}
+      ;{gamemode set_mode qp_coop}
       {ui sync_screen {music_library get_next_screen} 0}
       kDataUnhandled
    )
