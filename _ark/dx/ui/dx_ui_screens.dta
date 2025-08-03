@@ -9,6 +9,52 @@
       }
    )
 }
+{new UIPanel dx_search_cache_generator
+   (enter
+      {if {! {$this loaded_dir}}
+         {new PanelDir cache_generator}
+         {$this set_loaded_dir cache_generator}
+         {with cache_generator
+            {$this set cam '[ui.cam]'}
+            {$this set use_specified_cam TRUE}
+            {$this set draw_order 1000}
+            {new Group all.grp}
+            {$this sync_objects}
+            {new Mesh bg.mesh}
+            {dx_generate_quad_mesh bg.mesh 1280 720} ; make damn sure it covers the screen
+            {new Tex bg.tex}
+            {bg.tex set_bitmap "dx/custom_textures/_additional_textures/generic_white_box.png"}
+            {new Mat bg.mat}
+            {bg.mat set diffuse_tex bg.tex}
+            {bg.mat set color {pack_color 0 0 0}}
+            {bg.mat set z_mode zModeDisable}
+            {bg.mesh set mat bg.mat}
+            {all.grp add_object bg.mesh}
+            {new BandLabel progress.lbl}
+            {progress.lbl set resource_name pentatonic}
+            {progress.lbl set text_size 30}
+            {progress.lbl set width 400}
+            {progress.lbl set height 40}
+            {progress.lbl set alignment kMiddleCenter}
+            {progress.lbl set_token_fmt stringify "Starting search cache generation..."}
+            {all.grp add_object progress.lbl}
+         }
+      }
+      {set $dx_search_cache_sink $this}
+      {dx_generate_search_cache}
+   )
+   (progress_msg ($done $total)
+      {progress.lbl set_token_fmt stringify {sprint "Generating search cache (" $done "/" $total ")"}}
+   )
+   (generation_finished
+      {ui pop_screen}
+   )
+}
+{new BandScreen
+   dx_search_cache_generator_screen
+   (panels dx_search_cache_generator)
+   (focus dx_search_cache_generator)
+}
 {new
    UIPanel
    dx_search_cache_outdated_warning_panel
@@ -24,8 +70,8 @@
       {description.lbl set_token_fmt stringify "Your search cache is outdated idiot!!!!"})
    (SELECT_MSG
       {switch $component
-         (customize.btn {dx_generate_search_cache} {ui pop_screen})
-         (continue.btn {ui pop_screen dx_search_cache_outdated_warning_screen} {ui pop_screen dx_search_screen})
+         (customize.btn {ui goto_screen dx_search_cache_generator_screen})
+         (continue.btn {ui pop_screen})
       }
    )
 }
@@ -80,9 +126,15 @@
                {new Mesh search_icon.mesh}
                {dx_generate_quad_mesh search_icon.mesh 20 20}
                {new Mat search_icon.mat}
-               {new Tex search_icon.tex}
-               {search_icon.tex set_bitmap "dx/custom_textures/_additional_textures/search_icon.png"}
-               {search_icon.mat set diffuse_tex search_icon.tex}
+               ; We're keeping this texture loaded at all times because latency on search panel enter is bad enough as is 
+               {unless $search_icon_tex
+                  {set $search_icon_tex {new Tex search_icon.tex}}
+                  {search_icon.tex set_bitmap "dx/custom_textures/_additional_textures/search_icon.png"}
+                  ; Move it to the main dir to prevent it from getting unloaded
+                  ; (refcounting should prevent this but just being sure)
+                  {search_icon.tex set_name "search_icon.tex" main}
+               }
+               {search_icon.mat set diffuse_tex $search_icon_tex}
                {search_icon.mat set blend kBlendSrcAlpha}
                {search_icon.mat set alpha 0.6}
                {search_icon.mesh set mat search_icon.mat}
@@ -123,12 +175,9 @@
          }
          {do
             ;{ui pop_screen}
-            {ui push_screen dx_search_cache_outdated_warning_screen}
+            {ui goto_screen dx_search_cache_outdated_warning_screen}
          }
       }
-      #ifdef HX_WII
-      {search.input show_virtual_keyboard {elem $keyboard_ticket 0}}
-      #endif
       {set $keyboard_ticket FALSE}
    )
    (exit
@@ -185,7 +234,7 @@
       {$this push_highlight_to_library}
    )
    (push_highlight_to_library
-      {if {> {size $search_results} 0}
+      {if {&& $search_results {> {size $search_results} 0}}
          {do
             {music_library set_highlight_ix {elem {elem $search_results {results.lst selected_pos}} 2} FALSE}
             ;{song_select_panel component_scroll {song_select_panel find song.lst} 0} ; Scroll message expects a user but the song select panel never uses it so shhhhhh
@@ -204,9 +253,11 @@
       kDataUnhandled
    )
    (component_select ($component $user)
-      {meta_performer set_song {elem {elem $search_results {results.lst selected_pos}} 0}}
-      ;{gamemode set_mode qp_coop}
-      {ui sync_screen {music_library get_next_screen} 0}
+      {if {&& $search_results {> {size $search_results} 0}}
+         {meta_performer set_song {elem {elem $search_results {results.lst selected_pos}} 0}}
+         ;{gamemode set_mode qp_coop}
+         {ui sync_screen {music_library get_next_screen} 0}
+      }
       kDataUnhandled
    )
 }
