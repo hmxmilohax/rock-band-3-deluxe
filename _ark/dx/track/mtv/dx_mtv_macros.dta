@@ -24,8 +24,14 @@
       {if {find_exists $songdtareader artist}
          {set $artistvar {fix_special_chars {elem {find $songdtareader artist} 1}}}
       }
+      {if {find_exists $songdtareader covered_by}
+         {set $coveredbyvar {fix_special_chars {elem {find $songdtareader covered_by} 1}}}
+      }
       {if {find_exists $songdtareader year_released}
          {set $yearvar {elem {find $songdtareader year_released} 1}}
+      }
+      {if {find_exists $songdtareader year_recorded}
+         {set $yearrecvar {elem {find $songdtareader year_recorded} 1}}
       }
       {if {find_exists $songdtareader album_name}
          {set $albumvar {fix_special_chars {elem {find $songdtareader album_name} 1}}}
@@ -322,18 +328,31 @@
          ;make new line, fill it
          {if {|| $dx_mtv_line_artist {modifier_mgr is_modifier_active mod_fakejuke}}
             CREATE_MTV_LINE
-            {cond
+            ; sorry
+            {cond 
                ({&& $mastervar $dx_mtv_year {! $dx_mtv_line_album}}
-                  {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  {if_else $yearrecvar
+                     {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
+                     {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  }
                )
                ({&& {! $mastervar} $dx_mtv_year {! $dx_mtv_line_album}}
-                  {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  {if_else {&& $yearrecvar {|| {! $dx_mtv_line_coveredby} {! $coveredbyvar}}}
+                     {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
+                     {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  }
                )
                ({&& $mastervar $dx_mtv_year $dx_mtv_line_album {! $albumvar}}
-                  {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  {if_else $yearrecvar
+                     {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
+                     {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  }
                )
                ({&& {! $mastervar} $dx_mtv_year $dx_mtv_line_album {! $albumvar}}
-                  {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  {if_else {&& $yearrecvar {|| {! $dx_mtv_line_coveredby} {! $coveredbyvar}}}
+                     {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
+                     {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+                  }
                )
                ({|| {! $dx_mtv_year} $dx_mtv_line_album}
                   {THIS_MTV_LBL set_artist_name_from_shortname {meta_performer song}}
@@ -341,10 +360,21 @@
             }
             {++ $this_total_lines}
          }
+         {if {|| {&& $dx_mtv_line_coveredby $coveredbyvar}}
+            CREATE_MTV_LINE
+            {if_else {&& $dx_mtv_year $yearrecvar}
+               {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize covered_by} " </it>" $coveredbyvar ", " $yearrecvar}}
+               {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize covered_by} " </it>" $coveredbyvar}}
+            }
+            {++ $this_total_lines}
+         }
          {if {&& $dx_mtv_line_album $albumvar}
             CREATE_MTV_LINE
             {if_else $dx_mtv_year
-               {THIS_MTV_LBL set_token_fmt {sprint $albumvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+               {if_else $yearrecvar
+                  {THIS_MTV_LBL set_token_fmt {sprint $albumvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
+                  {THIS_MTV_LBL set_token_fmt {sprint $albumvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
+               }
                {THIS_MTV_LBL set_token_fmt stringify $albumvar}
             }
             {++ $this_total_lines}
