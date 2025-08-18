@@ -10,10 +10,16 @@
    {set $dx_state_tracker {array ()}}
 }
 {set $dx_button_list (kPad_L2 kPad_R2 kPad_L1 kPad_R1 kPad_Tri kPad_Circle kPad_X kPad_Square kPad_Select kPad_L3 kPad_R3 kPad_Start kPad_DUp kPad_DRight kPad_DDown kPad_DLeft)}
+
+; adjust judgments window to match console input offsets
+#ifdef HX_XBOX
+{set $dx_window_offset 16.683350016683352}  ; xenon input offset
+#endif
+#ifdef HX_PS3
+{set $dx_window_offset 43.683350016683352}  ; ps3 input offset
+#endif
 #ifdef HX_WII
 {set $dx_window_offset 83.41675008341676}  ; ngc input offset
-#else
-{set $dx_window_offset 16.683350016683352}  ; xenon & ps3 input offset
 #endif
 ; that is a neversoft reference btw
 
@@ -343,35 +349,57 @@ DX_CURRENT_SONG_CLEAR
    }
 }
 {if_else $dx_ps3hw
-   {set $dx_detected_platform platform_ps3}
-   {set $dx_detected_platform platform_rpcs3}
+   {do
+      {set $dx_detected_platform platform_ps3}
+      {set $dx_hardware TRUE}
+      {set $dx_emulator FALSE}
+   }
+   {do
+      {set $dx_detected_platform platform_rpcs3}
+      {set $dx_hardware FALSE}
+      {set $dx_emulator TRUE}
+   }
 }
 #endif
 
 #ifdef HX_XBOX
 #ifdef RB3E
 {set $dx_detected_platform platform_xbox_rb3e}
+{set $dx_hardware TRUE}
+{set $dx_emulator FALSE}
 #else
 {set $dx_detected_platform platform_xbox}
+{set $dx_hardware TRUE}
+{set $dx_emulator FALSE}
 #endif
 #ifdef RB3E_EMULATOR 
 {set $dx_detected_platform platform_xenia_rb3e}
+{set $dx_hardware FALSE}
+{set $dx_emulator TRUE}
 #endif
 #endif
 
 #ifdef HX_WII
 #ifdef RB3E
 {set $dx_detected_platform platform_wii_rb3e}
+{set $dx_hardware TRUE}
+{set $dx_emulator FALSE}
 #else
 {set $dx_detected_platform platform_wii}
+{set $dx_hardware TRUE}
+{set $dx_emulator FALSE}
 #endif
 #ifdef RB3E_EMULATOR
 {set $dx_detected_platform platform_dolphin_rb3e}
+{set $dx_hardware TRUE}
+{set $dx_emulator TRUE}
 #endif
 #endif
 
 {unless $dx_detected_platform
    {set $dx_detected_platform platform_unknown}
+   {set $dx_hardware TRUE} ; assume hardware for safety
+   {set $dx_emulator FALSE}
 }
 
 {dx_log_writer default {localize $dx_detected_platform}}
@@ -417,6 +445,8 @@ DX_CURRENT_SONG_CLEAR
 ;set mtv vars, trainer doesn't like these empty on boot
 ;{set $artistvar "No Artist Found"}
 ;{set $yearvar "No Year Found"}
+;{set $yearrecvar "No Year Recorded Found"}
+;{set $coveredbyvar "No Cover Artist Found"}
 ;{set $albumvar "No Album Found"}
 ;{set $genrevar "No Genre Found"}
 ;{set $subgenrevar "No Sub Genre Found"}
@@ -542,6 +572,9 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_scroll_sound TRUE}
 {set $dx_instrument_fx TRUE}
 {set $dx_whammy_fx TRUE}
+
+; Displays note hit percentage with two decimal places
+{set $dx_precise_percent TRUE}
 
 ;sets default track speed. 1.15 is 115%, 1.30 is 130% and so on.
 {set $dx_trkspd_inst all}
@@ -708,6 +741,7 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_mtv_line_artist TRUE}
 {set $dx_mtv_year TRUE}
 ;{set $dx_year_on_one_mtv_line TRUE}
+{set $dx_mtv_line_coveredby TRUE}
 {set $dx_mtv_line_album FALSE}
 {set $dx_mtv_line_genre FALSE}
 {set $dx_mtv_line_sub_genre FALSE}
@@ -769,7 +803,7 @@ DX_CURRENT_SONG_CLEAR
 {set $dx_streak_counter single}
 {if_else $dx_event_mode
    {do
-      {set $dx_current_intro_movie off}
+      {set $dx_current_intro_movie disabled}
       {set $dx_splash_screen FALSE}
    }
    {do
@@ -920,6 +954,11 @@ DX_CURRENT_SONG_CLEAR
 {if_else {>= $emulatefps 35}
    {set $dx_60fps TRUE}
    {set $dx_60fps FALSE}
+}
+
+; backwards compatibility
+{if {== $dx_current_intro_movie off}
+   {set $dx_current_intro_movie disabled}
 }
 
 ;for safety
