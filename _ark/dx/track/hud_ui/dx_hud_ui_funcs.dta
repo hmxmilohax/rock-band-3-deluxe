@@ -620,123 +620,177 @@
    ;}
 }
 {func dx_create_lyric_display
-   ; Only do this once
-   {unless {exists lyric_display.grp}
+   {new RndDir lyric_display
+      (create_objects
+         ;{new Group lyric_display.grp}
+         ;{draw_order.grp add_object lyric_display.grp}
 
-      {set $dx_lyric_display_upcoming_scale 0.5}
-      {set $dx_lyric_display_upcoming_offset -0.75}
+         {new UIColor lyric_highlight.color}
+         {lyric_highlight.color set color {pack_color $dx_lyric_highlight_r $dx_lyric_highlight_g $dx_lyric_highlight_b}}
+         ;{new UIColor lyric_normal.color}
+         ;{lyric_normal.color set color {pack_color 1 1 1}}
 
-      {set $dx_lyric_display_fading_scale 0.75}
-      {set $dx_lyric_display_fading_offset 0.75}
+         {new BandLabel lyric_current.lbl}
+         {new BandLabel lyric_upcoming.lbl}
+         {new BandLabel lyric_fadingout.lbl}
 
-      {new Group lyric_display.grp}
-      {draw_order.grp add_object lyric_display.grp}
-      {lyric_display.grp set_trans_parent draw_order.grp}
+         {set $lyricdisplay_labels (lyric_current.lbl lyric_fadingout.lbl lyric_upcoming.lbl)}
+         {foreach $curlabel $lyricdisplay_labels
+            {$curlabel set resource_name pentatonic_outline}
+            {$curlabel set width 40}
+            {$curlabel set height 500}
+            {$curlabel set text_size 1}
+            {$curlabel set alignment kMiddleCenter}
+            {$curlabel set_trans_parent $this}
+            {$curlabel set_showing TRUE}
+            {$curlabel set_token_fmt {sprint ""}}
+            {$curlabel set alt_style_enabled TRUE}
+            {$curlabel set alt_text_size 1}
+            {$curlabel set alt_text_color lyric_highlight.color}
+            {$curlabel set alt_font_resource_name pentatonic_outline}
+            {$curlabel set markup TRUE}
+            ; This allows for syllable highlighting
+            ; Also makes it annoying to switch fonts!
+            {$curlabel set alt_mat_variation 'Pentatonic_outline_(5_00)4x_ploff'}
+            {$curlabel set fit_type kFitJust}
+            ;{$curlabel set color_override lyric_normal.color}
+         }
+         ;{lyric_display.grp set_local_pos 0 33 8.5}
+         ;{lyric_display.grp set_trans_parent draw_order.grp}
 
-      {new UIColor lyric_highlight.color}
-      {lyric_highlight.color set color {pack_color $dx_lyric_highlight_r $dx_lyric_highlight_g $dx_lyric_highlight_b}}
-      ;{new UIColor lyric_normal.color}
-      ;{lyric_normal.color set color {pack_color 1 1 1}}
+         {new PropAnim lyric_transition.anim}
+         {lyric_transition.anim add_keys lyric_current.lbl (position) kPropVector3}
+         {lyric_transition.anim add_keys lyric_current.lbl (scale) kPropVector3}
+         {lyric_transition.anim add_keys lyric_current.lbl (alpha) kPropFloat}
+         {lyric_transition.anim add_keys lyric_current.lbl (alt_alpha) kPropFloat}
+         {lyric_transition.anim add_keys lyric_upcoming.lbl (alpha) kPropFloat}
+         {lyric_transition.anim add_keys lyric_upcoming.lbl (alt_alpha) kPropFloat}
+         {lyric_transition.anim add_keys lyric_fadingout.lbl (position) kPropVector3}
+         {lyric_transition.anim add_keys lyric_fadingout.lbl (scale) kPropVector3}
+         {lyric_transition.anim add_keys lyric_fadingout.lbl (alpha) kPropFloat}
+         {lyric_transition.anim add_keys lyric_fadingout.lbl (alt_alpha) kPropFloat}
 
-      {new BandLabel lyric_current.lbl}
-      {new BandLabel lyric_upcoming.lbl}
-      {lyric_upcoming.lbl set alpha 0.75}
-      {lyric_upcoming.lbl set_local_pos 0 0 $dx_lyric_display_upcoming_offset}
-      {lyric_upcoming.lbl set_local_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale}
-      {new BandLabel lyric_fadingout.lbl}
-      {lyric_fadingout.lbl set alpha 0}
-      {lyric_fadingout.lbl set_local_pos 0 0 $dx_lyric_display_fading_offset}
-      {lyric_fadingout.lbl set_local_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale}
+         {set [current] {object lyric_current.lbl}}
+         {set [upcoming] {object lyric_upcoming.lbl}}
+         {set [fading] {object lyric_fadingout.lbl}}
+         {set [anim] {object lyric_transition.anim}}
 
-      {set $lyricdisplay_labels (lyric_current.lbl lyric_fadingout.lbl lyric_upcoming.lbl)}
-      {foreach $curlabel $lyricdisplay_labels
-         {$curlabel set resource_name pentatonic_outline}
-         {$curlabel set width 40}
-         {$curlabel set height 500}
-         {$curlabel set text_size 1}
-         {$curlabel set alignment kMiddleCenter}
-         {$curlabel set_trans_parent lyric_display.grp}
-         {$curlabel set_showing TRUE}
-         {$curlabel set_token_fmt {sprint ""}}
-         {$curlabel set alt_style_enabled TRUE}
-         {$curlabel set alt_text_size 1}
-         {$curlabel set alt_text_color lyric_highlight.color}
-         {$curlabel set alt_font_resource_name pentatonic_outline}
-         {$curlabel set markup TRUE}
-         {$curlabel set alt_mat_variation 'Pentatonic_outline_(5_00)4x_ploff'} ; This allows for syllable highlighting
-         {$curlabel set fit_type kFitJust}
-         ;{$curlabel set color_override lyric_normal.color}
-      }
+         {$this sync_objects}
 
-      ;{lyric_current.lbl set alt_style_enabled TRUE}
-      {lyric_display.grp add_object lyric_fadingout.lbl}
-      {lyric_display.grp add_object lyric_upcoming.lbl}
-      {lyric_display.grp add_object lyric_current.lbl}
-      {lyric_display.grp set_showing TRUE}
-      {lyric_display.grp set_local_pos 0 33 8.5} ; x z y??????
+         {$this set_trans_parent draw_order.grp}
 
-      ; Animations
+      )
 
-      {new PropAnim lyric_transition.anim}
+      (current [current])
+      (upcoming [upcoming])
+      (fading [fading])
+      (anim [anim])
+      (charlimit [charlimit])
 
-      ; lyric_current.lbl anims
-      {lyric_transition.anim add_keys lyric_current.lbl (position) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_current.lbl (position) 0 (0 0 $dx_lyric_display_upcoming_offset)}
-      {lyric_transition.anim set_key_val lyric_current.lbl (position) 1 (0 0 0)}
-      {lyric_transition.anim set_interp_type lyric_current.lbl (position) kPropHermite}
+      (setup_anims
+         ; lyric_current.lbl anims
+         {lyric_transition.anim set_key_val lyric_current.lbl (position) 0 (0 0 $dx_lyric_display_upcoming_offset)}
+         {lyric_transition.anim set_key_val lyric_current.lbl (position) 1 (0 0 0)}
+         {lyric_transition.anim set_interp_type lyric_current.lbl (position) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_current.lbl (scale) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 0 ($dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale)}
-      {lyric_transition.anim set_key_val lyric_current.lbl (scale) 1 (1 1 1)}
-      {lyric_transition.anim set_interp_type lyric_current.lbl (scale) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_current.lbl (scale) 0 ($dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale)}
+         {lyric_transition.anim set_key_val lyric_current.lbl (scale) 1 (1 1 1)}
+         {lyric_transition.anim set_interp_type lyric_current.lbl (scale) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_current.lbl (alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 0 0.75}
-      {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 1 1}
-      {lyric_transition.anim set_interp_type lyric_current.lbl (alpha) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 0 0.75}
+         {lyric_transition.anim set_key_val lyric_current.lbl (alpha) 1 1}
+         {lyric_transition.anim set_interp_type lyric_current.lbl (alpha) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_current.lbl (alt_alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 0 0.75}
-      {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 1 1}
-      {lyric_transition.anim set_interp_type lyric_current.lbl (alt_alpha) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 0 0.75}
+         {lyric_transition.anim set_key_val lyric_current.lbl (alt_alpha) 1 1}
+         {lyric_transition.anim set_interp_type lyric_current.lbl (alt_alpha) kPropHermite}
 
-      ; lyric_upcoming.lbl anims
-      {lyric_transition.anim add_keys lyric_upcoming.lbl (alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 0 0}
-      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 1 0.75}
-      {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alpha) kPropHermite}
+         ; lyric_upcoming.lbl anims
+         {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 0 0}
+         {lyric_transition.anim set_key_val lyric_upcoming.lbl (alpha) 1 0.75}
+         {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alpha) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_upcoming.lbl (alt_alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 0 0}
-      {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 1 0.75}
-      {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alt_alpha) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 0 0}
+         {lyric_transition.anim set_key_val lyric_upcoming.lbl (alt_alpha) 1 0.75}
+         {lyric_transition.anim set_interp_type lyric_upcoming.lbl (alt_alpha) kPropHermite}
 
-      ; lyric_fadeout.lbl anims
-      {lyric_transition.anim add_keys lyric_fadingout.lbl (position) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 0 (0 0 0)}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 1 (0 0 $dx_lyric_display_fading_offset)}
-      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (position) kPropHermite}
+         ; lyric_fadeout.lbl anims
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 0 (0 0 0)}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (position) 1 (0 0 $dx_lyric_display_fading_offset)}
+         {lyric_transition.anim set_interp_type lyric_fadingout.lbl (position) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_fadingout.lbl (scale) kPropVector3}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 0 (1 1 1)}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 1 ($dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale)}
-      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (scale) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 0 (1 1 1)}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (scale) 1 ($dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale)}
+         {lyric_transition.anim set_interp_type lyric_fadingout.lbl (scale) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_fadingout.lbl (alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 0 1}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 1 0}
-      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alpha) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 0 1}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (alpha) 1 0}
+         {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alpha) kPropHermite}
 
-      {lyric_transition.anim add_keys lyric_fadingout.lbl (alt_alpha) kPropFloat}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 0 1}
-      {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 1 0}
-      {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alt_alpha) kPropHermite}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 0 1}
+         {lyric_transition.anim set_key_val lyric_fadingout.lbl (alt_alpha) 1 0}
+         {lyric_transition.anim set_interp_type lyric_fadingout.lbl (alt_alpha) kPropHermite}
 
-      {lyric_display.grp add_object lyric_transition.anim}
+         {lyric_transition.anim set rate kTaskUISeconds}
+         {lyric_transition.anim set_frame 1}
+      )
 
-      {lyric_transition.anim set rate kTaskUISeconds}
-      {lyric_transition.anim set_frame 1}
+      (position_extra_labels
+         {lyric_upcoming.lbl set alpha 0.75}
+         {lyric_upcoming.lbl set_local_pos 0 0 $dx_lyric_display_upcoming_offset}
+         {lyric_upcoming.lbl set_local_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale $dx_lyric_display_upcoming_scale}
+
+         {lyric_fadingout.lbl set alpha 0}
+         {lyric_fadingout.lbl set_local_pos 0 0 $dx_lyric_display_fading_offset}
+         {lyric_fadingout.lbl set_local_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale $dx_lyric_display_fading_scale}
+      )
+
+      (set_normal_pos
+         {set $dx_lyric_display_upcoming_scale 0.5}
+         {set $dx_lyric_display_upcoming_offset -0.75}
+
+         {set $dx_lyric_display_fading_scale 0.75}
+         {set $dx_lyric_display_fading_offset 0.75}
+
+         {$this set_local_pos 0 33 8.5}
+         {$this set_local_scale 1 1 1}
+         {[current] set alignment kMiddleCenter}
+         {[upcoming] set alignment kMiddleCenter}
+         {[fading] set alignment kMiddleCenter}
+         {if_else {== {rnd aspect} 1}
+            {set [charlimit] 65}
+            {set [charlimit] 80}
+         }
+         {$this position_extra_labels}
+         {$this setup_anims}
+      )
+
+      (set_vox_pos ($harms)
+         {set $dx_lyric_display_upcoming_scale 0.7}
+         {set $dx_lyric_display_upcoming_offset -0.9}
+
+         {set $dx_lyric_display_fading_scale 1}
+         {set $dx_lyric_display_fading_offset 0.45}
+
+         {if_else $harms
+            {$this set_local_pos -7.5 33 4.60}
+            {$this set_local_pos -9.70 33 5.25}
+         }
+         {$this set_local_scale 0.85 0.85 0.85}
+         {[current] set alignment kTopLeft}
+         {[upcoming] set alignment kTopLeft}
+         {[fading] set alignment kTopLeft}
+         {if_else $harms
+            {set [charlimit] 35}
+            {set [charlimit] 55}
+         }
+         {$this position_extra_labels}
+         {$this setup_anims}
+      )
    }
+   {lyric_display create_objects}
+   ;{lyric_display setup_anims}
+   {lyric_display save_objects "GD:/dev_hdd0/game/BLUS30463/USRDIR/lyric_display.milo"}
 }
 
 ; All of the lyric data is stored in $dx_lyric_display_phrases
@@ -778,10 +832,7 @@
    {set $phrase_length {elem $phrase 3}}
    {$label set text_size 1}
    {$label set alt_text_size 1}
-   {set $max_width 80}
-   {if {== {rnd aspect} 1}
-      {set $max_width 65}
-   }
+   {set $max_width {lyric_display charlimit}}
    {if {> $phrase_length $max_width}
       {$label set text_size {/ $max_width $phrase_length}}
       {$label set alt_text_size {/ $max_width $phrase_length}}
@@ -829,13 +880,13 @@
    ;{lyric_fadingout.lbl set_token_fmt {lyric_current.lbl get text_token}}
    ;{lyric_fadingout.lbl set text_size {lyric_current.lbl get text_size}}
    ;{lyric_fadingout.lbl set alt_text_size {lyric_current.lbl get alt_text_size}}
-   {lyric_fadingout.lbl copy lyric_current.lbl kCopyShallow}
+   {{lyric_display fading} copy {lyric_display current} kCopyShallow}
    {if {> {size $dx_lyric_display_phrases} 1}
       {if_else {>= {+ $dx_lyric_display_current_idx 1} {size $dx_lyric_display_phrases}}
          {lyric_upcoming.lbl set_token_fmt {sprint ""}}
-         {dx_apply_phrase lyric_upcoming.lbl -1 {dx_get_next_lyric_phrase}}
+         {dx_apply_phrase {lyric_display upcoming} -1 {dx_get_next_lyric_phrase}}
       }
-      {lyric_transition.anim animate (range 0 1) (period 0.3) (units kTaskUISeconds)}
+      {{lyric_display anim} animate (range 0 1) (period 0.3) (units kTaskUISeconds)}
       {dx_lyric_display_update_syllable}
    }
 }
@@ -843,7 +894,7 @@
 ; This is so fucking nightmarish god damn
 {func dx_lyric_display_update_syllable
    {if {> {size $dx_lyric_display_phrases} 0}
-      {dx_apply_phrase lyric_current.lbl $dx_lyric_display_current_syl_idx {dx_get_current_lyric_phrase}}
+      {dx_apply_phrase {lyric_display current} $dx_lyric_display_current_syl_idx {dx_get_current_lyric_phrase}}
       {++ $dx_lyric_display_current_syl_idx}
       {set $syllables_array {elem {dx_get_current_lyric_phrase} 1}}
       ; {dx_log_writer insane {sprint "On syllable " $dx_lyric_display_current_syl_idx " of phrase " $dx_lyric_display_current_idx}}
@@ -856,20 +907,28 @@
 
 {func dx_lyric_display_start
    {set $lyrics_player_active FALSE}
+   {set $lyrics_player_harms FALSE}
    {beatmatch foreach_active_player $player
       {if {== {$player instrument} vocals}
          {set $lyrics_player_active TRUE}
+         {set $lyrics_player_harms {> {{find_obj DX_VOCALDIR} num_vocal_parts} 1}}
       }
    }
 
    {set $dx_lyric_display_current_idx -1}
-   {lyric_current.lbl set_token_fmt {sprint ""}}
-   {lyric_upcoming.lbl set_token_fmt {sprint ""}}
-   {lyric_fadingout.lbl set_token_fmt {sprint ""}}
+   {{lyric_display current} set_token_fmt {sprint ""}}
+   {{lyric_display upcoming} set_token_fmt {sprint ""}}
+   {{lyric_display fading} set_token_fmt {sprint ""}}
+
+   {set $dx_debug_force_lyric_display TRUE}
 
    {if_else {&& $dx_lyric_display_enabled {! {gamemode in_mode practice}} {!= {song_mgr num_vocal_parts {meta_performer song}} 0} {|| {! $lyrics_player_active} $dx_debug_force_lyric_display} $dx_lyric_display_phrases}
       {do
          {set $lyrics_out TRUE}
+         {if_else $lyrics_player_active
+            {lyric_display set_vox_pos $lyrics_player_harms}
+            {lyric_display set_normal_pos}
+         }
          {dx_lyric_display_advance_phrase}
       }
       {do
