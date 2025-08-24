@@ -14,6 +14,34 @@ import re
 import argparse
 import pypresence
 import platform
+import threading
+from urllib.parse import urlencode
+
+# -------- GoCentral globals --------
+SERVER_URL = "https://gocentral-service.rbenhanced.rocks"
+
+# remove trailing " [PS3]" / " [RPCS3]" / " [360]" / " [WII]"
+_TAG_RE = re.compile(r"\s\[(?:PS3|RPCS3|360|WII)\]\s*$", re.IGNORECASE)
+def _strip_platform_tag(name: str) -> str:
+    return _TAG_RE.sub("", (name or "").strip())
+
+# instrument -> role_id (keep it local/isolated)
+_INSTR_ROLE_IDS = {
+    "drums": 0, "bass": 1, "guitar": 2, "vocals": 3, "harmony": 4, "keys": 5,
+    "prodrums": 6, "proguitar": 7, "probass": 8, "prokeys": 9, "band": 10,
+}
+_INSTR_ALIASES = {
+    "gtr": "guitar", "lead": "guitar",
+    "pg": "proguitar", "pro guitar": "proguitar", "real guitar": "proguitar",
+    "b": "bass",
+    "pb": "probass", "pro bass": "probass", "real bass": "probass",
+    "drum": "drums", "pro drums": "prodrums", "real drums": "prodrums",
+    "v": "vocals", "vox": "vocals", "sing": "vocals",
+    "harm": "harmony", "harms": "harmony",
+    "k": "keys", "keyboard": "keys",
+    "pk": "prokeys", "pro keys": "prokeys", "real keys": "prokeys",
+    "bandscore": "band",
+}
 
 def get_rpcs3_path():
     os_system = platform.system()
@@ -798,6 +826,123 @@ def display_current_status(presence_data, debug_mode, network, should_clear_scre
         print(f"  Current Screen: {current_screen}")
         print(f"  Previous Screen: {update_presence.previous_screen}")
 
+def _resolve_instrument_role_id(name: str) -> int | None:
+    if not name:
+        return None
+    n = name.strip().lower()
+    key = n if n in _INSTR_ROLE_IDS else _INSTR_ALIASES.get(n)
+    return _INSTR_ROLE_IDS.get(key) if key else None
+
+def _format_s_expr(song_id: int, pairs: list[tuple[str, int]]) -> str:
+    # (
+    #  SONG_ID
+    #     (
+    #         ("player" 123)
+    #         ("player2" 456)
+    #     )
+    # )
+    lines = [f"{song_id}", "   ("]
+    for player, score in pairs:
+        lines.append(f"        ({json.dumps(player)} {int(score)})")
+    lines += ["   )"]
+    return "\n".join(lines)
+
+def _collect_top_leaderboard_fast(
+    session: requests.Session,
+    song_id: int,
+    instrument: str,
+    *,
+    max_entries: int = 100,
+    page_size: int = 50,   # 2 pages max -> faster
+    timeout: float = 7.0
+) -> list[tuple[str, int]]:
+    """Return [(PLAYER, SCORE), ...] up to max_entries."""
+    rid = _resolve_instrument_role_id(instrument)
+    if rid is None:
+        return []
+
+    endpoint = f"{SERVER_URL}/leaderboards"
+    results: list[tuple[str, int]] = []
+    page = 1
+
+    while len(results) < max_entries:
+        params = {"song_id": song_id, "role_id": rid, "page": page, "page_size": page_size}
+        try:
+            resp = session.get(endpoint, params=params, timeout=timeout)
+            if resp.status_code != 200:
+                break
+            data = resp.json()
+        except Exception:
+            break
+
+        rows = data if isinstance(data, list) else (data.get("leaderboard") or data.get("entries") or [])
+        if not rows:
+            break
+
+        for r in rows:
+            name = _strip_platform_tag(str(r.get("name", "")))
+            score = r.get("score")
+            if isinstance(score, (int, float)):
+                results.append((name, int(score)))
+                if len(results) >= max_entries:
+                    break
+
+        if len(rows) < page_size:
+            break
+        page += 1
+
+    return results
+
+def _monitor_gc_requests(usrdir: Path, stop_event: threading.Event, debug: bool = False):
+    """
+    Poll dx_gc_request.dta every 0.5s. When it contains:
+        <song_id>\n<instrument>
+    truncate it immediately, fetch top 100 for that instrument,
+    and write dx_gc_response.dta with the s-expr payload.
+    """
+    req_path = usrdir / "dx_gc_request.dta"
+    resp_path = usrdir / "dx_gc_response.dta"
+    sess = requests.Session()
+
+    # small helper: atomic write to avoid partial reads
+    def _atomic_write(p: Path, text: str):
+        tmp = p.with_suffix(p.suffix + ".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(p)
+
+    while not stop_event.is_set():
+        try:
+            if req_path.exists():
+                raw = req_path.read_text(encoding="utf-8")
+                if raw.strip():
+                    # Immediately clear request file so caller can issue the next request ASAP
+                    try:
+                        req_path.write_text("", encoding="utf-8")
+                    except Exception:
+                        pass  # not fatal
+
+                    # Parse "<song_id>\n<instrument>"
+                    lines = [ln.strip() for ln in raw.splitlines() if ln.strip()]
+                    song_id = int(lines[0]) if lines else 0
+                    instrument = (lines[1] if len(lines) > 1 else "")
+
+                    pairs: list[tuple[str, int]] = []
+                    if song_id > 0 and instrument:
+                        pairs = _collect_top_leaderboard_fast(sess, song_id, instrument)
+
+                    payload = _format_s_expr(song_id, pairs)
+                    _atomic_write(resp_path, payload)
+
+                    if debug:
+                        print(f"[dx_gc] wrote response for song_id={song_id} instrument={instrument} ({len(pairs)} rows)")
+
+        except Exception as e:
+            if debug:
+                print(f"[dx_gc] watcher error: {e!r}")
+
+        # poll rate
+        stop_event.wait(0.5)
+
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Discord Rich Presence and Last.fm Scrobbler for Rock Band 3 Deluxe")
@@ -928,6 +1073,23 @@ def main():
                 break
             else:
                 print("Invalid choice. Please try again.")
+
+    gc_stop_event = threading.Event()
+    gc_thread = None
+    usrdir_path = None
+    if rpcs3_path:
+        usrdir_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR"
+        if usrdir_path.exists():
+            gc_thread = threading.Thread(
+                target=_monitor_gc_requests,
+                args=(usrdir_path, gc_stop_event, debug_mode),
+                daemon=True,
+            )
+            gc_thread.start()
+        else:
+            logger.info("USRDIR not found; dx_gc watcher not started.")
+    else:
+        logger.info("RPCS3 path not set; dx_gc watcher not started.")
 
     # Initialize other configurations
     network = setup_lastfm_network(lastfm_config)
@@ -1076,6 +1238,12 @@ def main():
         print("Disconnecting from Discord...", end="", flush=True)
         RPC.clear()
         RPC.close()
+        try:
+            gc_stop_event.set()
+            if gc_thread:
+                gc_thread.join(timeout=1.0)
+        except Exception:
+            pass
         print("\nDisconnected. Goodbye!", flush=True)
 
 if __name__ == '__main__':

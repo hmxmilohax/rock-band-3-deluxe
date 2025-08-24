@@ -10,6 +10,35 @@
    (current_song {meta_performer song})
    DX_LOADING_HANDLES
    (enter
+      ;score_spy rb3 request
+      {set $middleclassspy {array 0}}
+      {set $validscores {array 0}}
+      {set $validscoresindex 0}
+      {set $gc_next_score FALSE}
+      {set $gc_next_score_name FALSE}
+      {if {rock_central is_online}
+         {do
+            ($instrument FALSE)
+            {if_else {> {user_mgr get_num_participants} 1}
+               {set $instrument "band"}
+               {user_mgr foreach_user $user
+                  {if $user {set $instrument {$user get_track_sym}}}
+               }
+            }
+            {do
+               ($requestpath DX_SCORE_REQUEST_DTA_PATH)
+               ($song {meta_performer song})
+               ($id {{song_mgr get_meta_data $song} id})
+               ($request {array 0})
+               {push_back $request {eval $id}}
+               {push_back $request {eval $instrument}}
+               #ifndef HX_WII
+               {write_file $requestpath $request}
+               #endif
+            }
+         }
+      }
+
       ;reset midi parser end of song shot addition gate to prevent camera spam
       ;i know this is bad and shouldnt be here
       {set $add_end_shot FALSE}
@@ -70,8 +99,9 @@
       ;its the L everyone has to take
       {thread_task ;delay going to practice to let the game catch up
          kTaskUISeconds
-         (delay $dx_delay)
+         (delay 5)
          (script
+            {load_gocentral_results}
             {if_else {== {ui current_screen} preloading_screen}
                #ifdef HX_WII
                {ui goto_screen pregame_screen}
