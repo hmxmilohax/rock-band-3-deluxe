@@ -432,42 +432,59 @@
       $pass
    }
 }
+{func gocentral_results_continue
+   {if_else {== {ui current_screen} preloading_screen}
+      #ifdef HX_WII
+      {ui goto_screen pregame_screen}
+      #else
+      {ui goto_screen {gamemode get game_screen}}
+      #endif
+      {ui goto_screen load_nextsong_screen}
+   }
+}
+{func gocentral_results_save
+   ($arr $idx)
+   {set_elem {find $syscfg go_central_scores} 1 $arr}
+   {set_elem {find $syscfg go_central_index} 1 $idx}
+   {set_elem {find $syscfg go_central_index_temp} 1 $idx}
+   {gocentral_results_continue}
+}
 {func load_gocentral_results
+   ($tries)
    {do
       ($responsepath DX_SCORE_RESPONSE_DTA_PATH)
       ($song {meta_performer song})
       ($id {{song_mgr get_meta_data $song} id})
-      ($compare_id 0)
+      ($middleclassspy {read_file $responsepath})
+      ($compare_id {if_else {> {size $middleclassspy} 0} {elem $middleclassspy 0} 0})
+      ($valid_response {== $compare_id $id})
+      ($arr {array 0})
+      ($idx 0)
       ;score_spy rb3 response
-      {if {rock_central is_online}
-         {set $middleclassspy {read_file $responsepath}}
-         {set $compare_id {elem $middleclassspy 0}}
-         ;{dx_passive_messenger_symbol {sprint {elem $middleclassspy 0}}}
-         {if {== $compare_id $id}
-            {set $validscores {array {elem $middleclassspy 1}}}
-            {set $validscoresindex {- {size $validscores} 1}}
-            ;{dx_passive_messenger_symbol {sprint {size $validscores}}}
-         }
+      {if {|| {< $tries 5} $valid_response}
+         ;#ifndef HX_WII
          ;{write_file $responsepath {array 0}}
+         ;#endif
+         {if {> {size $middleclassspy} 0}
+            {set $arr {elem $middleclassspy 1}}
+            {set $idx {- {size $arr} 1}}
+            {gocentral_results_save $arr $idx}
+         }
+      }
+      {if {&& {>= $tries 5} {! $valid_response}}
+         {gocentral_results_continue}
+      }
+      {if {&& {< $tries 5} {! $valid_response}}
+         {++ $tries}
+         {do
+            {script_task
+               kTaskUISeconds
+               (delay 1) ;couldnt get leaderboards, try again
+               (script {load_gocentral_results $tries})
+            }
+         }
       }
    }
-
-   ;used in game like this as a test, posted here for brevity
-   ;{if {> {size $validscores} 0}
-   ;   {do
-   ;      ($name {elem {elem $validscores $validscoresindex} 0})
-   ;      ($scoretobeat {elem {elem $validscores $validscoresindex} 1})
-   ;      ($myscore {{coop_track_panel find scoreboard} get score})
-   ;      ;{dx_passive_messenger_symbol $scoretobeat}
-   ;      ;{dx_passive_messenger_symbol $name}
-   ;      {if {&& {> $validscoresindex 0} {> $myscore $scoretobeat}}
-   ;         {-- $validscoresindex}
-   ;      }
-
-   ;      {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprint
-   ;         {+ $validscoresindex 1} ". " $name " - " $scoretobeat
-   ;      }}
-   ;   }
 }
 #include ../world/dx_camera_funcs.dta
 #include ../game/dx_game_funcs.dta

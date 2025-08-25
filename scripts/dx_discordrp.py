@@ -902,6 +902,7 @@ def _monitor_gc_requests(usrdir: Path, stop_event: threading.Event, debug: bool 
     """
     req_path = usrdir / "dx_gc_request.dta"
     resp_path = usrdir / "dx_gc_response.dta"
+    alive_path = usrdir / "dx_rp_alive.dta"
     sess = requests.Session()
 
     # small helper: atomic write to avoid partial reads
@@ -910,7 +911,17 @@ def _monitor_gc_requests(usrdir: Path, stop_event: threading.Event, debug: bool 
         tmp.write_text(text, encoding="utf-8")
         tmp.replace(p)
 
+    last_alive = 0.0
+
     while not stop_event.is_set():
+        now = time.monotonic()
+        if now - last_alive >= 1.0:
+            try:
+                _atomic_write(alive_path, "(1)")
+            except Exception:
+                pass
+            last_alive = now
+
         try:
             if req_path.exists():
                 raw = req_path.read_text(encoding="utf-8")

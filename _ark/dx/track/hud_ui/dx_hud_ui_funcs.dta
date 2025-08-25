@@ -525,95 +525,133 @@
    ;   {sprintf "Executed dx_mtv_time_remaining_handler - time: %.4fms"
    ;      {time
             {if {&& $dx_mtvup {exists beatmatch} {! {gamemode in_mode trainer}}}
-               {switch $dx_time_remaining_direction
-                  (off 
-                     {do
-                        ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else
-                        {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt os_blnk}
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.1336) ;in approximately 8 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
-                  (down
-                     {do
-                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
-                        {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
-                        {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
-                        {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
-                        {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
-                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
-                        ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
-                        {if {!= $timer_str $total_str}
-                           {switch $dx_disp_total_time ;check whether total time should be displayed
-                              (TRUE
-                                 {if_else $dx_time_remain_dbg
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" {elem $dx_brutal_distance 0} {elem $dx_brutal_distance 1} {elem $dx_brutal_distance 2} {elem $dx_brutal_distance 3} {elem $dx_health_slot 0} {elem $dx_health_slot 1} {elem $dx_health_slot 2} {elem $dx_health_slot 3}}} ;temp brutal debug  addendum: what the fuck
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
-                                 }
-                              )
-                              (FALSE
-                                 {if_else $dx_time_remain_dbg
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
-                                 }
-                              )
-                           }
-                        }
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.0668) ;in approximately 4 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
-                  (up
-                     {do
-                        {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
-                        {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
-                        ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
-                        {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
-                        {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
-                        {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
-                        {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
-                        ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
-                        {if {!= $timer_str $total_str}
-                           {switch $dx_disp_total_time ;check whether total time should be displayed
-                              (TRUE
-                                 {if_else $dx_time_remain_dbg
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
-                                 }
-                              )
-                              (FALSE
-                                 {if_else $dx_time_remain_dbg
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
-                                    {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
-                                 }
-                              )
-                           }
-                        }
-                        {script_task
-                           kTaskUISeconds
-                           (delay 0.0668) ;in approximately 4 frames, call this function again
-                           (script {dx_mtv_time_remaining_handler})
-                        }
-                     }
-                  )
+               {if {> {size {elem {find $syscfg go_central_scores} 1}} 0}
                   {do
-                     ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else}
+                     ($validscores {elem {find $syscfg go_central_scores} 1})
+                     ($validscoresindex {elem {find $syscfg go_central_index_temp} 1})
+                     ($to_beat_index {+ $validscoresindex 1})
+                     ($name {elem {elem $validscores $validscoresindex} 0})
+                     ($scoretobeat {elem {elem $validscores $validscoresindex} 1})
+                     ($my_index {if_else {>= $to_beat_index 100} "???" {+ $validscoresindex 2}})
+                     ($my_score {{coop_track_panel find scoreboard} get score})
+                     ($my_name FALSE)
+                     {beatmatch foreach_active_player $player
+                        {set $my_name {dx_sanitize_player_name {{$player get_user} get_user_name}}}
+                     }
+
+                     {if {&& {> $validscoresindex 0} {> $my_score $scoretobeat}}
+                        {-- $validscoresindex}
+                        {set_elem {find $syscfg go_central_index_temp} 1 $validscoresindex}
+                     }
+                     {if_else {&& {== $validscoresindex 0} {> $my_score $scoretobeat}}
+                        {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprint
+                           $my_index ". " $my_name
+                        }}
+                        {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprint
+                           $to_beat_index ". " $name " - " $scoretobeat "\n"
+                           $my_index ". " $my_name
+                        }}
+                     }
+                  }
+                  {do
                      {script_task
                         kTaskUISeconds
                         (delay 0.1336) ;in approximately 8 frames, call this function again
                         (script {dx_mtv_time_remaining_handler})
                      }
                   }
-
                }
-                  ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+               {if {== {size {elem {find $syscfg go_central_scores} 1}} 0}
+                  {switch $dx_time_remaining_direction
+                     (off 
+                        {do
+                           ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else
+                           {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt os_blnk}
+                           {script_task
+                              kTaskUISeconds
+                              (delay 0.1336) ;in approximately 8 frames, call this function again
+                              (script {dx_mtv_time_remaining_handler})
+                           }
+                        }
+                     )
+                     (down
+                        {do
+                           {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                           {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
+                           {set $timer_ms {- $total_ms $curr_ms}} ;calc remaining time
+                           {if {< $timer_ms 0} {set $timer_ms 0}} ;failsafe, if less than 0, force to 0
+                           {if {> $timer_ms $total_ms} {set $timer_ms $total_ms}} ;failsafe, if greater than total, force to total
+                           {set $timer_str {dx_ms_to_time_str $timer_ms TRUE}} ;convert current time to string
+                           {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                           ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                           {if {!= $timer_str $total_str}
+                              {switch $dx_disp_total_time ;check whether total time should be displayed
+                                 (TRUE
+                                    {if_else $dx_time_remain_dbg
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "BRUTAL: %.2f %.2f %.2f %.2f\nCROWD: %.2f %.2f %.2f %.2f" {elem $dx_brutal_distance 0} {elem $dx_brutal_distance 1} {elem $dx_brutal_distance 2} {elem $dx_brutal_distance 3} {elem $dx_health_slot 0} {elem $dx_health_slot 1} {elem $dx_health_slot 2} {elem $dx_health_slot 3}}} ;temp brutal debug  addendum: what the fuck
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                    }
+                                 )
+                                 (FALSE
+                                    {if_else $dx_time_remain_dbg
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprint {dx_uptime} " -"}} ;include debug line
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                    }
+                                 )
+                              }
+                           }
+                           {script_task
+                              kTaskUISeconds
+                              (delay 0.0668) ;in approximately 4 frames, call this function again
+                              (script {dx_mtv_time_remaining_handler})
+                           }
+                        }
+                     )
+                     (up
+                        {do
+                           {set $curr_ms {beatmatch get_song_ms}} ;current time in ms
+                           {set $total_ms {int {* {+ {beat_to_seconds $dx_end_of_song} 1} 1000}}} ;grab current song length in ms
+                           ;{set $timer_ms $dx_current_progress_ms} ;calc remaining time
+                           {if {< $curr_ms 0} {set $curr_ms 0}} ;failsafe, if less than 0, force to 0
+                           {if {> $curr_ms $total_ms} {set $curr_ms $total_ms}} ;failsafe, if greater than total, force to total
+                           {set $timer_str {dx_ms_to_time_str $curr_ms TRUE}} ;convert current time to string
+                           {set $total_str {dx_ms_to_time_str $total_ms TRUE}} ;convert total time to string
+                           ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE}
+                           {if {!= $timer_str $total_str}
+                              {switch $dx_disp_total_time ;check whether total time should be displayed
+                                 (TRUE
+                                    {if_else $dx_time_remain_dbg
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "%.0f / %.0f" $curr_ms $total_ms}} ;include debug line
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_both $timer_str $total_str} ;don't include debug line
+                                    }
+                                 )
+                                 (FALSE
+                                    {if_else $dx_time_remain_dbg
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt {sprintf "%d" $curr_ms}} ;include debug line
+                                       {{{coop_track_panel find scoreboard} find progress_timer.lbl} set_token_fmt dx_time_remaining_one $timer_str} ;don't include debug line
+                                    }
+                                 )
+                              }
+                           }
+                           {script_task
+                              kTaskUISeconds
+                              (delay 0.0668) ;in approximately 4 frames, call this function again
+                              (script {dx_mtv_time_remaining_handler})
+                           }
+                        }
+                     )
+                     {do
+                        ;{dx_game_hud_label dx_hud_label_time_remaining $dx_hud_time_remaining_text_size $dx_hud_time_remaining_text_font $dx_hud_time_remaining_text_alignment $dx_hud_time_remaining_text_kerning {+ $dx_hud_time_remaining_text_x {* $dx_score_base_0 0.314}} {+ $dx_hud_time_remaining_text_z $dx_score_base_1} {+ $dx_hud_time_remaining_text_y {* DX_SCORE_BASE_2_AUTOPOS 0.314}} $dx_hud_time_remaining_text_r $dx_hud_time_remaining_text_g $dx_hud_time_remaining_text_b TRUE} ;hide timer and do nothing else}
+                        {script_task
+                           kTaskUISeconds
+                           (delay 0.1336) ;in approximately 8 frames, call this function again
+                           (script {dx_mtv_time_remaining_handler})
+                        }
+                     }
+
+                  }
+                     ;{{{gamemode get track_panel} find mtv_overlay} mtv_formatter} ;refresh the mtv overlay
+               }
             }
    ;      }
    ;   }
