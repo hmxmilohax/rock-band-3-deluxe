@@ -833,6 +833,109 @@ def _resolve_instrument_role_id(name: str) -> int | None:
     key = n if n in _INSTR_ROLE_IDS else _INSTR_ALIASES.get(n)
     return _INSTR_ROLE_IDS.get(key) if key else None
 
+def _xbox_execute(ip: str, script: str, timeout: float = 4.0, raw: bool = True, headers: dict | None = None) -> tuple[bool, int | None, str]:
+    try:
+        if raw:
+            url = f"http://{ip}:21070/execute?script={{do {script}}}"
+            r = requests.get(url, timeout=timeout, headers=headers)
+        else:
+            r = requests.get(f"http://{ip}:21070/execute", params={"script": f"{{do {script}}}"}, timeout=timeout, headers=headers)
+        return (r.status_code == 200, r.status_code, "")
+    except Exception as e:
+        return (False, None, str(e))
+
+def _xbox_set_alive(ip: str, debug: bool = False):
+    ok, code, err = _xbox_execute(ip, "{set $dx_rp_alive (1)}", headers={"Connection": "close"})
+    if debug:
+        print(f"[xbox] heartbeat -> {'OK' if ok else 'FAIL'}{'' if ok else f' (code={code}, err={err})'}")
+    # brief pause helps the tiny server
+    time.sleep(0.1)
+    return ok
+
+def _build_gc_setelem_script(song_id: int, pairs: list[tuple[str, int]], slot: int = 1) -> str:
+    inner = " ".join(f'({json.dumps(name)} {int(score)})' for name, score in pairs)
+    return f'{{set_elem {{find $syscfg go_central_scores}} {slot} ({int(song_id)} ({inner}))}}'
+
+
+def _push_gc_scores_to_xbox(ip: str, sid: int, pairs: list[tuple[str, int]], *, slot: int = 1, debug: bool = False) -> bool:
+    total = len(pairs)
+
+    # --- 1) initial set: only the first score (if any) ---
+    if total > 0:
+        core = _build_gc_setelem_script(sid, pairs[:1], slot=slot)
+        idx_cmd = f' {{set_elem {{find $syscfg go_central_index}} {slot} 0}}'
+        script = "{set $dx_rp_alive (1)} " + core + idx_cmd
+    else:
+        # no rows — set empty list for the song id; no index set
+        empty_core = f'{{set_elem {{find $syscfg go_central_scores}} {slot} ({int(sid)} ())}}'
+        script = "{set $dx_rp_alive (1)} " + empty_core
+
+    if debug:
+        raw_url = f"http://{ip}:21070/execute?script={{do {script}}}"
+        print(f"[gc] init set_elem (1 of {total}) script_len={len(script)} url_len={len(raw_url)}")
+        print(script)
+
+    ok, code, err = _xbox_execute(ip, script, timeout=5.0, raw=True,
+                                  headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+    print(f"[gc] push raw -> {'OK' if ok else 'FAIL'}{'' if ok else f' (code={code}, err={err})'}")
+    time.sleep(0.12)
+
+    if not ok:
+        ok2, code2, err2 = _xbox_execute(ip, script, timeout=5.0, raw=False,
+                                         headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+        print(f"[gc] push encoded -> {'OK' if ok2 else 'FAIL'}{'' if ok2 else f' (code={code2}, err={err2})'}")
+        time.sleep(0.12)
+        if not ok2:
+            return False
+
+    # --- 2) push_back remaining scores one at a time, updating index each time ---
+    for idx in range(1, total):
+        name, score = pairs[idx]
+        item = f'({json.dumps(name)} {int(score)})'
+        pb_cmd = f'{{push_back {{elem {{find $syscfg go_central_scores}} {slot}}} {item}}}'
+        ix_cmd = f'{{set_elem {{find $syscfg go_central_index}} {slot} {idx}}}'
+        script = "{set $dx_rp_alive (1)} " + pb_cmd + " " + ix_cmd
+
+        if debug:
+            raw_url = f"http://{ip}:21070/execute?script={{do {script}}}"
+            print(f"[gc] push_back {idx+1}/{total} script_len={len(script)} url_len={len(raw_url)} -> {pb_cmd} ; {ix_cmd}")
+
+        ok, code, err = _xbox_execute(ip, script, timeout=5.0, raw=True,
+                                      headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+        if not ok:
+            ok2, code2, err2 = _xbox_execute(ip, script, timeout=5.0, raw=False,
+                                             headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+            if debug:
+                print(f"[gc] push_back raw={'OK' if ok else 'FAIL'}; encoded -> {'OK' if ok2 else 'FAIL'}"
+                      f"{'' if ok or ok2 else f' (code={code2}, err={err2})'}")
+            if not ok2:
+                return False
+        else:
+            if debug:
+                print(f"[gc] push_back OK {idx+1}/{total}")
+
+        time.sleep(0.10)
+
+    # --- 3) all done -> mark ready ---
+    ready_script = "{set $dx_rp_alive (1)} {set $gc_leaderboards_ready TRUE}"
+    if debug:
+        raw_url = f"http://{ip}:21070/execute?script={{do {ready_script}}}"
+        print(f"[gc] ready flag -> script_len={len(ready_script)} url_len={len(raw_url)}")
+        print(ready_script)
+
+    ok, code, err = _xbox_execute(ip, ready_script, timeout=4.0, raw=True,
+                                  headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+    if not ok:
+        ok2, code2, err2 = _xbox_execute(ip, ready_script, timeout=4.0, raw=False,
+                                         headers={"Connection": "close", "User-Agent": "rb3dx-gc/1.0"})
+        if debug:
+            print(f"[gc] ready flag raw={'OK' if ok else 'FAIL'}; encoded -> {'OK' if ok2 else 'FAIL'}"
+                  f"{'' if ok or ok2 else f' (code={code2}, err={err2})'}")
+        if not ok2:
+            return False
+
+    return True
+
 def _format_s_expr(song_id: int, pairs: list[tuple[str, int]]) -> str:
     # (
     #  SONG_ID
@@ -1123,6 +1226,13 @@ def main():
         last_json_content = None
         xbox_connection_error_displayed = False
         screen_clear_delay_counter = 0  # Initialize the screen clear delay counter
+        # --- GC/Xbox state ---
+        gc_http = requests.Session()
+        last_gc_req: tuple[int | None, str | None] = (None, None)  # only update if push OK
+
+        # track screen transitions to force push on preloading_screen
+        last_screen_seen: str | None = None
+        last_preload_key: tuple[int | None, str | None] = (None, None)
 
         while True:
             current_time = time.time()
@@ -1183,7 +1293,7 @@ def main():
 
             # Set interval based on data source
             if data_source == 'xbox':
-                interval = 5  # Check every 5 seconds when using Xbox
+                interval = 3  # Check every 5 seconds when using Xbox
             else:
                 interval = 2  # Check every 2 seconds when not using Xbox
 
@@ -1219,6 +1329,7 @@ def main():
 
                 last_data_receive_time = time.time()
 
+
                 if data_changed or presence_cleared:
                     if presence_cleared:
                         update_presence.start_time = None  # Reset start_time to reset the timer
@@ -1229,6 +1340,74 @@ def main():
                 # Call scrobbling logic only if Last.fm is configured
                 if network is not None:
                     handle_scrobbling(presence_data, network, active_instrument_name, active_instrument_text)
+
+                # Heartbeat (Xbox only)
+                # --- GoCentral/Xbox integration ---
+                did_push = False
+                current_screen = presence_data.get('Current Screen', '') or ''
+
+                # Parse song_id / instrument from RP payload
+                sid_raw = (presence_data.get('song_id') or
+                           presence_data.get('SongID') or
+                           presence_data.get('songId'))
+                inst = (presence_data.get('go_req_inst') or "").strip().lower()
+
+                if debug_mode:
+                    print(f"[gc][rp] sid={sid_raw} inst={inst} screen={current_screen} loaded={presence_data.get('Loaded Song','')}")
+
+                sid = None
+                if isinstance(sid_raw, (int, float, str)):
+                    try:
+                        sid = int(sid_raw)
+                    except Exception:
+                        sid = None
+
+                # detect entry into preloading_screen
+                entered_preloading = (current_screen == 'preloading_screen' and last_screen_seen != 'preloading_screen')
+
+                if data_source == 'xbox' and xbox_console_ip and sid and inst:
+                    rid = _resolve_instrument_role_id(inst)
+
+                    if rid is None:
+                        if debug_mode:
+                            print(f"[gc] unknown instrument '{inst}'")
+                    else:
+                        key = (sid, inst)
+
+                        if entered_preloading:
+                            # Force refresh: always fetch & push on preloading entry
+                            if debug_mode:
+                                print(f"[gc] preloading -> forcing refresh for {key}")
+                            pairs = _collect_top_leaderboard_fast(gc_http, sid, inst, max_entries=50, page_size=50, timeout=7.0)
+                            if debug_mode:
+                                print(f"[gc] fetched {len(pairs)} rows (preloading)")
+                            ok = _push_gc_scores_to_xbox(xbox_console_ip, sid, pairs, slot=1, debug=debug_mode)
+                            if ok:
+                                last_preload_key = key
+                                last_gc_req = key  # ok to set; we forced a fresh one
+                                did_push = True
+                        else:
+                            # Normal path: dedupe so we only fetch/push once per (sid,inst)
+                            if key == last_gc_req:
+                                if debug_mode:
+                                    print(f"[gc] dedupe skip for {key}")
+                            else:
+                                if debug_mode:
+                                    print(f"[gc] fetch leaderboards sid={sid} inst={inst} rid={rid} …")
+                                pairs = _collect_top_leaderboard_fast(gc_http, sid, inst, max_entries=50, page_size=50, timeout=7.0)
+                                if debug_mode:
+                                    print(f"[gc] fetched {len(pairs)} rows")
+                                ok = _push_gc_scores_to_xbox(xbox_console_ip, sid, pairs, slot=1, debug=debug_mode)
+                                if ok:
+                                    last_gc_req = key
+                                    did_push = True
+
+                # If we didn’t push anything this loop, send a standalone heartbeat
+                if data_source == 'xbox' and xbox_console_ip and not did_push:
+                    _xbox_set_alive(xbox_console_ip, debug=debug_mode)
+
+                # remember the screen for next iteration’s transition check
+                last_screen_seen = current_screen
 
                 # Display current status in every iteration
                 display_current_status(presence_data, debug_mode, network, should_clear_screen, screen_clear_delay_counter)

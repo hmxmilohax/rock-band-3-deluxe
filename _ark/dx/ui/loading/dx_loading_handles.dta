@@ -25,6 +25,41 @@
          }
       }
       {set $speedmod_top $leaderspeed}
+      {if {&& {gamemode in_mode qp_coop} {rock_central is_online}}
+         {if
+            #ifdef HX_WII TRUE #endif
+            #ifdef HX_PS3 {> {size {read_file DX_RP_ALIVE_DTA_PATH}} 0} #endif
+            #ifdef HX_XBOX {> {size $dx_rp_alive} 0} #endif
+            {set $dx_delay 2} ;force await for gocentral response
+            {dx_passive_messenger gc_loading_board}
+            {set $gc_xbox_response_var {array 0}}
+            {set $gc_leaderboards_ready FALSE}
+            {do
+               ($instrument FALSE)
+               {if_else {> {user_mgr get_num_participants} 1}
+                  {set $instrument "band"}
+                  {user_mgr foreach_user $user
+                     {if $user {set $instrument {$user get_track_sym}}}
+                  }
+               }
+               {do
+                  ($requestpath DX_SCORE_REQUEST_DTA_PATH)
+                  ($song {meta_performer song})
+                  ($id {{song_mgr get_meta_data $song} id})
+                  ($request {array 0})
+                  {push_back $request {eval $id}}
+                  {push_back $request {eval $instrument}}
+                  #ifdef HX_PS3
+                  {write_file $requestpath $request}
+                  {write_file DX_RP_ALIVE_DTA_PATH {array 0}}
+                  #endif
+                  #ifdef HX_XBOX
+                  {dx_presence_manager}
+                  #endif
+               }
+            }
+         }
+      }
    )
    (dx_set_up_loading_tip_label
       #ifndef HX_WII
