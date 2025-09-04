@@ -1,10 +1,7 @@
 # add_devbuild.py
-from pathlib import Path
-import subprocess
 import sys
 
-commit = subprocess.check_output(["git", "describe", "--always", "--dirty"],text=True).strip("\n")
-version = f"1.1.0-nightly+{commit}"
+version = f"1.1.0-beta13"
 
 path = sys.argv[1]
 
