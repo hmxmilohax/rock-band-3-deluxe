@@ -1159,9 +1159,28 @@ DX_CURRENT_SONG_CLEAR
    }
 }
 #ifdef HX_PS3
-{set $tempwrite {find_exists $syscfg missing_song_data}}
-{foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
-   {push_back $tempwrite $entry}
+{set $tempwrite {array 0}}
+{foreach $entry {find $syscfg missing_song_data}
+   {if {!= $entry "missing_song_data"}
+      {push_back $tempwrite $entry}
+   }
+}
+{do
+   ($found FALSE)
+   {foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
+      {if {find_exists $tempwrite {elem $entry 0}}
+         {set $found TRUE}
+         {foreach $entry2 $entry
+            {if {!= $entry2 {elem $entry 0}}
+               {push_back {find $tempwrite {elem $entry 0}} $entry2}
+            }
+         }
+      }
+      {if {! $found}
+         {push_back $tempwrite $entry}
+      }
+      {set $found FALSE}
+   }
 }
 {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/songs_updates.dta"} $tempwrite}
 {set $tempwrite FALSE}
