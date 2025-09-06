@@ -9,6 +9,266 @@
       }
    )
 }
+{new UIPanel dx_search_cache_generator
+   (BUTTON_DOWN_MSG
+      {switch $action
+         (kAction_Cancel {ui pop_screen})
+         kDataUnhandled
+      }
+   )
+   (enter
+      {if {! {$this loaded_dir}}
+         {new PanelDir cache_generator}
+         {$this set_loaded_dir cache_generator}
+         {with cache_generator
+            {$this set cam '[ui.cam]'}
+            {$this set use_specified_cam TRUE}
+            {$this set draw_order 1000}
+            {new Group all.grp}
+            {$this sync_objects}
+            {new Mesh bg.mesh}
+            {dx_generate_quad_mesh bg.mesh 1280 720} ; make damn sure it covers the screen
+            {bg.mesh set_local_pos 0 -10 0}
+            {new Mat bg.mat}
+            {bg.mat set color {pack_color 0 0 0}}
+            {bg.mesh set mat bg.mat}
+            {all.grp add_object bg.mesh}
+            {new BandLabel progress.lbl}
+            {progress.lbl set resource_name pentatonic}
+            {progress.lbl set text_size 30}
+            {progress.lbl set width 400}
+            {progress.lbl set height 40}
+            {progress.lbl set alignment kMiddleCenter}
+            {progress.lbl set_token_fmt stringify "Starting search cache generation..."}
+            {progress.lbl set_local_pos 0 -15 0}
+            {all.grp add_object progress.lbl}
+         }
+      }
+      {set $dx_search_cache_sink $this}
+      {dx_generate_search_cache}
+   )
+   (progress_msg ($done $total)
+      {progress.lbl set_token_fmt stringify {sprint "Generating search cache (" $done "/" $total ")"}}
+   )
+   (generation_finished
+      {ui pop_screen}
+   )
+}
+{new BandScreen
+   dx_search_cache_generator_screen
+   (panels dx_search_cache_generator)
+   (focus dx_search_cache_generator)
+}
+{new
+   UIPanel
+   dx_search_cache_outdated_warning_panel
+   (file
+      "../../ui/hints/hint_rb3_welcome.milo")
+   (focus
+      "customize.btn")
+   (enter
+      {customize.btn set_token_fmt song_cache_generate_button}
+      {continue.btn set_token_fmt cancel}
+      ;{$this disable continue.btn}
+      ;{continue.btn set_showing FALSE}
+      {description.lbl set_token_fmt song_cache_generate_desc})
+   (SELECT_MSG
+      {switch $component
+         (customize.btn {ui goto_screen dx_search_cache_generator_screen})
+         (continue.btn {ui pop_screen})
+      }
+   )
+}
+{new
+   BandScreen
+   dx_search_cache_outdated_warning_screen
+   (panels dx_search_cache_outdated_warning_panel)
+   (focus dx_search_cache_outdated_warning_panel)}
+{new UIPanel dx_search_panel
+   (BUTTON_DOWN_MSG
+      {switch $action
+         (kAction_Confirm kDataUnhandled)
+         (kAction_Cancel {ui pop_screen})
+         (kAction_Option {search.input show_virtual_keyboard $user})
+         kDataUnhandled
+      }
+   )
+   (focus "results.lst")
+   (enter
+      {song_select_panel activate_search}
+      {if {! {$this loaded_dir}}
+         {new PanelDir search_panel}
+         {$this set_loaded_dir search_panel}
+         {do
+            ($panelobj $this)
+            {with search_panel
+               {dx_log_writer insane "Spawning panel"}
+               {$this set cam '[ui.cam]'}
+               {$this set use_specified_cam TRUE}
+               {new Group all.grp}
+               {$this sync_objects}
+               {new BandList results.lst}
+               {results.lst set_type search_results} ; refer to ui/ui_objects.dta
+               {results.lst mutate_dir}
+               #ifndef HX_WII
+               {results.lst set_num_display 12}
+               #else
+               {results.lst set_num_display 11} ; The Wii? Come on now...
+               #endif
+               {results.lst set scroll_time 0}
+               {results.lst set auto_scroll_pause 0}
+               {results.lst set auto_scroll_send_messages FALSE}
+               {results.lst set scroll_past_min_display FALSE}
+               {results.lst set scroll_past_max_display TRUE}
+               {results.lst set min_display 4}
+               {results.lst set max_display 7}
+               {results.lst set_local_pos 69.640 0.1 159}
+
+               ; Set some dummy data in the list so that its DataProvider is setup correctly                         ↓ this true is important, it enables localization
+               {results.lst set_data ("Song One" "Song Two" "Song Two Episode One" "Song Two Episode Two") 0 FALSE TRUE}
+               {all.grp add_object results.lst}
+               {new Mesh search_icon.mesh}
+               {dx_generate_quad_mesh search_icon.mesh 20 20}
+               {new Mat search_icon.mat}
+               ; We're keeping this texture loaded at all times because latency on search panel enter is bad enough as is 
+               {unless $search_icon_tex
+                  {set $search_icon_tex {new Tex search_icon.tex}}
+                  {search_icon.tex set_bitmap "dx/custom_textures/_additional_textures/search_icon.png"}
+                  ; Move it to the main dir to prevent it from getting unloaded
+                  ; (refcounting should prevent this but just being sure)
+                  {search_icon.tex set_name "search_icon.tex" main}
+               }
+               {search_icon.mat set diffuse_tex $search_icon_tex}
+               {search_icon.mat set blend kBlendSrcAlpha}
+               {search_icon.mat set alpha 0.6}
+               {search_icon.mesh set mat search_icon.mat}
+               {search_icon.mesh set_local_pos -358 0 174}
+               {all.grp add_object search_icon.mesh}
+               {new InlineHelp search.ihp}
+               {search.ihp copy {song_select_panel find help.ihp} kCopyShallow}
+               {search.ihp set_config ((kAction_Confirm play_song) (kAction_Option 'SHOW KEYBOARD'))}
+               {search.ihp set_showing TRUE} ; not showing by default because help.ihp was hidden by activate_search
+               {all.grp add_object search.ihp}
+
+               {dx_create_input_field search.input}
+               {search.input set_local_pos -344 0 174}
+               {search.input set_sink $panelobj}
+               {search.input set virtual_title {localize song_search}}
+               {search.input set virtual_desc {localize song_search_desc}}
+               {all.grp add_object search.input}
+
+               {$this set_focus results.lst}
+            }
+         }
+      }
+      {results.lst set showing FALSE}
+      {if_else {dx_search_cache_check}
+         {do
+            {if $keyboard_ticket
+               {if_else {== {size $keyboard_ticket} 4}
+                  {do
+                     {dx_keyboard_focus {$this find search.input}}
+                     {search.input keyboard_msg {elem $keyboard_ticket 0} {elem $keyboard_ticket 1} {elem $keyboard_ticket 2} {elem $keyboard_ticket 3}}
+                  }
+                  {do
+                     ; If the keyboard ticket is not 4 elements long, interpret as a virtual keyboard message
+                     {search.input show_virtual_keyboard {elem $keyboard_ticket 0}}
+                  }
+               }
+            }
+         }
+         {do
+            ;{ui pop_screen}
+            {ui goto_screen dx_search_cache_outdated_warning_screen}
+         }
+      }
+      {set $keyboard_ticket FALSE}
+   )
+   (exit
+      {music_library push_highlight_to_screen}
+      {search.input set_text ""}
+      {search.input send_update_msg}
+      {set $search_results {array 0}}
+      {results.lst set_data (dummy)}
+      {dx_keyboard_unfocus}
+      {song_select_panel deactivate_search}
+   )
+   (keyboard_msg ($key $shift $ctrl $alt)
+      {dx_log_writer insane "Search panel keyboard input"}
+      ; If the user types, focus the search field and forward the message
+      {if_else {$this exists search.input}
+         {do
+            {dx_log_writer insane "Forwarding input normal"}
+            {dx_keyboard_focus {$this find search.input}}
+            {search.input keyboard_msg $key $shift $ctrl $alt}
+         }
+         {do
+            ($script {quasiquote {do
+               {set_this {unquote $this}}
+               {dx_log_writer insane "Forwarding input deferred frame later"}
+               {dx_keyboard_focus {$this find search.input}}
+               {search.input keyboard_msg {unquote $key} {unquote $shift} {unquote $ctrl} {unquote $alt}}
+            }})
+            {dx_log_writer insane "Forwarding input deferred"}
+            {set $keyboard_ticket {array ($key $shift $ctrl $alt)}}
+         }
+      }
+   )
+   (update_results
+      {dx_log_writer insane {sprint "Updating search results: " {size $search_results} " found"}}
+      {set $resultsdata {array 0}}
+      {foreach $result $search_results
+         ;{push_back $result 0}
+         {do
+            ($fields {elem $result 1})
+            {push_back $resultsdata {array (song_artist_fmt {elem $fields 0} {elem $fields 1})}}
+         }
+      }
+      {if_else {> {size $resultsdata} 0}
+         {do
+            {results.lst set_data $resultsdata}
+            {results.lst set_showing TRUE}
+         }
+         {do
+            {results.lst set_data (dummyvalue)}
+            {results.lst set_showing FALSE}
+         }
+      }
+      {results.lst set_selected 0}
+      {$this push_highlight_to_library}
+   )
+   (push_highlight_to_library
+      {if {&& $search_results {> {size $search_results} 0}}
+         {do
+            {music_library set_highlight_ix {elem {elem $search_results {results.lst selected_pos}} 2} FALSE}
+            ;{song_select_panel component_scroll {song_select_panel find song.lst} 0} ; Scroll message expects a user but the song select panel never uses it so shhhhhh
+         }
+      }
+   )
+   (input_field_accept ($field $text)
+      {dx_song_search {tolower {sprint $text}}}
+      {$this update_results}
+   )
+   (input_field_update ($field $text $focused)
+      kDataUnhandled
+   )
+   (component_scroll ($component $user)
+      {$this push_highlight_to_library}
+      kDataUnhandled
+   )
+   (component_select ($component $user)
+      {if {&& $search_results {> {size $search_results} 0}}
+         {meta_performer set_song {elem {elem $search_results {results.lst selected_pos}} 0}}
+         ;{gamemode set_mode qp_coop}
+         {ui sync_screen {music_library get_next_screen} 0}
+      }
+      kDataUnhandled
+   )
+}
+{new BandScreen dx_search_screen
+   (panels dx_search_panel)
+   (focus dx_search_panel)
+}
 {new
    UIPanel
    dx_welcome_panel

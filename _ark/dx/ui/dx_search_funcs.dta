@@ -1,0 +1,190 @@
+#define SONGS_PER_CACHE_PAGE (500)
+
+{set $dx_search_cache_meta_loaded FALSE}
+{set $dx_search_cache_sink FALSE}
+
+{func dx_generate_search_cache
+    #ifndef HX_WII
+    {dx_hyper_finder check_init}
+    {print_debug "Hyper finder loaded"}
+    {music_library reset_filters}
+    {print_debug "Reset library filters"}
+    {set $searchcache_buf {array 0}}
+    {set $searchcache_curfile 1}
+    {set $searchcache_curdata 0}
+    {set $searchcache_numdata {music_library num_data}}
+    {set $searchcache_count 0}
+    {dx_generate_search_cache_updatepath}
+    {print_debug "Starting search cache generation..."}
+    ; Wait a little bit to let the generation screen show before clogging the render thread
+    {script_task kTaskUISeconds (delay 1) (script
+        {dx_generate_search_cache_loop}
+    )}
+    #endif
+}
+
+{func dx_generate_search_cache_updatepath
+    {set $searchcache_filepath {dx_search_cache_getpath $searchcache_curfile}}
+}
+
+{func dx_search_cache_getpath ($num)
+    {sprint DX_GAMEDATA_ROOT "dx_searchcache_" $num ".dta"}
+}
+
+{func dx_generate_search_cache_loop
+    {do
+        ($continue TRUE)
+        ($time 0.0)
+        {while $continue
+            ; A frame for UI rendering every 1000ms
+            {+= $time {time {foreach_int $i 0 20 {dx_generate_search_cache_iteration}}}}
+            {if {> $time 1000}
+                {set $continue FALSE}
+            }
+            {if {>= $searchcache_curdata $searchcache_numdata}
+                {set $continue FALSE}
+            }
+        }
+        ;{$temp_status_indicator set_token_fmt {sprint "Generating search cache: " $searchcache_curdata "/" $searchcache_numdata}}
+        {if $dx_search_cache_sink
+            {$dx_search_cache_sink progress_msg $searchcache_curdata $searchcache_numdata}
+        }
+        {if_else {< $searchcache_curdata $searchcache_numdata}
+            {script_task kTaskUISeconds (delay 0.001) (script
+                {dx_generate_search_cache_loop}
+            )}
+            {do
+                {dx_generate_search_cache_flushbuffer}
+                {dx_generate_search_cache_finalize}
+            }
+        }
+    }
+}
+
+{func dx_generate_search_cache_finalize
+    {set $searchcache_meta
+        {array (
+            (comment "This is the song search cache. Do not edit these files! You can delete them, but make sure to delete all of them when doing so.")
+            (filecount {- $searchcache_curfile 1})
+            (songcount $searchcache_count)
+            (listlength $searchcache_numdata)
+        )}
+    }
+    {write_file {dx_search_cache_getpath "meta"} $searchcache_meta}
+    {set $dx_search_cache_meta_loaded TRUE}
+    {if $dx_search_cache_sink
+        {$dx_search_cache_sink generation_finished}
+        {set $dx_search_cache_sink FALSE}
+    }
+}
+
+{func dx_load_search_cache_meta
+    #ifndef HX_WII
+    {if {! {$dx_search_cache_meta_loaded}}
+        {if {file_exists {dx_search_cache_getpath "meta"}}
+            {set $searchcache_meta {read_file {dx_search_cache_getpath "meta"}}}
+            {set $dx_search_cache_meta_loaded TRUE}
+        }
+    }
+    #endif
+}
+
+{func dx_search_cache_check
+    #ifndef HX_WII
+    {dx_load_search_cache_meta}
+    {if_else $dx_search_cache_meta_loaded
+        {do
+            ($file_numdata {elem {find $searchcache_meta listlength} 1})
+            {== $file_numdata {music_library num_data}}
+        }
+        FALSE
+    }
+    #else
+    TRUE
+    #endif
+}
+
+{func dx_generate_search_cache_iteration
+    {+= $searchcache_curdata 1}
+    {if {< $searchcache_curdata $searchcache_numdata}
+        {music_library set_highlight_ix $searchcache_curdata FALSE}
+        {do
+            ($node {music_library get_highlighted_node})
+            {if {== {$node get_node_type} kNodeSong}
+                ;{song_select_panel dx_authorpoll {$node get_token}}
+                ; Author finder is too slow
+                {push_back $searchcache_buf {array ({$node get_token} ({$node title} {dx_hyper_finder get_artist_from_sort_node $node}) $searchcache_curdata)}}
+                {+= $searchcache_count 1}
+                {if {>= {size $searchcache_buf} SONGS_PER_CACHE_PAGE}
+                    {dx_generate_search_cache_flushbuffer}
+                }
+            }
+        }
+    }
+}
+
+{func dx_generate_search_cache_flushbuffer
+    {if {> {size $searchcache_buf} 0}
+        {write_file $searchcache_filepath $searchcache_buf}
+        {set $searchcache_buf {array 0}}
+        {+= $searchcache_curfile 1}
+        {dx_generate_search_cache_updatepath}
+    }
+}
+
+{func dx_get_search_cache_entry ($idx)
+    ;{dx_log_writer insane {sprint "Getting search cache entry " $idx}}
+    {do
+        ($filenum {+ {int {/ $idx SONGS_PER_CACHE_PAGE}} 1})
+        ($fileindex {mod $idx SONGS_PER_CACHE_PAGE})
+        {if {!= $filenum $searchcache_current_page}
+            {set $searchcache_current_page $filenum}
+            {set $searchcache_page_data {read_file {dx_search_cache_getpath $filenum}}}
+        }
+        {elem $searchcache_page_data $fileindex}
+    }
+}
+
+#ifndef HX_WII
+{func dx_song_search ($query)
+    {dx_load_search_cache_meta}
+    {music_library reset_filters}
+    {set $search_query $query}
+    {set $search_results {array 0}}
+    {foreach_int $i 0 {elem {find_exists $searchcache_meta songcount} 1}
+        {do
+            ($entry {dx_get_search_cache_entry $i})
+            ($fields {elem $entry 1})
+            ($name {tolower {elem $fields 0}})
+            ($artist {tolower {elem $fields 1}})
+            {if {|| {has_substr $name $query} {has_substr $artist $query}}
+                {push_back $search_results $entry}
+            }
+        }
+    }
+}
+#else
+{func dx_song_search ($query)
+    {music_library reset_filters}
+    {dx_hyper_finder check_init}
+    {set $search_query $query}
+    {set $search_results {array 0}}
+    {foreach_int $i 0 {music_library num_data}
+        {music_library set_highlight_ix $i FALSE}
+        {do
+            ($node {music_library get_highlighted_node})
+            {if {== {$node get_node_type} kNodeSong}
+                {do
+                    ($uppername {$node title})
+                    ($name {tolower $uppername})
+                    ($upperartist {dx_hyper_finder get_artist_from_sort_node $node})
+                    ($artist {tolower $upperartist})
+                    {if {|| {has_substr $name $query} {has_substr $artist $query}}
+                        {push_back $search_results {array ({$node get_token} ($uppername $upperartist) $i)}}
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

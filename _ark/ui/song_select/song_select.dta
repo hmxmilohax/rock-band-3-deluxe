@@ -444,6 +444,37 @@
          kAction_Option
       }
    )
+   ; Called by the search panel to hide some stuff to make way for search elements
+   (activate_search
+      {if_else {== {music_library get_current_sort_name} by_song}
+         {music_library reset_filters}
+         {{music_library get view_settings_provider} reset_all_settings}
+      }
+      {song.lst set_showing FALSE}
+      {song.sbd set_showing FALSE}
+      {help.ihp set_showing FALSE}
+      {settings.ihp set_showing FALSE}
+      {viewing.ihp set_showing FALSE}
+      {music_library.lbl set_token_fmt store_search} ; TODO: use a special localization token?
+      {status.lbl set_showing FALSE}
+      {stats.grp set_showing FALSE}
+   )
+   (deactivate_search
+      {song.lst set_showing TRUE}
+      {song.sbd set_showing TRUE}
+      {help.ihp set_showing TRUE}
+      {settings.ihp set_showing TRUE}
+      {viewing.ihp set_showing TRUE}
+      {music_library.lbl set_token_fmt music_library}
+      {status.lbl set_showing TRUE}
+      {stats.grp set_showing TRUE}
+   )
+   (keyboard_msg ($key $shift $ctrl $alt)
+      ; If the user types anything, open the search screen and forward the input
+      {dx_log_writer insane "Keyboard input"}
+      {ui push_screen dx_search_screen}
+      {dx_search_panel keyboard_msg $key $shift $ctrl $alt}
+   )
    (poll
       {if
          {||
@@ -2237,16 +2268,20 @@
                         {ui_event_mgr trigger_event remote_exit}
                      }
                      ;dx, fallback to search on hold red lmao
-                     {virtual_keyboard show_keyboard
-                        $user
-                        17
-                        {localize song_search}
-                        {localize song_search_desc}
-                        {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                           {{music_library get_highlighted_node} title}
-                           {localize song_search_title}
-                        }
-                        $this
+                     ;{virtual_keyboard show_keyboard
+                     ;   $user
+                     ;   17
+                     ;   {localize song_search}
+                     ;   {localize song_search_desc}
+                     ;   {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                     ;      {{music_library get_highlighted_node} title}
+                     ;      {localize song_search_title}
+                     ;   }
+                     ;   $this
+                     ;}
+                     {do
+                        {set $keyboard_ticket {array ($user)}}
+                        {ui push_screen dx_search_screen}
                      }
                      ;{ui
                      ;   go_back_screen
