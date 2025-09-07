@@ -7,19 +7,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Build Files
         run: |
           dependencies/python/configure_yarg_build.py
           dependencies/linux/ninja
+
+      # --- Build arson-fmt (Rust) ---
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Checkout arson repo
+        uses: actions/checkout@v4
+        with:
+          repository: hmxmilohax/arson
+          path: arson
+
+      - name: Cargo build arson-fmt
+        working-directory: arson
+        run: cargo build
+
+      - name: Format songs_updates.dta with arson-fmt
+        run: |
+          ./arson/target/debug/arson-fmt "$GITHUB_WORKSPACE/out/yarg/songs_updates/songs_updates.dta"
+
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
           name: RB3DX-YARG-Updates
           path: out/yarg
+
 
   build_xbox:
     runs-on: ubuntu-latest
