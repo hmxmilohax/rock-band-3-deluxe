@@ -1,0 +1,45 @@
+; Applabel based song metadata finder
+; Can find artist and album, but not much else.
+{new ObjectDir dx_hyper_finder
+    (check_init
+        {if {! {$this has (initialized)}}
+            {$this init}
+        }
+    )
+    (init
+        {dx_log_writer insane "Initializing hyper finder..."}
+        {new BandLabel hyper_finder.lbl}
+        ; Don't ask me why I set every parameter here. The label doesn't like working without all of these set.
+        {hyper_finder.lbl set resource_name pentatonic_outline}
+        {hyper_finder.lbl set text_size 1}
+        {hyper_finder.lbl set fit_type kFitJust}
+        {hyper_finder.lbl set alignment kMiddleRight}
+        {hyper_finder.lbl set width 50}
+        {hyper_finder.lbl set height 50}
+        {hyper_finder.lbl set_token_fmt "hello world"}
+        ; It's more efficient to store the label's internal Text object in a property than to retrieve it every time
+        {$this set textobj {elem {hyper_finder.lbl get_children} 0}}
+        {$this set label {$this find hyper_finder.lbl}}
+        ; Store as variables since variable DataNodes are converted to a raw pointer at parse time: this is faster
+        {set $hyper_finder_textobj [textobj]}
+        {set $hyper_finder_label [label]}
+        {dx_log_writer insane "Initialized hyper finder"}
+        {$this set initialized TRUE}
+    )
+    
+    (get_artist_from_shortname ($shortname)
+        {$hyper_finder_label set_artist_name_from_shortname $shortname}
+        {$hyper_finder_textobj get text}
+    )
+
+    (get_artist_from_sort_node ($sortnode)
+        {$hyper_finder_label set_artist_name $sortnode}
+        {$hyper_finder_textobj get text}
+    )
+
+    ; No album from shortname handler, sorry!
+    (get_album_from_sort_node ($sortnode)
+        {$hyper_finder_label set_album_name $sortnode}
+        {$hyper_finder_textobj get text}
+    )
+}

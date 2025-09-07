@@ -1,0 +1,311 @@
+{set $focused_input_field 0}
+{func dx_create_input_field ($name)
+    {do
+        ($fielddir {new RndDir $name 
+            (label {object text.lbl})
+            (set_sink ($obj) {$this set sink_obj $obj})
+            (text {$this get buf})
+            (set_text ($text)
+                {$this set buf $text}
+                {$this update_label}
+            )
+            (update_label
+                {text.lbl set_token_fmt stringify {$this get buf}}
+            )
+
+            (keyboard_msg ($key $shift $ctrl $alt)
+                {if_else $ctrl
+                    {do
+                        {switch $key
+                            (KB_a {set [highlight_start] 0} {set [highlight_end] {strlen [buf]}} {set [caret] [highlight_end]} {$this sync_caret})
+                            (KB_BACKSPACE {$this delete_char}) ; This should be delete word but it's not implemented yet
+                        }
+                    }
+                    {do
+                        {if {&& {>= $key 32} {<= $key 127}} ; ASCII printable
+                            {$this insert_char {char $key}}
+                        }
+                        {switch $key
+                            (KB_TAB {dx_keyboard_unfocus})
+                            (KB_BACKSPACE {$this delete_char})
+                            (KB_LEFT {if_else $shift {$this sel_left} {$this shift_caret -1}})
+                            (KB_RIGHT {if_else $shift {$this sel_right} {$this shift_caret 1}})
+                            (KB_ENTER {$this accept})
+                        }
+                    }
+                }
+            )
+
+            ;These two use the caret position
+            (insert_char ($char)
+                {if {$this has_highlight}
+                    {$this erase_highlight}
+                }
+                {if_else {== [caret] {strlen [buf]}}
+                    {$this set buf {sprint [buf] $char}}
+                    {do
+                        {$this set buf {sprint {substr [buf] 0 [caret]} $char {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
+                    }
+                }
+                {+= [caret] 1}
+                {$this update_label}
+                {$this sync_caret}
+                {$this send_update_msg}
+            )
+            (delete_char
+                {if_else {$this has_highlight}
+                    {$this erase_highlight}
+                    {if {> [caret] 0}
+                        {if_else {== [caret] {strlen [buf]}}
+                            {$this set buf {sprint {substr [buf] 0 {- [caret] 1}}}}
+                            {$this set buf {sprint {substr [buf] 0 {- [caret] 1}} {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
+                        }
+                        {-= [caret] 1}
+                        {$this update_label}
+                        {$this sync_caret}
+                        {$this send_update_msg}
+                    }
+                }
+            )
+
+            (erase_highlight
+                {if {$this has_highlight}
+                    
+                    {$this set buf {sprint {substr [buf] 0 [highlight_start]} {substr [buf] [highlight_end] {- {strlen [buf]} [highlight_end]}}}}
+
+                    {set [caret] [highlight_start]}
+                    {$this clear_highlight}
+                    {$this sync_caret}
+                    {$this update_label}
+                    {$this send_update_msg}
+                }
+            )
+
+            (shift_caret ($shift)
+                {if_else {$this has_highlight}
+                    {do 
+                        {if_else {> $shift 0}
+                            {set [caret] [highlight_end]}
+                            {set [caret] [highlight_start]}
+                        }
+                        {$this clear_highlight}
+                        {$this sync_caret}
+                    }
+                    {do
+                        {+= [caret] $shift}
+                        {clamp_eq [caret] 0 {strlen [buf]}}
+                        {$this sync_caret}
+                    }
+                }
+            )
+            (sel_left
+                {unless {$this has_highlight}
+                    {set [highlight_start] [caret]}
+                    {set [highlight_end] [caret]}
+                }
+                {if_else {== [caret] [highlight_start]}
+                    {do
+                        {-= [highlight_start] 1}
+                    }
+                    {do
+                        {-= [highlight_end] 1}
+                    }
+                }
+                {-= [caret] 1}
+                {$this clamp_highlight}
+                {clamp_eq [caret] 0 {strlen [buf]}}
+                {$this sync_caret}
+            )
+            (sel_right
+                {unless {$this has_highlight}
+                    {set [highlight_start] [caret]}
+                    {set [highlight_end] [caret]}
+                }
+                {if_else {== [caret] [highlight_end]}
+                    {do
+                        {+= [highlight_end] 1}
+                    }
+                    {do
+                        {+= [highlight_start] 1}
+                    }
+                }
+                {+= [caret] 1}
+                {$this clamp_highlight}
+                {clamp_eq [caret] 0 {strlen [buf]}}
+                {$this sync_caret}
+            )
+
+            (accept
+                {dx_keyboard_unfocus}
+                {[sink_obj] input_field_accept $this [buf]}
+            )
+
+            (send_update_msg
+                {[sink_obj] input_field_update $this [buf] [focused]}
+            )
+
+            ; Call this if you edit the label's size or font
+            (sync_properties
+                {do
+                    ($textsize {text.lbl get text_size})
+                    {caret.lbl set resource_name {text.lbl get resource_name}}
+                    {caret.lbl set text_size $textsize}
+                    {dx_generate_quad_mesh_leftalign highlight.mesh 1 $textsize}
+                }
+            )
+            (sync_caret
+                {do
+                    ($width {text.lbl get_string_width {substr [buf] 0 [caret]}})
+                    {caret.lbl set_local_pos_index 0 $width}
+                    {if_else {$this has_highlight} 
+                        {do
+                            ($start {text.lbl get_string_width {substr [buf] 0 [highlight_start]}})
+                            ($end {text.lbl get_string_width {substr [buf] 0 [highlight_end]}})
+                            ($highlightwide {- $end $start})
+                            {highlight.mesh set_showing TRUE}
+                            {highlight.mesh set_local_pos_index 0 $start}
+                            {highlight.mesh set_local_scale_index 0 $highlightwide}
+                        }
+                        {do
+                            {highlight.mesh set_showing FALSE}
+                        }
+                    }
+                }
+            )
+            (has_highlight
+                {if_else {&& {!= [highlight_start] -1} {!= [highlight_end] -1} {!= [highlight_start] [highlight_end]}}
+                    {do
+                        {if {< [highlight_end] [highlight_start]}
+                            {do
+                                ($swap [highlight_end])
+                                {set [highlight_end] [highlight_start]}
+                                {set [highlight_start] $swap}
+                            }
+                        }
+                        TRUE
+                    }
+                    {do
+                        FALSE
+                    }
+                }
+            )
+            (clamp_highlight
+                {do
+                    ($len {strlen [buf]})
+                    {clamp_eq [highlight_start] 0 $len}
+                    {clamp_eq [highlight_end] 0 $len}
+                }
+            )
+            (clear_highlight
+                {set [highlight_start] -1}
+                {set [highlight_end] -1}
+            )
+
+            (set_focused
+                {$this set focused TRUE}
+                {$this set caret {strlen [buf]}}
+                {$this clear_highlight}
+                {caret.lbl set_showing TRUE}
+                {$this sync_caret}
+                {$this send_update_msg}
+            )
+            (set_unfocused
+                {$this set focused FALSE}
+                {caret.lbl set_showing FALSE}
+                {highlight.mesh set_showing FALSE}
+                {$this send_update_msg}
+            )
+
+            (show_virtual_keyboard ($user)
+                {virtual_keyboard show_keyboard
+                    $user
+                    [length_limit]
+                    [virtual_title]
+                    [virtual_desc]
+                    [buf]
+                    $this
+                    kVkNormalEntry  
+                }
+            )
+
+            (VIRTUAL_KEYBOARD_RESULT_MSG
+                {set [buf] $text}
+                {$this update_label}
+                {if $ok {$this accept}}
+            )
+        })
+        {with $fielddir
+            {new BandLabel text.lbl}
+            {text.lbl set resource_name pentatonic}
+            {text.lbl set text_size 20.5}
+            {text.lbl set fit_type kFitJust}
+            {text.lbl set alignment kMiddleLeft}
+            {text.lbl set width 600}
+            {text.lbl set height 40}
+            {text.lbl set_trans_parent $this}
+            {$this set sink_obj kDataUnhandled}
+            {$this set buf ""}
+            {$this set caret 0}
+            {$this set focused FALSE}
+            {$this set highlight_start -1}
+            {$this set highlight_end -1}
+            {$this set length_limit 32} ; Note: only applies to the virtual keyboard at the moment
+            {$this set virtual_title "Input Field"}
+            {$this set virtual_desc "Input some text here! Some developer forgot to populate this lmao"}
+
+            {new Mesh highlight.mesh}
+            ;{dx_generate_quad_mesh_leftalign highlight.mesh 1 20.5}
+            {new Mat highlight.mat}
+            {highlight.mat set blend kBlendSrcAlpha}
+            {new Tex highlight.tex}
+            {highlight.tex set_bitmap "dx/custom_textures/_additional_textures/generic_white_box.png"}
+            {highlight.mat set diffuse_tex highlight.tex}
+            {highlight.mat set color {pack_color 1 0 0}}
+            {highlight.mat set alpha 0.5}
+            {highlight.mesh set mat highlight.mat}
+            {highlight.mesh set draw_order -1}
+            {highlight.mesh set_trans_parent $this}
+            {highlight.mesh set_showing FALSE}
+
+            {new BandLabel caret.lbl}
+            {$this sync_properties}
+            {caret.lbl set fit_type kFitJust}
+            {caret.lbl set alignment kMiddleLeft}
+            {caret.lbl set width 40}
+            {caret.lbl set height 40}
+            {caret.lbl set_token_fmt stringify "|"}
+            {caret.lbl set_trans_parent $this}
+            {caret.lbl set_local_scale 0.4 1 1}
+            {caret.lbl set_showing FALSE}
+
+
+            {new UIColor caret.color}
+            {caret.color set color {pack_color 1 0 0}}
+            {caret.lbl set color_override caret.color}
+            {$this sync_objects}
+        }
+    }
+}
+
+{func dx_keyboard_handler ($key $shift $ctrl $alt)
+    {if_else {!= {type $focused_input_field} kDataObject}
+        {do
+            {{ui focus_panel} keyboard_msg $key $shift $ctrl $alt}
+        }
+        {do
+            {$focused_input_field keyboard_msg $key $shift $ctrl $alt}
+        }
+    }
+}
+
+{func dx_keyboard_focus ($field)
+    {set $focused_input_field $field}
+    {$focused_input_field set_focused}
+}
+
+{func dx_keyboard_unfocus
+    {if {== {type $focused_input_field} kDataObject}
+        {$focused_input_field set_unfocused}
+        {set $focused_input_field 0}
+    }
+}
