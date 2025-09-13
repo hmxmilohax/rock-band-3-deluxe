@@ -13,6 +13,8 @@ parser.add_argument(
 parser.add_argument(
     "--no-updates", action="store_true", help="disable dx song updates"
 )
+parser.add_argument("--define", action="append", help="Defines a macro in dx_build_marcos.dta, for debugging")
+
 
 args = parser.parse_args()
 
@@ -49,6 +51,7 @@ match sys.platform:
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
         ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies\\python\\gen_song_update_hash.py $out", description="Writing song hash")
+        ninja.rule("defines", "python dependencies\\python\\gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
         ninja.rule("generate_theme_data", "python dependencies\\python\\generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
@@ -67,6 +70,7 @@ match sys.platform:
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
         ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python3 dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
+        ninja.rule("defines", "python3 dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.rule("generate_theme_data", "python3 dependencies/python/generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
@@ -85,6 +89,7 @@ match sys.platform:
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
         ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
+        ninja.rule("defines", "python dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
         ninja.rule("generate_theme_data", "python dependencies/python/generate_theme_data.py $dir $out", description="THEMEDATA $dir")
         match args.platform:
@@ -271,6 +276,17 @@ dtb = Path("obj", args.platform, "raw", "dx", "gen", "dx_song_update_hash.dtb")
 enc = Path("obj", args.platform, "ark", "dx", "gen", "dx_song_update_hash.dtb")
 
 ninja.build(str(dta), "song_update_hash", implicit="_always")
+ninja.build(str(dtb), "dtab_serialize", str(dta))
+ninja.build(str(enc), "dtab_encrypt", str(dtb))
+
+ark_files.append(str(enc))
+
+# generate build defines
+dta = Path("obj", args.platform, "raw", "dx", "macros", "dx_build_macros.dta")
+dtb = Path("obj", args.platform, "raw", "dx", "macros", "gen", "dx_build_macros.dtb")
+enc = Path("obj", args.platform, "ark", "dx", "macros", "gen", "dx_build_macros.dtb")
+
+ninja.build(str(dta), "defines", implicit="_always", variables={"defines": " ".join(args.define) if args.define else None})
 ninja.build(str(dtb), "dtab_serialize", str(dta))
 ninja.build(str(enc), "dtab_encrypt", str(dtb))
 
