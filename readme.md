@@ -2,7 +2,7 @@
 
 <img src="dependencies/media/header.gif" width="100%" alt="Header GIF">
 
-# Downloads and install instructions have been moved to our [brand new website](https://rb3dx.milohax.org/)!
+# Downloads and install instructions are located on our [website](https://rb3dx.milohax.org/)!
 
 <br/> <br/>
 
