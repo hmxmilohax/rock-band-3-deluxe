@@ -1,0 +1,139 @@
+{set $dx_settings_states (
+   #include dx_settings_states.dta
+)}
+
+{set $dx_settings_current_state settings_state_main}
+
+{func dx_create_setting_button ($entryarr)
+   {do
+      ($ret {new BandButton {sprint "setting_" {elem $entryarr 0}}})
+      ($type {elem {find_exists $entryarr type} 1})
+      ($var {if_else {find_exists $entryarr var} {find_exists $entryarr var} 0})
+      {$ret set resource_name pentatonic_display}
+      {$ret set_token_fmt {elem $entryarr 0}}
+      {$ret set alignment kMiddleLeft}
+      {$ret set setting_type $type}
+      {$ret set use_highlight_mesh TRUE}
+      $ret
+   }
+}
+
+{new UIPanel dx_settings_list_panel
+   (BUTTON_DOWN_MSG
+      {switch $action
+         (kAction_Cancel 
+            {dx_settings_screen set_focus_panel dx_settings_panel}
+         )
+         kDataUnhandled
+      }
+   )
+   (enter
+      {if {! {$this loaded_dir}}
+         {new PanelDir settings_list}
+         {$this set_loaded_dir settings_list}
+         {with settings_list
+            {if {$this has (settings_objects)}
+               {notify "!!! Notice: property lingers"}
+            }
+            {set [settings_objects] {array 0}}
+         }
+      }
+   )
+
+   (populate_settings ($statearr)
+      {notify {sprint "YOU'RE GOING TO " {$this loaded_dir}}}
+      {with {$this loaded_dir}
+         {foreach $obj [settings_objects]
+            {delete $obj}
+         }
+         {settings.grp clear_objects}
+         {do
+            ($cursor_y 0)
+            ($entries {find_exists $statearr entries})
+            ($prev_button 0)
+            {foreach $entry $entries
+               {if {!= $entry entries} ; Don't iterate the tag
+                  {do
+                     ($type {elem {find_exists $entry type} 1})
+                     {if {startswith $type "setting_"}
+                        {set $obj {dx_create_setting_button $entry}}
+                        {$obj set_trans_parent $this}
+                        {$obj set_local_pos 0 0 $cursor_y}
+                        {push_back [settings_objects] $obj}
+                        {notify {sprint $obj " lives in " {$obj dir}}}
+                        {unless {$this has (first_setting)}
+                           {$this set first_setting $obj}
+                        }
+                        {if $prev_button
+                           {$prev_button set nav_down $obj}
+                        }
+                        {set $prev_button $obj}
+                        {-= $cursor_y 40}
+                     }
+                  }
+               }
+            }
+         }
+         {$this sync_objects}
+         {$this set_focus [first_setting]}
+      }
+   )
+}
+
+{new UIPanel dx_settings_panel
+   (BUTTON_DOWN_MSG
+      {switch $action
+         (kAction_Cancel 
+            {ui pop_screen}
+            {overshell enter}
+         )
+         kDataUnhandled
+      }
+   )
+   (enter
+      {if {! {$this loaded_dir}}
+         {new PanelDir settings_panel}
+         {$this set_loaded_dir settings_panel}
+         {with settings_panel
+            {$this set draw_order 1000}
+            ;{new Group all.grp}
+            {new Mesh bg.mesh}
+            {dx_generate_quad_mesh bg.mesh 1280 720}
+            {new Mat bg.mat}
+            {bg.mat set blend kBlendSrcAlpha}
+            {bg.mat set z_mode kZModeDisable}
+            {bg.mat set alpha 0.6}
+            {bg.mat set color {pack_color 0 0 0}}
+            {bg.mesh set mat bg.mat}
+            {bg.mesh set draw_order -200}
+            {bg.mesh set_local_pos 0 -5 0}
+            ;{all.grp add_object bg.mesh}
+
+            {new BandLabel test.lbl}
+            {test.lbl set resource_name pentatonic_outline}
+            {test.lbl set width 300}
+            {test.lbl set height 40}
+            {test.lbl set_token_fmt stringify "Settings :)"}
+            {test.lbl set_local_pos 0 0 200}
+            ;{all.grp add_object test.lbl}
+
+            {new Trans main_content.trans}
+            ;{dx_populate_settings {find_exists $dx_settings_states $dx_settings_current_state}}
+            ;{all.grp add_object settings_list}
+            ;{settings_list set_trans_parent $this}
+            {dx_settings_list_panel enter}
+            {dx_settings_list_panel set_trans_parent $this}
+            {settings_list set_local_pos -150 0 160}
+            {dx_settings_list_panel populate_settings {find_exists $dx_settings_states $dx_settings_current_state}}
+            
+            {$this sync_objects}
+            ;{$this set_focus {settings_list get first_setting}}
+         }
+      }
+   )
+}
+{new BandScreen
+   dx_settings_screen
+   (panels dx_settings_panel dx_settings_list_panel)
+   (focus dx_settings_list_panel)
+}
