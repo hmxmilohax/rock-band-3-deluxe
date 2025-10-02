@@ -75,39 +75,17 @@
       {dx_search_panel keyboard_msg $key $shift $ctrl $alt}
    )
    (poll
-      {if
-         {||
-            $dx_in_show_flow
-            #ifdef RB3E
-            TRUE
-            #else
-            {! $dx_more_info_toggle}
-            #endif
-         }
-         {if {song.lst is_scrolling}
-            {if {exists author_finder}
-               {delete author_finder}
-            }
-         }
+      {if $probeforfinder
          {if
-            {&&
-               {! {song.lst is_scrolling}}
-               {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-               $probeforfinder
+            {||
+               $dx_in_show_flow
+               #ifdef RB3E
+               TRUE
+               #else
+               {! $dx_more_info_toggle}
+               #endif
             }
-            {if
-               {||
-                  {file_exists
-                     {sprint
-                        {song_mgr song_path {{music_library get_highlighted_node} get_token}}
-                        "/../../gen/songs.dtb"
-                     }
-                  }
-                  {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
-               }
-               {set $probeforfinder FALSE}
-               {$this dx_authorfinder}
-            }
+            {$this dx_more_info_load TRUE}
          }
       }
    )
@@ -152,31 +130,56 @@
       }
    )
    (dx_more_info_load
-      {if {song.lst is_scrolling}
+      ($probe)
+      {if_else {song.lst is_scrolling}
          {if {exists author_finder}
             {delete author_finder}
          }
-      }
-      {if
-         {&&
-            {! {song.lst is_scrolling}}
-            {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-            $probeforfinder
-         }
-         {if
-            {||
-               {file_exists
-                  {sprint
-                     {song_mgr song_path {{music_library get_highlighted_node} get_token}}
-                     "/../../gen/songs.dtb"
+         {if {&& $probe {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
+            {do
+               ($token {{music_library get_highlighted_node} get_token})
+               ($song_path {sprint {song_mgr song_path $token} "/../../gen/songs.dtb"})
+               {if
+                  {||
+                     {file_exists $song_path}
+                     {song_mgr is_song_mounted $token}
                   }
+                  {set $probeforfinder FALSE}
+                  {$this dx_authorfinder}
                }
-               {song_mgr is_song_mounted {{music_library get_highlighted_node} get_token}}
             }
-            {set $probeforfinder FALSE}
-            {$this dx_authorfinder}
          }
       }
+   )
+   (dx_authorfinder
+      {if {! {gamemode in_mode trainer}}
+         {do
+            {if {exists author_finder}
+               {delete author_finder}
+            }
+            {script_task kTaskUISeconds
+               #ifndef RB3E
+               (delay 0.75)
+               #endif
+               (name author_finder)
+               (script
+                  {$this dx_authorpoll {{music_library get_highlighted_node} get_token}}
+                  {$this apply_authorfinder_metadata}
+               )
+            }
+         }
+      }
+   )
+   (dx_authorpoll
+      ($shortname)
+      #ifdef RB3E
+      {$this rb3e_author_finder $shortname}
+      #else
+      {dx_author_finder_var_reset}
+      {meta_performer set_song {symbol $shortname}}
+      {set $dx_song_data_processed FALSE}
+      {preload_panel dx_load_tip_and_author_finder}
+      #endif
    )
    (rb3e_author_finder
       ($shortname)
@@ -209,18 +212,29 @@
          }
       }
    )
-   (dx_authorpoll
-      ($shortname)
+   (apply_authorfinder_metadata
+      {if $sourcevar
+         {switch {{music_library get_highlighted_node} get_token}
+            DX_SOURCE_SWITCH
+         }
+      }
       #ifdef RB3E
-      {$this rb3e_author_finder $shortname}
-      #else
-      {dx_author_finder_var_reset}
-      {meta_performer set_song {symbol $shortname}}
-      {set $dx_song_data_processed FALSE}
-      {preload_panel dx_load_tip_and_author_finder}
+      {if {== $sourcevar rb1_dlc}
+         {set $sourcevar dlc}
+      }
+      {if {== $sourcevar DOWNLOADED}
+         {set $sourcevar customs}
+      }
       #endif
-   )
-   (handle_source_icon
+      {if_else $sourcevar
+         {dx_song_name_year_title.lbl set_token_fmt {localize $sourcevar}}
+         {dx_song_name_year_title.lbl set_token_fmt os_blnk}
+      }
+      {if_else $authorvar
+         {dx_song_name_album_title.lbl set_token_fmt stringify $authorvar}
+         {dx_song_name_album_title.lbl set_token_fmt os_blnk}
+      }
+
       {{song_select_panel find song_demo.grp} set_local_scale 0.16 1 0.2}
       {{song_select_panel find song_demo.grp} set_local_pos 70 0 -120}
       {if_else $sourcevar
@@ -241,74 +255,6 @@
             {{song_select_panel find song_demo.lbl} set_token_fmt os_blnk}
          }
          {{song_select_panel find song_demo.grp} set_showing FALSE}
-      }
-   )
-   (dx_authorfinder
-      {set $dx_song_data_processed FALSE}
-      {set $dx_path_failed FALSE}
-      {dx_song_name_album.lbl set_album_name
-         {music_library get_highlighted_node}
-      }
-      {if_else
-         #ifdef RB3E
-         TRUE
-         #else
-         {&&
-            {! $dx_path_failed}
-            $dx_author_finder_is_enabled
-            {! {gamemode in_mode trainer}}
-         }
-         #endif
-         {do
-            {if {exists author_finder}
-               {delete author_finder}
-            }
-            {script_task kTaskUISeconds
-               #ifndef RB3E
-               (delay 0.75)
-               #endif
-               (name author_finder)
-               (script
-                  #ifdef RB3E
-                  {$this rb3e_author_finder {{music_library get_highlighted_node} get_token}}
-                  #else
-                  {dx_author_finder_var_reset}
-                  {meta_performer set_song {{music_library get_highlighted_node} get_token}}
-                  {set $dx_song_data_processed FALSE}
-                  {preload_panel dx_load_tip_and_author_finder}
-                  #endif
-                  {if $sourcevar
-                     {switch {{music_library get_highlighted_node} get_token}
-                        DX_SOURCE_SWITCH
-                     }
-                  }
-                  #ifdef RB3E
-                  {if {== $sourcevar rb1_dlc}
-                     {set $sourcevar dlc}
-                  }
-                  {if {== $sourcevar DOWNLOADED}
-                     {set $sourcevar customs}
-                  }
-                  #endif
-                  {if_else $sourcevar
-                     {dx_song_name_year_title.lbl set_token_fmt {localize $sourcevar}}
-                     {dx_song_name_year_title.lbl set_token_fmt os_blnk}
-                  }
-                  {if_else $authorvar
-                     {dx_song_name_album_title.lbl set_token_fmt stringify $authorvar}
-                     {dx_song_name_album_title.lbl set_token_fmt os_blnk}
-                  }
-                  {$this handle_source_icon}
-               )
-            }
-         }
-         {do
-            {dx_song_name_year_title.lbl set_token_fmt os_blnk}
-            {dx_song_name_album_title.lbl set_token_fmt os_blnk}
-            {dx_song_name_album.lbl set_album_name
-               {music_library get_highlighted_node}
-            }
-         }
       }
    )
    (lbl_maker
@@ -441,43 +387,46 @@
          DX_SET_DIFFS
       }
    )
+   #define ALL_SONG_SELECT_LABELS
+   (
+      (
+         dx_guitar.lbl
+         dx_guitar_diff.lbl
+         dx_bass.lbl
+         dx_bass_diff.lbl
+         dx_keys.lbl
+         dx_keys_diff.lbl
+         dx_drum.lbl
+         dx_drum_diff.lbl
+         dx_vocals.lbl
+         dx_vocals_diff.lbl
+         dx_real_guitar.lbl
+         dx_real_guitar_diff.lbl
+         dx_real_bass.lbl
+         dx_real_bass_diff.lbl
+         dx_real_keys.lbl
+         dx_real_keys_diff.lbl
+         dx_real_drum.lbl
+         dx_real_drum_diff.lbl
+         dx_real_vocals.lbl
+         dx_real_vocals_diff.lbl
+         dx_song_name_length.lbl
+         dx_song_name_length_title.lbl
+         dx_song_name_album.lbl
+         dx_song_name_album_title.lbl
+         dx_song_name_genre.lbl
+         dx_song_name_genre_title.lbl
+         dx_song_name_year.lbl
+         dx_song_name_year_title.lbl
+      )
+   )
    (fade_diffs
       ($key1 $key2)
       {if {! {exists diffs_fade.anim}}
          {new PropAnim diff_fade.anim}
          {do
             ($keys (0 1 0))
-            {foreach $entry
-               (
-                  dx_guitar.lbl
-                  dx_guitar_diff.lbl
-                  dx_bass.lbl
-                  dx_bass_diff.lbl
-                  dx_keys.lbl
-                  dx_keys_diff.lbl
-                  dx_drum.lbl
-                  dx_drum_diff.lbl
-                  dx_vocals.lbl
-                  dx_vocals_diff.lbl
-                  dx_real_guitar.lbl
-                  dx_real_guitar_diff.lbl
-                  dx_real_bass.lbl
-                  dx_real_bass_diff.lbl
-                  dx_real_keys.lbl
-                  dx_real_keys_diff.lbl
-                  dx_real_drum.lbl
-                  dx_real_drum_diff.lbl
-                  dx_real_vocals.lbl
-                  dx_real_vocals_diff.lbl
-                  dx_song_name_length.lbl
-                  dx_song_name_length_title.lbl
-                  dx_song_name_album.lbl
-                  dx_song_name_album_title.lbl
-                  dx_song_name_genre.lbl
-                  dx_song_name_genre_title.lbl
-                  dx_song_name_year.lbl
-                  dx_song_name_year_title.lbl
-               )
+            {foreach $entry ALL_SONG_SELECT_LABELS
                {diff_fade.anim add_keys $entry (alpha) kPropFloat}
                {diff_fade.anim add_keys $entry (alt_alpha) kPropFloat}
                {foreach_int $i 0 {size $keys}
@@ -493,37 +442,7 @@
    )
    (rings_show
       ($show)
-      {foreach $entry
-         (
-            dx_guitar.lbl
-            dx_guitar_diff.lbl
-            dx_bass.lbl
-            dx_bass_diff.lbl
-            dx_keys.lbl
-            dx_keys_diff.lbl
-            dx_drum.lbl
-            dx_drum_diff.lbl
-            dx_vocals.lbl
-            dx_vocals_diff.lbl
-            dx_real_guitar.lbl
-            dx_real_guitar_diff.lbl
-            dx_real_bass.lbl
-            dx_real_bass_diff.lbl
-            dx_real_keys.lbl
-            dx_real_keys_diff.lbl
-            dx_real_drum.lbl
-            dx_real_drum_diff.lbl
-            dx_real_vocals.lbl
-            dx_real_vocals_diff.lbl
-            dx_song_name_length.lbl
-            dx_song_name_length_title.lbl
-            dx_song_name_album.lbl
-            dx_song_name_album_title.lbl
-            dx_song_name_genre.lbl
-            dx_song_name_genre_title.lbl
-            dx_song_name_year.lbl
-            dx_song_name_year_title.lbl
-         )
+      {foreach $entry ALL_SONG_SELECT_LABELS
          {$entry set_showing $show}
       }
       {foreach $entry
@@ -544,33 +463,22 @@
       {{song_select_panel find song_demo.lbl} set_showing FALSE}
       {{song_select_panel find song_demo.lbl} set_token_fmt os_blnk}
       #ifdef RB3E
-      {set $probeforfinder TRUE}
-      {$this dx_more_info_load}
+      {$this dx_more_info_load TRUE}
       #else
-      {if_else $dx_author_finder_is_enabled
-         {if_else $dx_more_info_toggle
-            {do
-               {dx_song_name_album_title.lbl set_token_fmt press_to_load_meta}
-               {dx_song_name_album.lbl set_album_name
-                  {music_library get_highlighted_node}
-               }
-               {dx_song_name_year_title.lbl set_token_fmt os_blnk}
-            }
-            {do
-               {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
-               {dx_song_name_album.lbl set_token_fmt lb_waiting}
-               {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
-            }
+      {if_else $dx_more_info_toggle
+         {do
+            {dx_song_name_album_title.lbl set_token_fmt press_to_load_meta}
+            {dx_song_name_year_title.lbl set_token_fmt os_blnk}
          }
          {do
-            {dx_song_name_year_title.lbl set_token_fmt os_blnk}
-            {dx_song_name_album_title.lbl set_token_fmt os_blnk}
-            {dx_song_name_album.lbl set_album_name
-               {music_library get_highlighted_node}
-            }
+            {dx_song_name_album_title.lbl set_token_fmt lb_waiting}
+            {dx_song_name_year_title.lbl set_token_fmt lb_waiting}
          }
       }
       #endif
+      {dx_song_name_album.lbl set_album_name
+         {music_library get_highlighted_node}
+      }
       {dx_song_name_genre_title.lbl set_token_fmt
          {{music_library get_highlighted_node} genre}
       }
@@ -579,20 +487,17 @@
          {{music_library get_highlighted_node} year_released}
       }
       ;song_length
-      {dx_song_name_length.lbl set_token_fmt
-         title_length_fmt
-         (
-            (title "")
-            (minutes
-               {int {/ {{music_library get_highlighted_node} get_total_ms} 60000}}
+      {do
+         ($ms {{music_library get_highlighted_node} get_total_ms})
+         {dx_song_name_length.lbl set_token_fmt
+            title_length_fmt
+            (
+               (title "")
+               (minutes {int {/ $ms 60000}})
+               (seconds {int {/ {mod $ms 60000} 1000}})
+               (ms {mod $ms 1000})
             )
-            (seconds
-               {int
-                  {/ {mod {{music_library get_highlighted_node} get_total_ms} 60000} 1000}
-               }
-            )
-            (ms {mod {{music_library get_highlighted_node} get_total_ms} 1000})
-         )
+         }
       }
 
       {foreach $entry (guitar bass drum keys real_guitar real_bass real_keys real_vocals real_drum)
@@ -1636,8 +1541,7 @@
       {cond
          #ifndef RB3E
          ({&& {== $action kAction_ShellOption} $dx_more_info_toggle}
-            {set $probeforfinder TRUE}
-            {$this dx_more_info_load}
+            {$this dx_more_info_load TRUE}
          )
          #endif
          ({== $action kAction_Confirm}
