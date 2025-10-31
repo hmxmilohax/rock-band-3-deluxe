@@ -1,20 +1,33 @@
-{func
-   dx_modifier_reader
-   ($dx_modifier_reader)
-   ;{dx_log_writer insane {sprint "func: dx_modifier_reader - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $dx_modifier_reader}}
-   ;{dx_log_writer insane
-   ;   {sprintf "Executed dx_modifier_reader - time: %.4fms"
-         {time
-            {foreach $entry {read_file DX_MODIFIER_FILE_PATH}
-               {if {== {elem $entry 0} {basename $dx_modifier_reader}}
-                  {if {== {elem {find $entry $dx_modifier_reader} 1} 1}
-                     {modifier_mgr toggle_modifier_enabled $dx_modifier_reader}
-                  }
+{func dx_modifier_reader
+   ($setting)
+   {notify $setting}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
+   {if {== {elem $entry 0} {basename {eval $setting}}}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {== {elem {elem $entry 1} 0} {basename {eval $setting}}}
+                  TRUE
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $setting} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {if {== {type $setting_enum} kDataInt}
+               {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                  {set $safe TRUE}
                }
             }
+            {if {&& $safe {== $setting_enum 1}}
+               {modifier_mgr toggle_modifier_enabled $setting}
+            }
          }
-   ;   }
-   ;}
+      }
+   }
 }
 {func
    dx_setting_saver
@@ -31,9 +44,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_modifiers {eval $out}}
                            {set $dx_modifiers {array $dx_modifiers}}
                         }
@@ -43,9 +59,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_track_theme {eval $out}}
                            {set $dx_track_theme {array $dx_track_theme}}
                         }
@@ -55,9 +74,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_settings {eval $out}}
                            {set $dx_settings {array $dx_settings}}
                         }
@@ -67,9 +89,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_values {eval $out}}
                            {set $dx_values {array $dx_values}}
                         }
@@ -82,20 +107,120 @@
    ;}
 }
 {func dx_read_setting
-   ($setting)
+   ($setting $type)
    {notify $setting}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
    {if {== {elem $entry 0} {basename {eval $setting}}}
-      {set_var {eval $setting}
-         {elem {find $entry $setting} 1}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {== {elem {elem $entry 1} 0} {basename {eval $setting}}}
+                  TRUE
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $setting} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {switch $type
+               (bool
+                  {if {== {type $setting_enum} kDataInt}
+                     {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
+               (int
+                  {if {== {type $setting_enum} kDataInt}
+                     {set $safe TRUE}
+                  }
+               )
+               (float
+                  {if {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataFloat}}
+                     {set $safe TRUE}
+                  }
+               )
+               (string
+                  {if {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}
+                     {set $safe TRUE}
+                     {set $setting_enum {symbol $setting_enum}}
+                  }
+               )
+               (array
+                  {if {== {type $setting_enum} kDataArray}
+                     {set $safe TRUE}
+                  }
+               )
+               (unsafe {set $safe TRUE})
+            }
+            {if $safe
+               {set_var {eval $setting} $setting_enum}
+            }
+         }
       }
    }
 }
 {func dx_read_setting_with_name
-   ($name $setting)
+   ($name $setting $type)
    {notify $setting}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
    {if {== {elem $entry 0} {basename {eval $name}}}
-      {set_var {eval $setting}
-         {elem {find $entry $name} 1}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {== {elem {elem $entry 1} 0} {basename {eval $name}}}
+                  TRUE
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {switch $type
+               (bool
+                  {if {== {type $setting_enum} kDataInt}
+                     {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
+               (int
+                  {if {== {type $setting_enum} kDataInt}
+                     {set $safe TRUE}
+                  }
+               )
+               (float
+                  {if {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataFloat}}
+                     {set $safe TRUE}
+                  }
+               )
+               (string
+                  {if {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}
+                     {set $safe TRUE}
+                     {set $setting_enum {symbol $setting_enum}}
+                  }
+               )
+               (array
+                  {if {== {type $setting_enum} kDataArray}
+                     {set $safe TRUE}
+                  }
+               )
+               (unsafe
+                  {if {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataString}}
+                     {set $safe TRUE}
+                  }
+               )
+            }
+            {if $safe
+               {set_var {eval $setting} $setting_enum}
+            }
+         }
       }
    }
 }
@@ -103,30 +228,72 @@
    ($name $setting1 $setting2 $setting3)
    {notify $name}
    {if {== {elem $entry 0} {basename {eval $name}}}
-      {set_var {eval $setting1}
-         {elem {elem {find $entry $name} 1} 0}
-      }
-      {set_var {eval $setting2}
-         {elem {elem {find $entry $name} 1} 1}
-      }
-      {set_var {eval $setting3}
-         {elem {elem {find $entry $name} 1} 2}
-      }
-   }
-}
-{func dx_read_num_of_settings
-   ($num $name $basesetting)
-   {notify $name}
-   {foreach_int $i 0 $num
-      {if {== {elem $entry 0} {basename {eval $name}}}
-         {set_var {sprint {eval $basesetting} {+ $i 1}}
-            {if {<= {size $entry} $i}
-               {elem {elem {find $entry $name} 1} $i}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {== {elem {elem $entry 1} 0} {basename {eval $name}}}
+                  TRUE
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {if {== {type $setting_enum} kDataArray}
+               {if {== {size $setting_enum} 3}
+                  {set $safe TRUE}
+               }
+            }
+            {if $safe
+               {set_var {eval $setting1}
+                  {elem $setting_enum 0}
+               }
+               {set_var {eval $setting2}
+                  {elem $setting_enum 1}
+               }
+               {set_var {eval $setting3}
+                  {elem $setting_enum 2}
+               }
             }
          }
       }
    }
 }
+{func dx_read_num_of_settings
+   ($num $basesetting $name)
+   {notify $name}
+   {if {== {elem $entry 0} {basename {eval $name}}}
+      {do
+         ($is_deeper
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {== {elem {elem $entry 1} 0} {basename {eval $name}}}
+                  TRUE
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
+         ($arr {elem $this_setting 1})
+         ($protected {if_else {== {type $arr} kDataArray} TRUE FALSE})
+         ($arr_size {if_else $protected {size $arr} 0})
+         {if $protected
+            {foreach_int $i 0 $num
+               {if {< $i $arr_size}
+                  {set_var {sprint {eval $basesetting} {+ $i 1}}
+                     {elem $arr $i}
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+
 {func
    dx_settings_dta_reader
    {notify {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
@@ -160,26 +327,28 @@
 {func
    dx_modifier_dta_reader
    {dx_log_writer info {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   {dx_modifier_reader mod_kick_bounce}
-   {dx_modifier_reader mod_static_fills}
-   {dx_modifier_reader mod_chord_numbers}
-   {dx_modifier_reader mod_nohud}
-   {dx_modifier_reader mod_miss_sounds}
-   {dx_modifier_reader mod_practiceoverdrive}
-   {dx_modifier_reader mod_nolanes}
-   {dx_modifier_reader mod_rb4_lanes}
-   {dx_modifier_reader mod_synced_track_speeds}
-   {dx_modifier_reader mod_nopause}
-   {dx_modifier_reader mod_remote_texture_sync}
-   {dx_modifier_reader mod_highlight_key}
-   #ifndef RB3E
-   {dx_modifier_reader mod_mhx_color_shuffle}
-   #endif
-   {unless {modifier_mgr is_modifier_active mod_doublespeed}
-      {dx_modifier_reader mod_doublespeed}
-   }
-   {unless {modifier_mgr is_modifier_active mod_dx_no_overdrive}
-      {dx_modifier_reader mod_dx_no_overdrive}
+   {foreach $entry {read_file DX_MODIFIER_FILE_PATH}
+      {dx_modifier_reader mod_kick_bounce}
+      {dx_modifier_reader mod_static_fills}
+      {dx_modifier_reader mod_chord_numbers}
+      {dx_modifier_reader mod_nohud}
+      {dx_modifier_reader mod_miss_sounds}
+      {dx_modifier_reader mod_practiceoverdrive}
+      {dx_modifier_reader mod_nolanes}
+      {dx_modifier_reader mod_rb4_lanes}
+      {dx_modifier_reader mod_synced_track_speeds}
+      {dx_modifier_reader mod_nopause}
+      {dx_modifier_reader mod_remote_texture_sync}
+      {dx_modifier_reader mod_highlight_key}
+      #ifndef RB3E
+      {dx_modifier_reader mod_mhx_color_shuffle}
+      #endif
+      {unless {modifier_mgr is_modifier_active mod_doublespeed}
+         {dx_modifier_reader mod_doublespeed}
+      }
+      {unless {modifier_mgr is_modifier_active mod_dx_no_overdrive}
+         {dx_modifier_reader mod_dx_no_overdrive}
+      }
    }
 }
 {func
