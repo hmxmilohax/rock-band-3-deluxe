@@ -70,63 +70,37 @@
 }
 {func dx_char_hider
    ($enabled)
-   {if {&& {== {ui current_screen} game} {exists song_mgr}}
+   {if {&& {exists song_mgr} $dx_mtvup {gamemode in_mode qp_coop}}
       {ui foreach_screen $screen
          {$screen foreach_panel $panel
             {if {$panel loaded_dir}
                {{$panel loaded_dir} iterate RndDir $b
                   {$b iterate BandCharacter $c
-                     {switch {$c get instrument_type}
-                        (guitar
-                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part guitar}}}
-                              {$c iterate RndDir $y
-                                 {set_this $y}
-                                 {$this iterate Mesh $m
-                                    {$m set_showing FALSE}
-                                 }
-                              }
+                     {do
+                        ($inst {$c get instrument_type})
+                        ($inst_map
+                           {switch $inst
+                              (keyboard keys)
+                              (mic vocals)
+                              $inst
                            }
                         )
-                        (bass
-                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part bass}}}
-                              {$c iterate RndDir $y
-                                 {set_this $y}
-                                 {$this iterate Mesh $m
-                                    {$m set_showing FALSE}
-                                 }
+                        ($song {symbol {meta_performer song}})
+                        ($meta {song_mgr get_meta_data $song})
+                        ($has_part {$meta has_part $inst_map})
+                        ($scale {if_else $has_part 1 0})
+                        {$c iterate RndDir $y
+                           {set_this $y}
+                           {$this iterate Mesh $m
+                              {if {! {has_any_substr {$m name} (placement _base)}}
+                                 {$m set_showing $has_part}
                               }
                            }
-                        )
-                        (drum
-                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part drum}}}
-                              {$c iterate RndDir $y
-                                 {set_this $y}
-                                 {$this iterate Mesh $m
-                                    {$m set_showing FALSE}
-                                 }
-                              }
-                           }
-                        )
-                        (keyboard
-                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part keys}}}
-                              {$c iterate RndDir $y
-                                 {set_this $y}
-                                 {$this iterate Mesh $m
-                                    {$m set_showing FALSE}
-                                 }
-                              }
-                           }
-                        )
-                        (mic
-                           {if {&& {exists song_mgr} {! {{song_mgr get_meta_data {symbol {meta_performer song}}} has_part vocals}}}
-                              {$c iterate RndDir $y
-                                 {set_this $y}
-                                 {$this iterate Mesh $m
-                                    {$m set_showing FALSE}
-                                 }
-                              }
-                           }
-                        )
+                        }
+                        {if {== $inst_map drum}
+                           {{$c find drum_L-stick.mesh} set_local_scale $scale $scale $scale}
+                           {{$c find drum_R-stick.mesh} set_local_scale $scale $scale $scale}
+                        }
                      }
                   }
                }
