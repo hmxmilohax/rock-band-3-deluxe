@@ -248,8 +248,8 @@ mip_entries = {
     # Score box
     #Path("_ark", "dx", "custom_textures", "score", "scoreboard_frame"): 3,
     #Path("_ark", "dx", "custom_textures", "score", "scoreboard_lens"): 3,
-    Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_frame"): 4,
-    Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_lens"): 4,
+    #Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_frame"): 4,
+    #Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_lens"): 4,
 
     # Font
     Path("_ark", "dx", "custom_textures", "font"): 6,
@@ -289,12 +289,12 @@ mip_entries = {
     #Path("_ark", "dx", "custom_textures", "vocal_highway", "vocal_highway_bg_brown"): 2,
 
     # Vocal arrows
-    Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"): 4,
-    Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow_outline"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow_outline"): 4,
 
     # Vocal notes
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tube"): 5,
-    Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_talkie"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_talkie"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tamb_gem"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_off"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_on"): 4,
