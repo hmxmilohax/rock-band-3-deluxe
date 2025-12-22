@@ -4,6 +4,34 @@
 {set $dx_metamusic_list (
    #include dx_metamusic.dta
 )}
+#ifndef HX_WII
+; Seasonal metaloops
+{do
+   ($alliwantforchristmas ("alliwantforchristmas" "loops/others/alliwantforchristmas" -0.86))
+   {get_date_time $year $month $day $hour $minute $second}
+   {if {== $month 12}
+      ; Add to rotation during December, only play it on Christmas Day
+      {if_else {== $day 25}
+         {set $dx_metamusic_list {array ($alliwantforchristmas)}}
+         {do
+            ($to_remove {array 0})
+            ; Randomly remove half of the metaloops so christmas is more common
+            ; Done in two loops because removing elements from an array while you're iterating it is a bad idea
+            {foreach $metaloop $dx_metamusic_list
+               {set $num {random_int 0 50}}
+               {if {<= $num 99}
+                  {push_back $to_remove $metaloop}
+               }
+            }
+            {foreach $metaloop $to_remove
+               {remove_elem $dx_metamusic_list $metaloop}
+            }
+            {push_back $dx_metamusic_list $alliwantforchristmas}
+         }
+      }
+   }
+}
+#endif
 {set $dx_current_metamusic_volume -2}
 {func
    dx_store_meta_info
@@ -21,6 +49,12 @@
    }
 }
 {func dx_get_metamusic_file
+   {get_date_time $year $month $day $hour $minute $second}
+   ; Call a random int based off of current time
+   ; This will increase the entropy of the game's RNG greatly
+   {foreach_int $i 0 {+ $second $day $hour}
+      {random_int 0 1}
+   }
    {do
       ($picked {random_elem $dx_metamusic_list})
       ($shortname {elem $picked 0})
