@@ -56,7 +56,7 @@ def get_rpcs3_path():
         else:
             print("Invalid RPCS3 data directory path provided.")
 
-def save_config(config_path: Path, rpcs3_path, xbox_console_ip, never_setup_rpcs3=False, never_setup_xbox=False, lastfm_config=None, never_setup_lastfm=False):
+def save_config(config_path: Path, rpcs3_path, xbox_console_ip, ps3_console_ip, never_setup_rpcs3=False, never_setup_xbox=False, never_setup_ps3=False, lastfm_config=None, never_setup_lastfm=False):
     config = configparser.ConfigParser()
     if config_path.exists():
         config.read(config_path)
@@ -66,12 +66,14 @@ def save_config(config_path: Path, rpcs3_path, xbox_console_ip, never_setup_rpcs
         config['Paths'] = {}
     config['Paths']['rpcs3_path'] = str(rpcs3_path) if rpcs3_path else ''
     config['Paths']['xbox_console_ip'] = xbox_console_ip
+    config['Paths']['ps3_console_ip'] = ps3_console_ip
 
     # Save Settings for "Never" flags
     if 'Settings' not in config:
         config['Settings'] = {}
     config['Settings']['never_setup_rpcs3'] = str(never_setup_rpcs3)
     config['Settings']['never_setup_xbox'] = str(never_setup_xbox)
+    config['Settings']['never_setup_ps3'] = str(never_setup_ps3)
     config['Settings']['never_setup_lastfm'] = str(never_setup_lastfm)
 
     # Save LastFM
@@ -93,13 +95,15 @@ def load_config(config_path: Path):
     else:
         # Configuration file doesn't exist
         # Return default values
-        return None, '', False, False, None, False  # Added never_setup_lastfm
+        return None, '', '', False, False, False, None, False  # Added never_setup_lastfm
 
     rpcs3_path = None
     xbox_console_ip = ''
+    ps3_console_ip = ''
     lastfm_config = None
     never_setup_rpcs3 = False
     never_setup_xbox = False
+    never_setup_ps3 = False
     never_setup_lastfm = False  # Initialize never_setup_lastfm
 
     # Read Paths
@@ -108,11 +112,13 @@ def load_config(config_path: Path):
         if rpcs3_path_str:
             rpcs3_path = Path(rpcs3_path_str)
         xbox_console_ip = config['Paths'].get('xbox_console_ip', '').strip()
+        ps3_console_ip = config['Paths'].get('ps3_console_ip', '').strip()
 
     # Read Settings for "Never" flags
     if 'Settings' in config:
         never_setup_rpcs3 = config['Settings'].getboolean('never_setup_rpcs3', fallback=False)
         never_setup_xbox = config['Settings'].getboolean('never_setup_xbox', fallback=False)
+        never_setup_ps3 = config['Settings'].getboolean('never_setup_ps3', fallback=False)
         never_setup_lastfm = config['Settings'].getboolean('never_setup_lastfm', fallback=False)  # Read never_setup_lastfm
 
     # Read LastFM
@@ -130,7 +136,7 @@ def load_config(config_path: Path):
                 'PASSWORD_HASH': password_hash
             }
 
-    return rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
+    return rpcs3_path, xbox_console_ip, ps3_console_ip, never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm
 
 def setup_lastfm_network(lastfm_config):
     if lastfm_config and all(key in lastfm_config for key in ['API_KEY', 'API_SECRET', 'USERNAME', 'PASSWORD_HASH']):
@@ -814,45 +820,14 @@ def main():
     idle_timeout = 900  # 15 minutes
 
     config_path = Path.cwd() / 'dx_config.ini'
-    rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm = load_config(config_path)
-
-    # Function to prompt setup with "Never" option
-    def prompt_setup():
-        nonlocal rpcs3_path, xbox_console_ip, never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm
-
-        while True:
-            print("\nNo RPCS3 data path or Xbox console IP configured.")
-            print("Please select your setup:")
-            print("1. Set up RPCS3")
-            print("2. Set up Xbox")
-            print("3. Set up both")
-            choice = input("Enter the number corresponding to your setup (1-3): ").strip()
-
-            if choice == '1':
-                rpcs3_path = get_rpcs3_path()
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
-                return
-            elif choice == '2':
-                xbox_console_ip_input = input("Enter the IP address of the Xbox console: ").strip()
-                if xbox_console_ip_input:
-                    xbox_console_ip = xbox_console_ip_input
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
-                return
-            elif choice == '3':
-                rpcs3_path = get_rpcs3_path()
-                xbox_console_ip_input = input("Enter the IP address of the Xbox console: ").strip()
-                if xbox_console_ip_input:
-                    xbox_console_ip = xbox_console_ip_input
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
-                return
-            else:
-                print("Invalid choice. Please try again.")
+    rpcs3_path, xbox_console_ip, ps3_console_ip, never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm = load_config(config_path)
 
     # Initial setup prompts based on existing configurations and "never" flags
-    while (not rpcs3_path and not xbox_console_ip) and not (never_setup_rpcs3 and never_setup_xbox):
-        prompt_setup()
+    if (not rpcs3_path and not xbox_console_ip and not ps3_console_ip) and not (never_setup_rpcs3 and never_setup_xbox and never_setup_ps3):
+        print("No RPCS3 data path or consoles configured.")
+        print("You will now be asked in order if you wish to configure RPCS3, Xbox, and/or PlayStation 3 console sources.")
 
-    # Check if only one is missing and prompt accordingly, considering "never" flags
+    # Check if any are missing and prompt accordingly, considering "never" flags
     if not rpcs3_path and not never_setup_rpcs3:
         print("\nRPCS3 data path not configured.")
         print("Do you want to set it up now?")
@@ -862,12 +837,12 @@ def main():
         choice = input("Enter your choice (1-3): ").strip()
         if choice == '1':
             rpcs3_path = get_rpcs3_path()
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
         elif choice == '2':
             pass
         elif choice == '3':
             never_setup_rpcs3 = True
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
             print("RPCS3 setup will not be prompted again.")
         else:
             print("Invalid choice. Please try again.")
@@ -881,18 +856,37 @@ def main():
         choice = input("Enter your choice (1-3): ").strip()
         if choice == '1':
             xbox_console_ip = input("Enter the IP address of the Xbox console: ").strip()
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
         elif choice == '2':
             pass
         elif choice == '3':
             never_setup_xbox = True
-            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
             print("Xbox setup will not be prompted again.")
         else:
             print("Invalid choice. Please try again.")
 
+    if not ps3_console_ip and not never_setup_ps3:
+        print("\nPlayStation 3 console IP not configured.")
+        print("Do you want to set it up now?")
+        print("1. Yes")
+        print("2. Not Now")
+        print("3. Never")
+        choice = input("Enter your choice (1-3): ").strip()
+        if choice == '1':
+            ps3_console_ip = input("Enter the IP address of the PlayStation 3 console: ").strip()
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
+        elif choice == '2':
+            pass
+        elif choice == '3':
+            never_setup_ps3 = True
+            save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
+            print("PlayStation 3 setup will not be prompted again.")
+        else:
+            print("Invalid choice. Please try again.")
+
     # Save the updated configuration
-    save_config(config_path, rpcs3_path or '', xbox_console_ip or '', never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+    save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '', never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
 
     # Check Last.fm configuration
     if not lastfm_config and not never_setup_lastfm:
@@ -908,8 +902,8 @@ def main():
                 lastfm_config = setup_lastfm_config()
                 if lastfm_config:
                     # Save the configuration
-                    save_config(config_path, rpcs3_path or '', xbox_console_ip or '',
-                                never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+                    save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '',
+                                never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
                     break  # Exit the loop since setup is complete
                 else:
                     # User chose to skip Last.fm setup after failed authentication
@@ -922,8 +916,8 @@ def main():
             elif choice == '3':
                 # Do not ask again
                 never_setup_lastfm = True
-                save_config(config_path, rpcs3_path or '', xbox_console_ip or '',
-                            never_setup_rpcs3, never_setup_xbox, lastfm_config, never_setup_lastfm)
+                save_config(config_path, rpcs3_path or '', xbox_console_ip or '', ps3_console_ip or '',
+                            never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm)
                 print("Last.fm setup will not be prompted again.")
                 break
             else:
@@ -948,7 +942,7 @@ def main():
         last_data_change_time = time.time()
         last_data_receive_time = time.time()
         last_json_content = None
-        xbox_connection_error_displayed = False
+        console_connection_error_displayed = False
         screen_clear_delay_counter = 0  # Initialize the screen clear delay counter
 
         while True:
@@ -961,23 +955,23 @@ def main():
             # Determine whether to clear the screen
             should_clear_screen = screen_clear_delay_counter == 0
 
-            # Attempt to fetch data from Xbox if configured
+            # Attempt to fetch data from consoles if configured
             if xbox_console_ip and not never_setup_xbox:
                 web_address = f"http://{xbox_console_ip}:21070/jsonrpc"
                 json_data = fetch_json_from_web(web_address)
                 if json_data:
                     data_source = 'xbox'
                     from_web = True
-                    xbox_connection_error_displayed = False  # Reset the error flag
+                    console_connection_error_displayed = False  # Reset the error flag
                     screen_clear_delay_counter = 0  # Reset the counter when connection is successful
                 else:
-                    if not xbox_connection_error_displayed:
+                    if not console_connection_error_displayed:
                         print(f"Error: Could not connect to Xbox at {xbox_console_ip}.")
-                        print("Please ensure the Xbox IP is correct and the console is powered on.")
+                        print("Please ensure the IP is correct and the console is powered on.")
                         print("Rich Presence on Xbox requires Nightly RB3Enhanced installed and configured")
                         print("Consult the MiloHax Discord or online setup guide https://rb3pc.milohax.org/adv_discordrp")
                         print("Attempting to reconnect...")
-                        xbox_connection_error_displayed = True
+                        console_connection_error_displayed = True
 
                         # Set the screen clear delay counter to delay clearing the screen
                         screen_clear_delay_counter = 1  # Number of cycles to delay
@@ -987,6 +981,40 @@ def main():
                         pass
 
                     # Xbox data not available, fall back to RPCS3 if configured
+                    if rpcs3_path and not never_setup_rpcs3:
+                        json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
+                        json_file = Path(json_path)
+                        if json_file.is_file():
+                            with json_file.open('r', encoding='utf-8') as file:
+                                json_data = file.read()
+                            if json_data:
+                                data_source = 'local'
+                                from_web = False
+            if ps3_console_ip and not never_setup_ps3:
+                web_address = f"http://{ps3_console_ip}/dev_hdd0/game/BLUS30463/USRDIR/discordrp.json"
+                json_data = fetch_json_from_web(web_address)
+                if json_data:
+                    data_source = 'ps3'
+                    from_web = True
+                    console_connection_error_displayed = False  # Reset the error flag
+                    screen_clear_delay_counter = 0  # Reset the counter when connection is successful
+                else:
+                    if not console_connection_error_displayed:
+                        print(f"Error: Could not connect to PlayStation 3 at {ps3_console_ip}.")
+                        print("Please ensure the IP is correct and the console is powered on.")
+                        print("Rich Presence on PlayStation 3 requires webMAN installed and enabled")
+                        print("Consult the MiloHax Discord or online setup guide https://rb3pc.milohax.org/adv_discordrp")
+                        print("Attempting to reconnect...")
+                        console_connection_error_displayed = True
+
+                        # Set the screen clear delay counter to delay clearing the screen
+                        screen_clear_delay_counter = 1  # Number of cycles to delay
+                    else:
+                        # We can choose whether to reset the counter on subsequent failures
+                        # For now, we'll only set the counter on the first failure
+                        pass
+
+                    # PS3 data not available, fall back to RPCS3 if configured
                     if rpcs3_path and not never_setup_rpcs3:
                         json_path = rpcs3_path / "dev_hdd0" / "game" / "BLUS30463" / "USRDIR" / "discordrp.json"
                         json_file = Path(json_path)
@@ -1009,10 +1037,10 @@ def main():
                             from_web = False
 
             # Set interval based on data source
-            if data_source == 'xbox':
-                interval = 5  # Check every 5 seconds when using Xbox
+            if data_source == 'xbox' or data_source == 'ps3':
+                interval = 5  # Check every 5 seconds when using remote consoles
             else:
-                interval = 2  # Check every 2 seconds when not using Xbox
+                interval = 2  # Check every 2 seconds when fetching from the local machine
 
             # If no data from any source, wait and retry
             if not json_data:
