@@ -1,37 +1,12 @@
    (dxState_ControllerMenu
       (view
-         {if_else 
-            {&&
-               {== $dx_joypad_type_guitar kControllerGuitar}
-               {== $dx_joypad_type_keys kControllerKeys}
-               {== $dx_joypad_type_vocals kControllerVocals}
-            }
-            os_instrumentswap
-            os_instreset ;shows controller reset menu if at least one instrument faking is active
-         }
+         os_instrumentswap
          os_pad_mapping
-         {if_else {== $dx_joypad_type_vocals kControllerVocals} os_button_remapper 0}
+         os_button_remapper
          os_slot_options
       )
       (select
-         (os_instrumentswap
-            {switch {{$this get_user} get_controller_type}
-               (kControllerGuitar
-                  {dx_state dxState_InstrumentSwapGuitar})
-               (kControllerKeys
-                  {dx_state dxState_InstrumentSwapKeys})
-               (kControllerVocals
-                  {dx_state dxState_InstrumentSwapVocals}
-               )
-            }
-         )
-         (os_instreset
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES
-            ;{dx_state dxState_Advanced} ;force closes the menu if a different player resets the controllers
-            {overshell update_all}
-         )
+         (os_instrumentswap {dx_state dxState_InstrumentSwap})
          (os_pad_mapping {dx_state dxState_PadMappingSwap})
          (os_button_remapper {dx_state dxState_ButtonRemapper})
          (os_slot_options
@@ -200,107 +175,215 @@
          (os_rbdrums {set $dx_joypad_pad_mapping #ifdef HX_PS3 hx_drums_ps3 #else #ifdef HX_WII wii_drums #else hx_drums_xbox #endif #endif})
          (os_rb2drums {set $dx_joypad_pad_mapping #ifdef HX_PS3 hx_drums_ps3 #else #ifdef HX_WII wii_drums #else hx_drums_xbox_rb2 #endif #endif})
          (os_ghdrums {set $dx_joypad_pad_mapping #ifdef HX_PS3 ro_drums_ps3 #else #ifdef HX_WII wii_rodrums #else ro_drums_xbox #endif #endif})
+         DX_REMAP_PAD
       )
       (cancel {dx_state dxState_ControllerMenu})
    )
 
-   (dxState_InstrumentSwapGuitar
-      (view keys drums vocals)
+   (dxState_InstrumentSwap
+      (slot_swapped FALSE)
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_instreset}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk all_instruments}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2} {!= $dx_list_pos 1}} os_blnk
+            {sprint " - " {localize guitar} " -> " 
+               {localize 
+                  {switch $dx_joypad_type_guitar
+                     (kControllerGuitar guitar)
+                     (kControllerDrum drum)
+                     (kControllerVocals vocals)
+                     (kControllerKeys keys)
+                     (kControllerRealGuitar pro_guitar)
+                  }
+               }
+               " + "
+            }
+         }
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3} {!= $dx_list_pos 1}} os_blnk
+            {sprint " - " {localize drum} " -> " 
+               {localize 
+                  {switch $dx_joypad_type_drum
+                     (kControllerGuitar guitar)
+                     (kControllerDrum drum)
+                     (kControllerVocals vocals)
+                     (kControllerKeys keys)
+                     (kControllerRealGuitar pro_guitar)
+                  }
+               }
+               " + "
+            }
+         }
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4} {!= $dx_list_pos 1}} os_blnk
+            {sprint " - " {localize vocals} " -> " 
+               {localize 
+                  {switch $dx_joypad_type_vocals
+                     (kControllerGuitar guitar)
+                     (kControllerDrum drum)
+                     (kControllerVocals vocals)
+                     (kControllerKeys keys)
+                     (kControllerRealGuitar pro_guitar)
+                  }
+               }
+               " + "
+            }
+         }
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5} {!= $dx_list_pos 1}} os_blnk
+            {sprint " - " {localize keys} " -> " 
+               {localize 
+                  {switch $dx_joypad_type_keys
+                     (kControllerGuitar guitar)
+                     (kControllerDrum drum)
+                     (kControllerVocals vocals)
+                     (kControllerKeys keys)
+                     (kControllerRealGuitar pro_guitar)
+                  }
+               }
+               " + "
+            }
+         }
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6} {!= $dx_list_pos 1}} os_blnk
+            {sprint " - " {localize pro_guitar} " -> " 
+               {localize 
+                  {switch $dx_joypad_type_real_guitar
+                     (kControllerGuitar guitar)
+                     (kControllerDrum drum)
+                     (kControllerVocals vocals)
+                     (kControllerKeys keys)
+                     (kControllerRealGuitar pro_guitar)
+                  }
+               }
+               " + "
+            }
+         }
+      )
       (message os_instrumentswap_menu_guitar_desc)
-      (select
-         (keys
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_guitar kControllerKeys}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_GUITAR
-            {dx_log_writer info {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
-         )
-         (drums
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_guitar kControllerDrum}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_GUITAR
-            {dx_log_writer info {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
-         )
-         (vocals
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_guitar kControllerVocals}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_GUITAR
-            {dx_log_writer info {sprint "Guitar instrument type has been changed to: " {find $syscfg joypad instrument_mapping ro_guitar}}}
-         )
+      #define APPLY_TRACK_SWAP_TO_ALL
+      (
+         {set $dx_joypad_type_drum
+            $dx_joypad_type_guitar
+         }
+         {set $dx_joypad_type_vocals
+            $dx_joypad_type_guitar
+         }
+         {set $dx_joypad_type_keys
+            $dx_joypad_type_guitar
+         }
+         {set $dx_joypad_type_real_guitar
+            $dx_joypad_type_guitar
+         }
       )
-      (cancel {dx_state dxState_ControllerMenu})
-   )
-
-   (dxState_InstrumentSwapKeys
-      (view guitar drums vocals)
-      (message os_instrumentswap_menu_keys_desc)
-      (select
-         (guitar
-            {leave_dx_settings}
-            {$this hide_message}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_keys kControllerGuitar}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_KEYS
-            {dx_log_writer info {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
-         )
-         (drums
-            {leave_dx_settings}
-            {$this hide_message}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_keys kControllerDrum}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_KEYS
-            {dx_log_writer info {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
-         )
-         (vocals
-            {leave_dx_settings}
-            {$this hide_message}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_keys kControllerVocals}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_KEYS
-            {dx_log_writer info {sprint "Keys instrument type has been changed to: " {find $syscfg joypad instrument_mapping hx_midi_keys_xbox}}}
-         )
+      #define LIST_INST_TYPE_SWAP
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               (1
+                  {set $this_var dx_joypad_type_guitar}
+               )
+               (2
+                  {set $this_var dx_joypad_type_guitar}
+               )
+               (3
+                  {set $this_var dx_joypad_type_drum}
+               )
+               (4
+                  {set $this_var dx_joypad_type_vocals}
+               )
+               (5
+                  {set $this_var dx_joypad_type_keys}
+               )
+               (6
+                  {set $this_var dx_joypad_type_real_guitar}
+               )
+               
+            }
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {if {> {eval {var {sprint $this_var}}} 0}
+                     {set_var {sprint $this_var} {- {eval {var $this_var}} 1}}
+                     {set_elem {find $syscfg dx_settings dxState_InstrumentSwap slot_swapped} 1 TRUE}
+                  }
+                  {if {== {$current_list selected_data} 1}
+                     APPLY_TRACK_SWAP_TO_ALL
+                  }
+                  DX_SWAP_INSTRUMENT_TYPE
+               )
+               ((kAction_Right kAction_Up)
+                  {if {< {eval {var {sprint $this_var}}} {- {size $dx_controller_type_list} 1}}
+                     {set_var {sprint $this_var} {+ {eval {var $this_var}} 1}}
+                     {set_elem {find $syscfg dx_settings dxState_InstrumentSwap slot_swapped} 1 TRUE}
+                  }
+                  {if {== {$current_list selected_data} 1}
+                     APPLY_TRACK_SWAP_TO_ALL
+                  }
+                  DX_SWAP_INSTRUMENT_TYPE
+               )
+            }
+         }
       )
-      (cancel {dx_state dxState_ControllerMenu})
-   )
-
-   (dxState_InstrumentSwapVocals
-      (view guitar keys drums)
-      (message os_instrumentswap_menu_vocals_desc)
-      (select
-         (guitar
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_vocals kControllerGuitar}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_VOCALS
-            {dx_log_writer info {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
-         )
-         (drums
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_vocals kControllerDrum}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_VOCALS
-            {dx_log_writer info {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
-         )
-         (keys
-            {leave_dx_settings}
-            DX_RESET_INST_TYPES ;resets all instruments to default before faking a new one
-            {set $dx_joypad_type_vocals kControllerKeys}
-            {if {! $dx_prompt_save} {dx_settings_dta_writer}}
-            DX_SWAP_INSTRUMENT_TYPE_VOCALS
-            {dx_log_writer info {sprint "Vocals instrument type has been changed to: " {find $syscfg joypad instrument_mapping analog}}}
-         )
+      (enter
+         {set $dx_pos_interval_list (0.01 0.02 0.05 0.10 0.15 0.20 0.25 0.30)}
+         {set $dx_pos_current_interval {elem $dx_pos_interval_list $dx_pos_remapper_array_number}} ;1 unit
+         {do
+            ($arr {find $syscfg dx_settings $this_state view})
+            ($data {array 0})
+            {foreach $entry $arr
+               {if {!= $entry view}
+                  {push_back $data $entry}
+               }
+            }
+            {$current_list set_data $data}
+         }
+         {set_elem {find $syscfg dx_settings dxState_InstrumentSwap slot_swapped} 1 FALSE}
       )
-      (cancel {dx_state dxState_ControllerMenu})
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {if_else {== {$current_list selected_data} 0} ;if we click reset
+                  {do
+                     DX_RESET_INST_TYPES
+                     DX_SWAP_INSTRUMENT_TYPE
+                     {set_elem {find $syscfg dx_settings dxState_InstrumentSwap slot_swapped} 1 TRUE}
+                  }
+                  {do
+                     {set $dx_list_item_selected TRUE}
+                     {set $dx_list_pos {$current_list selected_data}}
+                  }
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {do
+                  {if_else {elem {find $syscfg dx_settings dxState_InstrumentSwap slot_swapped} 1}
+                     {do
+                        DX_SWAP_INSTRUMENT_TYPE
+                        {if {! $dx_prompt_save} {dx_settings_dta_writer}}
+                        {leave_dx_settings}
+                        {overshell update_all}
+                     }
+                     {dx_state dxState_ControllerMenu}
+                  }
+               }
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_INST_TYPE_SWAP)
+         (kAction_Up LIST_INST_TYPE_SWAP)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_INST_TYPE_SWAP)
+         (kAction_Right LIST_INST_TYPE_SWAP)
+      )
+      (exit
+         {set $dx_list_pos 0}
+         {set $dx_list_item_selected FALSE}
+         {set $dx_pos_remapper_array_number 3}
+      )
+      ;(cancel {dx_state dxState_ControllerMenu})
    )
 
 ;#define kPad_L2
