@@ -1,47 +1,138 @@
-{new
-   MidiParser
-   guitar_timer
-   (track_name 'PART GUITAR')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   (message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
+#define DX_COMMON_MIDI
+(
+
+   (track_name
+      {switch {quasiquote {unquote $entry}}
+         (guitar 'PART GUITAR') (bass 'PART BASS')
+         (real_guitar 'PART REAL_GUITAR') (real_bass 'PART REAL_BASS')
+         (vocals 'PART VOCALS') (harm 'HARM1')
+         kDataUnhandled
+      }
+   )
+   (inverted FALSE) (up FALSE) (append_length TRUE) (compress TRUE)
+   (message_type midi_parser) (mp.up FALSE) (idle)
    (allowed_notes
-      (96 97 98 99 100 103 120) ;103 = solo, 120 = lowest of BRE
+      {switch {quasiquote {unquote $entry}}
+         ((guitar bass) (96 97 98 99 100 103 120)) ;103 = solo, 120 = lowest of BRE
+         ((real_guitar real_bass) (96 97 98 99 100 101 120)) ;120: BRE
+         ((vocals harm) (105 106))
+         kDataUnhandled
+      }
    )
-   (midi
-      {unless $first_guitar_gem_tracked
-         {set $first_guitar_gem_tracked TRUE}
-         {set $tracked_break_num_guitar 0}
-         {set $first_guitar_gem_beat {int $mp.start}}
-         {set $dx_last_note_started_guitar 0} ; cache note start time
-         {if {> $first_guitar_gem_beat 16}
-            {push_back $guitar_note_tracker {array ("delay_0" 0 $first_guitar_gem_beat)}}
-            {set $tracked_break_num_guitar 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $guitar_tracked_start {int $mp.start}}
-         {set $guitar_tracked_prev_end {int {- $guitar_tracked_start $mp.prev_end}}}
-         {push_back $guitar_note_tracker {array ({sprint "delay_" $tracked_break_num_guitar} $guitar_tracked_prev_end $guitar_tracked_start)}}
-         {set $tracked_break_num_guitar {+ $tracked_break_num_guitar 1}}
-      }
-      {set $dx_final_note_guitar {int $mp.end}}
-      {if {> $dx_final_note_guitar $dx_final_note} {set $dx_final_note $dx_final_note_guitar}}
-      {if $dx_perfects_indicator
-         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
-            {if {> {- $mp.start $dx_last_note_started_guitar} 0}
-               {push_back $guitar_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
-               {set $guitar_note_tracker_2_size {size $guitar_note_tracker_2}}
-               {set $dx_last_note_started_guitar $mp.start} ; cache note start time
+   (firstgem 0) (firstbeat 0) (breaknum 0) (note_start 0) (note_prevend 0)
+   (last_note_start 0) (final_note 0) (tracker 1) (tracker2 0)
+)
+{foreach $entry (guitar bass real_guitar real_bass vocals harm)
+   {do
+      {set_var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}} {array 0}}
+      {set_var {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}} {array 0}}
+      {notify "inst: " {quasiquote {unquote $entry}}}
+      {notify "inst: " {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}}}
+      {notify "inst: " {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}}}
+      ;first count notes and breaks to get the correct size for our actual parser next
+      {new
+         MidiParser
+         {sprint "timer_" {unquote $entry}}
+         DX_COMMON_MIDI
+         (midi
+            {unless [firstgem]
+               {set [firstgem] TRUE}
+               {set [firstbeat] {int $mp.start}}
+               {set [last_note_start] 0} ; cache note start time
+               {if {> [firstbeat] 16}
+                  {++ [tracker]}
+               }
             }
-         }
+            {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+               {++ [tracker]}
+            }
+            {if {&& {!= {quasiquote {unquote $entry}} harm} {!= {quasiquote {unquote $entry}} vocals}}
+               {if $dx_perfects_indicator
+                  {if {&& {!= $mp.val 103} {!= $mp.val 120}}
+                     {if {> {- $mp.start [last_note_start]} 0}
+                        {++ [tracker2]}
+                        {set [last_note_start] $mp.start} ; cache note start time
+                     }
+                  }
+               }
+            }
+         )
+         (term
+            {set_var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}} {array [tracker]}}
+            {set_var {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}} {array [tracker2]}}
+            {notify {eval {quasiquote {sprint {unquote $entry} " tracker1: " [tracker]}}}}
+            {notify {eval {quasiquote {sprint {unquote $entry} " tracker2: " [tracker2]}}}}
+            {notify
+               {eval
+                  {quasiquote {sprint {unquote $entry} " note tracker: "}} 
+                  {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}}}}
+               }
+            }
+         )
       }
-   )
+      {notify "eval: " {quasiquote {unquote $entry}}}
+      {notify "eval: " {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}}}
+      ;populate the previously sized arrays with data
+      {new
+         MidiParser
+         {sprint "eval_" {unquote $entry}}
+         DX_COMMON_MIDI
+         (midi
+            {unless [firstgem]
+               {set [firstgem] TRUE}
+               {set [breaknum] 0}
+               {set [firstbeat] {int $mp.start}}
+               {set [last_note_start] 0} ; cache note start time
+               {if {> [firstbeat] 16}
+                  {set_elem {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}}}}
+                     [tracker]
+                     {array ("delay_0" 0 [firstbeat])}
+                  }
+                  {set [breaknum] 1}
+                  {++ [tracker]}
+                  {notify {eval {quasiquote {sprint {unquote $entry} " _evaltracker1: " [tracker]}}}}
+                  {notify {eval {quasiquote {sprint {unquote $entry} " _evaltracker2: " [tracker2]}}}}
+                  {notify {eval {quasiquote {sprint {unquote $entry} " _evalnote tracker: "}}  {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}}}}}}
+               }
+            }
+            {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+               {set [note_start] {int $mp.start}}
+               {set [note_prevend] {int {- [note_start] $mp.prev_end}}}
+               {set_elem {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}}}}
+                  [tracker]
+                  {array ({sprint "delay_" [breaknum]} [note_prevend] [note_start])}
+               }
+               {++ [breaknum]}
+               {++ [tracker]}
+            }
+            {set [final_note] {int $mp.end}}
+            {if {> [final_note] $dx_final_note}
+               {set $dx_final_note [final_note]}
+            }
+            {if {&& {!= {quasiquote {unquote $entry}} harm} {!= {quasiquote {unquote $entry}} vocals}}
+               {if $dx_perfects_indicator
+                  {if {&& {!= $mp.val 103} {!= $mp.val 120}}
+                     {if {> {- $mp.start [last_note_start]} 0}
+                        {set_elem {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker_2"}}}}}
+                           [tracker2]
+                           {* {beat_to_seconds $mp.start} 1000}
+                        }
+                        {++ [tracker2]}
+                        {set [last_note_start] $mp.start} ; cache note start time
+                     }
+                  }
+               }
+            }
+         )
+         (term
+            {notify {eval {quasiquote {sprint {unquote $entry} " _evaltracker1: " [tracker]}}}}
+            {notify {eval {quasiquote {sprint {unquote $entry} " _evaltracker2: " [tracker2]}}}}
+            {notify {eval {quasiquote {sprint {unquote $entry} " _evalnote tracker: "}}  {eval {var {eval {quasiquote {sprint {unquote $entry} "_note_tracker"}}}}}}}
+         )
+      }
+   }
 }
+
 {new
    MidiParser
    guitar_overdrive_timer
@@ -76,50 +167,6 @@
    )
    (midi
       {push_back $guitar_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
-   )
-}
-{new
-   MidiParser
-   real_guitar_timer
-   (track_name 'PART REAL_GUITAR')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   ;(message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
-   (allowed_notes
-      (96 97 98 99 100 101 120) ;120: BRE
-   )
-   (midi
-      {unless $first_real_guitar_gem_tracked
-         {set $first_real_guitar_gem_tracked TRUE}
-         {set $tracked_break_num_real_guitar 0}
-         {set $dx_last_note_started_real_guitar 0} ; cache note start time
-         {set $first_real_guitar_gem_beat {int $mp.start}}
-         {if {> $first_real_guitar_gem_beat 16}
-            {push_back $real_guitar_note_tracker {array ("delay_0" 0 $first_real_guitar_gem_beat)}}
-            {set $tracked_break_num_real_guitar 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $real_guitar_tracked_start {int $mp.start}}
-         {set $real_guitar_tracked_prev_end {int {- $real_guitar_tracked_start $mp.prev_end}}}
-         {push_back $real_guitar_note_tracker {array ({sprint "delay_" $tracked_break_num_real_guitar} $real_guitar_tracked_prev_end $real_guitar_tracked_start)}}
-         {set $tracked_break_num_real_guitar {+ $tracked_break_num_real_guitar 1}}
-      }
-      {set $dx_final_note_real_guitar {int $mp.end}}
-      {if {> $dx_final_note_real_guitar $dx_final_note} {set $dx_final_note $dx_final_note_real_guitar}}
-      {if $dx_perfects_indicator
-         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100} {== $mp.val 101}}
-            {if {> {- $mp.start $dx_last_note_started_real_guitar} 0}
-               {push_back $real_guitar_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
-               {set $real_guitar_note_tracker_2_size {size $real_guitar_note_tracker_2}}
-               {set $dx_last_note_started_real_guitar $mp.start} ; cache note start time
-            }
-         }
-      }
    )
 }
 {new
@@ -291,50 +338,6 @@
 }
 {new
    MidiParser
-   bass_timer
-   (track_name 'PART BASS')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   ;(message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
-   (allowed_notes
-      (96 97 98 99 100 103 120) ;103: solo, 120: BRE
-   )
-   (midi
-      {unless $first_bass_gem_tracked
-         {set $first_bass_gem_tracked TRUE}
-         {set $tracked_break_num_bass 0}
-         {set $dx_last_note_started_bass 0} ; cache note start time
-         {set $first_bass_gem_beat {int $mp.start}}
-         {if {> $first_bass_gem_beat 16}
-            {push_back $bass_note_tracker {array ("delay_0" 0 $first_bass_gem_beat)}}
-            {set $tracked_break_num_bass 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $bass_tracked_start {int $mp.start}}
-         {set $bass_tracked_prev_end {int {- $bass_tracked_start $mp.prev_end}}}
-         {push_back $bass_note_tracker {array ({sprint "delay_" $tracked_break_num_bass} $bass_tracked_prev_end $bass_tracked_start)}}
-         {set $tracked_break_num_bass {+ $tracked_break_num_bass 1}}
-      }
-      {set $dx_final_note_bass {int $mp.end}}
-      {if {> $dx_final_note_bass $dx_final_note} {set $dx_final_note $dx_final_note_bass}}
-      {if $dx_perfects_indicator
-         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
-            {if {> {- $mp.start $dx_last_note_started_bass} 0}
-               {push_back $bass_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
-               {set $bass_note_tracker_2_size {size $bass_note_tracker_2}}
-               {set $dx_last_note_started_bass $mp.start} ; cache note start time
-            }
-         }
-      }
-   )
-}
-{new
-   MidiParser
    bass_overdrive_timer
    (track_name 'PART BASS')
    (inverted FALSE)
@@ -367,50 +370,6 @@
    )
    (midi
       {push_back $bass_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
-   )
-}
-{new
-   MidiParser
-   real_bass_timer
-   (track_name 'PART REAL_BASS')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   ;(message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
-   (allowed_notes
-      (96 97 98 99 100 101 103 120) ;120: BRE
-   )
-   (midi
-      {unless $first_real_bass_gem_tracked
-         {set $first_real_bass_gem_tracked TRUE}
-         {set $tracked_break_num_real_bass 0}
-         {set $dx_last_note_started_real_bass 0} ; cache note start time
-         {set $first_real_bass_gem_beat {int $mp.start}}
-         {if {> $first_real_bass_gem_beat 16}
-            {push_back $real_bass_note_tracker {array ("delay_0" 0 $first_real_bass_gem_beat)}}
-            {set $tracked_break_num_real_bass 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $real_bass_tracked_start {int $mp.start}}
-         {set $real_bass_tracked_prev_end {int {- $real_bass_tracked_start $mp.prev_end}}}
-         {push_back $real_bass_note_tracker {array ({sprint "delay_" $tracked_break_num_real_bass} $real_bass_tracked_prev_end $real_bass_tracked_start)}}
-         {set $tracked_break_num_real_bass {+ $tracked_break_num_real_bass 1}}
-      }
-      {set $dx_final_note_real_bass {int $mp.end}}
-      {if {> $dx_final_note_real_bass $dx_final_note} {set $dx_final_note $dx_final_note_real_bass}}
-      {if $dx_perfects_indicator
-         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100} {== $mp.val 101}}
-            {if {> {- $mp.start $dx_last_note_started_real_bass} 0}
-               {push_back $real_bass_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
-               {set $real_bass_note_tracker_2_size {size $real_bass_note_tracker_2}}
-               {set $dx_last_note_started_real_bass $mp.start} ; cache note start time
-            }
-         }
-      }
    )
 }
 {new
@@ -841,41 +800,6 @@
 #ifdef RB3DX
 {new
    MidiParser
-   vocals_timer
-   (track_name 'PART VOCALS')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   ;(message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
-   (allowed_notes
-      (105 106)
-   )
-   (midi
-      ;{$this rt_compute_space}
-      {unless $first_vocals_gem_tracked
-         {set $first_vocals_gem_tracked TRUE}
-         {set $tracked_break_num_vocals 0}
-         {set $first_vocals_gem_beat {int $mp.start}}
-         {if {> $first_vocals_gem_beat 16}
-            {push_back $vocals_note_tracker {array ("delay_0" 0 $first_vocals_gem_beat)}}
-            {set $tracked_break_num_vocals 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $vocals_tracked_start {int $mp.start}}
-         {set $vocals_tracked_prev_end {int {- $vocals_tracked_start $mp.prev_end}}}
-         {push_back $vocals_note_tracker {array ({sprint "delay_" $tracked_break_num_vocals} $vocals_tracked_prev_end $vocals_tracked_start)}}
-         {set $tracked_break_num_vocals {+ $tracked_break_num_vocals 1}}
-      }
-      {set $dx_final_note_vocals {int $mp.end}}
-      {if {> $dx_final_note_vocals $dx_final_note} {set $dx_final_note $dx_final_note_vocals}}
-   )
-}
-{new
-   MidiParser
    vocals_overdrive_timer
    (track_name 'PART VOCALS')
    (inverted FALSE)
@@ -912,41 +836,6 @@
 }
 {new
    MidiParser
-   harm_timer
-   (track_name 'HARM1')
-   (inverted FALSE)
-   (up FALSE)
-   (append_length TRUE)
-   (compress TRUE)
-   ;(message_type midi_parser)
-   (mp.up FALSE)
-   (idle)
-   (allowed_notes
-      (105 106)
-   )
-   (midi
-      ;{$this rt_compute_space}
-      {unless $first_harm_gem_tracked
-         {set $first_harm_gem_tracked TRUE}
-         {set $tracked_break_num_harm 0}
-         {set $first_harm_gem_beat {int $mp.start}}
-         {if {> $first_harm_gem_beat 16}
-            {push_back $harm_note_tracker {array ("delay_0" 0 $first_harm_gem_beat)}}
-            {set $tracked_break_num_harm 1}
-         }
-      }
-      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set $harm_tracked_start {int $mp.start}}
-         {set $harm_tracked_prev_end {int {- $harm_tracked_start $mp.prev_end}}}
-         {push_back $harm_note_tracker {array ({sprint "delay_" $tracked_break_num_harm} $harm_tracked_prev_end $harm_tracked_start)}}
-         {set $tracked_break_num_harm {+ $tracked_break_num_harm 1}}
-      }
-      {set $dx_final_note_harm {int $mp.end}}
-      {if {> $dx_final_note_harm $dx_final_note} {set $dx_final_note $dx_final_note_harm}}
-   )
-}
-{new
-   MidiParser
    harm_overdrive_timer
    (track_name 'HARM1')
    (inverted FALSE)
@@ -961,6 +850,11 @@
    )
    (midi
       {push_back $harm_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+   (term
+      {foreach $entry (guitar bass real_guitar real_bass vocals harm)
+         {notify {sprint $entry " final note tracker: "  {eval {var {sprint $entry "_note_tracker"}}}}}
+      }
    )
 }
 {new
