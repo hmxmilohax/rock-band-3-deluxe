@@ -1,93 +1,10 @@
-#define COMMON_STD_MIDIP_BODY
+#define COMMON_STD_MIDIP
 (
    (inverted FALSE) (up FALSE) (append_length TRUE) (compress TRUE)
    (message_type midi_parser) (mp.up FALSE) (idle)
    (firstgem 0) (firstbeat 0) (breaknum 0) (note_start 0) (note_prevend 0)
    (last_note_start 0) (final_note 0) (tracker 1) (tracker2 0)
-   (capture 0) (last_kick_end 0)
-)
-#define COMMON_STD_MIDIP_COUNT
-(
-   (midi
-      {unless [firstgem]
-         {set [firstgem] TRUE}
-         {set [firstbeat] {int $mp.start}}
-         {set [last_note_start] 0} ; cache note start time
-         {if {== [instrument] drum}
-            {set [capture] TRUE}
-            {set [last_kick_end] 0}
-         }
-         {if {> [firstbeat] 16}
-            {++ [tracker]}
-         }
-      }
-      {if {&& {!= $mp.val 116} {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {++ [tracker]}
-      }
-      {if {== $mp.val 116} ;overdrive
-         {++ [tracker]}
-      }
-      {if {|| {== $mp.val 103} {== $mp.val 115}} ;solo
-         {++ [tracker]}
-      }
-      {if {== $mp.val 120} ;bre
-         ;{++ [tracker]}
-         {set $bre_start_time $mp.start}
-      }
-      {if {&& {!= [instrument] harm} {!= [instrument] vocals}}
-         {if {&& {!= $mp.val 103} {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
-            {if $dx_perfects_indicator
-               {if {== [instrument] drum}
-                  ;if parser jumped backwards, stop capturing
-                  {if {< {- $mp.start [last_note_start]} 0}
-                     {set [capture] FALSE}
-                  }
-                  ; only push if capture is active and ordering makes sense
-                  {if {&& [capture] {>= {- $mp.end [last_note_start]} 0}}
-                     ; RB3E 2x kick overlap workaround:
-                     {unless
-                        {&&
-                           {|| {== $mp.val 95} {== $mp.val 96}}
-                           {< {- $mp.start [last_kick_end]} 0}
-                        }
-                        {++ [tracker2]}
-                        {set [last_note_start] {int $mp.start}}
-                        {set_var {sprint [instrument] "_last_note_time"} [last_note_start]}
-
-                        ; update kick end time for 95/96
-                        {if {|| {== $mp.val 95} {== $mp.val 96}}
-                           {set [last_kick_end] $mp.end}
-                        }
-                     }
-                  }
-               }
-               {if {!= [instrument] drum}
-                  {if {> {- $mp.start [last_note_start]} 0}
-                     {++ [tracker2]}
-                     {set [last_note_start] $mp.start} ; cache note start time
-                     {set_var {sprint [instrument] "_last_note_time"} [last_note_start]}
-                     {set_var {sprint "dx_final_note_" [instrument]} {int $mp.end}}
-                     {if {> {eval {var {sprint "dx_final_note_" [instrument]}}} $dx_final_note}
-                        {set $dx_final_note {eval {var {sprint "dx_final_note_" [instrument]}}}}
-                     }
-                  }
-               }
-            }
-         }
-      }
-   )
-   (term
-      {set_var {sprint [instrument] "_note_tracker"} {array [tracker]}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array [tracker2]}}
-      {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} 0 (none none)}
-      {notify {sprint [instrument] "count_note_tracker: " [tracker]}}
-      {notify {sprint [instrument] "count_note_tracker2: " [tracker2]}}
-      {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-      {notify {sprint "count size:" {size {eval {var {sprint [instrument] "_note_tracker"}}}}}}
-   )
-)
-#define COMMON_STD_MIDIP_EVAL
-(
+   (capture 0) (last_kick_end 0) (pass2 0)
    (midi
       {unless [firstgem]
          {set [firstgem] TRUE}
@@ -99,12 +16,11 @@
             {set [last_kick_end] 0}
          }
          {if {> [firstbeat] 16}
-            {notify {sprint [instrument] "eval_note_tracker progress: " [tracker]}}
-            {notify {sprint [instrument] "eval_note_tracker2 progress: " [tracker2]}}
-            {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}}
-               [tracker]
-               {array ("delay_0" 0 [firstbeat])}
+            {if [pass2]
+               {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
+                  [tracker]
+                  {array ("delay_0" 0 [firstbeat])}
+               }
             }
             {set [breaknum] 1}
             {++ [tracker]}
@@ -113,40 +29,47 @@
       {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
          {set [note_start] {int $mp.start}}
          {set [note_prevend] {int {- [note_start] $mp.prev_end}}}
-         {notify {sprint [instrument] "eval_note_tracker progress: " [tracker]}}
-         {notify {sprint [instrument] "eval_note_tracker2 progress: " [tracker2]}}
-         {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-         {set_elem {eval {var {sprint [instrument] "_note_tracker"}}}
-            [tracker]
-            {array ({sprint "delay_" [breaknum]} [note_prevend] [note_start])}
+         {if [pass2]
+            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
+               [tracker]
+               {array ({sprint "delay_" [breaknum]} [note_prevend] [note_start])}
+            }
          }
          {++ [breaknum]}
          {++ [tracker]}
       }
       {if {== $mp.val 116} ;overdrive
-         {set_elem {eval {var {sprint [instrument] "_note_tracker"}}}
-            [tracker]
-            {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}
+         {if [pass2]
+            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
+               [tracker]
+               {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}
+            }
          }
          {++ [tracker]}
       }
       {if {|| {== $mp.val 103} {== $mp.val 115}} ;solo
-         {set_elem {eval {var {sprint [instrument] "_note_tracker"}}}
-            [tracker]
-            {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}
+         {if [pass2]
+            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
+               [tracker]
+               {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}
+            }
          }
          {++ [tracker]}
       }
-      ;{if {== $mp.val 120} ;bre
-      ;   {set_elem {eval {var {sprint [instrument] "_note_tracker"}}}
-      ;      [tracker]
-      ;      {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}
-      ;   }
-      ;   {++ [tracker]}
-      ;}
+      {if {== $mp.val 120} ;bre
+         ;{++ [tracker]}
+         {set $bre_start_time $mp.start}
+      }
       {set [final_note] {int $mp.end}}
       {if {> [final_note] $dx_final_note}
          {set $dx_final_note [final_note]}
+      }
+      {if {&& {!= $mp.val 103} {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}} ;cache last note in chart
+         {set_var {sprint [instrument] "_last_note_time"} {int $mp.end}}
+         {set_var {sprint "dx_final_note_" [instrument]} {int $mp.end}}
+         {if {> {int $mp.end} $dx_final_note}
+            {set $dx_final_note {int $mp.end}}
+         }
       }
       {if {&& {!= [instrument] harm} {!= [instrument] vocals}}
          {if {&& {!= $mp.val 103} {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
@@ -164,9 +87,11 @@
                            {|| {== $mp.val 95} {== $mp.val 96}}
                            {< {- $mp.start [last_kick_end]} 0}
                         }
-                        {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                           [tracker2]
-                           {* {beat_to_seconds $mp.start} 1000}
+                        {if [pass2]
+                           {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}} ;only done in eval
+                              [tracker2]
+                              {* {beat_to_seconds $mp.start} 1000}
+                           }
                         }
                         {++ [tracker2]}
                         {set [last_note_start] {int $mp.start}}
@@ -180,9 +105,11 @@
                }
                {if {!= [instrument] drum}
                   {if {> {- $mp.start [last_note_start]} 0}
-                     {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                        [tracker2]
-                        {* {beat_to_seconds $mp.start} 1000}
+                     {if [pass2]
+                        {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}} ;only done in eval
+                           [tracker2]
+                           {* {beat_to_seconds $mp.start} 1000}
+                        }
                      }
                      {++ [tracker2]}
                      {set [last_note_start] $mp.start} ; cache note start time
@@ -193,16 +120,17 @@
       }
    )
    (term
-      {if {== [instrument] drum}
-         {set $real_drum_note_tracker $drum_note_tracker}
-         {set $real_drum_note_tracker_2 $drum_note_tracker_2}
+      {if {! [pass2]}
+         {set_var {sprint [instrument] "_note_tracker"} {array [tracker]}}
+         {set_var {sprint [instrument] "_note_tracker_2"} {array [tracker2]}}
+         {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} 0 (none none)}
       }
-      {notify {sprint [instrument] "eval_note_tracker: " [tracker]}}
-      {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-      {notify {sprint "eval size:" {size {eval {var {sprint [instrument] "_note_tracker"}}}}}}
-      {notify {sprint [instrument] "eval_note_tracker2: " [tracker2]}}
-      {notify {eval {var {sprint [instrument] "_note_tracker_2"}}}}
-      {notify {sprint "eval_2 size:" {size {eval {var {sprint [instrument] "_note_tracker"}}}}}}
+      {if [pass2]
+         {if {== [instrument] drum}
+            {set $real_drum_note_tracker $drum_note_tracker}
+            {set $real_drum_note_tracker_2 $drum_note_tracker_2}
+         }
+      }
    )
 )
 
@@ -217,17 +145,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_guitar
    (track_name 'PART GUITAR')
    (allowed_notes (96 97 98 99 100 103 120 116)) ;103 = solo, 120 = lowest of BRE ;116 - od
-   (init {$this set instrument guitar})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument guitar} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -240,17 +166,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_bass
    (track_name 'PART BASS')
    (allowed_notes (96 97 98 99 100 103 116)) ;116 - od ;103 - solo
-   (init {$this set instrument bass})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument bass} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -263,17 +187,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_vocals
    (track_name 'PART VOCALS')
    (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init {$this set instrument vocals})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument vocals} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -286,17 +208,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_real_guitar
    (track_name 'PART REAL_GUITAR')
    (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init {$this set instrument real_guitar})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument real_guitar} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -309,17 +229,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_real_bass
    (track_name 'PART REAL_BASS')
    (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init {$this set instrument real_bass})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument real_bass} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -332,17 +250,15 @@
       {set_var {sprint [instrument] "_note_tracker"} {array 0}}
       {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
    eval_harm
    (track_name 'HARM1')
    (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init {$this set instrument harm})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument harm} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
@@ -366,8 +282,7 @@
       {set_var {sprint "real_drum" "_note_tracker"} {array 0}}
       {set_var {sprint "real_drum" "_note_tracker_2"} {array 0}}
    )
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_COUNT
+   COMMON_STD_MIDIP
 }
 {new
    MidiParser
@@ -383,9 +298,8 @@
       (96 97 98 99 100 103 103 116)
       #endif
    )
-   (init {$this set instrument drum})
-   COMMON_STD_MIDIP_BODY
-   COMMON_STD_MIDIP_EVAL
+   (init {$this set instrument drum} {$this set pass2 TRUE})
+   COMMON_STD_MIDIP
 }
 
 {new
