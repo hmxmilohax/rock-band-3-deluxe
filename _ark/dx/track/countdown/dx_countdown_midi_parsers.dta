@@ -1,570 +1,984 @@
-#define COMMON_STD_MIDIP
-(
-   (inverted FALSE) (up FALSE) (append_length TRUE) (compress TRUE)
-   (message_type midi_parser) (mp.up FALSE) (idle)
-   (firstgem 0) (firstbeat 0) (breaknum 0) (note_start 0) (note_prevend 0)
-   (last_note_start 0) (final_note 0) (tracker 1) (tracker2 0)
-   (capture 0) (last_kick_end 0) (pass2 0)
-   (batch_start_beat -1) (batch_notes {array ()})
-   (log_enabled FALSE) (detailed_keys_log FALSE)
+{new
+   MidiParser
+   guitar_timer
+   (track_name 'PART GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   (message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (96 97 98 99 100 103 120) ;103 = solo, 120 = lowest of BRE
+   )
    (midi
-      {unless [firstgem]
-         {set [firstgem] TRUE}
-         {set [breaknum] 0}
-         {set [firstbeat] {int $mp.start}}
-         {set [last_note_start] 0} ; cache note start time
-         {set [batch_start_beat] -1}
-         {set [batch_notes] {array ()}}
-         {set [log_enabled] FALSE}
-         {set [detailed_keys_log] FALSE}
-         {if {|| {== [instrument] drum} {== [instrument] real_drum}}
-            {set [capture] TRUE}
-            {set [last_kick_end] 0}
-         }
-         {if {> [firstbeat] 16}
-            {if [log_enabled]
-               {notify {sprint [instrument] "eval_note_tracker progress: " [tracker]}}
-               {notify {sprint [instrument] "eval_note_tracker2 progress: " [tracker2]}}
-               {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-            }
-            {if [pass2]
-               {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
-                  [tracker]
-                  {array ("delay_0" 0 [firstbeat])}
-               }
-            }
-            {set [breaknum] 1}
-            {++ [tracker]}
+      {unless $first_guitar_gem_tracked
+         {set $first_guitar_gem_tracked TRUE}
+         {set $tracked_break_num_guitar 0}
+         {set $first_guitar_gem_beat {int $mp.start}}
+         {set $dx_last_note_started_guitar 0} ; cache note start time
+         {if {> $first_guitar_gem_beat 16}
+            {push_back $guitar_note_tracker {array ("delay_0" 0 $first_guitar_gem_beat)}}
+            {set $tracked_break_num_guitar 1}
          }
       }
       {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
-         {set [note_start] {int $mp.start}}
-         {set [note_prevend] {int {- [note_start] $mp.prev_end}}}
-         {if [log_enabled]
-            {notify {sprint [instrument] "eval_note_tracker progress: " [tracker]}}
-            {notify {sprint [instrument] "eval_note_tracker2 progress: " [tracker2]}}
-            {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-         }
-         {if [pass2]
-            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
-               [tracker]
-               {array ({sprint "delay_" [breaknum]} [note_prevend] [note_start])}
-            }
-         }
-         {++ [breaknum]}
-         {++ [tracker]}
+         {set $guitar_tracked_start {int $mp.start}}
+         {set $guitar_tracked_prev_end {int {- $guitar_tracked_start $mp.prev_end}}}
+         {push_back $guitar_note_tracker {array ({sprint "delay_" $tracked_break_num_guitar} $guitar_tracked_prev_end $guitar_tracked_start)}}
+         {set $tracked_break_num_guitar {+ $tracked_break_num_guitar 1}}
       }
-      {if {== $mp.val 116} ;overdrive
-         {if [pass2]
-            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
-               [tracker]
-               {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}
-            }
-         }
-         {++ [tracker]}
-      }
-      {if {|| {== $mp.val 103} {== $mp.val 115}} ;solo
-         {if [pass2]
-            {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} ;only done in eval
-               [tracker]
-               {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}
-            }
-         }
-         {++ [tracker]}
-      }
-      {if {== $mp.val 120} ;bre
-         ;{++ [tracker]}
-         {set $bre_start_time $mp.start}
-      }
-      {set [final_note] {int $mp.end}}
-      {if {> [final_note] $dx_final_note}
-         {set $dx_final_note [final_note]}
-      }
-      {if {&& {!= $mp.val 103} {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}} ;cache last note in chart
-         {set_var {sprint [instrument] "_last_note_time"} {int $mp.end}}
-         {set_var {sprint "dx_final_note_" [instrument]} {int $mp.end}}
-         {if {> {int $mp.end} $dx_final_note}
-            {set $dx_final_note {int $mp.end}}
-         }
-      }
-      {if {&& {!= [instrument] harm} {!= [instrument] vocals}} ;vocals has no perfects
-         {if {&& {!= $mp.val 103} {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
-            {if $dx_perfects_indicator
-               ;all instruments BESIDES drum and keys
-               {if {&& {!= [instrument] drum} {!= [instrument] real_drum} {!= [instrument] keys} {!= [instrument] real_keys}}
-                  {if {> {- $mp.start [last_note_start]} 0}
-                     
-                     {if [pass2]
-                        {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}} ;only done in eval
-                           [tracker2]
-                           {* {beat_to_seconds $mp.start} 1000}
-                        }
-                     }
-                     {++ [tracker2]}
-                     {set [last_note_start] $mp.start} ; cache note start time
-                  }
-               }
-               ; DRUMS
-               {if {|| {== [instrument] drum} {== [instrument] real_drum}}
-                  ;if parser jumped backwards, stop capturing
-                  {if {< {- $mp.start [last_note_start]} 0}
-                     {set [capture] FALSE}
-                  }
-                  ; only push if capture is active and ordering makes sense
-                  {if {&& [capture] {>= {- $mp.end [last_note_start]} 0}}
-                     ; RB3E 2x kick overlap workaround:
-                     {unless
-                        {&&
-                           {|| {== $mp.val 95} {== $mp.val 96}}
-                           {< {- $mp.start [last_kick_end]} 0}
-                        }
-                        {if [pass2]
-                           {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}} ;only done in eval
-                              [tracker2]
-                              {* {beat_to_seconds $mp.start} 1000}
-                           }
-                        }
-                        {++ [tracker2]}
-                        {set [last_note_start] {int $mp.start}}
-
-                        ; update kick end time for 95/96
-                        {if {|| {== $mp.val 95} {== $mp.val 96}}
-                           {set [last_kick_end] $mp.end}
-                        }
-                     }
-                  }
-               }
-               ;KEYS
-               {if {|| {== [instrument] keys} {== [instrument] real_keys}}
-
-                  ; Decide whether this note is a "playable note" for perfect tracking.
-                  ; keys: only 96–100
-                  ; real_keys: anything except 115/116/120 (playable 48–72)
-                  {set [is_playable_note]
-                     {if_else {== [instrument] keys} ;this is probably redundant based on the above mp.val check
-                        {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
-                        {&& {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
-                     }
-                  }
-
-                  {if [is_playable_note]
-
-                     {if [detailed_keys_log]
-                        {set [detailed_keys_log]
-                           {if_else {< {beat_to_seconds $mp.start} 60} TRUE FALSE}
-                        }
-                        {if [detailed_keys_log]
-                           {notify {sprint "starting parsing note"}}
-                        }
-                        {if {<= {eval {var {sprint [instrument] "_note_tracker_2_size"}}} 4000}
-                           {if [detailed_keys_log]
-                              {notify
-                                 {sprint
-                                    {eval {var {sprint [instrument] "_note_tracker_2_size"}}} ","
-                                    {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} ","
-                                    $mp.start "," $mp.end "," [batch_start_beat] ","
-                                    $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val
-                                 }
-                              }
-                           }
-                        }
-                     }
-
-                    ; If this note starts a new batch (same 0.02 logic)
-                    {if {> {- $mp.start [batch_start_beat]} 0.02}
-
-                        ; Process previous batch (if any)
-                        {if {> {size [batch_notes]} 0}
-                           {set [diff_end_found] FALSE}
-
-                           {if {> {size [batch_notes]} 1}
-                              {set $first_end {elem {elem [batch_notes] 0} 1}}
-                              {foreach $n [batch_notes]
-                                 {if {!= {elem $n 1} $first_end}
-                                    {set [diff_end_found] TRUE}
-                                 }
-                              }
-                           }
-
-                           ; Push all notes if differing end times exist, else push only first
-                           {if_else {== [diff_end_found] TRUE}
-                              {foreach $n [batch_notes]
-                                 {do
-                                    {if [pass2]
-                                       {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                                          [tracker2]
-                                          {* {beat_to_seconds {elem $n 0}} 1000}
-                                       }
-                                    }
-                                    {++ [tracker2]}
-                                 }
-                              }
-                                 {do
-                                    {set $n {elem [batch_notes] 0}}
-                                    {if [pass2]
-                                       {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                                          [tracker2]
-                                          {* {beat_to_seconds {elem $n 0}} 1000}
-                                       }
-                                    }
-                                    {++ [tracker2]}
-                                 }
-                              }
-                           }
-
-                        ; Start new batch
-                        {set [batch_start_beat] $mp.start}
-                        {set [batch_notes] {array ()}}
-                     }
-
-                     ; Add note to batch only if no matching val already exists in batch
-                     {set [do_add_note] TRUE}
-                     {if {> {size [batch_notes]} 0}
-                        {foreach $n [batch_notes]
-                           {if {== {elem $n 2} $mp.val}
-                              {set [do_add_note] FALSE}
-                           }
-                        }
-                     }
-
-                     {if [do_add_note]
-                        {set $dx_note {array ($mp.start $mp.end $mp.val)}}
-                        {push_back [batch_notes] $dx_note}
-                     }
-
-                     {if [detailed_keys_log]
-                        {notify {sprint "[batch_notes] = " [batch_notes]}}
-                        {if {> {size [batch_notes]} 0}
-                           {notify {sprint "[batch_notes].0 = " {elem [batch_notes] 0}}}
-                           {notify {sprint "[batch_notes].0.0 = " {elem {elem [batch_notes] 0} 0}}}
-                           {notify {sprint "[batch_notes].0.1 = " {elem {elem [batch_notes] 0} 1}}}
-                        }
-                        {notify {sprint "Currently " {size [batch_notes]} " notes in cache"}}
-                        {notify {sprint "finished parsing note"}}
-                     }
-                  }
-               }
+      {set $dx_final_note_guitar {int $mp.end}}
+      {if {> $dx_final_note_guitar $dx_final_note} {set $dx_final_note $dx_final_note_guitar}}
+      {if $dx_perfects_indicator
+         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
+            {if {> {- $mp.start $dx_last_note_started_guitar} 0}
+               {push_back $guitar_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
+               {set $guitar_note_tracker_2_size {size $guitar_note_tracker_2}}
+               {set $dx_last_note_started_guitar $mp.start} ; cache note start time
             }
          }
       }
    )
-   (term
-      {if {&& $dx_perfects_indicator {|| {== [instrument] keys} {== [instrument] real_keys}}}
-         {if {> {size [batch_notes]} 0}
-            {set [diff_end_found] FALSE}
+}
+{new
+   MidiParser
+   guitar_overdrive_timer
+   (track_name 'PART GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $guitar_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   guitar_solo_timer
+   (track_name 'PART GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
+   )
+   (midi
+      {push_back $guitar_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   real_guitar_timer
+   (track_name 'PART REAL_GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (96 97 98 99 100 101 120) ;120: BRE
+   )
+   (midi
+      {unless $first_real_guitar_gem_tracked
+         {set $first_real_guitar_gem_tracked TRUE}
+         {set $tracked_break_num_real_guitar 0}
+         {set $dx_last_note_started_real_guitar 0} ; cache note start time
+         {set $first_real_guitar_gem_beat {int $mp.start}}
+         {if {> $first_real_guitar_gem_beat 16}
+            {push_back $real_guitar_note_tracker {array ("delay_0" 0 $first_real_guitar_gem_beat)}}
+            {set $tracked_break_num_real_guitar 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $real_guitar_tracked_start {int $mp.start}}
+         {set $real_guitar_tracked_prev_end {int {- $real_guitar_tracked_start $mp.prev_end}}}
+         {push_back $real_guitar_note_tracker {array ({sprint "delay_" $tracked_break_num_real_guitar} $real_guitar_tracked_prev_end $real_guitar_tracked_start)}}
+         {set $tracked_break_num_real_guitar {+ $tracked_break_num_real_guitar 1}}
+      }
+      {set $dx_final_note_real_guitar {int $mp.end}}
+      {if {> $dx_final_note_real_guitar $dx_final_note} {set $dx_final_note $dx_final_note_real_guitar}}
+      {if $dx_perfects_indicator
+         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100} {== $mp.val 101}}
+            {if {> {- $mp.start $dx_last_note_started_real_guitar} 0}
+               {push_back $real_guitar_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
+               {set $real_guitar_note_tracker_2_size {size $real_guitar_note_tracker_2}}
+               {set $dx_last_note_started_real_guitar $mp.start} ; cache note start time
+            }
+         }
+      }
+   )
+}
+{new
+   MidiParser
+   real_guitar_overdrive_timer
+   (track_name 'PART REAL_GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $real_guitar_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   real_guitar_solo_timer
+   (track_name 'PART REAL_GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (115)
+   )
+   (midi
+      {push_back $real_guitar_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   bre_timer
+   (track_name 'PART GUITAR')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (120)
+   )
+   (midi
+      {push_back $guitar_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+      {push_back $bass_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+      {push_back $drum_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+      {push_back $keys_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+      {push_back $vocals_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+      {push_back $harm_note_tracker {array ({sprint "bre_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   drum_timer
+   (track_name 'PART DRUMS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      #ifdef RB3E
+      {if_else {dx_check_rb3e_modifier mod_double_bass}
+         (95 96 97 98 99 100 103 120)
+         (96 97 98 99 100 103 120)
+      }
+      #else
+      (96 97 98 99 100 103 120)
+      #endif
+   )
+   (midi
+      {unless $first_drum_gem_tracked
+         {set $first_drum_gem_tracked TRUE}
+         {set $dx_capture_drum TRUE}
+         {set $tracked_break_num_drum 0}
+         {set $first_drum_gem_beat {int $mp.start}}
+         {set $dx_last_kick_ended 0}
+         {set $dx_last_note_started_drum 0} ; cache note end time
+         {if {> $first_drum_gem_beat 16}
+            {push_back $drum_note_tracker {array ("delay_0" 0 $first_drum_gem_beat)}}
+            {set $tracked_break_num_drum 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $drum_tracked_start {int $mp.start}}
+         {set $drum_tracked_prev_end {int {- $drum_tracked_start $mp.prev_end}}}
+         {push_back $drum_note_tracker {array ({sprint "delay_" $tracked_break_num_drum} $drum_tracked_prev_end $drum_tracked_start)}}
+         {set $tracked_break_num_drum {+ $tracked_break_num_drum 1}}
+      }
+      {set $dx_final_note_drum {int $mp.end}}
+      {if {> $dx_final_note_drum $dx_final_note} {set $dx_final_note $dx_final_note_drum}}
+      {if $dx_perfects_indicator
+         {if {|| #ifdef RB3E {&& {== $mp.val 95} {dx_check_rb3e_modifier mod_double_bass}} #endif {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
+            {if {< {- $mp.start $dx_last_note_started_drum} 0}
+               {set $dx_capture_drum FALSE} ;will be triggered the first time the parser jumps to the beginning after having completed the mid
+            }
+            {if {&& $dx_capture_drum {>= {- $mp.end $dx_last_note_started_drum} 0}}
+               {unless {&& {|| {== $mp.val 95} {== $mp.val 96}} {< {- $mp.start $dx_last_kick_ended} 0}} ;workaround for RB3E 2x kick overlapping notes which are dropped by the RB3 engine
+                  {push_back $drum_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
+                  {set $drum_note_tracker_2_size {size $drum_note_tracker_2}} 
+               
+                  ;{if {== $drum_note_tracker_2_size 1}
+                  ;   {dx_log_writer countdown {sprint "NoteID,Time,End,dx_last_note_started_drum,mp.start,mp.end,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
+                  ;}
+                  ;{if {<= $drum_note_tracker_2_size 4000}
+                  ;   {dx_log_writer countdown {sprint $drum_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $dx_last_note_started_drum "," $mp.start "," $mp.end "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}
+                  ;}
+                  {set $dx_last_note_started_drum {int $mp.start}}
+                  {if {|| {== $mp.val 95} {== $mp.val 96}}
+                     {set $dx_last_kick_ended $mp.end}
+                  }
+               }
+            }
+         }
+      }
+      {set $dx_final_note_real_drum $dx_final_note_drum}
+      {set $real_drum_note_tracker_2 $drum_note_tracker_2}
+      {set $real_drum_note_tracker $drum_note_tracker}
+      {set $real_drum_note_tracker_2_size $drum_note_tracker_2_size}
+   )
+}
+{new
+   MidiParser
+   drum_overdrive_timer
+   (track_name 'PART DRUMS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $drum_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   drum_solo_timer
+   (track_name 'PART DRUMS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
+   )
+   (midi
+      {push_back $drum_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   bass_timer
+   (track_name 'PART BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (96 97 98 99 100 103 120) ;103: solo, 120: BRE
+   )
+   (midi
+      {unless $first_bass_gem_tracked
+         {set $first_bass_gem_tracked TRUE}
+         {set $tracked_break_num_bass 0}
+         {set $dx_last_note_started_bass 0} ; cache note start time
+         {set $first_bass_gem_beat {int $mp.start}}
+         {if {> $first_bass_gem_beat 16}
+            {push_back $bass_note_tracker {array ("delay_0" 0 $first_bass_gem_beat)}}
+            {set $tracked_break_num_bass 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $bass_tracked_start {int $mp.start}}
+         {set $bass_tracked_prev_end {int {- $bass_tracked_start $mp.prev_end}}}
+         {push_back $bass_note_tracker {array ({sprint "delay_" $tracked_break_num_bass} $bass_tracked_prev_end $bass_tracked_start)}}
+         {set $tracked_break_num_bass {+ $tracked_break_num_bass 1}}
+      }
+      {set $dx_final_note_bass {int $mp.end}}
+      {if {> $dx_final_note_bass $dx_final_note} {set $dx_final_note $dx_final_note_bass}}
+      {if $dx_perfects_indicator
+         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
+            {if {> {- $mp.start $dx_last_note_started_bass} 0}
+               {push_back $bass_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
+               {set $bass_note_tracker_2_size {size $bass_note_tracker_2}}
+               {set $dx_last_note_started_bass $mp.start} ; cache note start time
+            }
+         }
+      }
+   )
+}
+{new
+   MidiParser
+   bass_overdrive_timer
+   (track_name 'PART BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $bass_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   bass_solo_timer
+   (track_name 'PART BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
+   )
+   (midi
+      {push_back $bass_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   real_bass_timer
+   (track_name 'PART REAL_BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (96 97 98 99 100 101 103 120) ;120: BRE
+   )
+   (midi
+      {unless $first_real_bass_gem_tracked
+         {set $first_real_bass_gem_tracked TRUE}
+         {set $tracked_break_num_real_bass 0}
+         {set $dx_last_note_started_real_bass 0} ; cache note start time
+         {set $first_real_bass_gem_beat {int $mp.start}}
+         {if {> $first_real_bass_gem_beat 16}
+            {push_back $real_bass_note_tracker {array ("delay_0" 0 $first_real_bass_gem_beat)}}
+            {set $tracked_break_num_real_bass 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $real_bass_tracked_start {int $mp.start}}
+         {set $real_bass_tracked_prev_end {int {- $real_bass_tracked_start $mp.prev_end}}}
+         {push_back $real_bass_note_tracker {array ({sprint "delay_" $tracked_break_num_real_bass} $real_bass_tracked_prev_end $real_bass_tracked_start)}}
+         {set $tracked_break_num_real_bass {+ $tracked_break_num_real_bass 1}}
+      }
+      {set $dx_final_note_real_bass {int $mp.end}}
+      {if {> $dx_final_note_real_bass $dx_final_note} {set $dx_final_note $dx_final_note_real_bass}}
+      {if $dx_perfects_indicator
+         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100} {== $mp.val 101}}
+            {if {> {- $mp.start $dx_last_note_started_real_bass} 0}
+               {push_back $real_bass_note_tracker_2 {* {beat_to_seconds $mp.start} 1000}}
+               {set $real_bass_note_tracker_2_size {size $real_bass_note_tracker_2}}
+               {set $dx_last_note_started_real_bass $mp.start} ; cache note start time
+            }
+         }
+      }
+   )
+}
+{new
+   MidiParser
+   real_bass_overdrive_timer
+   (track_name 'PART REAL_BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $real_bass_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   real_bass_solo_timer
+   (track_name 'PART REAL_BASS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (115)
+   )
+   (midi
+      {push_back $real_bass_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   keys_timer
+   (track_name 'PART KEYS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (96 97 98 99 100 120) ;120: lowest BRE
+   )
+   (midi
+      ;{$this rt_compute_space}
+      {unless $first_keys_gem_tracked
+         {set $first_keys_gem_tracked TRUE}
+         {set $first_note_done_keys FALSE}
+         ;{dx_log_writer countdown {sprint "NoteID,Time,End,mp.start,mp.end,dx_batch_start_beat_keys,mp.length,mp.prev_start,mp.prev_end,mp.data,mp.val"}}
+         {set $tracked_break_num_keys 0}
+         {set [dx_batch_start_beat_keys] -1}
+         {set [batch_notes_keys] {array ()}}
+         {set [log_enabled_keys] TRUE}
+         {set $first_keys_gem_beat {int $mp.start}}
+         {if {> $first_keys_gem_beat 16}
+            {push_back $keys_note_tracker {array ("delay_0" 0 $first_keys_gem_beat)}}
+            {set $tracked_break_num_keys 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $keys_tracked_start {int $mp.start}}
+         {set $keys_tracked_prev_end {int {- $keys_tracked_start $mp.prev_end}}}
+         {push_back $keys_note_tracker {array ({sprint "delay_" $tracked_break_num_keys} $keys_tracked_prev_end $keys_tracked_start)}}
+         {set $tracked_break_num_keys {+ $tracked_break_num_keys 1}}
+      }
+      {set $dx_final_note_keys {int $mp.end}}
+      {if {> $dx_final_note_keys $dx_final_note} {set $dx_final_note $dx_final_note_keys}}
+      {if $dx_perfects_indicator
+         ;Thanks ChatGPT
+         ; Only parse KEYS notes 96–100
+         {if {|| {== $mp.val 96} {== $mp.val 97} {== $mp.val 98} {== $mp.val 99} {== $mp.val 100}}
+            {if [log_enabled_keys]
+               {set [log_enabled_keys] {if_else {< {beat_to_seconds $mp.start} 60}
+                                        TRUE
+                                        FALSE}
+               }
+            }
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "starting parsing note"}}}
+            ;{if {<= $keys_note_tracker_2_size 4000}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint $keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
+            ;}
 
-            {if {> {size [batch_notes]} 1}
-               {set $first_end {elem {elem [batch_notes] 0} 1}}
-               {foreach $n [batch_notes]
+            ; If this note starts a new batch
+            {if {> {- $mp.start [dx_batch_start_beat_keys]} 0.02}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_keys]} " notes"}}}
+               
+               ; Process previous batch (if any)
+               {if {> {size [batch_notes_keys]} 0}
+                  {set [diff_end_found_keys] FALSE}
+                  {if {> {size [batch_notes_keys]} 1}
+                     ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
+                     {set $first_end {elem {elem [batch_notes_keys] 0} 1}}
+                     {foreach $n [batch_notes_keys] 
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                        {if {!= {elem $n 1} $first_end}
+                           {set [diff_end_found_keys] TRUE}
+                        }
+                     }
+                     ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
+                  }
+
+                  ; Push all notes if there's a differing end
+                  {if_else {== [diff_end_found_keys] TRUE}
+                     {foreach $n [batch_notes_keys] {do
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                        {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+                     }}
+                     {do
+                        {set $n {elem [batch_notes_keys] 0}}
+                        ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                        {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+                     }
+                  }
+                  
+                  {set $keys_note_tracker_2_size {size $keys_note_tracker_2}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
+               }
+
+               ; Start new batch
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set [dx_batch_start_beat_keys] to " $mp.start}}}
+               {set [dx_batch_start_beat_keys] $mp.start}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[dx_batch_start_beat_keys] = " [dx_batch_start_beat_keys] ", set [batch_notes_keys] to empty array"}}}
+               {set [batch_notes_keys] {array ()}} ; Clear batch
+            }
+
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "push back $dx_keys_note to [batch_notes_keys]"}}}
+            {set [dx_do_add_note_keys] TRUE}
+            {if {> {size [batch_notes_keys]} 0}
+               {foreach $n [batch_notes_keys]
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
+                  {if {== {elem $n 2} $mp.val}
+                     ;{dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}
+                     {set [dx_do_add_note_keys] FALSE}
+                  }
+               }
+            }
+            {if {== [dx_do_add_note_keys] TRUE} 
+               {set $dx_keys_note {array ($mp.start $mp.end $mp.val)}}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "$dx_keys_note = " $dx_keys_note}}}
+               {push_back [batch_notes_keys] $dx_keys_note}
+            }
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[batch_notes_keys] = " [batch_notes_keys]}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0 = " {elem [batch_notes_keys] 0}}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0.0 = " {elem {elem [batch_notes_keys] 0} 0}}}}
+            ;{if {&& {> {size [batch_notes_keys]} 0} [log_enabled_keys]} {dx_log_writer countdown {sprint "[batch_notes_keys].0.1 = " {elem {elem [batch_notes_keys] 0} 1}}}}
+            
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "Currently " {size [batch_notes_keys]} " notes in cache"}}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "finished parsing note"}}}
+         }
+      }
+   )
+   (term 
+      ;{dx_log_writer countdown {sprint "TERM"}}
+      {if $dx_perfects_indicator
+         ; Add any hanging notes to the keys_note_tracker_2
+         {if {> {size [batch_notes_keys]} 0}
+            {set [diff_end_found_keys] FALSE}
+            {if {> {size [batch_notes_keys]} 1}
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_keys] 0} 1} }}}
+               {set $first_end {elem {elem [batch_notes_keys] 0} 1}}
+               {foreach $n [batch_notes_keys] 
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
                   {if {!= {elem $n 1} $first_end}
-                     {set [diff_end_found] TRUE}
+                     {set [diff_end_found_keys] TRUE}
                   }
                }
+               ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "[diff_end_found_keys] = " [diff_end_found_keys]}}}
             }
 
-            ; Push all notes if differing end times exist, else push only first
-            {if_else {== [diff_end_found] TRUE}
-               {foreach $n [batch_notes]
-                  {do
-                     {if [pass2]
-                        {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                           [tracker2]
-                           {* {beat_to_seconds {elem $n 0}} 1000}
+            ; Push all notes if there's a differing end
+            {if_else {== [diff_end_found_keys] TRUE}
+               {foreach $n [batch_notes_keys] {do
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                  {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+               }}
+               {do
+                  {set $n {elem [batch_notes_keys] 0}}
+                  ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                  {push_back $keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+               }
+            }
+            
+            {set $keys_note_tracker_2_size {size $keys_note_tracker_2}}
+            ;{if [log_enabled_keys] {dx_log_writer countdown {sprint "set $keys_note_tracker_2_size = " $keys_note_tracker_2_size}}}
+         }
+      }
+   )
+}
+{new
+   MidiParser
+   keys_overdrive_timer
+   (track_name 'PART KEYS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
+   )
+   (midi
+      {push_back $keys_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   keys_solo_timer
+   (track_name 'PART KEYS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
+   )
+   (midi
+      {push_back $keys_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
+}
+{new
+   MidiParser
+   real_keys_timer
+   (track_name 'PART REAL_KEYS_X')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 115 116 120) ;115: solo, 116: glissando, 120: BRE
+   )
+   (midi
+      ;{$this rt_compute_space}
+      {unless $first_real_keys_gem_tracked
+         {set $first_real_keys_gem_tracked TRUE}
+         {set [dx_batch_start_beat_real_keys] -1}
+         {set [batch_notes_real_keys] {array ()}}
+         {set $tracked_break_num_real_keys 0}
+         {set $dx_last_note_started_real_keys 0} ; cache note start time
+         {set $first_real_keys_gem_beat {int $mp.start}}
+         {set [log_enabled_real_keys] TRUE}
+         {if {> $first_real_keys_gem_beat 16}
+            {push_back $real_keys_note_tracker {array ("delay_0" 0 $first_real_keys_gem_beat)}}
+            {set $tracked_break_num_real_keys 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $real_keys_tracked_start {int $mp.start}}
+         {set $real_keys_tracked_prev_end {int {- $real_keys_tracked_start $mp.prev_end}}}
+         {push_back $real_keys_note_tracker {array ({sprint "delay_" $tracked_break_num_real_keys} $real_keys_tracked_prev_end $real_keys_tracked_start)}}
+         {set $tracked_break_num_real_keys {+ $tracked_break_num_real_keys 1}}
+      }
+      {set $dx_final_note_real_keys {int $mp.end}}
+      {if {> $dx_final_note_real_keys $dx_final_note} {set $dx_final_note $dx_final_note_real_keys}}
+      {if $dx_perfects_indicator
+         ;Thanks again ChatGPT
+         ; Parse the 25-note range (limited by the allowed_notes attribute) 
+         {if {&& {!= $mp.val 115} {!= $mp.val 116} {!= $mp.val 120}}
+            {if [log_enabled_real_keys] 
+               {set [log_enabled_real_keys] {if_else {< {beat_to_seconds $mp.start} 60}
+                                             TRUE
+                                             FALSE}
+               }
+            }
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "starting parsing note"}}}
+            ;{if {<= $real_keys_note_tracker_2_size 4000}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint $real_keys_note_tracker_2_size "," {* {beat_to_seconds $mp.start} 1000} "," {* {beat_to_seconds $mp.end} 1000} "," $mp.start "," $mp.end "," [dx_batch_start_beat_real_keys] "," $mp.length "," $mp.prev_start "," $mp.prev_end "," $mp.data "," $mp.val }}}
+            ;}
+
+            ; If this note starts a new batch
+            {if {> {- $mp.start [dx_batch_start_beat_real_keys]} 0.02} ;changed from an equality check; fix for ever so slightly desynchronised notes, eg. https://rhythmverse.co/songfile/61304c77b01252.88654892
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "new start time, process batch of " {size [batch_notes_real_keys]} " notes"}}}
+               
+               ; Process previous batch (if any)
+               {if {> {size [batch_notes_real_keys]} 0}
+                  {set [diff_end_found_real_keys] FALSE}
+                  {if {> {size [batch_notes_real_keys]} 1}
+                     ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
+                     {set $first_end {elem {elem [batch_notes_real_keys] 0} 1}}
+                     {foreach $n [batch_notes_real_keys] 
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                        {if {!= {elem $n 1} $first_end}
+                           {set [diff_end_found_real_keys] TRUE}
                         }
                      }
-                     {++ [tracker2]}
+                     ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
                   }
-               }
-               {do
-                  {set $n {elem [batch_notes] 0}}
-                  {if [pass2]
-                     {set_elem {eval {var {sprint [instrument] "_note_tracker_2"}}}
-                        [tracker2]
-                        {* {beat_to_seconds {elem $n 0}} 1000}
+
+                  ; Push all notes if there's a differing end
+                  {if_else {== [diff_end_found_real_keys] TRUE}
+                     {foreach $n [batch_notes_real_keys] {do
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                        {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+                     }}
+                     {do
+                        {set $n {elem [batch_notes_real_keys] 0}}
+                        ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                        {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
                      }
                   }
-                  {++ [tracker2]}
+                  
+                  {set $real_keys_note_tracker_2_size {size $real_keys_note_tracker_2}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
+               }
+
+               ; Start new batch
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set [dx_batch_start_beat_real_keys] to " $mp.start}}}
+               {set [dx_batch_start_beat_real_keys] $mp.start}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[dx_batch_start_beat_real_keys] = " [dx_batch_start_beat_real_keys] ", set [batch_notes_real_keys] to empty array"}}}
+               {set [batch_notes_real_keys] {array ()}} ; Clear batch
+            }
+
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "push back $dx_real_keys_note to [batch_notes_real_keys]"}}}
+            {set [dx_do_add_note_real_keys] TRUE}
+            {if {> {size [batch_notes_real_keys]} 0}
+               {foreach $n [batch_notes_real_keys]
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "Checking for no matching note val " {elem $n 2}}}}
+                  {if {== {elem $n 2} $mp.val}
+                     ;{dx_log_writer countdown {sprint "Second+ note with same start-time and val, skipping!"}}
+                     {set [dx_do_add_note_real_keys] FALSE}
+                  }
                }
             }
-            {set [batch_notes] {array ()}}
-         }
-      }
-      {if {! [pass2]}
-         {set_var {sprint [instrument] "_note_tracker"} {array [tracker]}}
-         {set_var {sprint [instrument] "_note_tracker_2"} {array [tracker2]}}
-         {set_var {sprint [instrument] "_note_tracker_2_size"} [tracker2]}
-         {set_elem {eval {var {sprint [instrument] "_note_tracker"}}} 0 (none none)}
-         {if [log_enabled]
-            {notify {sprint [instrument] "count_note_tracker: " [tracker]}}
-            {notify {sprint [instrument] "count_note_tracker2: " [tracker2]}}
-            {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-            {notify {sprint "count size:" {size {eval {var {sprint [instrument] "_note_tracker"}}}}}}
-         }
-      }
-      {if [pass2]
-         {if [log_enabled]
-            {notify {sprint [instrument] "eval_note_tracker: " [tracker]}}
-            {notify {eval {var {sprint [instrument] "_note_tracker"}}}}
-            {notify {sprint "eval size:" {size {eval {var {sprint [instrument] "_note_tracker"}}}}}}
-            {notify {sprint [instrument] "eval_note_tracker2: " [tracker2]}}
-            {notify {eval {var {sprint [instrument] "_note_tracker_2"}}}}
-            {notify {sprint os_blnk}}
-            {notify {sprint "eval_2 size:" {size {eval {var {sprint [instrument] "_note_tracker_2"}}}}}}
+            {if {== [dx_do_add_note_real_keys] TRUE} 
+               {set $dx_real_keys_note {array ($mp.start $mp.end $mp.val)}}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "$dx_real_keys_note = " $dx_real_keys_note}}}
+               {push_back [batch_notes_real_keys] $dx_real_keys_note}
+            }
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[batch_notes_real_keys] = " [batch_notes_real_keys]}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0 = " {elem [batch_notes_real_keys] 0}}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.0 = " {elem {elem [batch_notes_real_keys] 0} 0}}}}
+            ;{if {&& {> {size [batch_notes_real_keys]} 0} {[log_enabled_real_keys]}} {dx_log_writer countdown {sprint "[batch_notes_real_keys].0.1 = " {elem {elem [batch_notes_real_keys] 0} 1}}}}
+            
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "Currently " {size [batch_notes_real_keys]} " notes in cache"}}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "finished parsing note"}}}
          }
       }
    )
-)
+   (term 
+      ;{dx_log_writer countdown {sprint "TERM"}}
+      {if $dx_perfects_indicator
+         ; Add any hanging notes to the real_keys_note_tracker_2
+         {if {> {size [batch_notes_real_keys]} 0}
+            {set [diff_end_found_real_keys] FALSE}
+            {if {> {size [batch_notes_real_keys]} 1}
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $first_end to " {elem {elem [batch_notes_real_keys] 0} 1} }}}
+               {set $first_end {elem {elem [batch_notes_real_keys] 0} 1}}
+               {foreach $n [batch_notes_real_keys] 
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "checking note " $n " for different end time, using value " {elem $n 1}}}}
+                  {if {!= {elem $n 1} $first_end}
+                     {set [diff_end_found_real_keys] TRUE}
+                  }
+               }
+               ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "[diff_end_found_real_keys] = " [diff_end_found_real_keys]}}}
+            }
 
-{new
-   MidiParser
-   timer_guitar
-   (track_name 'PART GUITAR')
-   (allowed_notes (96 97 98 99 100 103 120 116)) ;103 = solo, 120 = lowest of BRE, 116 - overdrive
-   (init
-      {$this set instrument guitar}
-      {set $bre_start_time 0}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+            ; Push all notes if there's a differing end
+            {if_else {== [diff_end_found_real_keys] TRUE}
+               {foreach $n [batch_notes_real_keys] {do
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back note with time " {elem $n 0}}}}
+                  {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+               }}
+               {do
+                  {set $n {elem [batch_notes_real_keys] 0}}
+                  ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "pushing back singular note with time " {elem $n 0}}}}
+                  {push_back $real_keys_note_tracker_2 {* {beat_to_seconds {elem $n 0}} 1000}}
+               }
+            }
+            
+            {set $real_keys_note_tracker_2_size {size $real_keys_note_tracker_2}}
+            ;{if [log_enabled_real_keys] {dx_log_writer countdown {sprint "set $real_keys_note_tracker_2_size = " $real_keys_note_tracker_2_size}}}
+         }
+      }
    )
-   COMMON_STD_MIDIP
 }
 {new
    MidiParser
-   eval_guitar
-   (track_name 'PART GUITAR')
-   (allowed_notes (96 97 98 99 100 103 120 116)) ;103 = solo, 120 = lowest of BRE ;116 - od
-   (init {$this set instrument guitar} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-
-{new
-   MidiParser
-   timer_bass
-   (track_name 'PART BASS')
-   (allowed_notes (96 97 98 99 100 103 116)) ;103 = solo, 120 = lowest of BRE ;116 - od
-   (init
-      {$this set instrument bass}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+   real_keys_overdrive_timer
+   (track_name 'PART REAL_KEYS_X')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
    )
-   COMMON_STD_MIDIP
+   (midi
+      {push_back $real_keys_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
 }
 {new
    MidiParser
-   eval_bass
-   (track_name 'PART BASS')
-   (allowed_notes (96 97 98 99 100 103 116)) ;116 - od ;103 - solo
-   (init {$this set instrument bass} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
+   real_keys_solo_timer
+   (track_name 'PART REAL_KEYS_X')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (115)
+   )
+   (midi
+      {push_back $real_keys_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
 }
-
+#ifdef RB3DX
 {new
    MidiParser
-   timer_vocals
+   vocals_timer
    (track_name 'PART VOCALS')
-   (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init
-      {$this set instrument vocals}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (105 106)
    )
-   COMMON_STD_MIDIP
+   (midi
+      ;{$this rt_compute_space}
+      {unless $first_vocals_gem_tracked
+         {set $first_vocals_gem_tracked TRUE}
+         {set $tracked_break_num_vocals 0}
+         {set $first_vocals_gem_beat {int $mp.start}}
+         {if {> $first_vocals_gem_beat 16}
+            {push_back $vocals_note_tracker {array ("delay_0" 0 $first_vocals_gem_beat)}}
+            {set $tracked_break_num_vocals 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $vocals_tracked_start {int $mp.start}}
+         {set $vocals_tracked_prev_end {int {- $vocals_tracked_start $mp.prev_end}}}
+         {push_back $vocals_note_tracker {array ({sprint "delay_" $tracked_break_num_vocals} $vocals_tracked_prev_end $vocals_tracked_start)}}
+         {set $tracked_break_num_vocals {+ $tracked_break_num_vocals 1}}
+      }
+      {set $dx_final_note_vocals {int $mp.end}}
+      {if {> $dx_final_note_vocals $dx_final_note} {set $dx_final_note $dx_final_note_vocals}}
+   )
 }
 {new
    MidiParser
-   eval_vocals
+   vocals_overdrive_timer
    (track_name 'PART VOCALS')
-   (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init {$this set instrument vocals} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-
-{new
-   MidiParser
-   timer_real_guitar
-   (track_name 'PART REAL_GUITAR')
-   (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init
-      {$this set instrument real_guitar}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
    )
-   COMMON_STD_MIDIP
-}
-{new
-   MidiParser
-   eval_real_guitar
-   (track_name 'PART REAL_GUITAR')
-   (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init {$this set instrument real_guitar} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-
-{new
-   MidiParser
-   timer_real_bass
-   (track_name 'PART REAL_BASS')
-   (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init
-      {$this set instrument real_bass}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+   (midi
+      {push_back $vocals_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
    )
-   COMMON_STD_MIDIP
 }
 {new
    MidiParser
-   eval_real_bass
-   (track_name 'PART REAL_BASS')
-   (allowed_notes (96 97 98 99 100 101 116 115)) ;120: BRE ;116 - od
-   (init {$this set instrument real_bass} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
+   vocals_solo_timer
+   (track_name 'PART VOCALS')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
+   )
+   (midi
+      {push_back $vocals_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
+   )
 }
-
 {new
    MidiParser
-   timer_harm
+   harm_timer
    (track_name 'HARM1')
-   (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init
-      {$this set instrument harm}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (105 106)
    )
-   COMMON_STD_MIDIP
+   (midi
+      ;{$this rt_compute_space}
+      {unless $first_harm_gem_tracked
+         {set $first_harm_gem_tracked TRUE}
+         {set $tracked_break_num_harm 0}
+         {set $first_harm_gem_beat {int $mp.start}}
+         {if {> $first_harm_gem_beat 16}
+            {push_back $harm_note_tracker {array ("delay_0" 0 $first_harm_gem_beat)}}
+            {set $tracked_break_num_harm 1}
+         }
+      }
+      {if {&& {>= $mp.prev_end 16} {< $mp.prev_end 10000}}
+         {set $harm_tracked_start {int $mp.start}}
+         {set $harm_tracked_prev_end {int {- $harm_tracked_start $mp.prev_end}}}
+         {push_back $harm_note_tracker {array ({sprint "delay_" $tracked_break_num_harm} $harm_tracked_prev_end $harm_tracked_start)}}
+         {set $tracked_break_num_harm {+ $tracked_break_num_harm 1}}
+      }
+      {set $dx_final_note_harm {int $mp.end}}
+      {if {> $dx_final_note_harm $dx_final_note} {set $dx_final_note $dx_final_note_harm}}
+   )
 }
 {new
    MidiParser
-   eval_harm
+   harm_overdrive_timer
    (track_name 'HARM1')
-   (allowed_notes (105 106 116)) ;116 - od ;103 - solo (not here)
-   (init {$this set instrument harm} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-
-{new
-   MidiParser
-   timer_drum
-   (track_name 'PART DRUMS')
-   (allowed_notes ;116 - od ;103 - solo
-      #ifdef RB3E
-      {if_else {dx_check_rb3e_modifier mod_double_bass}
-         (95 96 97 98 99 100 103 116)
-         (96 97 98 99 100 103 116)
-      }
-      #else
-      (96 97 98 99 100 103 116)
-      #endif
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (116)
    )
-   (init
-      {$this set instrument drum}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
-      {set_var {sprint "real_drum" "_note_tracker"} {array 0}}
-      {set_var {sprint "real_drum" "_note_tracker_2"} {array 0}}
+   (midi
+      {push_back $harm_note_tracker {array ({sprint "overdrive_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
    )
-   COMMON_STD_MIDIP
 }
 {new
    MidiParser
-   eval_drum
-   (track_name 'PART DRUMS')
-   (allowed_notes ;116 - od ;103 - solo
-      #ifdef RB3E
-      {if_else {dx_check_rb3e_modifier mod_double_bass}
-         (95 96 97 98 99 100 103 103 116)
-         (96 97 98 99 100 103 103 116)
-      }
-      #else
-      (96 97 98 99 100 103 103 116)
-      #endif
+   harm_solo_timer
+   (track_name 'PART harm')
+   (inverted FALSE)
+   (up FALSE)
+   (append_length TRUE)
+   (compress TRUE)
+   ;(message_type midi_parser)
+   (mp.up FALSE)
+   (idle)
+   (allowed_notes
+      (103)
    )
-   (init {$this set instrument drum} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-{new
-   MidiParser
-   timer_real_drum
-   (track_name 'PART DRUMS')
-   (allowed_notes ;116 - od ;103 - solo
-      #ifdef RB3E
-      {if_else {dx_check_rb3e_modifier mod_double_bass}
-         (95 96 97 98 99 100 103 116)
-         (96 97 98 99 100 103 116)
-      }
-      #else
-      (96 97 98 99 100 103 116)
-      #endif
+   (midi
+      {push_back $harm_note_tracker {array ({sprint "solo_" {int $mp.start}} {int $mp.start} {int $mp.end})}}
    )
-   (init
-      {$this set instrument real_drum}
-      {set_var {sprint [instrument] "_note_tracker"} {array 0}}
-      {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
-      {set_var {sprint "real_drum" "_note_tracker"} {array 0}}
-      {set_var {sprint "real_drum" "_note_tracker_2"} {array 0}}
-   )
-   COMMON_STD_MIDIP
 }
-{new
-   MidiParser
-   eval_real_drum
-   (track_name 'PART DRUMS')
-   (allowed_notes ;116 - od ;103 - solo
-      #ifdef RB3E
-      {if_else {dx_check_rb3e_modifier mod_double_bass}
-         (95 96 97 98 99 100 103 103 116)
-         (96 97 98 99 100 103 103 116)
-      }
-      #else
-      (96 97 98 99 100 103 103 116)
-      #endif
-   )
-   (init {$this set instrument real_drum} {$this set pass2 TRUE})
-   COMMON_STD_MIDIP
-}
-
-{new
-  MidiParser
-  timer_keys
-  (track_name 'PART KEYS')
-  (allowed_notes (96 97 98 99 100 103 116)) ;116 od ;103 solo
-  (init
-    {$this set instrument keys}
-    {$this set pass2 FALSE}
-    {set_var {sprint [instrument] "_note_tracker"}   {array 0}}
-    {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
-  )
-  COMMON_STD_MIDIP
-}
-
-{new
-  MidiParser
-  eval_keys
-  (track_name 'PART KEYS')
-  (allowed_notes (96 97 98 99 100 103 116)) ;116 od ;103 solo
-  (init {$this set instrument keys} {$this set pass2 TRUE})
-  COMMON_STD_MIDIP
-}
-
-{new
-  MidiParser
-  timer_real_keys
-  (track_name 'PART REAL_KEYS_X')
-  (allowed_notes (48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 115 116)) ;115: solo, 116: glissando, 120: BRE
-  (init
-    {$this set instrument real_keys}
-    {$this set pass2 FALSE}
-    {set_var {sprint [instrument] "_note_tracker"}   {array 0}}
-    {set_var {sprint [instrument] "_note_tracker_2"} {array 0}}
-  )
-  COMMON_STD_MIDIP
-}
-
-{new
-  MidiParser
-  eval_real_keys
-  (track_name 'PART REAL_KEYS_X')
-  (allowed_notes (48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 115 116)) ;115: solo, 116: glissando, 120: BRE
-  (init {$this set instrument real_keys} {$this set pass2 TRUE})
-  COMMON_STD_MIDIP
-}
+#endif
