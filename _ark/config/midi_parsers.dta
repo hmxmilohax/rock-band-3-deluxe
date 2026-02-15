@@ -21,6 +21,21 @@
          {== {{song_mgr get_meta_data {meta_performer song}} version} 29} ;Dx To reduce my lines of code I added this new variable that checks if this is ver 29
       }
    }
+   {func is_upgrade_song
+      {&&
+         {file_exists
+            {sprint
+               "songs/updates/"
+               {meta_performer song}
+               "/"
+               {meta_performer song}
+               "_update.mid"
+            }
+         }
+         {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+         {!= $sourcevar ugc2} ; This is necessary to avoid problems with rbn 2.0 stuff
+      }
+   }
    #include ../dx/track/countdown/dx_countdown_midi_parsers.dta
    #include ../dx/macros/dx_midi_parsers.dta
    {new MidiParser
@@ -2420,7 +2435,10 @@
                world_camera_parser_rbn3
                (track_name VENUE)
                (enabled TRUE)
-               (init {set [enabled] {is_ver_30}})
+               (init
+                  {set [enabled] {is_ver_30}}
+                  {set [is_upgrade] {is_upgrade_song}}
+               )
                (term
                   {if [enabled]
                      {$banddirector midi_shot5_cleanup}
@@ -2428,11 +2446,115 @@
                )
                (text
                   {if [enabled]
-                     {if {has_substr $mp.val "directed_"}
-                        {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds $mp.start}}
+                     {if [is_upgrade]
+                     {do
+                        ($shot $mp.val)
+                        ($time {beat_to_seconds $mp.start})
+                        ($remap_val '')
+                        {set $remap_val
+                           {switch $shot
+                              (coop_k_behind {random_elem (coop_all_behind coop_front_behind)})
+                              (coop_k_closeup_hand {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_k_closeup_head {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_k_near {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_bk_behind coop_b_behind)
+                              (coop_bk_near coop_b_near)
+                              (coop_gk_behind coop_g_behind)
+                              (coop_gk_near coop_g_near)
+                              (coop_kv_behind coop_v_behind)
+                              (coop_kv_near coop_v_near)
+                              (directed_keys "")
+                              (directed_keys_cam "")
+                              (directed_keys_np "")
+                              (directed_duo_kg "")
+                              (directed_duo_kb "")
+                              (directed_duo_kv "")
+                              $shot
+                           }
+                        }
+                        {if {!= $remap_val ""}
+                           {if {has_substr $remap_val "directed_"}
+                              {$banddirector add_symbol_key shot_bg $remap_val $time}
+                           }
+                           {if {has_substr $remap_val "coop_"}
+                              {$banddirector add_symbol_key shot_bg $remap_val $time}
+                           }
+                        }
+                        {set $remap_val
+                           {switch $shot
+                              (coop_g_behind {random_elem (coop_all_behind coop_front_behind)})
+                              (coop_g_closeup_hand {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_g_closeup_head {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_g_near {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_bg_behind coop_b_behind)
+                              (coop_bg_near coop_b_near)
+                              (coop_dg_near coop_d_near)
+                              (coop_gk_behind coop_k_near)
+                              (coop_gk_near coop_k_near)
+                              (coop_gv_behind coop_v_behind)
+                              (coop_gv_near coop_v_near)
+                              (directed_duo_guitar "")
+                              (directed_duo_gb "")
+                              (directed_guitar "")
+                              (directed_guitar_np "")
+                              (directed_guitar_cam "")
+                              (directed_guitar_cls "")
+                              (directed_crowd_g "")
+                              (directed_duo_kg "")
+                              (directed_guitar_cam_pr "")
+                              (directed_guitar_cam_pt "")
+                              $shot
+                           }
+                        }
+                        {if {!= $remap_val ""}
+                           {if {has_substr $remap_val "directed_"}
+                              {$banddirector add_symbol_key shot_bk $remap_val $time}
+                           }
+                           {if {has_substr $remap_val "coop_"}
+                              {$banddirector add_symbol_key shot_bk $remap_val $time}
+                           }
+                        }
+                        {set $remap_val
+                           {switch $shot
+                              (coop_b_behind {random_elem (coop_all_behind coop_front_behind)})
+                              (coop_b_closeup_hand {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_b_closeup_head {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_b_near {random_elem (coop_all_far coop_all_near coop_front_near)})
+                              (coop_bd_near coop_d_near)
+                              (coop_bg_behind coop_g_behind)
+                              (coop_bg_near coop_g_near)
+                              (coop_bv_behind coop_v_behind)
+                              (coop_bv_near coop_v_near)
+                              (coop_bk_behind coop_k_behind)
+                              (coop_bk_near coop_k_near)
+                              (directed_duo_bass "")
+                              (directed_duo_gb "")
+                              (directed_bass "")
+                              (directed_bass_np "")
+                              (directed_bass_cam "")
+                              (directed_bass_cls "")
+                              (directed_crowd_b "")
+                              (directed_duo_kb "")
+                              $shot
+                           }
+                        }
+                        {if {!= $remap_val ""}
+                           {if {has_substr $remap_val "directed_"}
+                              {$banddirector add_symbol_key shot_gk $remap_val $time}
+                           }
+                           {if {has_substr $remap_val "coop_"}
+                              {$banddirector add_symbol_key shot_gk $remap_val $time}
+                           }
+                        }
                      }
-                     {if {has_substr $mp.val "coop_"}
-                        {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds $mp.start}}
+                     }
+                     {if {![is_upgrade]}
+                        {if {has_substr $mp.val "directed_"}
+                           {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds $mp.start}}
+                        }
+                        {if {has_substr $mp.val "coop_"}
+                           {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds $mp.start}}
+                        }
                      }
                   }
                )
@@ -2479,48 +2601,48 @@
                   }
                )
             }
-            {new MidiParser
-               world_camera_fixer
-               (track_name VENUE)
-               (enabled TRUE)
-               (init
-                  {set [enabled] FALSE}
-                  {if
-                     {&&
-                        {file_exists
-                           {sprint
-                              "songs/updates/"
-                              {meta_performer song}
-                              "/"
-                              {meta_performer song}
-                              "_update.mid"
-                           }
-                        }
-                        {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
-                        {!= $sourcevar ugc2} ; This is necessary to avoid problems with rbn 2.0 stuff
-                     }
-                     {set [enabled] TRUE}
-                  }
-               )
-               (term
-                  {if [enabled]
-                     {$banddirector midi_shot5_cleanup}
-                  }
-               )
-               (text
-                  {if [enabled]
-                     ;add a final end shot so the clean up doesnt add camera spam
-                     {if {&& {has_substr $mp.val "directed_"} {! $add_end_shot}}
-                        {set $add_end_shot TRUE}
-                        {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds 999999}}
-                        {$banddirector add_symbol_key shot_gk $mp.val {beat_to_seconds 999999}}
-                        {$banddirector add_symbol_key shot_bk $mp.val {beat_to_seconds 999999}}
-                        {$banddirector add_symbol_key shot_bg $mp.val {beat_to_seconds 999999}}
-                     }
-                     ; Axo note: This fixes the few remaining camera spam. The error is due to remapping to the shot variants to place the cuts
-                  }
-               )
-            }
+            ; {new MidiParser
+            ;    world_camera_fixer
+            ;    (track_name VENUE)
+            ;    (enabled TRUE)
+            ;    (init
+            ;       {set [enabled] FALSE}
+            ;       {if
+            ;          {&&
+            ;             {file_exists
+            ;                {sprint
+            ;                   "songs/updates/"
+            ;                   {meta_performer song}
+            ;                   "/"
+            ;                   {meta_performer song}
+            ;                   "_update.mid"
+            ;                }
+            ;             }
+            ;             {== {{song_mgr get_meta_data {meta_performer song}} version} 30}
+            ;             {!= $sourcevar ugc2} ; This is necessary to avoid problems with rbn 2.0 stuff
+            ;          }
+            ;          {set [enabled] TRUE}
+            ;       }
+            ;    )
+            ;    (term
+            ;       {if [enabled]
+            ;          {$banddirector midi_shot5_cleanup}
+            ;       }
+            ;    )
+            ;    (text
+            ;       {if [enabled]
+            ;          ;add a final end shot so the clean up doesnt add camera spam
+            ;          {if {&& {has_substr $mp.val "directed_"} {! $add_end_shot}}
+            ;             {set $add_end_shot TRUE}
+            ;             {$banddirector add_symbol_key shot_5 $mp.val {beat_to_seconds 999999}}
+            ;             {$banddirector add_symbol_key shot_gk $mp.val {beat_to_seconds 999999}}
+            ;             {$banddirector add_symbol_key shot_bk $mp.val {beat_to_seconds 999999}}
+            ;             {$banddirector add_symbol_key shot_bg $mp.val {beat_to_seconds 999999}}
+            ;          }
+            ;          ; Axo note: This fixes the few remaining camera spam. The error is due to remapping to the shot variants to place the cuts
+            ;       }
+            ;    )
+            ; }
          }
       }
    }
