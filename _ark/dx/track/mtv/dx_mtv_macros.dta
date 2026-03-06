@@ -131,124 +131,124 @@
       {dx_rank_var_finder real_bass 150 208 267 325 384 442}
    }
 )
-#define MTV_DTA_READER
-(
-      ;init vars
-      {set $dx_path_failed FALSE}
-      {set $tempreadarray ()}
-      {resize $tempreadarray 0}
+{func
+   dx_mtv_reader
+   ;init vars
+   {set $dx_path_failed FALSE}
+   {set $tempreadarray ()}
+   {resize $tempreadarray 0}
+   {set $songdtareader ()}
+   {resize $songdtareader 0}
+   ;init base filepath
+   {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+   ;if base file path exists
+   {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+      ;set it
+      {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}} ;a dlc dta
+       ;check if we are on disc
+       {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"}}
+         ;set on disc path
+         {set $filepath "songs/songs.dta"} ;on disc
+         ;we have to assume ps3 hw can see all, because file_exists doesnt work outside of the ark there
+         {if_else $dx_ps3hw
+            {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
+            {set $dx_path_failed TRUE}
+         }
+      }
+   }
+   ;man idk why but ps3 hw cannot display a package_name for rb1, thus this mess
+   {if $dx_ps3hw
+      {foreach $entry
+         (
+            29fingers sayitaintso inbloom ithinkimparanoid
+            timewehad missqueen hereitgoesagain creep
+            blooddoll waveofmutilation shouldistay maps
+            gimmeshelter brainpower sabotage blitzkriegbop
+            celebrityskin imsosick whenyouwereyoung
+            blackholesun wanteddeadoralive learntofly seven
+            orangecrush mainoffender thehandthatfeeds
+            daylatedollarshort epic suffragettecity
+            ballroomblitz deadonarrival pleasure
+            trainkeptarollin areyougonnabemygirl paranoid
+            timmy welcomehome gowiththeflow danicalifornia
+            nightmare dontfearthereaper reptilia
+            electricversion vasoline detroitrockcity
+            cantletgo nexttoyou cherubrock tomsawyer
+            entersandman greengrass outside highwaystar
+            foreplaylongtime flirtinwithdisaster igetby
+            runtothehills wontgetfooled
+         )
+         {if {== $entry {symbol {meta_performer song}}}
+            {set $filepath "songs/rb1_songs.dta"}
+         }
+      }
+   }
+   {if {! $dx_path_failed}
+      #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
+      {if {&& {!= $filepath "songs/rb1_songs.dta"} {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+         {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
+         {if {has_substr $filepath BLUS30050}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLUS30147}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLUS30463}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLES00986}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00986/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLES00385}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00385/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if {has_substr $filepath BLES00228}
+            {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00228/USRDIR/" $packagename "/songs/songs.dta"}}
+         }
+         {if_else {|| $dx_ps3hw {file_exists $ps3_base_path}}
+            {set $filepath $ps3_base_path}
+            {set $dx_path_failed TRUE}
+         }
+      }
+      #endif
+      #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
+      {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
+         {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}}}}
+         {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
+         {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
+         {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
+         {search_replace $filepath "_song/" "/" $filepath}
+         ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
+      }
+      #endif
+
+      {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {== $filepath "songs/rb1_songs.dta"} $dx_ps3hw {file_exists $filepath}} #endif
+         {set $songdtareader {read_file $filepath}}
+         {set $dx_path_failed TRUE}
+      }
+
+      {if_else {> {size $songdtareader} 0}
+         {foreach $entry $songdtareader
+            {if {== {elem $entry 0} {symbol {meta_performer song}}}
+               {set $songdtareader $entry}
+               DTA_ARRAY_READER
+            }
+         }
+         {set $dx_path_failed TRUE}
+      }
+
       {set $songdtareader ()}
       {resize $songdtareader 0}
-      ;init base filepath
-      {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
-      ;if base file path exists
-      {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
-         ;set it
-         {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}} ;a dlc dta
-          ;check if we are on disc
-          {if_else {file_exists {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../gen/songs.dtb"}}
-            ;set on disc path
-            {set $filepath "songs/songs.dta"} ;on disc
-            ;we have to assume ps3 hw can see all, because file_exists doesnt work outside of the ark there
-            {if_else $dx_ps3hw
-               {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}} "/../../songs.dta"}}
-               {set $dx_path_failed TRUE}
-            }
-         }
-      }
-      ;man idk why but ps3 hw cannot display a package_name for rb1, thus this mess
-      {if $dx_ps3hw
-         {foreach $entry
-            (
-               29fingers sayitaintso inbloom ithinkimparanoid
-               timewehad missqueen hereitgoesagain creep
-               blooddoll waveofmutilation shouldistay maps
-               gimmeshelter brainpower sabotage blitzkriegbop
-               celebrityskin imsosick whenyouwereyoung
-               blackholesun wanteddeadoralive learntofly seven
-               orangecrush mainoffender thehandthatfeeds
-               daylatedollarshort epic suffragettecity
-               ballroomblitz deadonarrival pleasure
-               trainkeptarollin areyougonnabemygirl paranoid
-               timmy welcomehome gowiththeflow danicalifornia
-               nightmare dontfearthereaper reptilia
-               electricversion vasoline detroitrockcity
-               cantletgo nexttoyou cherubrock tomsawyer
-               entersandman greengrass outside highwaystar
-               foreplaylongtime flirtinwithdisaster igetby
-               runtothehills wontgetfooled
-            )
-            {if {== $entry {symbol {meta_performer song}}}
-               {set $filepath "songs/rb1_songs.dta"}
-            }
-         }
-      }
       {if {! $dx_path_failed}
-         #ifdef HX_PS3 ; if we didnt find the above file path on ps3, its not on disc and we need to do stupid things for hardware
-         {if {&& {!= $filepath "songs/rb1_songs.dta"} {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
-            {set $packagename {sprint {song_mgr package_name {meta_performer song}}}}
-            {if {has_substr $filepath BLUS30050}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30050/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if {has_substr $filepath BLUS30147}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30147/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if {has_substr $filepath BLUS30463}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLUS30463/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if {has_substr $filepath BLES00986}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00986/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if {has_substr $filepath BLES00385}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00385/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if {has_substr $filepath BLES00228}
-               {set $ps3_base_path {sprint "GD:/dev_hdd0/game/BLES00228/USRDIR/" $packagename "/songs/songs.dta"}}
-            }
-            {if_else {|| $dx_ps3hw {file_exists $ps3_base_path}}
-               {set $filepath $ps3_base_path}
-               {set $dx_path_failed TRUE}
-            }
-         }
-         #endif
-         #ifdef HX_WII ;on wii if your shortname does not match the folder name, you're fucked. fix your shit
-         {if {&& {!= $filepath "songs/songs.dta"} {! {file_exists $filepath}}}
-            {set $filepath {sprint {song_mgr song_path {symbol {meta_performer song}}}}}
-            {set $dx_pathbefore {sprint "/" {meta_performer song} "/" {meta_performer song}}}
-            {set $dx_pathafter {sprint "/" {meta_performer song} "/songs.dta"}}
-            {search_replace $filepath $dx_pathbefore $dx_pathafter $filepath}
-            {search_replace $filepath "_song/" "/" $filepath}
-            ;{set $dx_songpath {sprint {tolower $dx_songpath}}}
-         }
-         #endif
-
-         {if_else #ifdef HX_WII TRUE #else {|| {== $filepath "songs/songs.dta"} {== $filepath "songs/rb1_songs.dta"} $dx_ps3hw {file_exists $filepath}} #endif
-            {set $songdtareader {read_file $filepath}}
-            {set $dx_path_failed TRUE}
-         }
-
-         {if_else {> {size $songdtareader} 0}
-            {foreach $entry $songdtareader
-               {if {== {elem $entry 0} {symbol {meta_performer song}}}
-                  {set $songdtareader $entry}
-                  DTA_ARRAY_READER
-               }
-            }
-            {set $dx_path_failed TRUE}
-         }
-
-         {set $songdtareader ()}
-         {resize $songdtareader 0}
-         {if {! $dx_path_failed}
-            {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
-               {set $songdtareader {find $syscfg missing_song_data {symbol {meta_performer song}}}}
-               {if {> {size $songdtareader} 0}
-                  DTA_ARRAY_READER
-               }
+         {if {find_exists $syscfg missing_song_data {symbol {meta_performer song}}}
+            {set $songdtareader {find $syscfg missing_song_data {symbol {meta_performer song}}}}
+            {if {> {size $songdtareader} 0}
+               DTA_ARRAY_READER
             }
          }
       }
-)
+   }
+}
 #define CREATE_MTV_LINE
 (
    {dx_mtv_hud_label
@@ -356,31 +356,31 @@
             CREATE_MTV_LINE
             ; sorry
             {cond 
-               ({&& $mastervar $dx_mtv_year {! $dx_mtv_line_album}}
+               ({&& $mastervar $dx_mtv_year {! $dx_mtv_line_album_name}}
                   {if_else $yearrecvar
                      {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
                      {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
                   }
                )
-               ({&& {! $mastervar} $dx_mtv_year {! $dx_mtv_line_album}}
+               ({&& {! $mastervar} $dx_mtv_year {! $dx_mtv_line_album_name}}
                   {if_else {&& $yearrecvar {|| {! $dx_mtv_line_coveredby} {! $coveredbyvar}}}
                      {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
                      {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
                   }
                )
-               ({&& $mastervar $dx_mtv_year $dx_mtv_line_album {! $albumvar}}
+               ({&& $mastervar $dx_mtv_year $dx_mtv_line_album_name {! $albumvar}}
                   {if_else $yearrecvar
                      {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
                      {THIS_MTV_LBL set_token_fmt {sprint $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
                   }
                )
-               ({&& {! $mastervar} $dx_mtv_year $dx_mtv_line_album {! $albumvar}}
+               ({&& {! $mastervar} $dx_mtv_year $dx_mtv_line_album_name {! $albumvar}}
                   {if_else {&& $yearrecvar {|| {! $dx_mtv_line_coveredby} {! $coveredbyvar}}}
                      {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released} " (" $yearrecvar ")" }}
                      {THIS_MTV_LBL set_token_fmt {sprint "<it>" {localize store_famous_by} " </it>" $artistvar ", " {{song_mgr get_meta_data {meta_performer song}} year_released}}}
                   }
                )
-               ({|| {! $dx_mtv_year} $dx_mtv_line_album}
+               ({|| {! $dx_mtv_year} $dx_mtv_line_album_name}
                   {THIS_MTV_LBL set_artist_name_from_shortname {meta_performer song}}
                )
             }
@@ -394,7 +394,7 @@
             }
             {++ $this_total_lines}
          }
-         {if {&& $dx_mtv_line_album $albumvar}
+         {if {&& $dx_mtv_line_album_name $albumvar}
             CREATE_MTV_LINE
             {if_else $dx_mtv_year
                {if_else $yearrecvar
@@ -416,7 +416,7 @@
             {THIS_MTV_LBL set_token_fmt $subgenrevar}
             {++ $this_total_lines}
          }
-         {if {&& $dx_mtv_line_game_origin $sourcevar {! {modifier_mgr is_modifier_active mod_karaoke}} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
+         {if {&& $dx_mtv_line_source $sourcevar {! {modifier_mgr is_modifier_active mod_karaoke}} {! {modifier_mgr is_modifier_active mod_fakejuke}}}
             CREATE_MTV_LINE
             {THIS_MTV_LBL set_token_fmt $sourcevar}
             {++ $this_total_lines}
@@ -508,7 +508,7 @@
             {do
                {unless $dx_mtv_dta_reader_once
                   {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
-                  MTV_DTA_READER
+                  {dx_mtv_reader}
                }
                {if
                   {&&

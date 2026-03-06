@@ -398,3 +398,79 @@
       }
    }
 }
+
+{func
+   dx_check_for_real_guitar_cheat
+   {unless {modifier_mgr is_modifier_active mod_auto_play}
+      {beatmatch foreach_active_player $player
+         {if
+            {&&
+               {{$player get_user} is_local}
+               {||
+                  {== {$player instrument} real_guitar}
+                  {== {$player instrument} real_bass}
+               }
+               {!
+                  {||
+                     {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_guitar_xbox}
+                     {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_guitar_ps3}
+                     {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_guitar_wii}
+                  }
+               }
+            }
+            {dx_reset_score}
+         }
+      }
+   }
+}
+ 
+;super jank way of setting score to 0 and disabling scoring
+{func
+   dx_reset_score
+   {unless {beatmatch is_invalid_score}
+      {beatmatch set_invalid_score TRUE}
+      {foreach_int $i 0 4
+         {cheat_toggle_difficulty}
+      }
+   }
+}
+
+{func dx_load_synth ($synth)
+   {if {game is_instrument_synth_on}
+      {game toggle_instrument_synth}
+   }
+   {set $path {elem {find $syscfg sound instruments chamberlin_selections $synth} 1}}
+   {dx_log_writer insane {sprint "Loading synth " $path}}
+   {set $newinstrument {load_objects $path}}
+   {$dx_chamberlin_dir iterate Object $obj
+      {dx_log_writer insane {sprint "old: " $obj}}
+      {unless {$obj is_a ObjectDir}
+         {delete $obj}
+      }
+   }
+   {$newinstrument iterate Object $obj
+      {dx_log_writer insane {sprint "new: " $obj}}
+      {unless {$obj is_a ObjectDir}
+         {$obj set_name {$obj name} $dx_chamberlin_dir}
+      }
+   }
+   {dx_log_writer insane {sprint "Loaded synth " $synth}}
+   {set $dx_loaded_synth $synth}
+}
+
+{func dx_update_synth
+   {if_else $dx_synth_enabled
+      {do
+         {if {!= $dx_loaded_synth $dx_selected_synth}
+            {dx_load_synth $dx_selected_synth}
+         }
+         {unless {game is_instrument_synth_on}
+            {game toggle_instrument_synth}
+         }
+         {game set_instrument_synth_volume 100}
+      }
+      {if {game is_instrument_synth_on}
+         {game toggle_instrument_synth}
+      }
+   }
+}

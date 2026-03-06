@@ -25,5 +25,7 @@ f.write(f'(message_motd "Rock Band 3 Deluxe r{rev} Loaded! Thanks for playing!")
 f.write(f'(message_motd_signin "Rock Band 3 Deluxe r{rev} Loaded! Thanks for playing!")\n')
 f.write(f'(message_motd_noconnection "Rock Band 3 Deluxe r{rev} Loaded! Thanks for playing!")\n')
 f.write(f'(rb3e_mod_string "RB3DX {version}")\n')
+f.write(f'(rb3dx_commit "{commit}")\n')
+f.write(f'(rb3dx_version "{version}")\n')
 
 f.close()

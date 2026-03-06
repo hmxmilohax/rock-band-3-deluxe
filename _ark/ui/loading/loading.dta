@@ -1,21 +1,34 @@
-#ifdef DX_PTBR
-#include ../locale/ptb/dx/dx_loading_tips.dta
-#else
-#include ../../dx/ui/loading/dx_loading_tips.dta
-#endif
-#include ../../dx/ui/loading/dx_loading_handles.dta
-{new BandPreloadPanel
-   preload_panel
-   (song_mgr song_mgr)
-   (current_song {meta_performer song})
-   DX_LOADING_HANDLES
-   (enter
+#define DX_LOADING_HANDLES
+(
+   (dx_load_tip_and_author_finder
+      {unless $dx_song_data_processed
+         {set $dx_song_data_processed TRUE}
+         {dx_author_finder_var_reset}
+         {unless $dx_mtv_dta_reader_once
+            {set $dx_mtv_dta_reader_once TRUE} ;no matter how many times this function gets called, we only need to read these dtas once because its very heavy
+            {dx_mtv_reader}
+         }
+      }
+   )
+   (dx_loading_enter
       ;reset midi parser end of song shot addition gate to prevent camera spam
       ;i know this is bad and shouldnt be here
       {set $add_end_shot FALSE}
-      #ifndef HX_WII
-      {$this dx_loading_enter}
-      #endif
+      {dx_countdown_var_reset}
+      {dx_midi_parser_var_reset}
+      {set $dx_song_data_processed FALSE}
+      {$this dx_load_tip_and_author_finder}
+
+      {if_else {! {session_mgr is_local}}
+         {set $dx_delay 2}
+         {if_else $dx_song_delay
+            {set $dx_delay 2}
+            {set $dx_delay 0}
+         }
+      }
+
+      {set $speedmod_top $leaderspeed}
+
       {if $dx_prep_show_flow
          {set $dx_prep_show_flow FALSE}
       }
@@ -25,6 +38,39 @@
             {set $current_solo_highscore {elem $entry 1}}
          }
       }
+   )
+   (dx_set_up_loading_tip_label
+      {do
+         ($tip_roll {random_int 1 214}) ;increment based on number of tips in dx_locale_tips.dta
+         ($num {random_int 0 50})
+         ($roll {&& $dx_loading_tip_var {>= $num 25}})
+         ($str ;randomize the string for this tip
+            {if_else $roll ;50% chance if we found a tip for this song
+               {sprint $dx_loading_tip_var} ; set the loading tip found in songs.dta
+               {localize {sprint "dx_loading_tip_" $tip_roll}} ; otherwise, set a random loading tip
+            }
+         )
+         {set_this transition_fallback_panel}
+         {loading.lbl set caps_mode kCapsModeNone} ; make label lowercase
+         {loading.lbl set fixed_length 1000} ; increase the character count
+         {loading.lbl set width 640} ; force a specific length
+         {loading.lbl set fit_type kFitWrap} ; fit the text to the length and make a new line when reached
+         {loading.lbl set alignment kTopCenter} ; keep the text below the loading emblem
+         {loading.lbl set_local_pos_index 2 {- {loading.lbl get_locale_pos_index 2} 150}} ; set the y position to make it a lil prettier
+         {loading.lbl set_token_fmt stringify $str} 
+         {set $dx_loading_tip_var FALSE}
+      }
+   )
+)
+{new BandPreloadPanel
+   preload_panel
+   (song_mgr song_mgr)
+   (current_song {meta_performer song})
+   DX_LOADING_HANDLES
+   (enter
+      #ifndef HX_WII
+      {$this dx_loading_enter}
+      #endif
    )
    (preload_files
       ({song_mgr
@@ -68,19 +114,15 @@
       ;lowering the delay makes it not work
       ;ive tried several things
       ;its the L everyone has to take
-      {thread_task ;delay going to practice to let the game catch up
-         kTaskUISeconds
-         (delay $dx_delay)
-         (script
-            {if_else {== {ui current_screen} preloading_screen}
-               #ifdef HX_WII
-               {ui goto_screen pregame_screen}
-               #else
-               {ui goto_screen {gamemode get game_screen}}
-               #endif
-               {ui goto_screen load_nextsong_screen}
-            }
-         )
+      {do
+         ($first {== {ui current_screen} preloading_screen})
+         ($game #ifdef HX_WII pregame_screen #else {gamemode get game_screen} #endif)
+         ($next {if_else $first $game load_nextsong_screen})
+         {thread_task ;delay going to practice to let the game catch up
+            kTaskUISeconds
+            (delay $dx_delay)
+            (script {ui goto_screen $next})
+         }
       }
    )
    (on_preload_failed
@@ -132,7 +174,9 @@
       {game set multi_event FALSE}
       {song_mgr add_recent_song {meta_performer song}}
       {preload_panel dx_load_tip_and_author_finder}
+      #ifndef HX_WII
       {preload_panel dx_set_up_loading_tip_label}
+      #endif
       {if {exists game}
          {acc_mgr clear_goal_info}
       }

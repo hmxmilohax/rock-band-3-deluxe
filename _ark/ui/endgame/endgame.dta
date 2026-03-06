@@ -1,4 +1,347 @@
-#include ../../dx/ui/endgame/dx_endgame_macros.dta
+#define DX_ENDGAME_HANDLES
+(
+   (dx_endgame_enter
+      {set $dx_num_songs_this_session
+         {++ $dx_num_songs_this_session}
+      }
+
+      {dx_presence_manager}
+
+      ;clean up stuffies
+      {dx_countdown_var_reset}
+      ;force close solo boxes if it's still up when exiting game
+      {beatmatch foreach_active_player $player
+         {dx_final_percent_report $player {$player instrument}}
+      }
+      ;force close dx settings if entered endgame from linoscal
+      {if $in_dx_settings
+         {leave_dx_settings}
+      }
+
+      {$this dx_mid_setlist_swapper}
+
+      {$this dx_song_label_setter}
+      {$this dx_show_next_song}
+      #ifndef HX_WII
+      {$this dx_endgame_play_player_sfx}
+      {$this dx_endgame_diff_setter}
+      #endif
+
+      ;idk why we removed this. it made it red
+      ;{if {modifier_mgr is_modifier_active mod_brutalmode}
+      ;   {header_song_bg_refract.mat set_color {pack_color 0.85 0.05 0.05}}
+      ;   {highscore.mat set_color {pack_color 0.85 0.05 0.05}}
+      ;   {header_song_bg.mat set_color {pack_color 0.85 0.05 0.05}}
+      ;}
+      {$this dx_auto_endgame}
+      {dx_admin_mode}
+   )
+   (dx_endgame_exit
+      ;delete moggclips
+      {foreach $entry (fc_clip nice_clip jurgen_clip)
+         {if {exists $entry} {delete $entry}}
+      }
+      ;;TODO: Clear it elsewhere, crashes game if restarting
+      ;;clear out note trackers on exit
+      ;{foreach $entry (guitar drum real_drum real_guitar bass real_bass keys real_keys)
+      ;   {set_var {sprint $entry "_note_tracker"} {array 0}}
+      ;   {set_var {sprint $entry "_note_tracker_2"} {array 0}}
+      ;   {push_back {eval {var {sprint $entry "_note_tracker"}}} (none none)}
+      ;}
+      ;delete next song labels
+      {do
+         ($icons (guitar bass drum keys vocals real_guitar real_bass real_keys real_drum band))
+         {foreach $entry $icons
+            {do
+               ($lbl {sprint "dx_" $entry ".lbl"})
+               ($diff_lbl {sprint "dx_" $entry "_diff.lbl"})
+               {if {exists $lbl} {delete $lbl}}
+               {if {exists $diff_lbl} {delete $diff_lbl}}
+            }
+         }
+      }
+   )
+
+   (dx_swap_venue_mid_setlist
+      {if 
+         {&&
+            {||
+               {! {gamemode in_mode practice}}
+               {! {gamemode in_mode trainer}}
+            }
+            {> {meta_performer num_songs} 1}
+            {! {meta_performer is_set_complete}}
+            {session_mgr is_leader_local} ;set stuff only if host of the lobby
+         }
+         {if $dx_venue_swap
+            {dx_venue_setter}
+         }
+         {dx_randomize_backup_band} ;i moved the other one to outro vignette finished :)
+      }
+   )
+   (dx_auto_endgame
+      {if
+         {&&
+            $dx_auto_endgame
+            {|| ;modes to always autoskip in
+               {modifier_mgr is_modifier_active mod_karaoke}
+               {modifier_mgr is_modifier_active mod_fakejuke}
+               {modifier_mgr is_modifier_active mod_auto_play}
+            }
+         }
+         {if $dx_auto_endurance
+            {dx_uptime_onscreen}
+         }
+         {do
+            ($once FALSE) ;this is hacky but idc, it only should run once per user loop, regardless of # of users
+            {script_task kTaskSeconds
+               (delay {if_else {modifier_mgr is_modifier_active mod_karaoke} 0 7})
+               (script ;fake press green to continue by calling it manually
+                  {user_mgr foreach_user $user
+                     {if {&& $user {! $once}}
+                        {set $once TRUE}
+                        {$this button_down $user kPad_X kAction_Confirm {$user get_pad_num}}
+                     }
+                  }
+               )
+            }
+         }
+      }
+   )
+
+   ;endgame moggclip playback
+   (fc_clip
+      {unless {== $dx_fullcombo_sound dx_none}
+         ;{dx_log_writer default {sprint "Playing FC Sound. Congrats"}}
+         {unless {|| {exists jurgen_clip} {exists nice_clip} {exists fc_clip}}
+            {new MoggClip fc_clip}
+         }
+         {if {exists fc_clip}
+            {fc_clip set file {sprint "sfx/streams/fc/" $dx_fullcombo_sound ".mogg"}}
+            {fc_clip set loop FALSE}
+            {fc_clip set volume -8}
+            {fc_clip play}
+         }
+      }
+   )
+   (nice_clip
+      ;{dx_log_writer default {sprint "Playing Nice Sound. Nice"}}
+      {unless {|| {exists jurgen_clip} {exists nice_clip} {exists fc_clip}}
+         {new MoggClip nice_clip}
+      }
+      {if $dx_nice_sound
+         {if {exists nice_clip}
+            {nice_clip set file "sfx/streams/fc/nice_clip.mogg"}
+            {nice_clip set loop FALSE}
+            {nice_clip set volume -0}
+            {nice_clip play}
+         }
+      }
+   )
+   (jurgen_clip
+      ;{dx_log_writer default {sprint "Playing Jurgen Sound. Skill Issue"}}
+      {unless {|| {exists jurgen_clip} {exists nice_clip} {exists fc_clip}}
+         {new MoggClip jurgen_clip}
+      }
+      {set $jurgennumber {random_int 0 4}}
+      {if {<= $jurgennumber 1}
+         {set $jurgennumber 1}
+      }
+      {if {>= $jurgennumber 3}
+         {set $jurgennumber 3}
+      }
+      {if $dx_jurgen_sound
+         {if {exists jurgen_clip}
+            {jurgen_clip set file {sprint "sfx/streams/fc/jurgen_clip" $jurgennumber ".mogg"}}
+            {jurgen_clip set loop FALSE}
+            {jurgen_clip set volume -8}
+            {jurgen_clip play}
+         }
+      }
+   )
+   (dx_endgame_play_player_sfx
+      {dx_log_writer info {sprint "Checking player thresholds for sound effects - FC: " $dx_someone_fcd " NICE: " $dx_someone_niced " JURGEN: " $dx_someone_jurgend}}
+      {cond
+         ($dx_someone_fcd
+            {coop_endgame_panel fc_clip}
+         )
+         ($dx_someone_niced
+            {coop_endgame_panel nice_clip}
+         )
+         ($dx_someone_jurgend
+            {coop_endgame_panel jurgen_clip}
+         )
+      }
+   )
+   
+   (dx_lbl_maker
+      ($label $x $y $align)
+      {new BandLabel $label}
+      {$label set resource_name pentatonic_outline}
+      {$label set alt_style_enabled TRUE}
+      {$label set alt_font_resource_name instruments_icons}
+      {if {! {exists song_diff_color.color}}
+         {new UIColor song_diff_color.color}
+         {song_diff_color.color set color {pack_color 1 1 1}}
+      }
+      {if {! {exists song_grey_color.color}}
+         {new UIColor song_grey_color.color}
+         {song_grey_color.color set color {pack_color 0.2 0.2 0.2}}
+      }
+      {$label set markup TRUE}
+      {$label set_showing TRUE}
+      {$label set_local_scale 1 1 1}
+      {$label set_local_pos $x 0 $y}
+      {$label set set_token_fmt $content}
+      {$label set text_size 30}
+      {$label set alt_text_size 30}
+      {$label set alt_z_offset 0}
+      {$label set fit_type 2}
+      {$label set alignment kMiddleCenter}
+      {$label set width 300}
+      {$label set height 40}
+      {$label set alpha 1}
+      ;{$label set alt_text_color song_diff_color.color}
+      {universal.grp add_object $label}
+   )
+   
+   (dx_diff_lbl_maker
+      ($label $x $y)
+      {new BandLabel $label}
+      {$label set resource_name pentatonic_outline}
+      {$label set alt_style_enabled TRUE}
+      {$label set alt_font_resource_name #ifdef HX_WII instruments_icons #else instruments_icons_rings #endif}
+      {if {! {exists song_diff_color.color}}
+         {new UIColor song_diff_color.color}
+         {song_diff_color.color set color {pack_color 1 1 1}}
+      }
+      {$label set markup TRUE}
+      {$label set_showing TRUE}
+      {$label set_local_scale 1 1 1}
+      {$label set_local_pos $x 0 $y}
+      {$label set set_token_fmt $content}
+      {$label set text_size 32}
+      {$label set alt_text_size 40}
+      {$label set alt_z_offset 4}
+      {$label set fit_type 2}
+      {$label set alignment kMiddleCenter}
+      {$label set width 300}
+      {$label set height 40}
+      {$label set alpha 1}
+      ;{$label set color_override now_play_color.color}
+      {universal.grp add_object $label}
+   )
+   
+   (dx_endgame_diff_setter
+      {if ;only run when we have a song in the queue
+         {&&
+            {> {meta_performer num_songs} 1}
+            {gamemode in_mode qp_coop}
+            {!= {meta_performer num_completed} {meta_performer num_songs}}
+            {meta_performer song_id}
+         }
+         {do
+            ($pos_arr_x (220 260 300 340 380 220 260 300 340 380))
+            ($pos_arr_y (200 200 200 200 200 149 149 149 149 149))
+            ($icons (guitar bass drum keys vocals real_guitar real_bass real_drum real_keys band))
+
+            ;create each label with above order of x, y, and name
+            {foreach_int $i 0 {size $icons}
+               {do
+                  ($icn {elem $icons $i})
+                  ($x {elem $pos_arr_x $i})
+                  ($y {elem $pos_arr_y $i})
+                  ($lbl {sprint "dx_" $icn ".lbl"})
+                  ($diff_lbl {sprint "dx_" $icn "_diff.lbl"})
+                  {if {&& {! {exists $lbl}} {! {exists $diff_lbl}}}
+                     {$this dx_lbl_maker $lbl $x $y}
+                     {$this dx_diff_lbl_maker $diff_lbl $x $y}
+                  }
+                  {if {== $icn band} ;this is because the band icon is in another font
+                     {dx_band.lbl set alt_font_resource_name #ifdef HX_WII instruments_icons #else instruments_icons_rings #endif}
+                  }
+                  {$lbl set_token_fmt {sprint "diff_icon_" $icn}}
+               }
+            }
+
+            ;set diffs when mid-setlist and the next song has a valid song_id
+            {foreach $entry $icons
+               {do
+                  ($part {if_else {== $entry real_drum} drum $entry})
+                  {{sprint "dx_" $entry "_diff.lbl"} set_token_fmt
+                     {sprint "dx_diff_" {song_mgr rank_tier_for_song {meta_performer song} $part}}
+                  }
+                  {if {!= $entry band}
+                     {{sprint "dx_" $entry ".lbl"} set alt_text_color 
+                        {if_else {song_mgr part_plays_in_song {meta_performer song} $part}
+                           song_diff_color.color
+                           song_grey_color.color
+                        }
+                     }
+                  }
+               }
+            }
+
+            ;hotswap vocals icon based on vocal parts
+            {dx_vocals.lbl set_token_fmt
+               {switch {song_mgr num_vocal_parts {meta_performer song}}
+                  (0 diff_icon_solo_vocals)
+                  (1 diff_icon_solo_vocals)
+                  (2 diff_icon_harm2)
+                  (3 diff_icon_harm3)
+               }
+            }
+
+         }
+      }
+   )
+   (dx_song_label_setter
+      ; dx - add song speed percent if above 100% to the song name by fetching the name directly
+      ;{dx_log_writer default {sprint "Endgame Reached. Number of songs completed this session: " $dx_num_songs_this_session " - Gamemode: " $dx_gamemode}}
+      {if_else {== $speedmod 1}
+         {song.lbl set_song_name {meta_performer get_completed_song}}
+         {song.lbl set_token_fmt eg_spd_songname_format
+            {{song_mgr get_meta_data {meta_performer get_completed_song}} title}
+            {int {'+' 0.5 {'*' $speedmod 100}}}
+         }
+      }
+   )
+   (dx_show_next_song
+      {songs.lbl set leading 0.9}
+      {songs.lbl set wrap_width 1000}
+      {songs.lbl set width 1000}
+      {songs.lbl set fixed_width 500}
+      {songs.lbl set fixed_length 1000}
+      ;reset to default state
+      {songs.lbl set_local_pos_index 2 173.57}
+      {song.lbl set_local_pos_index 2 179.24}
+      {song.lbl set_local_scale 1.0 1.0 1.0}
+      {songs.lbl set_token_fmt os_blnk}
+
+      {if {> {meta_performer num_songs} 1}
+         {do
+            ($num {meta_performer num_songs})
+            ($completed {meta_performer num_completed})
+            ($set_complete {== $completed $num})
+            ($song {meta_performer song})
+            ($id {meta_performer song_id})
+            ($title unknown_song)
+            {if $set_complete
+               {songs.lbl set_token_fmt tour_event_songs $completed $num}
+            }
+            {if {! $set_complete}
+               {if $id
+                  {set $title {symbol {{song_mgr get_meta_data $song} title}}}
+               }
+               {songs.lbl set_token_fmt tour_event_songs_next $completed $num $title}
+               {songs.lbl set_local_pos_index 2 180.57}
+               {song.lbl set_local_pos_index 2 193.24}
+               {song.lbl set_local_scale 0.65 1.0 0.65} ;smaller than normal
+            }
+         }
+      }
+   )
+)
 #include endgame_helpers.dta
 {new NextSongPanel
    coop_endgame_panel
@@ -16,15 +359,8 @@
       {platform_mgr set_notify_ui_location kOSNotifyBottomCenter}
       {$this set_results}
       {$this dx_endgame_enter}
-      {$this dx_song_label_setter}
-      #ifndef HX_WW
-      {$this dx_endgame_play_player_sfx}
-      #endif
-      {$this dx_endgame_diff_setter}
       {overshell set_use_extended_mic_arrows TRUE}
-      {songs.lbl set fixed_length 1000}
       {set $dx_restart_allowed TRUE}
-      DX_ENDGAME_SHOW_NEXT_SONG
       {if {&& {gamemode get loop_setlist} {meta_performer is_set_complete}}
          {meta_performer restart}
       }

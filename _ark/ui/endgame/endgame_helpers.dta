@@ -156,12 +156,57 @@
                   {if $active
                      {do
                         ($player {$user player})
+                        ($icon {$user get_track_icon})
+                        ($pass
+                           {||
+                              {== $icon "G"} {== $icon "g"}
+                              {== $icon "B"} {== $icon "b"}
+                              {== $icon "K"} {== $icon "k"}
+                              {== $icon "D"} {== $icon "d"}
+                              {== $icon $dx_icon_guitar} {== $icon $dx_icon_real_guitar}
+                              {== $icon $dx_icon_bass} {== $icon $dx_icon_real_bass}
+                              {== $icon $dx_icon_drum} {== $icon $dx_icon_drum_pro}
+                              {== $icon $dx_icon_vocals} ;this shouldnt be here right? yes it should
+                              {== $icon $dx_icon_keys} {== $icon $dx_icon_real_keys}
+                           }
+                        )
+                        ($percent {dx_round_percent {'*' 100 {{$user player} notes_hit_fraction}}})
+                        ($diff_sym {$user get_difficulty_sym})
+                        ($diff {localize {sprint $diff_sym "_short"}})
                         {player_details.lbl set_intro_name $user}
-                        {instrument.lbl set icon {$user get_track_icon}}
-                        {instrument_details.lbl set icon {$user get_track_icon}}
-                        DX_ENDGAME_NOTES_HIT_LABEL_SETTER
+                        {instrument.lbl set icon $icon}
+                        {instrument_details.lbl set icon $icon}
+
+                        ;dx hard set the player note percent ourselves
+                        {noteshit_details.lbl set_token_fmt
+                           {if_else
+                              {&&
+                                 {||
+                                    {modifier_mgr is_modifier_active mod_fastermode}
+                                    {modifier_mgr is_modifier_active mod_brutalmode}
+                                    {modifier_mgr is_modifier_active mod_precision}
+                                    {modifier_mgr is_modifier_active mod_calibration}
+                                    {modifier_mgr is_modifier_active mod_chmode}
+                                 }
+                                 $pass
+                              }
+                              {sprint $percent "% " $diff}
+                              {sprint $percent "%"}
+                           }
+                        }
+                        ;dx check and queue up moggclips
                         {if {!= {{$user player} instrument} vocals}
-                           DX_ENDGAME_CHECK_FOR_PLAYER_SFX
+                           {cond
+                              ({== {/ {$player longest_streak} {$player get_gem_count}} 1.0}
+                                 {set $dx_someone_fcd TRUE}
+                              )
+                              ({== {int {'*' 100 {{$user player} notes_hit_fraction}}} 69}
+                                 {set $dx_someone_niced TRUE}
+                              )
+                              ({<= {int {'*' 100 {{$user player} notes_hit_fraction}}} 60}
+                                 {set $dx_someone_jurgend TRUE}
+                              )
+                           }
                         }
                         {do
                            ($award_sym {coop_endgame_panel get_performance_award $slot})
@@ -170,8 +215,37 @@
                         }
                         {$user set_last_hit_fraction {$player notes_hit_fraction}}
                         {solostars.sd set_values {{$user player} num_stars} 5}
-                        {difficulty_details.lbl set text_token {$user get_difficulty_sym}}
-                        DX_ENDGAME_DIFFICULTY_LABEL_SETTER
+                        {difficulty_details.lbl set text_token $diff_sym}
+
+                        ;dx report different modifiers on endgame
+                        {if $pass
+                           {do
+                              ($is_guitar {|| {== $icon "g"} {== $icon "b"} {== $icon "G"} {== $icon "B"}})
+                              ($is_drum {|| {== $icon "d"} {== $icon "D"}})
+                              {cond
+                                 ({modifier_mgr is_modifier_active mod_auto_play}
+                                    {difficulty_details.lbl set_token_fmt eg_mod_format {localize $diff_sym} {localize mod_auto_play}})
+                                 ({&& $is_drum {modifier_mgr is_modifier_active mod_auto_kick}}
+                                    {difficulty_details.lbl set_token_fmt eg_mod_format {localize $diff_sym} {localize mod_auto_kick}})
+                                 ({&& $is_guitar {modifier_mgr is_modifier_active mod_chmode}}
+                                    {difficulty_details.lbl set_token_fmt mod_chmode})
+                                 ({modifier_mgr is_modifier_active mod_brutalmode}
+                                    {difficulty_details.lbl set_token_fmt mod_brutalmode})
+                                 ({modifier_mgr is_modifier_active mod_precision}
+                                    {difficulty_details.lbl set_token_fmt mod_precision})
+                                 ({modifier_mgr is_modifier_active mod_calibration}
+                                    {difficulty_details.lbl set_token_fmt mod_calibration})
+                                 ({modifier_mgr is_modifier_active mod_fastermode}
+                                    {difficulty_details.lbl set_token_fmt eg_acc_format
+                                       {localize mod_fastermode_topspeed}
+                                       {int {'+' 0.5 {'*' $speedmod_top 100}}}
+                                    }
+                                 )
+                                 kDataUnhandled
+                              }
+                           }
+                        }
+
                         {if_else {gamemode in_mode tour}
                            {do
                               {{tour performer} update_tour_player_contribution_label

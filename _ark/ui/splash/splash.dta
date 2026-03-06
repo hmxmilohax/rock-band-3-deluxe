@@ -1,4 +1,166 @@
-#include ../../dx/ui/splash/dx_splash_handles.dta
+#define DX_SPLASH_PANEL_HANDLES
+(
+   (lbl_maker
+      ($type $obj $x $y $align $size $w $h $colorname $r $g $b $content)
+      {new $type $obj}
+      {$obj set resource_name "pentatonic_outline"}
+      {$obj set alt_style_enabled TRUE}
+      {$obj set alt_font_resource_name pentatonic_outline}
+      {if {! {exists $colorname}}
+         {new UIColor $colorname}
+         {$colorname set color {pack_color $r $g $b}}
+      }
+      {$obj set markup TRUE}
+      {$obj set_showing TRUE}
+      {$obj set_local_scale 1 1 1}
+      {$obj set_local_pos $x 0 $y}
+      {if {== $type BandLabel}
+         {$obj set_token_fmt $content}
+      }
+      {if {== $type BandButton}
+         {$obj set text_token $content}
+      }
+      {$obj set text_size $size}
+      {$obj set alt_text_size 15}
+      {$obj set alt_z_offset -4}
+      {$obj set fit_type 2}
+      {$obj set alignment $align}
+      {$obj set width $w}
+      {$obj set height $h}
+      {$obj set alpha 1}
+      {$obj set color_override $colorname}
+      {$obj set alt_text_color $colorname}
+      {text.grp add_object $obj}
+   )
+   (dx_splash_panel_enter
+      {do
+         ($num {random_int 0 500})
+         ($pass
+            #ifdef _SHIP
+            {&& {== $num 69} $debug_mode} ;nice
+            #else
+            FALSE ;don't do in debug
+            #endif
+         )
+         {if_else $pass
+            {$this beta_text $num}
+            {$this splash_text} ;also handles logo and printing build
+         }
+      }
+
+      {dx_optimize_splash {{sv8_panel find sv8_a} find cityscape_ao}}
+
+      ;we are going to steal THE MOON
+      {{{{sv8_panel find sv8_a} find cityscape_ao} find moon.mesh} set_local_scale_index 0 2.5}
+      {{{{sv8_panel find sv8_a} find cityscape_ao} find moon.mesh} set_local_scale_index 2 1.3}
+   )
+   (splash_text
+      {do
+         ($num 181) ;increment this number based on the number of dx_splash entries in locale
+         {$this lbl_maker
+            BandButton ;type
+            dx_splashtext.btn ;name
+            197.5 -140 ;x/y position
+            kMiddleCenter ;alignment
+            30 ;text size
+            400 30 ;width/height
+            splash.color ;color name
+            0.96 0.90 0.28 ;rgb color
+            {sprint "dx_splash_" {random_int 1 $num}}
+         }
+
+         {start.btn set_showing FALSE}
+         {dx_splashtext.btn set_local_rot 35 12.5 -25}
+
+         {new PropAnim splash_text.anim}
+         {splash_text.anim add_keys dx_splashtext.btn (position) kPropVector3}
+
+         {splash_text.anim set_key_val dx_splashtext.btn (position) 0 (197.5 0 140)}
+         {splash_text.anim set_key_val dx_splashtext.btn (position) 1 (197.5 -50 140)}
+         {splash_text.anim set_key_val dx_splashtext.btn (position) 2 (197.5 0 140)}
+         {splash_text.anim set_interp_type dx_splashtext.btn (position) kPropHermite}
+
+         {splash_text.anim set rate kTaskUISeconds}
+         {splash_text.anim set_frame 0}
+         {splash_text.anim animate (loop 0 2) (period 1) (units kTaskUISeconds)}
+      }
+      ;call the rest of the flow (not done if beta text)
+      {$this set_logo}
+      {$this print_build dx_build.lbl}
+   )
+   (beta_text
+      ($num)
+      {$this lbl_maker
+         BandButton ;type
+         dx_splashtext.btn ;name
+         0 63 ;x/y position
+         kMiddleCenter ;alignment
+         22.5 ;text size
+         600 30 ;width/height
+         beta.color ;color name
+         1 0 0 ;rgb color
+         os_betaegg
+      }
+      {{{{sv8_panel find sv8_a} find cityscape_ao} find logo.mesh} set_showing FALSE}
+      {rb3.lbl set_showing TRUE}
+      {if {>= $num 34}
+         {rb3.lbl set_token_fmt os_rb3dx}
+      }
+   )
+   (print_build
+      ($lbl)
+      ;setup build label in case GoCentral is overriding our motd
+      {if {! {exists $lbl}}
+         {$this lbl_maker
+            BandLabel ;type
+            $lbl ;name
+            395 -215 ;x/y position
+            kBottomRight ;alignment
+            15 ;text size
+            1000 40 ;width/height
+            build.color ;color name
+            1 1 1 ;rgb color
+            rb3e_mod_string
+         }
+      }
+      {dx_buildversion_label $lbl}
+   )
+   (set_logo
+      {do
+         ($root "dx/custom_textures/_additional_textures/")
+         {set_this {{sv8_panel find sv8_a} find cityscape_ao}}
+         ; set main menu logo based on season
+         {if_else $dx_seasonal_logos
+            {do
+               {get_date_time $year $month $day $hour $minute $second}
+               {cond
+                  ({&& {== $month 2} {>= $day 7} {<= $day 17}} {set $dx_season valentines})
+                  ({&& {== $month 4} {== $day 1}} {set $dx_season aprilfools})
+                  ({== $month 6} {set $dx_season pride})
+                  ({== $month 10} {set $dx_season halloween})
+                  ({== $month 12} {set $dx_season christmas})
+                  (else {set $dx_season standard})
+               }
+            }
+            {set $dx_season standard}
+         }
+         {logo.tex set_bitmap {sprint $root "logo-" $dx_season #ifdef RB3E "-rb3e" #endif ".png"}}
+         {if {== $dx_season halloween}
+            {moon.tex set_bitmap {sprint $root "blood_moon.png"}}
+         }
+         {if {== $dx_season christmas}
+            {dx_get_festive {{sv8_panel find sv8_a} find cityscape_ao}}
+         }
+      }
+   )
+   (dx_splash_panel_exit
+      {foreach $entry (animate_splash dx_build.lbl custom.color splash_text.anim dx_splashtext.btn)
+         {if {exists $entry}
+            {delete $entry}
+         }
+      }
+   )
+)
 #define kSplashScreen_Entered (0)
 #define kSplashScreen_ActivateSaveLoad (1)
 #define kSplashScreen_StartOvershell (2)
@@ -38,53 +200,75 @@
    (audio TRUE)
    (loop FALSE)
    (videos
-      #ifdef HX_WII
-      dx_intro_movie_wii
-      #else
       {switch $dx_current_intro_movie
-         (deluxe dx_intro_movie)
+         ((deluxe disabled) #ifdef HX_WII dx_intro_movie_wii #else dx_intro_movie #endif)
          (vanilla intro_movie)
-         (disabled dx_intro_movie)
-         kDataUnhandled
+         intro_movie
       }
-      #endif
    )
    (should_leave FALSE)
    (should_leave_count 0)
-   DX_SPLASH_HANDLES
-   (enter
-      {rnd set_sync 1}
-      {if_else {== $dx_current_intro_movie disabled}
-         #ifdef HX_WII
-         {$this leave}
-         #else
-         {$this dx_splash_screen_enter}
-         #endif
+   (wii_go_to_main
+      ($screen)
+      {if_else {content_mgr is_sdcard_inserted}
          {do
-            #ifdef HX_PS3
-            ; load stuff early, these cause issues on 360 so ps3 only
-            ;{saveload_mgr activate}
-            {content_mgr start_refresh}
-            #endif
-            {profile_mgr set_overscan TRUE}
+            {startup_sdmode_screen set final_screen splash_screen}
+            {ui goto_screen startup_sdmode_screen}
          }
+         {ui goto_screen $screen}
       }
    )
-   (movie_done
-      #ifdef HX_WII
-      {$this leave}
-      #else
-      {$this dx_splash_screen_enter}
+   (leave
+      ($screen)
+      #ifdef _SHIP
+      {if {! [should_leave]}
+         {saveload_mgr show_save_icon}
+      }
       #endif
+      {$this wii_go_to_main $screen}
    )
-   #ifndef HX_WII
+   (dx_movie_enter
+      {do
+         ($screen
+            {if_else #ifndef HX_WII {&& {! $dx_black_menu} $dx_splash_screen} #else TRUE #endif ;always go to splash if wii
+               splash_screen ; dx - goes to the splash screen if enabled
+               meta_loading_main_screen ; dx - skips the intro movie instantly if disabled
+            }
+         )
+         {saveload_mgr activate} ; dx - load save file early
+         #ifdef HX_PS3
+         {content_mgr start_refresh} ; dx - start content enumeration early, this causes cache issues on 360 so ps3 only
+         #endif
+         {profile_mgr set_overscan TRUE}
+         #ifdef HX_WII
+         {$this leave $screen}
+         #else
+         {ui goto_screen $screen}
+         #endif
+      }
+   )
+   (enter
+      {rnd set_sync 1}
+      ;{rnd toggle_heap}
+      {if {== $dx_current_intro_movie disabled}
+         {$this dx_movie_enter}
+      }
+      {if {!= $dx_current_intro_movie disabled}
+         #ifdef HX_PS3
+         ; load stuff early, these cause issues on 360 so ps3 only
+         ;{saveload_mgr activate}
+         {content_mgr start_refresh}
+         #endif
+         {profile_mgr set_overscan TRUE}
+      }
+   )
+   (movie_done {$this dx_movie_enter})
    (enter
       {set [should_leave] FALSE}
       {set [should_leave_count] 0}
       {platform_mgr disable_xmp}
       kDataUnhandled
    )
-   #endif
    (exit
       {rnd set_sync $dx_vsync}
       #ifdef HX_PS3
@@ -99,11 +283,7 @@
    )
    (BUTTON_DOWN_MSG
       {if {'||' {== $action kAction_Start} {== $action kAction_Confirm}}
-         #ifdef HX_WII
-         {$this leave}
-         #else
-         {$this dx_splash_screen_enter}
-         #endif
+         {$this dx_movie_enter}
       }
    )
    #ifdef HX_WII
@@ -113,13 +293,7 @@
             {do
                {saveload_mgr create_vf_cache}
                {saveload_mgr hide_save_icon}
-               {if_else {content_mgr is_sdcard_inserted}
-                  {do
-                     {startup_sdmode_screen set final_screen splash_screen}
-                     {ui goto_screen startup_sdmode_screen}
-                  }
-                  {ui goto_screen splash_screen}
-               }
+               {$this dx_movie_enter}
             }
          }
          {if [should_leave]
@@ -128,26 +302,6 @@
       )
       #endif
    #endif
-   (leave
-      #ifdef HX_WII
-         #ifdef _SHIP
-         {if {! [should_leave]}
-            {saveload_mgr show_save_icon}
-         }
-         {set [should_leave] TRUE}
-         #else
-         {if_else {content_mgr is_sdcard_inserted}
-            {do
-               {startup_sdmode_screen set final_screen splash_screen}
-               {ui goto_screen startup_sdmode_screen}
-            }
-            {ui goto_screen splash_screen}
-         }
-         #endif
-      #else
-      {ui goto_screen splash_screen}
-      #endif
-   )
 }
 {new BandScreen
    intro_movie_helper
@@ -179,16 +333,6 @@
    )
    DX_SPLASH_PANEL_HANDLES
    (enter
-      ;   #ifdef HX_PS3
-      ;   {start.btn
-      ;      set
-      ;      text_token
-      ;      {if_else
-      ;         {trophy_registered}
-      ;         shell_press_start_to_rock
-      ;         trophy_initialization_please_wait}}
-      ;   {saveload_mgr activate}
-      ;   #endif
       #ifdef HX_WII
       {wiiprofile_panel req_delay}
       {if
@@ -214,15 +358,6 @@
       #endif
    )
    (poll
-      ;   #ifdef HX_PS3
-      ;   {if
-      ;      {&&
-      ;         {!=
-      ;            {start.btn get text_token}
-      ;            shell_press_start_to_rock}
-      ;         {trophy_registered}}
-      ;      {start.btn set text_token shell_press_start_to_rock}}
-      ;   #endif
       {if
          {&&
             {! {ui in_transition}}
@@ -319,6 +454,14 @@
                }
             }
          )
+	 (kSplashScreen_WiiFriendsPrompt
+            {unless {ui_event_mgr has_transition_event go_to_wiifriends_screen}
+               {do
+                  {overshell set_active_status kOvershellInShell}
+                  {wiifriends_screen go_to_import_friends_screen}
+               }
+            }
+         )
          (
             (kSplashScreen_EndOvershell)
             {overshell set_active_status kOvershellInactive}
@@ -359,16 +502,6 @@
                   {ui push_screen first_time_calibration}
                )
                {ui goto_screen main_hub_screen}
-            }
-         )
-         #endif
-         #ifdef HX_WII
-         (kSplashScreen_WiiFriendsPrompt
-            {unless {ui_event_mgr has_transition_event go_to_wiifriends_screen}
-               {do
-                  {overshell set_active_status kOvershellInShell}
-                  {wiifriends_screen go_to_import_friends_screen}
-               }
             }
          )
          #endif

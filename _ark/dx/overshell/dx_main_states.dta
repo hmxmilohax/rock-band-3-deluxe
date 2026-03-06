@@ -8,8 +8,7 @@
          os_track_theme
          os_features
          os_advanced
-         ;only show the controller menu when not in-game and only on applicable instruments or when faking is active
-         {if_else {&& {session_mgr is_local} {! {session is_in_game}}} ;prevents soft-lock, swapping instrument type in-game would prevent player from rejoining
+         {if_else {! {session is_in_game}} ;prevents soft-lock, swapping instrument type in-game would prevent player from rejoining
             os_controller
             0
          }
@@ -47,7 +46,8 @@
 
    (dxState_AudioSFX
       (view
-         os_toggle_synth
+         {if_else $dx_synth_enabled os_synth_on os_synth_off}
+         os_select_synth_sound
          {switch $dx_selected_guitar_fx
             (0 os_cyclefx_chorus) (1 os_cyclefx_wah) (2 os_cyclefx_flanger)
             (3 os_cyclefx_delay) (4 os_cyclefx_none) (5 os_cyclefx_do_nothing)
@@ -74,13 +74,58 @@
          (os_cyclefx_chorus CYCLE_MSG)
          (os_cyclefx_none CYCLE_MSG)
          (os_cyclefx_do_nothing CYCLE_MSG)
-         (os_toggle_synth
-            {toggle_instrument_synth}
-            {change_instrument_synth_volume 127}
+         (os_synth
+            {set $dx_synth_enabled {! $dx_synth_enabled}}
+            {dx_update_synth}
+         )
+         (os_select_synth_sound
+            {dx_state dxState_SynthSelect}
          )
       )
       (cancel
          {dx_state dxState_InGameFeatures}
+      )
+   )
+
+   (dxState_SynthSelect
+      (view
+         os_none
+         os_none
+         os_none
+         os_none
+         os_none
+         os_none
+         os_none
+      )
+      (message {sprintf {localize current_texture} {localize $dx_selected_synth}})
+      (enter
+         {do
+            ($options {array 0})
+            ($i 0)
+            {foreach $inst {find $syscfg sound instruments chamberlin_selections}
+               {if {!= $inst chamberlin_selections}
+                  {push_back $options {elem $inst 0}}
+               }
+            }
+            {$current_list set_data $options}
+            {$current_list refresh}
+            {foreach $option $options
+               {if {== $dx_selected_synth $option}
+                  {$current_list set_selected $i}
+               }
+               {++ $i}
+            }
+         }
+      )
+      (select
+         (_fallthrough
+            {set $dx_selected_synth {$component selected_sym}}
+            {dx_update_synth}
+            {dx_state dxState_AudioSFX}
+         )
+      )
+      (cancel
+         {dx_state dxState_AudioSFX}
       )
    )
 
@@ -168,22 +213,62 @@
          {dx_state dxState_FullCombo}
       )
    )
+   
+#define CALIB_LEFT
+(
+   ;grab current calibration number
+   {set $i
+      {switch $dx_calibration_mode
+         (video {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}})
+         (audio {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}})
+         0
+      }
+   }
+   ;add -1 or +1 when pressing left/right dpad
+   {set $i
+      {switch $action
+         ((kAction_Left kAction_Down) {- $i 1})
+         ((kAction_Right kAction_Up) {+ $i 1})
+      }
+   }
+   ;limit calibration from -300 to 300
+   {if {> $i 300} {set $i 300}}
+   {if {< $i -300} {set $i -300}}
+   ;set new calibration number
+   {switch $dx_calibration_mode
+      (video {profile_mgr set_excess_video_lag $i})
+      (audio {profile_mgr set_excess_audio_lag $i})
+      kDataUnhandled
+   }
+   ;reset average for judgments
+   {set $dx_reset_average_jdj TRUE}
+   {dx_reset_score}
+)
 
    (dxState_CalibrationInGame
       (view
-         {sprintf {localize os_calibrate_video} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}}
-         {sprintf {localize os_calibrate_audio} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}
+         {if_else {== {ui current_screen} game_screen}
+            {sprintf {localize os_calibrate_video} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}}
+            {sprintf {localize os_calibrate_video_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}}
+         }
+         {if_else {== {ui current_screen} game_screen}
+            {sprintf {localize os_calibrate_audio} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}
+            {sprintf {localize os_calibrate_audio_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}}
+         }
          overshell_calibration
       )
+      (message none)
       (enter
          {set $linoscal TRUE}
          {if {exists beatmatch}
             {beatmatch set_overshell_pause FALSE}
          }
-         {$this iterate Mesh $m {$m set_showing FALSE}}
-         {$this iterate UIList $l
-            {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}}
-            {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+         {if {== {ui current_screen} game_screen}
+            {$this iterate Mesh $m {$m set_showing FALSE}}
+            {$this iterate UIList $l
+               {$l set_local_pos_index 0 {+ {$l get_local_pos_index 0} 200}}
+               {$l set_local_pos_index 2 {+ {$l get_local_pos_index 2} 250}}
+            }
          }
       )
       (button
@@ -201,14 +286,38 @@
                (2
                   {set $linoscal FALSE}
                   {set $dx_reset_average_jdj FALSE}
-                  {$this iterate Mesh $m {$m set_showing TRUE}}
-                  {$this iterate UIList $l
-                     {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
-                     {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+                  {if {== {ui current_screen} game_screen}
+                     {$this iterate Mesh $m {$m set_showing TRUE}}
+                     {$this iterate UIList $l
+                        {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+                        {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+                     }
                   }
                   {$this show_enter_calibration} ;enter vanilla calibration screen
                )
             }
+         )
+         (kAction_Left
+            {switch {$current_list selected_data}
+               (0
+                  {set $dx_calibration_mode video}
+               )
+               (1
+                  {set $dx_calibration_mode audio}
+               )
+            }
+            CALIB_LEFT
+         )
+         (kAction_Right
+            {switch {$current_list selected_data}
+               (0
+                  {set $dx_calibration_mode video}
+               )
+               (1
+                  {set $dx_calibration_mode audio}
+               )
+            }
+            CALIB_LEFT
          )
          (kAction_Confirm CALIB_LIST)
       )
@@ -218,10 +327,12 @@
          {if {exists beatmatch}
             {beatmatch set_overshell_pause {|| {modifier_mgr is_modifier_active mod_nopause} {modifier_mgr is_modifier_active mod_fakejuke} {modifier_mgr is_modifier_active mod_karaoke}}}
          }
-         {$this iterate Mesh $m {$m set_showing TRUE}}
-         {$this iterate UIList $l
-            {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
-            {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+         {if {== {ui current_screen} game_screen}
+            {$this iterate Mesh $m {$m set_showing TRUE}}
+            {$this iterate UIList $l
+               {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+               {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+            }
          }
          {$this show_options_av_settings}
       )
@@ -231,10 +342,12 @@
       (view
          {if_else {== $dx_calibration_mode video} {sprintf {localize os_calibrate_video_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}}} os_blnk}
          {if_else {== $dx_calibration_mode audio} {sprintf {localize os_calibrate_audio_setting} {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}}} os_blnk}
-         os_exit_cal_one ;message telling user to press start to exit
-         os_exit_cal_two
+         ;message telling user to press start to exit
+         {if_else {== {ui current_screen} game_screen} os_exit_cal_one os_blnk}
+         {if_else {== {ui current_screen} game_screen} os_exit_cal_two os_blnk}
       )
       (scroll_disabled)
+      (message none)
       (enter
          {$current_list set_selected 0}
          {set $dx_list_item_selected TRUE}
@@ -250,63 +363,32 @@
          )
       )
       (button
-         #define CALIB_LEFT
-         (
-            ;grab current calibration number
-            {set $i
-               {switch $dx_calibration_mode
-                  (video {int {floor {'+' 0.5 {profile_mgr get_excess_video_lag}}}})
-                  (audio {int {floor {'+' 0.5 {profile_mgr get_excess_audio_lag}}}})
-                  0
-               }
-            }
-            ;add -1 or +1 when pressing left/right dpad
-            {set $i
-               {switch $action
-                  (kAction_Left {- $i 1})
-                  (kAction_Right {+ $i 1})
-               }
-            }
-            ;limit calibration from -300 to 300
-            {if {> $i 300} {set $i 300}}
-            {if {< $i -300} {set $i -300}}
-            ;set new calibration number
-            {switch $dx_calibration_mode
-               (video {profile_mgr set_excess_video_lag $i})
-               (audio {profile_mgr set_excess_audio_lag $i})
-               kDataUnhandled
-            }
-            ;reset average for judgments
-            {set $dx_reset_average_jdj TRUE}
-            {unless {beatmatch is_invalid_score}
-               {beatmatch set_invalid_score TRUE}
-               {foreach_int $i 0 4 ;super jank way of setting score to 0 and disabling scoring
-                  {cheat_toggle_difficulty}
-               }
-            }
-         )
          (kAction_Left CALIB_LEFT)
          (kAction_Right CALIB_LEFT)
-         (kAction_Up kDataUnhandled)
-         (kAction_Down kDataUnhandled)
+         (kAction_Up {if_else {== {ui current_screen} game_screen} kDataUnhandled {do CALIB_LEFT}})
+         (kAction_Down {if_else {== {ui current_screen} game_screen} kDataUnhandled {do CALIB_LEFT}})
          (kAction_Confirm kDataUnhandled)
-         (kAction_Cancel kDataUnhandled)
+         (kAction_Cancel {if_else {== {ui current_screen} game_screen} kDataUnhandled {dx_state dxState_CalibrationInGame}})
          ;pressing start will exit menu to allow user to continue playing with normal frets while calibrating
          (kAction_Start
             {set $dx_list_item_selected FALSE}
-            {$this iterate Mesh $m {$m set_showing TRUE}}
-            {$this iterate UIList $l
-               {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
-               {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+            {if {== {ui current_screen} game_screen}
+               {$this iterate Mesh $m {$m set_showing TRUE}}
+               {$this iterate UIList $l
+                  {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+                  {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+               }
             }
             {dx_state dxState_CalibrationInGame}
          )
       )
       (cancel
-         {$this iterate Mesh $m {$m set_showing TRUE}}
-         {$this iterate UIList $l
-            {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
-            {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+         {if {== {ui current_screen} game_screen}
+            {$this iterate Mesh $m {$m set_showing TRUE}}
+            {$this iterate UIList $l
+               {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
+               {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
+            }
          }
          {dx_state dxState_CalibrationInGame}
       )
