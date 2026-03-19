@@ -65,7 +65,7 @@ match sys.platform:
         ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
         ninja.variable("dtacheck", "dependencies\\windows\\dtacheck.exe")
         ninja.variable("prefabulous", "dependencies\\windows\\prefabulous.exe")
-        ninja.rule("prefab_import", 'cmd /c ""%prefabulous%" "%scene%" "%in%" && type nul > "%out%""', description="PREFAB %in% -> %scene%", pool="console",)
+        ninja.rule("prefab_import", '$prefabulous $scene $in && type nul > $out', description="PREFAB $in -> $scene", pool="console",)
     case "darwin":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
