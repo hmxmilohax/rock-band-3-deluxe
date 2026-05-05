@@ -587,3 +587,64 @@
       {dx_track_update_lengths}
    }
 }
+{func dx_get_local_leader
+   {if_else {session_mgr is_leader_local}
+      {session_mgr get_leader_user}
+      {do
+         ($result FALSE)
+         {user_mgr foreach_local_user $luser
+            {if {&& {! $result} {$user is_participating}}
+               {set $result $user}
+            }
+         }
+         $result
+      }
+   }
+}
+{func dx_handle_nav_pad
+   ($action)
+   {if {&& {session_mgr has_leader_user} {! {ui in_transition}}}
+      {do
+         ($leader {dx_get_local_leader})
+         ($slot {overshell get_slot $leader})
+         ($overshell_open
+            {&&
+               $slot
+               {! {{$slot get_state} get allows_input_to_shell}}
+            }
+         )
+         {if_else $overshell_open
+            {handle ($slot button_down $leader FALSE $action {$leader get_pad_num})}
+            {if_else {== $action kAction_Start}
+               {if $slot {$slot show_options}}
+               {switch {ui current_screen}
+                  (practice_game_screen
+                     {switch $action
+                        (kAction_Right {practice_panel inc_speed})
+                        (kAction_Left {practice_panel dec_speed})
+                     }
+                  )
+                  ((gem_preview_screen rk_trainer_screen rg_trainer_screen drum_trainer_screen)
+                     {switch $action
+                        (kAction_Right {{gamemode get game_panel} goto_preview 1} {gem_preview_panel inc_section} {gem_preview_panel update_labels})
+                        (kAction_Left {{gamemode get game_panel} goto_preview -1} {gem_preview_panel dec_section} {gem_preview_panel update_labels})
+                        (kAction_Up {{gamemode get game_panel} inc_speed})
+                        (kAction_Down {{gamemode get game_panel} dec_speed})
+                        {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+                     }
+                  )
+                  (song_select_screen
+                     {switch $action
+                        (kAction_PageUp {{ui current_screen} on_button_held $leader kPad_L1 kAction_PageDown {$leader get_pad_num}})
+                        (kAction_ExtendedOption2 {{ui current_screen} on_button_held $leader kPad_R2 kAction_Confirm {$leader get_pad_num}})
+                        (kAction_ExtendedOption1 {{ui current_screen} on_button_held $leader kPad_L2 kAction_Cancel {$leader get_pad_num}})
+                        {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+                     }
+                  )
+                  {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+               }
+            }
+         }
+      }
+   }
+}
