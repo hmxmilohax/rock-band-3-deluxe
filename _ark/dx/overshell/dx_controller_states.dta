@@ -4,6 +4,7 @@
          os_pad_mapping
          os_button_remapper
          os_slot_options
+         os_nav_controller
       )
       (select
          (os_instrumentswap {dx_state dxState_InstrumentSwap})
@@ -15,6 +16,7 @@
             ;   {dx_state dxState_SlotOptionsWarn}
             ;}
          )
+         (os_nav_controller {dx_state dxState_NavController}) 
       )
       (cancel {dx_state dxState_DeluxeSettings})
    )
@@ -383,6 +385,64 @@
          {set $dx_pos_remapper_array_number 3}
       )
       ;(cancel {dx_state dxState_ControllerMenu})
+   )
+   
+   (dxState_NavController
+      (selected_pad FALSE)
+      (view
+         {sprint {if_else {== $dx_nav_controller_port -1} "> " "  "} {localize os_nav_pad_disabled}}
+         {sprint {if_else {== $dx_nav_controller_port 1}  "> " "  "} {localize player} " 2"}
+         {sprint {if_else {== $dx_nav_controller_port 2}  "> " "  "} {localize player} " 3"}
+         {sprint {if_else {== $dx_nav_controller_port 3}  "> " "  "} {localize player} " 4"}
+         #ifdef HX_PS3
+         {sprint {if_else {== $dx_nav_controller_port 4}  "> " "  "} {localize player} " 5"}
+         {sprint {if_else {== $dx_nav_controller_port 5}  "> " "  "} {localize player} " 6"}
+         {sprint {if_else {== $dx_nav_controller_port 6}  "> " "  "} {localize player} " 7"}
+         #endif
+      )
+      (enter
+         {set_elem {find $syscfg dx_settings dxState_NavController selected_pad} 1 FALSE}
+      )
+      (message os_nav_controller_desc)
+      (button
+         (kAction_Confirm
+            {switch {$current_list selected_data}
+               (0 {set $dx_nav_controller_port -1})
+               {if_else {== {{$this get_user} get_pad_num} {$current_list selected_data}}
+                  {do
+                     {set_elem {find $syscfg dx_settings dxState_NavController selected_pad} 1 {$current_list selected_data}}
+                     {dx_state dxState_NavWarn}
+                  }
+                  {set $dx_nav_controller_port {$current_list selected_data}}
+               }
+            }
+         )
+         (kAction_Cancel {dx_state dxState_ControllerMenu})
+      )
+   )
+   
+   (dxState_NavWarn
+      (view
+         overshell_continue
+         overshell_cancel
+      )
+      (enter
+         {handle
+            ($this set_confirm_actions dx_nav_warn (overshell_continue overshell_cancel))})
+      (select
+         (overshell_continue
+            {set $dx_nav_controller_port {elem {find $syscfg dx_settings dxState_NavController selected_pad} 1}}
+            {leave_dx_settings}
+            {$this remove_user}
+            {overshell update_all}
+         )
+         (overshell_cancel
+            {dx_state dxState_NavController}
+         )
+      )
+      (cancel
+         {dx_state dxState_NavController}
+      )
    )
 
 ;#define kPad_L2
