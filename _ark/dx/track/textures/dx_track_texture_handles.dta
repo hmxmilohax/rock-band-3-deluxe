@@ -2,54 +2,60 @@
 (
    (track_texture_reset_handler
       {dx_log_writer info {sprint "Setting up textures"}}
-      {unless {|| {modifier_mgr is_modifier_active mod_nohud} {modifier_mgr is_modifier_active mod_karaoke} {modifier_mgr is_modifier_active mod_fakejuke}} ;don't run anything if performance mode is enabled
-         {do ;if we havent
-            {if {exists beatmatch}
-               {beatmatch foreach_active_player $player
-                  {dx_ring_fc_enabler $player}
+      {unless {|| {modifier_enabled mod_nohud} {modifier_enabled mod_karaoke} {modifier_enabled mod_fakejuke}} ;don't run anything if performance mode is enabled
+         ;set up the fc indicator
+         {if {exists beatmatch}
+            {beatmatch foreach_active_player $player
+               {unless {== {$player instrument} vocals}
+                  {do
+                     ($path "dx/custom_textures/multiplier_ring/multiplier_ring_plate")
+                     ($fc fcframe.tex)
+                     ($mult multframe.tex)
+                     ($mat streak_meter_plate.mat)
+                     ($disabled {== $dx_multiplier_ring none})
+                     {with {find_obj DX_GEMTRACKDIR streak_meter}
+                        {if {! {exists $fc}} {new Tex $fc}} ;generate a new texture to hold the fc and non fc tex
+                        {if {! {exists $mult}} {new Tex $mult}}
+                        {cond
+                           ($disabled
+                              {$fc set_bitmap {sprint $path "_fc/rock band 3.png"}}
+                              {$mult set_bitmap {sprint $path "/rock band 3.png"}}
+                           )
+                           {$fc set_bitmap {sprint $path "_fc/" {strip_var $dx_multiplier_ring} ".png"}}
+                           {$mult set_bitmap {sprint $path "/" {strip_var $dx_multiplier_ring} ".png"}}
+                        }
+                        {$mat set diffuse_tex {if_else $dx_fc_ring $fc $mult}}
+                     }
+                  }
                }
             }
          }
          {dx_custom_texture_setter multiplier_ring multiplier_ring_fx_stripes fx_peak_stripes.tex $dx_multiplier_ring}
          {dx_custom_texture_setter multiplier_ring multiplier_ring_glow multiplier_meter_glow.tex $dx_multiplier_ring}
-         {if {== $dx_multiplier_ring none} {set $dx_multiplier_ring 'rock band 3'}} ; ew
-         {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex $dx_multiplier_ring}
-         {if {== $dx_multiplier_ring 'rock band 3'} {set $dx_multiplier_ring none}}
+         {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex
+            {if_else {== $dx_multiplier_ring none} 'rock band 3' $dx_multiplier_ring} ;this is an argument
+         }
          {dx_custom_texture_setter multiplier_ring multiplier_ring_bg streak_meter_bg.tex $dx_multiplier_ring}
          {dx_custom_texture_setter multiplier_ring multiplier_ring_bg_vox streak_meter_bg_vox.tex $dx_multiplier_ring}
          {dx_custom_texture_setter multiplier_ring multiplier_ring_lens streak_meter_lens.tex $dx_multiplier_ring}
          {dx_custom_texture_setter multiplier_ring multiplier_ring_lens_vox streak_meter_lens_vox.tex $dx_multiplier_ring}
          {dx_custom_texture_setter multiplier_ring multiplier_ring_plate streak_meter_plate.tex $dx_multiplier_ring}
 
-         {if {modifier_mgr is_modifier_active mod_calibration}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex calibration}
-            {set $dx_multiplier_ring_needs_reset TRUE}
+         {do ;watermark streak indicator
+            ($tex
+               {cond
+                  ({modifier_enabled mod_auto_play} auto_play) ({modifier_enabled mod_chmode} clone_hero)
+                  ({modifier_enabled mod_calibration} calibration) ({modifier_enabled mod_brutalmode} brutal)
+                  ({modifier_enabled mod_precision} precision) ({modifier_enabled mod_fastermode} faster_mode)
+                  FALSE
+               }
+            )
+            {if $tex
+               {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex $tex}
+               {set $dx_multiplier_ring_needs_reset TRUE}
+            }
          }
-
-         {if {modifier_mgr is_modifier_active mod_brutalmode}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex brutal}
-            {set $dx_multiplier_ring_needs_reset TRUE}
-         }
-
-         {if {modifier_mgr is_modifier_active mod_precision}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex precision}
-            {set $dx_multiplier_ring_needs_reset TRUE}
-         }
-
-         {if {modifier_mgr is_modifier_active mod_fastermode}
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex faster_mode}
-            {set $dx_multiplier_ring_needs_reset TRUE}
-         }
-
-         {if {modifier_mgr is_modifier_active mod_chmode} ;if clone hero mode is currently enabled (must run last for watermark)
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex clone_hero}
-            {set $dx_multiplier_ring_needs_reset TRUE}
-         }
-
-         {if {modifier_mgr is_modifier_active mod_auto_play} ;check if a new texture is queued
-            {dx_custom_texture_setter multiplier_ring multiplier_ring_meter multiplier_meter.tex auto_play}
-            {set $dx_multiplier_ring_needs_reset TRUE}
-         }
+         
          {if $dx_gem_needs_reset ;check if a new texture is queued
             {dx_custom_texture_setter gems gems_default prism_gems.tex $dx_gem}
             #ifndef HX_WII
@@ -73,26 +79,14 @@
             {dx_custom_texture_setter strikeline strikeline_yellow square_smasher_bright_yellow.tex $dx_smasher}
             {dx_custom_texture_setter strikeline strikeline_blue square_smasher_bright_blue.tex $dx_smasher}
             {dx_custom_texture_setter strikeline strikeline_orange square_smasher_bright_orange.tex $dx_smasher}
-            {unless {== $dx_smasher none} ;check the texture is not set to default
-               {if_else {|| {!= $dx_smasher rb4v2} {!= $dx_smasher rb2}}
-                  {do
-                     {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set prelit TRUE}}
-                     {gem_smashers_guitar.tex iterate_refs $ref {$ref set prelit TRUE}}
-                     {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set prelit TRUE}}
-                     {gem_smashers_drum.tex iterate_refs $ref {$ref set prelit TRUE}}
-                  }
-                  {do
-                     {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set prelit FALSE}}
-                     {gem_smashers_guitar.tex iterate_refs $ref {$ref set prelit FALSE}}
-                     {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set prelit FALSE}}
-                     {gem_smashers_drum.tex iterate_refs $ref {$ref set prelit FALSE}}
-                  }
+            {do
+               ($enabled {&& {!= $dx_smasher none} {!= $dx_smasher rb4v2} {!= $dx_smasher rb2}})
+               {foreach $entry (guitar_nomip guitar drum drum_nomip)
+                  {{sprint "gem_smashers_" $entry ".tex"} iterate_refs $ref {$ref set prelit $enabled}}
+                  ;always alpha cut, who cares
+                  {{sprint "gem_smashers_" $entry ".tex"} iterate_refs $ref {$ref set alpha_cut TRUE}}
                }
             }
-            {gem_smashers_guitar_nomip.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
-            {gem_smashers_guitar.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
-            {gem_smashers_drum_nomip.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
-            {gem_smashers_drum.tex iterate_refs $ref {$ref set alpha_cut TRUE}}
          }
          {if $dx_flares_needs_reset ;check if a new texture is queued
             {dx_custom_texture_setter flares flares_guitar_inner flare_gtr_inner.tex $dx_flares}
@@ -146,12 +140,19 @@
 
          {beatmatch foreach_active_player $player
             {unless {== {$player instrument} vocals}
-               {cond
-                  ({has_substr {sprint $dx_solo_box} "none"} {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64})
-                  ({has_substr {sprint $dx_solo_box} "rb3"} {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64})
-                  ({has_substr {sprint $dx_solo_box} "circular"} {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64})
-                  ({has_substr {sprint $dx_solo_box} "yarg"} {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh} set_local_scale 2.64 2.64 2.64})
-                  (else {{{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh} set_local_scale 3.5 3 4})
+               {do
+                  ($obj {{{find_obj DX_GEMTRACKDIR} find player_feedback} find tamb_Background.mesh})
+                  ($str {sprint $dx_solo_box})
+                  ($big
+                     {||
+                        {has_substr $str "none"} {has_substr $str "rb3"}
+                        {has_substr $str "circular"} {has_substr $str "yarg"}
+                     }
+                  )
+                  {if_else $big
+                     {$obj set_local_scale 2.64 2.64 2.64}
+                     {$obj set_local_scale 3.5 3 4}
+                  }
                }
             }
          }
@@ -167,37 +168,31 @@
             {dx_custom_texture_setter crowd_meter crowd_meter_lens crowd_meter_lens.tex $dx_crowd_meter}
          }
 
-         {if {! {exists dx_star_base.tex}}
-            {new Tex dx_star_base.tex}
+         {foreach $entry (dx_star_base.tex dx_star_gold_flash.tex)
+            {if {! {exists $entry}}
+               {new Tex $entry}
+            }
          }
-         {if {! {exists dx_star_gold_flash.tex}}
-            {new Tex dx_star_gold_flash.tex}
-         }
-         
          {if $dx_stars_needs_reset
-            ;crap workaround because this always needs to run
-            {if {== $dx_stars none} {set $dx_stars 'rock band 3'}}
-            {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $dx_stars}
-            {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $dx_stars}
-            {{coop_track_panel find dx_star_base.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-            {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}} ;apply the fc texture to the ring material
-            {dx_custom_texture_setter stars score_star_gold_flash dx_star_gold_flash.tex $dx_stars}
-            {if {== $dx_stars 'rock band 3'} {set $dx_stars none}}
-         
-         
-            {dx_custom_texture_setter stars score_meter_wipe score_meter_wipe.tex $dx_stars}
-            {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $dx_stars}
-            {if {exists dx_star_base.tex}
-               {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $dx_stars}
-            }
-            {if_else {modifier_mgr is_modifier_active mod_brutalmode}
-               {if_else {|| {== $dx_stars rb3} {== $dx_stars none} {== $dx_stars 'rock band 3'}}
-                  {dx_custom_texture_setter stars score_star_crimson score_star_gold.tex 'rock band 3'}
-                  {dx_custom_texture_setter stars score_star_crimson score_star_gold.tex $dx_stars}
+            {do
+               ($tex {if_else {|| {== $dx_stars rb3} {== $dx_stars none}} 'rock band 3' $dx_stars})
+               {dx_custom_texture_setter stars score_star_frame dx_star_base.tex $tex}
+               {dx_custom_texture_setter stars score_star_frame score_star_frame.tex $tex}
+
+               {foreach $entry (dx_star_base.tex score_star_frame.tex)
+                  {{coop_track_panel find $entry} iterate_refs $ref {$ref set diffuse_tex dx_star_base.tex}}
                }
-               {dx_custom_texture_setter stars score_star_gold score_star_gold.tex $dx_stars}
+               
+               {dx_custom_texture_setter stars score_star_gold_flash dx_star_gold_flash.tex $tex}
+               {dx_custom_texture_setter stars score_meter_wipe score_meter_wipe.tex $tex}
+
+               {if_else {modifier_mgr is_modifier_active mod_brutalmode}
+                  {dx_custom_texture_setter stars score_star_crimson score_star_gold.tex $tex}
+                  {dx_custom_texture_setter stars score_star_gold score_star_gold.tex $tex}
+               }
+
+               {dx_custom_texture_setter stars score_tour_icon tour_icon.tex $tex}
             }
-            {dx_custom_texture_setter stars score_tour_icon tour_icon.tex $dx_stars}
          }
 
          {if $dx_beat_lines_needs_reset ;check if a new texture is queued

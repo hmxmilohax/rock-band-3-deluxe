@@ -1,7 +1,9 @@
 {new Object fc_callback ;the main callback for all instruments
    (hit ;when a note is hit
       ;{coop_track_panel dx_set_star_display_pos}
-      {dx_brutal_mode {modifier_mgr is_modifier_active mod_brutalmode}}
+      {beatmatch foreach_active_player $player
+         {dx_brutal_mode {{$player get_user} get_slot_num} $player {modifier_enabled mod_brutalmode}}
+      }
       {if {>= $speedmod $speedmod_top} ;if our current speed is higher than the top speed the player has reached in this run
          {set $speedmod_top $speedmod} ;set the top reached speed to the current speed
       }
@@ -9,12 +11,16 @@
       {dx_check_for_high_score $dx_high_score_report}
    )
    (miss ;when a note is missed (overstrum)
-      {dx_brutal_mode {modifier_mgr is_modifier_active mod_brutalmode}}
+      {beatmatch foreach_active_player $player
+         {dx_brutal_mode {{$player get_user} get_slot_num} $player {modifier_enabled mod_brutalmode}}
+      }
       {dx_acceleration_mode {modifier_mgr is_modifier_active mod_fastermode} 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
    )
    (pass ;when a note is passed (ignored)
-      {dx_brutal_mode {modifier_mgr is_modifier_active mod_brutalmode}}
+      {beatmatch foreach_active_player $player
+         {dx_brutal_mode {{$player get_user} get_slot_num} $player {modifier_enabled mod_brutalmode}}
+      }
       {dx_acceleration_mode {modifier_mgr is_modifier_active mod_fastermode} 0}
       {dx_perfection_resetter {modifier_mgr is_modifier_active mod_perfection}}
    )
@@ -96,7 +102,34 @@
       )
       (check_fc
          {$this check_missed} ;run the logic to check our current misses
-         {dx_fc_glow_enabler $dx_fc_glow [player] [num_gems_pass] [num_gems_miss]}
+         {if {&& $dx_fc_glow {== {'+' [num_gems_pass] [num_gems_miss]} 0}} ;if on fc
+            {with {find_obj DX_GEMTRACKDIR streak_meter} ;set context to this player
+               {star_deploy.trig trigger} ;color the max mult animation gold
+            }
+         }
+      )
+      (check_missed
+         {do
+            ($player [player]) ($slot [slot])
+            ($num_gems_pass [num_gems_pass]) ($num_gems_miss [num_gems_miss])
+            {if {> {'+' $num_gems_pass $num_gems_miss} 0} ;if not on an fc
+               {with {find_obj DX_GEMTRACKDIR streak_meter}
+                  {if {! {eval {var {sprint {$player instrument} "_missed_once"}}}} ;only remove the actual blue backer on first hit
+                     {set_var {sprint {$player instrument} "_missed_once"} TRUE} ;gate to not run again until restart
+                     {if $dx_fc_glow
+                        {end_streak.trig trigger} ;remove blue backer
+                     }
+                     {if $dx_fc_ring
+                        {streak_meter_plate.mat set diffuse_tex multframe.tex} ;remove the FC ring for entire band.
+                     }
+                  }
+                  ;we must remove gold matanim on every hit because OD turns it back on
+                  {if $dx_fc_glow
+                     {star_deploy_stop.trig trigger} ;this specifically only removes gold on every hit
+                  }
+               }
+            }
+         }
       )
       (check_missed {dx_fc_disabler [player] [slot] [num_gems_pass] [num_gems_miss]})
       (offset 0)
