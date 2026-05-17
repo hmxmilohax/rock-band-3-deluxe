@@ -127,9 +127,11 @@
             #ifdef HX_WII "_keep.bmp_wii" #endif
          )
          ($exists {file_exists {sprint "char/prefab/images/gen/" {chars.lst selected_sym} $ext}})
-         {if_else $exists
-            {choose_character.tex set_bitmap {sprint "char/prefab/images/" {chars.lst selected_sym} "_keep.bmp"}}
-            {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+         {if {exists choose_character.tex}
+            {if_else $exists
+               {choose_character.tex set_bitmap {sprint "char/prefab/images/" {chars.lst selected_sym} "_keep.bmp"}}
+               {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+            }
          }
       }
    )
@@ -140,19 +142,25 @@
       {chars.lst refresh}
       {chars.lst set display_num 7}
       {chars.lst set_type character_list}
-      ;{prefab_mgr load_portraits $this}
+      {if {! {session_mgr is_local}}
+         {prefab_mgr load_portraits $this}
+      }
       {if {{$this get_user} is_local}
          {$this update_character_list}
       }
       {chars.lst refresh}
       {handle ($this set_default_option '')}
       {handle ($this set_default_option_index {$this get_default_char_index})}
-      UPDATE_CHAR_PIC
+      {if {session_mgr is_local}
+         UPDATE_CHAR_PIC
+      }
    )
    (exit
-      {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+      {if_else {session_mgr is_local}
+         {prefab_mgr unload_portraits $this}
+         {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+      }
    )
-   ;(exit {prefab_mgr unload_portraits $this})
    (update_view
       {if {== {$this focus_name} chars.lst}
          {$this update_character_list}
@@ -161,7 +169,9 @@
    )
    (SCROLL_MSG
       {$this update}
-      UPDATE_CHAR_PIC
+      {if {session_mgr is_local}
+         UPDATE_CHAR_PIC
+      }
    )
    (SELECT_MSG {$this select_char {chars.lst selected_pos}})
    (on_cancel
