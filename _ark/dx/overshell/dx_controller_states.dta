@@ -609,3 +609,111 @@
          (kAction_Right LIST_BUTTON_REMAP_DIREC)
       )
    )
+
+   ; smell warning: this smells really bad
+   (dxState_ControllerInputOffsets
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_all_offsets_vanilla}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk os_all_offsets_custom_optimal}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprintf {localize os_pad_gamepad} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_GAMEPAD 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprintf {localize os_pad_guitar_rb1} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB1 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 4}} os_blnk {sprintf {localize os_pad_guitar_rb2} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB2 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 5}} os_blnk {sprintf {localize os_pad_guitar_gh} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_GH 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 6}} os_blnk {sprintf {localize os_pad_drums_rb1} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB1 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 7}} os_blnk {sprintf {localize os_pad_drums_rb2} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB2 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 8}} os_blnk {sprintf {localize os_pad_drums_gh} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_GH 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 9}} os_blnk {sprintf {localize os_pad_keys} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_KEYS 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 10}} os_blnk {sprintf {localize os_pad_pro_guitar} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR 0}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 11}} os_blnk {sprintf {localize os_pad_pro_guitar_squier} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0}}}}}}
+         #ifdef HX_PS3 {if_else {&& $dx_list_item_selected {!= $dx_list_pos 12}} os_blnk {sprintf {localize os_pad_drums_rr} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RR 0}}}}}} #endif
+         #ifdef HX_XBOX {if_else {&& $dx_list_item_selected {!= $dx_list_pos 12}} os_blnk {sprintf {localize os_pad_stage_kit} {int {floor {'+' 0.5 {profile_mgr get_joypad_extra_lag PAD_NUM_STAGE_KIT 0}}}}}} #endif
+      )
+      (message
+         ;detect the user's current controller (ty linos)
+         {switch {$current_list selected_data}
+            (0 os_all_offsets_vanilla_desc)
+            (1 os_all_offsets_custom_optimal_desc)
+            {sprint {localize os_current_controller} {localize {joypad_controller_type_padnum {{$this get_user} get_pad_num}}}}
+         }
+      )
+      #define LIST_INPUT_OFFSETS_DIREC
+      (
+         {if {!= {$current_list selected_data} 0}
+            {switch {$current_list selected_data}
+               (2 {set $this_var PAD_NUM_GAMEPAD})
+               (3 {set $this_var PAD_NUM_GUITAR_RB1})
+               (4 {set $this_var PAD_NUM_GUITAR_RB2})
+               (5 {set $this_var PAD_NUM_GUITAR_GH})
+               (6 {set $this_var PAD_NUM_DRUMS_RB1})
+               (7 {set $this_var PAD_NUM_DRUMS_RB2})
+               (8 {set $this_var PAD_NUM_DRUMS_GH})
+               (9 {set $this_var PAD_NUM_KEYS})
+               (10 {set $this_var PAD_NUM_PRO_GUITAR})
+               (11 {set $this_var PAD_NUM_PRO_GUITAR_SQUIER})
+               #ifdef HX_PS3 (12 {set $this_var PAD_NUM_DRUMS_RR}) #endif
+               #ifdef HX_XBOX (12 {set $this_var PAD_NUM_STAGE_KIT}) #endif
+            }
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {adjust_input_offset $this_var -}
+               )
+               ((kAction_Right kAction_Up)
+                  {adjust_input_offset $this_var +}
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {switch {$current_list selected_data}
+                  (0 ; reset button, i guess bro
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GAMEPAD 0 #ifdef HX_XBOX 14.00 #endif #ifdef HX_PS3 -12.00 #endif #ifdef HX_WII 0.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB1 0 #ifdef HX_XBOX 18.00 #endif #ifdef HX_PS3 10.00 #endif #ifdef HX_WII 10.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB2 0 #ifdef HX_XBOX 18.00 #endif #ifdef HX_PS3 20.00 #endif #ifdef HX_WII 0.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_GH 0 #ifdef HX_XBOX 18.00 #endif #ifdef HX_PS3 10.00 #endif #ifdef HX_WII -14.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB1 0 #ifdef HX_XBOX 36.00 #endif #ifdef HX_PS3 16.00 #endif #ifdef HX_WII 14.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB2 0 #ifdef HX_XBOX 36.00 #endif #ifdef HX_PS3 16.00 #endif #ifdef HX_WII 14.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_GH 0 #ifdef HX_XBOX 14.00 #endif #ifdef HX_PS3 16.00 #endif #ifdef HX_WII 0.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_KEYS 0 #ifdef HX_XBOX 24.00 #endif #ifdef HX_PS3 20.00 #endif #ifdef HX_WII -24.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR 0 #ifdef HX_XBOX 45.00 #endif #ifdef HX_PS3 20.00 #endif #ifdef HX_WII -15.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0 #ifdef HX_XBOX 58.00 #endif #ifdef HX_PS3 58.00 #endif #ifdef HX_WII 44.00 #endif}
+                     #ifdef HX_PS3 {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RR 0 16.00} #endif
+                     #ifdef HX_XBOX {profile_mgr set_joypad_extra_lag PAD_NUM_STAGE_KIT 0 36.00} #endif
+                  )
+                  (1 ; custom optimal
+                     #ifndef HX_WII
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB1 0 #ifdef HX_XBOX 10.00 #endif #ifdef HX_PS3 -3.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_GH 0 #ifdef HX_XBOX 10.00 #endif #ifdef HX_PS3 -3.00 #endif}
+                     {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB2 0 #ifdef HX_XBOX 10.00 #endif #ifdef HX_PS3 -3.00 #endif}
+                     {if $dx_emulator                   ; vv   assume official gamepad on everything except emu
+                        {profile_mgr set_joypad_extra_lag PAD_NUM_GAMEPAD 0 #ifdef HX_XBOX 10.00 #endif #ifdef HX_PS3 -3.00 #endif} 
+                        {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB2 0 #ifdef HX_XBOX 10.00 #endif #ifdef HX_PS3 -3.00 #endif} ;rpcs3 uses this
+                     }
+                     #else
+                     kDataUnhandled ; yea bro i'm not doing this shit on wii
+                     #endif
+                  )
+                  {set $dx_list_item_selected TRUE}
+                  {set $dx_list_pos {$current_list selected_data}}
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_Advanced}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_INPUT_OFFSETS_DIREC)
+         (kAction_Up LIST_INPUT_OFFSETS_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_INPUT_OFFSETS_DIREC)
+         (kAction_Right LIST_INPUT_OFFSETS_DIREC)
+      )
+   )
