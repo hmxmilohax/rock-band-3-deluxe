@@ -21,12 +21,13 @@
       (cancel {dx_state dxState_DeluxeSettings})
    )
 
-   (dxState_SlotOptions
-      (view
-         os_reset_everything
-         os_allowed_instruments
-         {if_else $dx_linear_join_order os_linear_join_order_on os_linear_join_order_off}
-      )
+    (dxState_SlotOptions
+       (view
+          os_reset_everything
+          os_allowed_instruments
+          os_preferred_instrument
+          {if_else $dx_linear_join_order os_linear_join_order_on os_linear_join_order_off}
+       )
       (enter
          ; temp until overshell size is fixed for warn list
          {unless $dx_slot_options_warn_seen
@@ -57,8 +58,9 @@
 
             {if {! $dx_prompt_save} {dx_settings_dta_writer}}
          )
-         (os_allowed_instruments {dx_state dxState_AllowedInstruments})
-         (os_linear_join_order {set $dx_linear_join_order {! $dx_linear_join_order}} {set $dx_slot_options_changed TRUE} {set $dx_slot_restart_required TRUE})
+          (os_allowed_instruments {dx_state dxState_AllowedInstruments})
+          (os_preferred_instrument {dx_state dxState_PreferredInstrument})
+          (os_linear_join_order {set $dx_linear_join_order {! $dx_linear_join_order}} {set $dx_slot_options_changed TRUE} {set $dx_slot_restart_required TRUE})
       )
       (cancel
          #ifdef RB3E
@@ -71,10 +73,101 @@
          {set $dx_slot_options_changed FALSE}
          {dx_state dxState_ControllerMenu}
          #endif
-      )
-   )
+       )
+    )
 
-   (dxState_AllowedInstruments
+#define SET_PREFERRED_INST
+(
+   {switch $slot_to_edit
+      (slot1 {set $dx_preferred_slot0 $this_inst})
+      (slot2 {set $dx_preferred_slot1 $this_inst})
+      (slot3 {set $dx_preferred_slot2 $this_inst})
+      (slot4 {set $dx_preferred_slot3 $this_inst})
+   }
+   {if {! $dx_prompt_save} {dx_settings_dta_writer}}
+   {dx_state dxState_PreferredInstrumentForSlot}
+)
+
+#define TOGGLE_AUTO_SELECT
+(
+   {switch $slot_to_edit
+      (slot1 {set $dx_auto_select_slot0 {! $dx_auto_select_slot0}} {set $dx_cur_auto $dx_auto_select_slot0})
+      (slot2 {set $dx_auto_select_slot1 {! $dx_auto_select_slot1}} {set $dx_cur_auto $dx_auto_select_slot1})
+      (slot3 {set $dx_auto_select_slot2 {! $dx_auto_select_slot2}} {set $dx_cur_auto $dx_auto_select_slot2})
+      (slot4 {set $dx_auto_select_slot3 {! $dx_auto_select_slot3}} {set $dx_cur_auto $dx_auto_select_slot3})
+   }
+   {if {! $dx_prompt_save} {dx_settings_dta_writer}}
+)
+
+    (dxState_PreferredInstrument
+       (view
+          os_pref_inst_slot1
+          os_pref_inst_slot2
+          os_pref_inst_slot3
+          os_pref_inst_slot4
+       )
+       (select
+          (os_pref_inst_slot1 {set $slot_to_edit slot1} {dx_state dxState_PreferredInstrumentForSlot})
+          (os_pref_inst_slot2 {set $slot_to_edit slot2} {dx_state dxState_PreferredInstrumentForSlot})
+          (os_pref_inst_slot3 {set $slot_to_edit slot3} {dx_state dxState_PreferredInstrumentForSlot})
+          (os_pref_inst_slot4 {set $slot_to_edit slot4} {dx_state dxState_PreferredInstrumentForSlot})
+       )
+       (cancel {dx_state dxState_SlotOptions})
+    )
+
+    (dxState_PreferredInstrumentForSlot
+       (enter
+          {switch $slot_to_edit
+             (slot1 {set $dx_cur_auto $dx_auto_select_slot0} {set $dx_cur_pref $dx_preferred_slot0})
+             (slot2 {set $dx_cur_auto $dx_auto_select_slot1} {set $dx_cur_pref $dx_preferred_slot1})
+             (slot3 {set $dx_cur_auto $dx_auto_select_slot2} {set $dx_cur_pref $dx_preferred_slot2})
+             (slot4 {set $dx_cur_auto $dx_auto_select_slot3} {set $dx_cur_pref $dx_preferred_slot3})
+          }
+       )
+       (view
+          {if_else $dx_cur_auto os_pref_auto_on os_pref_auto_off}
+          {sprint {localize os_pref_preferred} ": " {localize $dx_cur_pref}}
+       )
+       (message {localize os_preferred_instrument_desc})
+       (select
+          (os_pref_auto_on TOGGLE_AUTO_SELECT)
+          (os_pref_auto_off TOGGLE_AUTO_SELECT)
+          (os_pref_preferred {dx_state dxState_ChoosePreferredInstrument})
+       )
+       (cancel
+          {dx_state dxState_PreferredInstrument}
+       )
+    )
+
+    (dxState_ChoosePreferredInstrument
+       (view
+          overshell_guitar
+          overshell_bass
+          overshell_keys
+          overshell_real_keys
+          overshell_real_guitar
+          overshell_real_bass
+          overshell_drums
+          overshell_drums_pro
+          overshell_vocal_solo
+          overshell_vocal_harmony
+       )
+       (select
+          (overshell_guitar {set $this_inst overshell_guitar} SET_PREFERRED_INST)
+          (overshell_bass {set $this_inst overshell_bass} SET_PREFERRED_INST)
+          (overshell_keys {set $this_inst overshell_keys} SET_PREFERRED_INST)
+          (overshell_real_keys {set $this_inst overshell_real_keys} SET_PREFERRED_INST)
+          (overshell_real_guitar {set $this_inst overshell_real_guitar} SET_PREFERRED_INST)
+          (overshell_real_bass {set $this_inst overshell_real_bass} SET_PREFERRED_INST)
+          (overshell_drums {set $this_inst overshell_drums} SET_PREFERRED_INST)
+          (overshell_drums_pro {set $this_inst overshell_drums_pro} SET_PREFERRED_INST)
+          (overshell_vocal_solo {set $this_inst overshell_vocal_solo} SET_PREFERRED_INST)
+          (overshell_vocal_harmony {set $this_inst overshell_vocal_harmony} SET_PREFERRED_INST)
+       )
+       (cancel {dx_state dxState_PreferredInstrumentForSlot})
+    )
+
+    (dxState_AllowedInstruments
       (view
          os_allowed_instruments_normal
          mod_auto_vocals
