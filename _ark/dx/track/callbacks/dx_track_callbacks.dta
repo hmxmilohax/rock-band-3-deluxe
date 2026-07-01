@@ -67,7 +67,10 @@
          {thread_task kTaskBeats
             (name {sprint "perfect_task_" [track_instrument]})
             (script
-               {if {&& $dx_perfects_indicator {{[player] get_user} is_local} {== [diff] expert} {gamemode in_mode qp_coop}}
+                {if {||
+                   {&& $dx_perfects_indicator {{[player] get_user} is_local} {== [diff] expert} {gamemode in_mode qp_coop}}
+                   {&& {modifier_enabled mod_perfection} {{[player] get_user} is_local}}
+                }
                   {set [curr_ms] {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
@@ -120,7 +123,6 @@
       {set_var {sprint "num_gems_combo_" [slot]} [num_gems_combo]}
       {set_var {sprint "num_gems_pass_" [track_instrument]} [num_gems_pass]}
       {set_var {sprint "num_gems_miss_" [track_instrument]} [num_gems_miss]}
-      {set_var {sprint "dx_perfects_count_" [track_instrument]} [perfects]}
    )
       (check_fc
          {$this check_missed} ;run the logic to check our current misses
@@ -195,19 +197,21 @@
                {if {>= [offset] $dx_window_offset} {set [timing] late}}
                {if {<= [offset] $dx_window_offset} {set [timing] early}}
                ; autoplay is weird and dumb, always show perfects
-               {if_else {modifier_enabled mod_auto_play}
-                  {do
-                     {set [timing] late}
-                     {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
-                     {++ [perfects]} ;increment local counter
-                     {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
-                  }
-                  {cond
-                     ({&& {< [offset] {+ 25 $dx_window_offset}} {> [offset] {+ -25 $dx_window_offset}}}
-                        {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
-                        {++ [perfects]} ;increment local counter
-                        {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
-                     )
+                {if_else {modifier_enabled mod_auto_play}
+                   {do
+                      {set [timing] late}
+                      {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
+                      {++ [perfects]} ;increment local counter
+                      {set_var {sprint "dx_perfects_count_" [track_instrument]} [perfects]}
+                      {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
+                   }
+                   {cond
+                      ({&& {< [offset] {+ 25 $dx_window_offset}} {> [offset] {+ -25 $dx_window_offset}}}
+                         {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
+                         {++ [perfects]} ;increment local counter
+                         {set_var {sprint "dx_perfects_count_" [track_instrument]} [perfects]}
+                         {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
+                      )
                      ({&& {< [offset] {+ 40 $dx_window_offset}} {> [offset] {+ -40 $dx_window_offset}}}
                         {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
                      )
