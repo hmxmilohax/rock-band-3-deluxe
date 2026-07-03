@@ -382,6 +382,9 @@
          os_testsongs  ; Songs folder is removed on Wii
          #endif
          os_testfeatures
+         #ifndef HX_WII ; no
+         os_system_lag_offsets
+         #endif
          os_uptime
          #ifdef HX_PS3
          {if_else {file_exists DX_HI_MEM_PATH}
@@ -424,6 +427,7 @@
          (os_dumps {dx_state dxState_Dumps})
          (os_testsongs {dx_state dxState_TestSongs})
          (os_testfeatures {dx_state dxState_TestFeatures})
+         (os_system_lag_offsets {dx_state dxState_SystemLagOffsets})
          (os_uptime
             {dx_uptime_onscreen}
          )
@@ -532,6 +536,79 @@
          )
       )
       (cancel {dx_state dxState_Debug})
+   )
+
+   (dxState_SystemLagOffsets
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_vanilla_offsets}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk os_corrected_offsets}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprintf {localize os_syslag_audio} {int {floor {'+' 0.5 {profile_mgr get_platform_audio_latency}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprintf {localize os_syslag_video} {int {floor {'+' 0.5 {profile_mgr get_platform_video_latency}}}}}}
+      )
+      (message
+         {switch {$current_list selected_data}
+            (0 os_vanilla_offsets_desc)
+            (1 os_corrected_offsets_desc)
+            os_system_lag_offsets_help
+         }
+      )
+      #define LIST_SYSTEM_LAG_OFFSETS_DIREC
+      (
+         {if {&& {!= {$current_list selected_data} 0} {!= {$current_list selected_data} 1}}
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {switch {$current_list selected_data}
+                     (2 {profile_mgr set_platform_audio_latency {- {profile_mgr get_platform_audio_latency} 1}})
+                     (3 {profile_mgr set_platform_video_latency {- {profile_mgr get_platform_video_latency} 1}})
+                  }
+                  {if {$this in_game} {dx_reset_score}}
+               )
+               ((kAction_Right kAction_Up)
+                  {switch {$current_list selected_data}
+                     (2 {profile_mgr set_platform_audio_latency {+ {profile_mgr get_platform_audio_latency} 1}})
+                     (3 {profile_mgr set_platform_video_latency {+ {profile_mgr get_platform_video_latency} 1}})
+                  }
+                  {if {$this in_game} {dx_reset_score}}
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {switch {$current_list selected_data}
+                  (0 ; reset button
+                     {profile_mgr set_platform_audio_latency #ifdef HX_XBOX 5 #endif #ifdef HX_PS3 31 #endif}
+                     {profile_mgr set_platform_video_latency #ifdef HX_XBOX 22 #endif #ifdef HX_PS3 45 #endif}
+                     {if {$this in_game} {dx_reset_score}}
+                  )
+                  (1 ; corrected                                                                                         vv   emu numbers are experimental, pc hardware might be different and rpcs3 can update this over time maybe. accomidates for rpcs3 buffer lag at 34ms (default)
+                     {profile_mgr set_platform_audio_latency #ifdef HX_XBOX 5 #endif #ifdef HX_PS3 {if_else $dx_emulator 112 39} #endif} ; note: audio lag has to be increased according to difference between 59.94fps frametime (16.67ms) and whatever, i don't compensate for this here
+                     {profile_mgr set_platform_video_latency #ifdef HX_XBOX 49 #endif #ifdef HX_PS3 {if_else $dx_emulator 77 72} #endif}
+                     {if {$this in_game} {dx_reset_score}}
+                  )
+                  {set $dx_list_item_selected TRUE}
+                  {set $dx_list_pos {$current_list selected_data}}
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_Debug}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         (kAction_Up LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         (kAction_Right LIST_SYSTEM_LAG_OFFSETS_DIREC)
+      )
    )
 
    (dxState_PositionRemapper
