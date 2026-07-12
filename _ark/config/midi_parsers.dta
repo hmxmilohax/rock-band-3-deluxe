@@ -804,9 +804,16 @@
       (init
          {set [zero_length] TRUE}
          {set [variable_blend_pct] 0.9}
+         {set $mp.ride_side TRUE}
+         {set $mp.ride_dir FALSE}       
       )
       (idle {$this insert_idle idle 1.0 0.5 0.5})
       (term {$this sec_offset_all WORLD_OFFSET_SEC})
+      (text
+         {if {has_substr $mp.val "ride_side"}
+            {set $mp.ride_side {has_substr $mp.val "true"}}
+         }
+      )
       (allowed_notes (27 29 31 32 36 37 38 39 40 41 42 47 49 51))
       (midi
          {$this rt_compute_space}
@@ -908,11 +915,25 @@
                (40 crash_r_grab)
                (41 crash_l_grab)
                (42
-                  {cond
-                     ({rt_test_space NORM_SPACE 0} ride)
-                     ({rt_test_space TAP_SPACE 0} ride_tap)
-                     ({rt_test_space 0 BIG_SPACE} ride_tap)
-                     ride_hover
+                  {if_else
+                     {&&
+                        $mp.ride_side
+                        {'||'
+                           {&& {== {$this prev_val} 42} {< $mp.prev_start 2}}
+                           {&& {== {$this next_val} 42} {< {$this delta} 2}}
+                        }
+                     }
+                     {if_else {rt_test_space TAP_SPACE TAP_SPACE}
+                        {if_else {== {{$this dir} get attitude} kGenreRocker}
+                           {if_else $mp.ride_dir
+                              {do {set $mp.ride_dir FALSE} ride_side_r}
+                              {do {set $mp.ride_dir TRUE} ride_side_l}
+                           }
+                           {do {set $mp.ride_dir FALSE} ride_tap}
+                        }
+                        {do {set $mp.ride_dir FALSE} ride_tap}
+                     }
+                     {do {set $mp.ride_dir FALSE} ride_hover}
                   }
                )
                (47
