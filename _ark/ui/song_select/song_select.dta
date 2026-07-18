@@ -135,17 +135,20 @@
          {if {exists author_finder}
             {delete author_finder}
          }
-         {if {&& $probe {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
-            {do
-               ($token {{music_library get_highlighted_node} get_token})
-               ($song_path {sprint {song_mgr song_path $token} "/../../gen/songs.dtb"})
-               {if
-                  {||
-                     {file_exists $song_path}
-                     {song_mgr is_song_mounted $token}
+         {do
+            ($node {music_library get_highlighted_node})
+            {if {&& $probe $node {== {$node get_node_type} kNodeSong}}
+               {do
+                  ($token {$node get_token})
+                  ($song_path {sprint {song_mgr song_path $token} "/../../gen/songs.dtb"})
+                  {if
+                     {||
+                        {file_exists $song_path}
+                        {song_mgr is_song_mounted $token}
+                     }
+                     {set $probeforfinder FALSE}
+                     {$this dx_authorfinder}
                   }
-                  {set $probeforfinder FALSE}
-                  {$this dx_authorfinder}
                }
             }
          }
@@ -163,8 +166,13 @@
                #endif
                (name author_finder)
                (script
-                  {$this dx_authorpoll {{music_library get_highlighted_node} get_token}}
-                  {$this apply_authorfinder_metadata}
+                  {do
+                     ($af_node {music_library get_highlighted_node})
+                     {if {&& $af_node {== {$af_node get_node_type} kNodeSong}}
+                        {$this dx_authorpoll {$af_node get_token}}
+                        {$this apply_authorfinder_metadata}
+                     }
+                  }
                )
             }
          }
