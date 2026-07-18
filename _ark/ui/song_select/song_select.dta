@@ -135,17 +135,24 @@
          {if {exists author_finder}
             {delete author_finder}
          }
-         {if {&& $probe {== {{music_library get_highlighted_node} get_node_type} kNodeSong}}
-            {do
-               ($token {{music_library get_highlighted_node} get_token})
-               ($song_path {sprint {song_mgr song_path $token} "/../../gen/songs.dtb"})
-               {if
-                  {||
-                     {file_exists $song_path}
-                     {song_mgr is_song_mounted $token}
+         {do
+            ; RB3E compat (issue #1301): this handler polls every frame on RB3E
+            ; builds and the highlighted node can be a null object while search
+            ; cache generation sweeps the library -- bind once and null-check
+            ; before dispatching to it
+            ($node {music_library get_highlighted_node})
+            {if {&& $probe $node {== {$node get_node_type} kNodeSong}}
+               {do
+                  ($token {$node get_token})
+                  ($song_path {sprint {song_mgr song_path $token} "/../../gen/songs.dtb"})
+                  {if
+                     {||
+                        {file_exists $song_path}
+                        {song_mgr is_song_mounted $token}
+                     }
+                     {set $probeforfinder FALSE}
+                     {$this dx_authorfinder}
                   }
-                  {set $probeforfinder FALSE}
-                  {$this dx_authorfinder}
                }
             }
          }
@@ -163,8 +170,16 @@
                #endif
                (name author_finder)
                (script
-                  {$this dx_authorpoll {{music_library get_highlighted_node} get_token}}
-                  {$this apply_authorfinder_metadata}
+                  ; RB3E compat (issue #1301): on RB3E builds this task fires with
+                  ; no delay; re-fetch and guard the node at fire time -- the
+                  ; highlight may have moved (or gone null) since scheduling
+                  {do
+                     ($af_node {music_library get_highlighted_node})
+                     {if {&& $af_node {== {$af_node get_node_type} kNodeSong}}
+                        {$this dx_authorpoll {$af_node get_token}}
+                        {$this apply_authorfinder_metadata}
+                     }
+                  }
                )
             }
          }

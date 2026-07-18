@@ -112,7 +112,17 @@
             ($node {music_library get_highlighted_node})
             ($shortname "blank")
             ($shortname_str "blank")
-            {if {== {$node get_node_type} kNodeSong}
+            ; RB3E compat (issue #1301): with RB3Enhanced loaded, get_highlighted_node
+            ; can return a null object on some rows (letter headers). Dispatching any
+            ; message to a null object hard-crashes the game (null handle inside
+            ; DataArray::Execute). Re-apply the highlight and re-fetch once, then
+            ; skip the row if the node is still null. Headers carry no song data,
+            ; so skipping them is lossless.
+            {if {! $node}
+                {music_library set_highlight_ix $searchcache_curdata FALSE}
+                {set $node {music_library get_highlighted_node}}
+            }
+            {if {&& $node {== {$node get_node_type} kNodeSong}}
                 ;{song_select_panel dx_authorpoll {$node get_token}}
                 ; Author finder is too slow
                 {set $shortname {$node get_token}}
@@ -180,7 +190,8 @@
         {music_library set_highlight_ix $i FALSE}
         {do
             ($node {music_library get_highlighted_node})
-            {if {== {$node get_node_type} kNodeSong}
+            ; RB3E compat: guard against null nodes (see issue #1301)
+            {if {&& $node {== {$node get_node_type} kNodeSong}}
                 {do
                     ($uppername {$node title})
                     ($name {tolower $uppername})
