@@ -69,32 +69,10 @@
    {set $real_keys_last_note_time -1}
 
    {set $dx_final_note 0}
-
-
 }
 {func
    dx_get_current_beat
    {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}}
-}
-{func
-   dx_show_solo_box
-   ($player $instrument)
-   {if_else {|| {== $instrument vocals} {== $instrument harm}}
-      {set_this {find_obj DX_VOCALDIR player_feedback}}
-      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-   }
-   {if {! {$this in_solo}}
-      {solo_start.trig trigger}
-      {set_var {sprint "solo_box_up_" $instrument} TRUE}
-   }
-}
-{func
-   dx_restore_solo_box
-   ($player $instrument)
-   {dx_clean_solo_box $player $instrument}
-   {set_var {sprint "solo_box_up_" $instrument} FALSE}
-   {set_var {sprint "delay_tracked_" $instrument} FALSE}
-   {set_var {sprint "current_tracked_beat_" $instrument} {+ {eval {var {sprint "current_tracked_beat_" $instrument}}} 1}}
 }
 {func
    dx_clean_solo_box
@@ -105,23 +83,6 @@
    }
    {$this set_showing TRUE}
    {points.lbl set_token_fmt dx_points}
-}
-{func
-   dx_hide_solo_box
-   ($player $instrument)
-   {if_else {|| {== $instrument vocals} {== $instrument harm}}
-      {set_this {find_obj DX_VOCALDIR player_feedback}}
-      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-   }
-   {if {! {$this in_solo}}
-      {$this set_showing TRUE}
-      {$this end_solo}
-      {solo_end.trig trigger}
-      {solo_percent.lbl set_token_fmt solo_countdown {localize_separated_int 2}}
-      {solo_rating.lbl set_token_fmt get_ready}
-      {score.lbl set_token_fmt os_blnk}
-      {points.lbl set_token_fmt os_blnk}
-   }
 }
 {func
    dx_final_percent_report
@@ -136,43 +97,6 @@
       {score.lbl set_token_fmt os_blnk}
       {points.lbl set_token_fmt os_blnk}
       {set_var {sprint "solo_box_up_" $instrument} FALSE}
-   }
-}
-{func
-   dx_handle_final_note_report
-   ($player $instrument $gems_passed $gems_missed)
-   {if {! {|| {== $instrument vocals} {== $instrument harm}}}
-      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-      {if_else {== {+ $gems_passed $gems_missed} 0}
-         {solo_percent.lbl set_token_fmt full_combo_short}
-         {if_else {== $gems_passed 0}
-            {solo_percent.lbl set_token_fmt overstrums {localize_separated_int {int $gems_missed}}}
-            {solo_percent.lbl set_token_fmt solo_countdown {localize_separated_int {int {- 0 $gems_passed}}}}
-         }
-      }
-   }
-}
-{func
-   dx_final_note_report
-   ($player $instrument)
-   {set_var {sprint $instrument "_finalnote"}
-      {dx_handle_final_note_report
-         $player
-         $instrument
-         {eval {var {sprint "num_gems_pass_" $instrument}}}
-         {eval {var {sprint "num_gems_miss_" $instrument}}}
-      }
-   }
-}
-{func
-   dx_solo_set_label
-   ($player $instrument)
-   {if_else {|| {== $instrument vocals} {== $instrument harm}}
-      {set_this {find_obj DX_VOCALDIR player_feedback}}
-      {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
-   }
-   {if {! {$this in_solo}}
-      {solo_percent.lbl set_token_fmt solo_countdown {localize_separated_int {int {/ {- {eval {var {sprint "tracked_beat_no_notes_end_" $instrument}}} {dx_get_current_beat}} 4}}}}
    }
 }
 {func dx_hide_everything ($player $instrument)
@@ -263,47 +187,6 @@
                {rig.grp set_local_pos 0 0 0}
             )
          }
-      }
-   }
-}
-
-#define ON_LEGACY_BEAT_FUNCS
-(
-   {dx_show_solo_box $player $instrument}
-   {dx_solo_set_label $player $instrument}
-   {dx_hide_everything $player $instrument}
-)
-
-{func dx_check_beat ($player $instrument $input) ; input = beats until player has to play again
-   {if {>= $input 0}
-      {if_else {|| {== $instrument vocals} {== $instrument harm}}
-         {set_this {find_obj DX_VOCALDIR}}
-         {set_this {find_obj DX_GEMTRACKDIR}}
-      }
-      ; Not a switch statement because I want to use the order of execution.
-      {if {== {countdown.grp countdown_state} hidden}
-         {countdown.grp set_countdown_state showing}
-         {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
-         {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $input 8}) (units kTaskBeats)}
-         {dx_hide_everything $player $instrument}
-      }
-      {if {== {countdown.grp countdown_state} showing}
-         {countdown.grp set_timer_count {int {ceil {/ $input 4}}}}
-         {if {<= $input 8}
-            {countdown.grp set_countdown_state getready}
-            {dx_restore_everything $player $instrument}
-         }
-      }
-      {if {== {countdown.grp countdown_state} getready}
-         {if {<= $input 6}
-            {countdown.grp set_countdown_state fading}
-            {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
-         }
-      }
-      {if {<= $input 0}
-         {set_var {sprint "delay_tracked_" $instrument} FALSE}
-         {set_var {sprint "current_tracked_beat_" $instrument} {+ {eval {var {sprint "current_tracked_beat_" $instrument}}} 1}}
-         {countdown.grp set_countdown_state hidden}
       }
    }
 }

@@ -1,0 +1,246 @@
+#define DX_BEATMATCH_HANDLES
+(  ;while these are all defined here, they are actually attached to coop_track_panel as handlers
+   (dx_countdown
+      {beatmatch foreach_active_player $player
+         {do
+            ($icn {{$player get_user} get_track_icon})
+            ($inst
+               {if_else {|| {== $icn $dx_icon_harmony_2} {== $icn $dx_icon_harmony_3}}
+                  {set $inst harm}
+                  {$player instrument}
+               }
+            )
+            ($arr {eval {var {sprint $inst "_note_tracker"}}}) ;array of countdown arrays
+            ($cur_beat {eval {var {sprint "current_tracked_beat_" $inst}}})
+            ($current {sprint "delay_" $cur_beat}) ;the current index of the countdown list we are tracking
+            ($start {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}) ;beat countdown starts
+            ($end {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}}) ;beat countdown ends
+            ($remaining {- $end {dx_get_current_beat}}) ;beats until player has to play again
+            {if {== {type $arr} kDataArray} ;add protections to not enumerate non arrays in endgame instrument swap situations
+               {if {>= {size $arr} 1}
+                  {unless {eval {var {sprint "delay_tracked_" $inst}}} ;while countdown is currently not showing
+                     {foreach $entry $arr
+                        {if {== {elem $entry 0} $current} ;iterate the list and match to our current index in the countdown
+                           ;prep the next countdown start and end times, and mark as active
+                           {set_var {sprint "tracked_beat_no_notes_start_" $inst}
+                              {if_else {modifier_enabled mod_karaoke}
+                                 {+ {elem $entry 1} 5} ; offset timing a bit for karaoke
+                                 {elem $entry 1}
+                              }
+                           }
+                           {set_var {sprint "tracked_beat_no_notes_end_" $inst} {elem $entry 2}}
+                           {set_var {sprint "delay_tracked_" $inst} TRUE}
+                        }
+                     }
+                  }
+                  {if {eval {var {sprint "delay_tracked_" $inst}}} ;if countdown is currently... counting down
+                     ;while before the final note of a song, but after the start of the currently tracked countdown
+                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} $start}}
+                        {if {>= $remaining 0}
+                           {if_else {|| {== $inst vocals} {== $inst harm}}
+                              {set_this {find_obj DX_VOCALDIR}}
+                              {set_this {find_obj DX_GEMTRACKDIR}}
+                           }
+                           ; Not a switch statement because I want to use the order of execution.
+                           {if {== {countdown.grp countdown_state} hidden}
+                              {countdown.grp set_countdown_state showing}
+                              {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
+                              {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $remaining 8}) (units kTaskBeats)}
+                              {dx_hide_everything $player $inst}
+                           }
+                           {if {== {countdown.grp countdown_state} showing}
+                              {countdown.grp set_timer_count {int {ceil {/ $remaining 4}}}}
+                              {if {<= $remaining 8}
+                                 {countdown.grp set_countdown_state getready}
+                                 {dx_restore_everything $player $inst}
+                              }
+                           }
+                           {if {== {countdown.grp countdown_state} getready}
+                              {if {<= $remaining 6}
+                                 {countdown.grp set_countdown_state fading}
+                                 {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
+                              }
+                           }
+                           {if {<= $remaining 0}
+                              ;set as inactive and increment counter for next countdown list check
+                              {set_var {sprint "delay_tracked_" $inst} FALSE}
+                              {set_var {sprint "current_tracked_beat_" $inst} {+ $cur_beat 1}}
+                              {countdown.grp set_countdown_state hidden}
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   )
+   (dx_end_song_feedback
+      {beatmatch foreach_active_player $player
+         {do
+            ($icn {{$player get_user} get_track_icon})
+            ($inst
+               {if_else {|| {== $icn $dx_icon_harmony_2} {== $icn $dx_icon_harmony_3}}
+                  {set $inst harm}
+                  {$player instrument}
+               }
+            )
+            ($beat {eval {var {sprint "dx_final_note_" $inst}}})
+            {unless {|| {== $inst vocals} {== $inst harm}}
+               {if {&& {== {dx_get_current_beat} {+ $beat 1}} {== {ui current_screen} game_screen}}
+                  ;show the pick the solo box and show it
+                  {if_else {|| {== $inst vocals} {== $inst harm}}
+                     {set_this {find_obj DX_VOCALDIR player_feedback}}
+                     {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+                  }
+                  {if {! {$this in_solo}}
+                     {solo_start.trig trigger}
+                     {set_var {sprint "solo_box_up_" $inst} TRUE}
+                  }
+                  ;flag this instrument as complete
+                  {set_var {sprint $inst "_finalnote"} TRUE}
+                  ;populate the solo box
+                  {if {! {|| {== $instrument vocals} {== $instrument harm}}}
+                     {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+                     {if_else {== {+ $gems_passed $gems_missed} 0}
+                        {solo_percent.lbl set_token_fmt full_combo_short}
+                        {if_else {== $gems_passed 0}
+                           {solo_percent.lbl set_token_fmt overstrums {localize_separated_int {int {eval {var {sprint "num_gems_miss_" $inst}}}}}}
+                           {solo_percent.lbl set_token_fmt solo_countdown {localize_separated_int {int {- 0 {eval {var {sprint "num_gems_pass_" $inst}}}}}}}
+                        }
+                     }
+                  }
+                  ;this player has finished, hide the track
+                  {dx_hide_everything $player $inst}
+               }
+               ;after some time, remove the solo box
+               {if {== {dx_get_current_beat} {+ $beat 7}}
+                  {dx_final_percent_report $player $inst}
+               }
+            }
+         }
+      }
+   )
+   (dx_overdrive_calc
+      {beatmatch foreach_active_player $player
+         {if {!= {$player instrument} vocals}
+            {do
+               ($od {get_player_od $player})
+               ($user {$player get_user})
+               ($slot {$user get_slot_num})
+               ($diff {$user get_difficulty_sym})
+               {if $dx_od_ready_popups
+                  ;fire popup once and then gate firing again until drained
+                  {cond
+                     ({&& {>= $od 0.5} {! {eval {var {sprint "dx_stop_od_" $slot}}}}} ;once od is ready and if not popped already
+                        {set_var {sprint "dx_stop_od_" $slot} TRUE} ;gate popup until next drain
+                        {set_this {find_obj DX_GEMTRACKDIR player_feedback}} ;set current context of this user
+                        {bass_super_streak.lbl set_token_fmt dx_overdrive_ready} ;set text for popup to od ready locale
+                        {super_streak_start.trig trigger} ;fire trigger for text popup
+                        {unless {|| {== $diff easy} {== $diff medium}}
+                           {dx_remove_groove_label $player} ;remove text popup trigger
+                        }
+                        
+                     )
+                     ({<= $od 0.01} ;once drained
+                        {set_var {sprint "dx_stop_od_" $slot} FALSE} ;allow popups again for this user when od is ready
+                     )
+                     kDataUnhandled
+                  }
+                  {if {&& {|| {== $diff easy} {== $diff medium}} {$player is_deploying}} ;show until deployed on easy
+                     {set_this {find_obj DX_GEMTRACKDIR player_feedback}}
+                     {super_streak_end.trig trigger}
+                  }
+               }
+               ;print od% to user track (or hide it)
+               {dx_show_user_overdrive $dx_track_overdrive $player $slot $od}
+            }
+         }
+      }
+   )
+   (dx_bpm_fetcher
+      {if $dx_mtvup
+         {do
+            ($tmp {int {+ 0.5 {seconds_to_beat {/ {beatmatch get_song_ms} 1000}}}})
+            ($bpm {* {* 60 {/ 1 {- {beat_to_seconds {+ $tmp 1}} {beat_to_seconds $tmp}}}} $speedmod})
+            {set_this {coop_track_panel find mtv_overlay}}
+            {if {exists $bpm_label}
+               {$bpm_label set_token_fmt bpm_report $bpm}
+            }
+         }
+      }
+   )
+   (dx_mtv_section_update
+      {if $dx_mtvup
+         {set_this {coop_track_panel find mtv_overlay}}
+         {if {exists $current_section_label}
+            {$current_section_label set_token_fmt {beatmatch get_section_at_ms {{beatmatch main_performer} progress_ms}}}
+         }
+      }
+   )
+   (dx_update_and_hide_guitar_fx
+      {if {<= $dx_selected_guitar_fx 5}
+         {beatmatch foreach_active_player $player ;applies the selected guitar fx to the player
+            {if {== {$player instrument} guitar}
+               {if {!= {{find_obj DX_GEMTRACKDIR effect_selector} get_local_scale_index 0} 0}
+                  {if_else {>= $dx_selected_guitar_fx 5}
+                     {set $test_guitar_fx 4}
+                     {set $test_guitar_fx $dx_selected_guitar_fx}
+                  }
+                  {handle ($player update_guitar_fx)}
+                  {{find_obj DX_GEMTRACKDIR effect_selector} set_local_scale 0 0 0}
+               }
+            }
+         }
+      }
+   )
+   (dx_update_gold_flash
+      {set_this coop_track_panel}
+      {if
+         {&& ;is this enough
+            {modifier_disabled mod_nohud} {modifier_disabled mod_fakejuke} {modifier_disabled mod_karaoke}
+            $dx_gold_star_progress $dx_mtvup
+            {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}
+         }
+         {set $dx_num_stars {{{coop_track_panel find scoreboard} find star_display} get num_stars}}
+         {if_else {&& {>= $dx_num_stars 5.0} {! {>= $dx_num_stars 6.0}}} ; We don't need the stars to flash when you achieve golds
+            {do
+               {if {! $dx_gold_flash_on}
+                  {if {! $dx_gold_flash_spawned}
+                     {dx_init_gold_flash}
+                  }
+                  {set $dx_gold_flash_on TRUE}
+                  {gold_star_handler show_stars}
+                  {gold_star_handler start_anim}
+               }
+               {gold_star_handler set_star_progress {- $dx_num_stars 5.0}}
+            }
+            {do
+               {if $dx_gold_flash_on
+                  {set $dx_gold_flash_on FALSE}
+                  {gold_star_handler hide_stars}
+                  {gold_star_handler stop_anim}
+               }
+            }
+         }
+      }
+   )
+   (dx_bot_overdrive
+      ; this is likely the single dumbest thing in the whole codebase ;i beg to differ
+      {if {== $dx_bot_overdrive dx_drain}
+         {beatmatch foreach_active_player $player {$player empty_band_energy}}
+      }
+      {if_else {&& {== $dx_bot_overdrive dx_on} {modifier_enabled mod_auto_play}}
+         {dx_bot_overdrive_handler}
+         ;handle no drum fills modifier for an real player
+         {if {&& {== {gamemode get allow_drum_fills} FALSE} {modifier_enabled mod_static_fills}}
+            {beatmatch foreach_active_player $player
+               {if {== {$player instrument} drum}
+                  ;instant activate, should revisit
+                  {$player deploy_if_possible}
+               }
+            }
+         }
+      }
+   )
+)

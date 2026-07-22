@@ -1,60 +1,29 @@
+;the definitions to the dx stuff here are actually on track_panel, and defined in ../dx/track/beatmatch/dx_beatmatch_handles.dta
+;I dont like it either. this isnt an object so i cant cleanly define and $this them all here
+;all of the `beatmatch_task`s assume attached to coop_track_panel, so do that
 (callbacks
    (sixteenth_note
-      {unless {gamemode in_mode trainer}
+      {if {! {gamemode in_mode trainer}}
+         {if {|| $dx_od_ready_popups $dx_track_overdrive}
+            {thread_task kTaskBeats (script {coop_track_panel dx_overdrive_calc})}
+         }
+         {if $dx_mtv_line_section
+            {thread_task kTaskBeats (script {coop_track_panel dx_mtv_section_update})}
+         }
+         ; BAD - fix the scoreboard and star positions in case users drop in/out
          {thread_task kTaskBeats
             (script
-               {beatmatch foreach_active_player $player
-                  {if {!= {$player instrument} vocals}
-                     {do
-                        ($od
-                           {if_else $dx_mtvup
-                              {get_player_od $player}
-                              0
-                           }
-                        )
-                        {dx_calc_overdrive
-                           $dx_od_ready_popups
-                           $player
-                           {{$player get_user} get_difficulty_sym}
-                           {{$player get_user} get_slot_num}
-                           $od
-                        }
-                        {dx_show_user_overdrive
-                           $dx_track_overdrive
-                           $player
-                           {{$player get_user} get_slot_num}
-                           $od
-                        }
-                     }
-                  }
-               }
+               {dx_set_scoreboard_pos}
+               {dx_set_star_display_pos}
             )
          }
+         ; BAD - catch up bot deployments if someone deployed between beats
+         {dx_bot_overdrive_handler}
       }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats
-            (script {dx_set_scoreboard_pos} {dx_set_star_display_pos})
-         }
-      }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats
-            (script
-               {dx_bot_overdrive_handler}
-               {dx_current_section_fetcher $dx_mtv_line_section}
-            )
-         }
-      }
-      ;{coop_track_panel dx_set_star_display_pos}
-      #ifdef HX_WII
-      {unless $stagekit
-         {handle (game quarterbeat)}
-      }
-      #else
-      {if_else $stagekit
+      {if_else #ifdef HX_WII FALSE #else $stagekit #endif
          {stagekit_left_right kStageSweepLeft_fast kStageSweepRight_fast}
          {handle (game quarterbeat)}
       }
-      #endif
    )
    (eighth_note
       #ifndef HX_WII
@@ -64,56 +33,32 @@
       #endif
    )
    (beat
-      ;tbh why is this *here*
-      {if {modifier_mgr is_modifier_active mod_auto_play}
-         {beatmatch foreach_active_player $player
-            {if {== {$player instrument} vocals}
-               {with {{{get_track_panel} find vocals} find vocals_mics}
-                  {foreach $entry (arrow_1.mesh arrow_2.mesh arrow_3.mesh label.lbl)
-                     {$entry set_showing FALSE}
-                  }
-               }
+      {if {! {gamemode in_mode trainer}}
+         {if {&& $dx_refresh_beatmatch $dx_customizer}
+            {coop_track_panel track_texture_reset_handler}
+            {color_me_milo_lite}
+         }
+         {if $dx_mtv_line_bpm
+            {thread_task kTaskBeats (script {coop_track_panel dx_bpm_fetcher})}
+         }
+         {thread_task kTaskBeats (script {coop_track_panel dx_update_and_hide_guitar_fx})}
+         {thread_task kTaskBeats (script {coop_track_panel dx_bot_overdrive})}
+         {thread_task kTaskBeats (script {coop_track_panel dx_update_gold_flash})}
+         {if {! {gamemode in_mode practice}}
+            {if $dx_countdown_enabled
+               {thread_task kTaskBeats (script {coop_track_panel dx_countdown})}
+            }
+            {if $dx_end_song_feedback
+               {thread_task kTaskBeats (script {coop_track_panel dx_end_song_feedback})}
             }
          }
       }
-      {dx_update_and_hide_guitar_fx}
-      {if {&& $dx_refresh_beatmatch $dx_customizer}
-         {coop_track_panel track_texture_reset_handler}
-         {color_me_milo_lite}
-      }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats (script {dx_bpm_fetcher $dx_mtv_line_bpm})}
-      }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats
-            (script {dx_bot_overdrive_depletor} {dx_drum_overdrive_deployer})
-         }
-      }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats (script DX_COUNTDOWN_TRACKER)}
-      }
-      {unless {gamemode in_mode trainer}
-         {thread_task kTaskBeats (script {dx_update_gold_flash})}
-      }
-      #ifdef HX_WII
-      {unless $stagekit
-         {handle (game beat)}
-      }
-      #else
-      {if_else $stagekit
+      {if_else #ifdef HX_WII FALSE #else $stagekit #endif
          {stagekit_left_right kStageSweepLeft_slow kStageSweepRight_slow}
          {handle (game beat)}
       }
-      #endif
    )
    (downbeat
-      ; {unless {gamemode in_mode trainer}
-      ;    {thread_task kTaskBeats
-      ;       (script
-      ;          {dx_blink_gold_star_off}
-      ;       )
-      ;    }
-      ; }
       {unless $stagekit
          {handle (game downbeat)}
       }
@@ -134,18 +79,12 @@
 )
 (watcher
    (slop
-      {if_else {modifier_mgr is_modifier_active mod_precision}
-         50 ;precision mode, gh3/ch style
-         {if_else {modifier_mgr is_modifier_active mod_calibration}
-            15 ;really strict window, great for calibrating
-            {if_else {modifier_mgr is_modifier_active mod_chmode}
-               750 ;whale pussy mode
-               {if_else {<= $speedmod 1.0}
-                  100 ;if 100% or less, use stock 100ms window (which is proportional)
-                  {* 100 $speedmod} ;if speedup, compensate for song speed in the note window
-               }
-            }
-         }
+      {cond
+         ({modifier_enabled mod_precision} 50) ;precision mode, gh3/ch style
+         ({modifier_enabled mod_calibration} 15) ;really strict window, great for calibrating
+         ({modifier_enabled mod_chmode} 750) ;whale pussy mode
+         ({> $speedmod 1.0} {* 100 $speedmod}) ;if speedup, compensate for song speed in the note window
+         ({<= $speedmod 1.0} 100) ;if 100% or less, use stock 100ms window (which is proportional)
       }
    )
    (cheat_error 0)
@@ -167,7 +106,7 @@
    )
    (pitch_bend_range 1)
    (ms_to_full_pitch_bend 1000)
-   (cymbal_autoplay_ms 0)
+   (cymbal_autoplay_ms 0) ;dx fix cymbal "glitch" - vanilla: 90
    (trill_interval_ms (DX_TRILL_INTERVAL_COMMON_PRO))
    (keyboard_miss_window_ms 200)
    (real_guitar_miss_window_ms 200)
@@ -200,7 +139,7 @@
 )
 (audio
    (default_style unmute)
-   (mute_volume -96.0)
+   (mute_volume -96.0) ;dx full mute stems on miss - vanilla: -16.0
    (mute_volume_vocals -12.0)
    (multiplayer_scale 0.33)
    (multiplayer_attenuation 3.0)
@@ -209,12 +148,7 @@
    (cue_attenuation 0.0)
    (remote_attenuation 1.5)
    (drum_velocity_to_db (0.0 -13.0 -7.0 -3.0 -2.0 -0.5 0.0))
-   #ifdef HX_WII
-   (drum_sample_attenuation -12.0)
-   #endif
-   #ifndef HX_WII
-   (drum_sample_attenuation 3.0)
-   #endif
+   (drum_sample_attenuation #ifdef HX_WII -12.0 #else 3.0 #endif)
    (whammy_enabled $dx_whammy_fx)
    (auto_miss_sound_timeout_seconds 5.0)
    (auto_miss_sound_timeout_gems 5)
