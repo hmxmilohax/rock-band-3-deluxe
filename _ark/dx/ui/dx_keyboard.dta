@@ -31,6 +31,8 @@
                             (KB_BACKSPACE {$this delete_char})
                             (KB_LEFT {if_else $shift {$this sel_left} {$this shift_caret -1}})
                             (KB_RIGHT {if_else $shift {$this sel_right} {$this shift_caret 1}})
+                            (KB_UP {$this seek_history 1})
+                            (KB_DOWN {$this seek_history -1})
                             (KB_ENTER {$this accept})
                         }
                     }
@@ -143,10 +145,38 @@
             )
 
             (accept
+                {insert_elem [history] 0 [buf]}
+                {set [history_index] -1}
+                {if {> {size [history]} 30}
+                    {resize [history] 30}
+                }
                 {if [unfocus_on_accept]
                     {dx_keyboard_unfocus}
                 }
                 {[sink_obj] input_field_accept $this [buf]}
+            )
+
+            (seek_history ($offset)
+                {+= [history_index] $offset}
+
+                {clamp_eq [history_index] -1 {- {size [history]} 1}}
+
+                {$this clear_highlight}
+
+                {if_else {== [history_index] -1}
+                    {do
+                        {set [buf] ""}
+                        {set [caret] 0}
+                    }
+                    {do
+                        {set [buf] {elem [history] [history_index]}}
+                        {set [caret] {strlen [buf]}}
+                    }
+                }
+
+                {$this update_label}
+                {$this sync_caret}
+                {$this send_update_msg}
             )
 
             (send_update_msg
@@ -254,6 +284,8 @@
             {text.lbl set draw_order 10}
             {text.lbl set_trans_parent $this}
             {$this set sink_obj kDataUnhandled}
+            {$this set history {array 0}}
+            {$this set history_index -1}
             {$this set buf ""}
             {$this set caret 0}
             {$this set focused FALSE}
