@@ -1,4 +1,5 @@
 {set $focused_input_field 0}
+{set $clipboard ""}
 {func dx_create_input_field ($name)
     {do
         ($fielddir {new RndDir $name 
@@ -20,6 +21,18 @@
                             (KB_a {set [highlight_start] 0} {set [highlight_end] {strlen [buf]}} {set [caret] [highlight_end]} {$this sync_caret})
                             (KB_BACKSPACE {$this delete_char}) ; This should be delete word but it's not implemented yet
                             (KB_SPACE {[sink_obj] input_field_swap_shortcut})
+                            (KB_c
+                                {if {$this has_highlight}
+                                    {set $clipboard {substr [buf] [highlight_start] {- [highlight_end] [highlight_start]}}}
+                                }
+                            )
+                            (KB_x
+                                {if {$this has_highlight}
+                                    {set $clipboard {substr [buf] [highlight_start] {- [highlight_end] [highlight_start]}}}
+                                    {$this erase_highlight}
+                                }
+                            )
+                            (KB_v {$this insert_char $clipboard})
                         }
                     }
                     {do
@@ -50,7 +63,7 @@
                         {$this set buf {sprint {substr [buf] 0 [caret]} $char {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
                     }
                 }
-                {+= [caret] 1}
+                {+= [caret] {strlen $char}}
                 {$this update_label}
                 {$this sync_caret}
                 {$this send_update_msg}
