@@ -109,42 +109,50 @@
             {&& {== $dx_hide_on_countdown multi} {>= $dx_num_gem_tracks 1}}
          }
       }
-      {script_task kTaskSeconds
-         (delay 0.75)
-         (script 
-            {unless {|| {== $instrument vocals} {== $instrument harm}}
-               ; bring track out when countdown begins
-               ; unless statements prevent track from repeatedly popping out if it's already invisible
-               {set_var {sprint "track_out_" {{$player get_user} get_slot_num}} TRUE}
-               {set_this {find_obj DX_GEMTRACKDIR}}
-               {track_out.trig trigger}
-               {script_task kTaskSeconds
-                  (delay 0.5) ; begin hiding track meshes 0.5 seconds after track_out animation begins while solo box is still visible
-                  (script
-                     ; bring track back in to keep solo box visible
-                     {track_in.trig trigger}
-                     ;turn on autoplay while track is hidden to block user inputs
-                     {if {{$player get_user} is_local}
-                        {if {! {modifier_mgr is_modifier_active mod_auto_play}}
-                           {$player set_auto_play TRUE}
+      {do
+         ($slot {{$player get_user} get_slot_num})
+         ($local {{$player get_user} is_local})
+         {script_task kTaskSeconds
+            (delay 0.75)
+            (script 
+               {unless {|| {== $instrument vocals} {== $instrument harm}}
+                  ; bring track out when countdown begins
+                  ; unless statements prevent track from repeatedly popping out if it's already invisible
+                  {set_var {sprint "track_out_" $slot} TRUE}
+                  {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot}}}
+                  {track_out.trig trigger}
+                  {script_task kTaskSeconds
+                     (delay 0.5) ; begin hiding track meshes 0.5 seconds after track_out animation begins while solo box is still visible
+                     (script
+                        ; bring track back in to keep solo box visible
+                        {track_in.trig trigger}
+                        ;turn on autoplay while track is hidden to block user inputs
+                        {if $local
+                           {if {! {modifier_mgr is_modifier_active mod_auto_play}}
+                              {beatmatch foreach_active_player $p
+                                 {if {== {{$p get_user} get_slot_num} $slot}
+                                    {$p set_auto_play TRUE}
+                                 }
+                              }
+                           }
                         }
-                     }
-                     ; hide track meshes
-                     {switch $instrument
-                        ((guitar bass keys) {guitar_draw.grp set_showing FALSE})
-                        ((drum real_drum) {drum_draw.grp set_showing FALSE})
-                        (real_keys {keyboard_draw.grp set_showing FALSE})
-                        kDataUnhandled
-                     }
-                     {{{$this get star_power_meter} find power_meter.grp} set_showing FALSE}
-                     {{{$this get streak_meter} find draw.grp} set_showing FALSE}
-                     {{{$this get streak_meter} find streak_meter.grp} set_showing FALSE}
-                     {overdrive_plane.mesh set_showing FALSE}
-                     {rig.grp set_local_pos 99 99 99}
-                  )
+                        ; hide track meshes
+                        {switch $instrument
+                           ((guitar bass keys) {guitar_draw.grp set_showing FALSE})
+                           ((drum real_drum) {drum_draw.grp set_showing FALSE})
+                           (real_keys {keyboard_draw.grp set_showing FALSE})
+                           kDataUnhandled
+                        }
+                        {{{$this get star_power_meter} find power_meter.grp} set_showing FALSE}
+                        {{{$this get streak_meter} find draw.grp} set_showing FALSE}
+                        {{{$this get streak_meter} find streak_meter.grp} set_showing FALSE}
+                        {overdrive_plane.mesh set_showing FALSE}
+                        {rig.grp set_local_pos 99 99 99}
+                     )
+                  }
                }
-            }
-         )
+            )
+         }
       }
    }
 }
@@ -159,33 +167,41 @@
          }
       }
       {unless {|| {== $instrument vocals} {== $instrument harm}}
-         {set_var {sprint "track_out_" {{$player get_user} get_slot_num}} FALSE}
-         {set_this {find_obj DX_GEMTRACKDIR}}
-         ; remove "invisible" track from view while meshes are still hidden
-         {track_out.trig trigger}
-         {script_task kTaskSeconds
-            ; begin restoring track meshes 0.5 seconds after track_out animation begins while solo box is still visible
-            (delay 0.5)
-            (script
-               {track_in.trig trigger}
-               ;disable autoplay to restore user inputs
-               {if {{$player get_user} is_local}
-                  {if {! {modifier_mgr is_modifier_active mod_auto_play}}
-                     {$player set_auto_play FALSE}
+         {do
+            ($slot {{$player get_user} get_slot_num})
+            ($local {{$player get_user} is_local})
+            {set_var {sprint "track_out_" $slot} FALSE}
+            {set_this {find_obj DX_GEMTRACKDIR}}
+            ; remove "invisible" track from view while meshes are still hidden
+            {track_out.trig trigger}
+            {script_task kTaskSeconds
+               ; begin restoring track meshes 0.5 seconds after track_out animation begins while solo box is still visible
+               (delay 0.5)
+               (script
+                  {track_in.trig trigger}
+                  ;disable autoplay to restore user inputs
+                  {if $local
+                     {if {! {modifier_mgr is_modifier_active mod_auto_play}}
+                        {beatmatch foreach_active_player $p ;fresh lookup: no-ops if player left
+                           {if {== {{$p get_user} get_slot_num} $slot}
+                              {$p set_auto_play FALSE}
+                           }
+                        }
+                     }
                   }
-               }
-               {switch $instrument
-                  ((guitar bass keys) {guitar_draw.grp set_showing TRUE})
-                  (drum {drum_draw.grp set_showing TRUE})
-                  (real_keys {keyboard_draw.grp set_showing TRUE})
-                  kDataUnhandled
-               }
-               {{{$this get star_power_meter} find power_meter.grp} set_showing TRUE}
-               {{{$this get streak_meter} find draw.grp} set_showing TRUE}
-               {{{$this get streak_meter} find streak_meter.grp} set_showing TRUE}
-               {overdrive_plane.mesh set_showing TRUE}
-               {rig.grp set_local_pos 0 0 0}
-            )
+                  {switch $instrument
+                     ((guitar bass keys) {guitar_draw.grp set_showing TRUE})
+                     (drum {drum_draw.grp set_showing TRUE})
+                     (real_keys {keyboard_draw.grp set_showing TRUE})
+                     kDataUnhandled
+                  }
+                  {{{$this get star_power_meter} find power_meter.grp} set_showing TRUE}
+                  {{{$this get streak_meter} find draw.grp} set_showing TRUE}
+                  {{{$this get streak_meter} find streak_meter.grp} set_showing TRUE}
+                  {overdrive_plane.mesh set_showing TRUE}
+                  {rig.grp set_local_pos 0 0 0}
+               )
+            }
          }
       }
    }
