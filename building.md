@@ -12,7 +12,7 @@ NOTE: This is for *building the game*, for developers and contributors. <br/> If
 ### Windows
 * Windows users should [**download Python**](https://www.python.org/downloads/) (version 3.11 or later).
   * **Select "`Add python.exe to PATH`"*** on the installer.  
-  > ![Python PATH](dependencies/media/pywinpath.webp)
+  > ![Python PATH](dependencies/media/building/pywinpath.webp)
 
 Verify that you have Python installed by typing in `where python` and `python --version` into command prompt.  
 ![Python is installed](dependencies/media/building/pywinverify.webp)
@@ -72,7 +72,7 @@ Click on `Create new branch` after that.
 ![Repo Folder](dependencies/media/building/repofolder.webp)
 
 3. ✅ ***The Rock Band 3 Deluxe repo is now set up!***  
-From here, you can make any personal modifications to the game or [[build it yourself]](#Building).
+From here, you can make any personal modifications to the game or [[build it yourself]](#-building).
 
 ## To Contribute
 1. If you're contributing to the project, make sure you clone the repository you forked instead.  
@@ -82,15 +82,15 @@ It will typically be prefixed by your username, like `YourUsername/rock-band-3-d
 > ![Changing Branch](dependencies/media/building/gitbranch.webp)
 3. Verify the repository cloned correctly by checking the file structure.  
 > ![Repo Folder](dependencies/media/building/repofolder.webp)
-4. Make any changes then [[build]](#Building) Rock Band 3 Deluxe to see if it works.
+4. Make any changes then [[build]](#-building) Rock Band 3 Deluxe to see if it works.
 > ![Commit](dependencies/media/building/gitbranch.webp)
-5. When you've verified your changes work, push your changes and [[open a pull request]](https://docs.github.com/en/desktop/working-with-your-remote-repository-on-github-or-github-enterprise/creating-an-issue-or-pull-request-from-github-desktop) to send your changes back to the main repository.
+5. When you've verified your changes work, push your changes and open a pull request to send your changes back to the main repository.
 > ![Pull Request](dependencies/media/building/ghpullrequest.webp)
 <br/>
 
 # 🚧 Building
 > [!CAUTION]
-> While you can build a Wii version, we only use it for [[debugging purposes]](#Debugging) nowadays and offer no support for casual Wii play.
+> While you can build a Wii version, we only use it for [[debugging purposes]](#-debugging) nowadays and offer no support for casual Wii play.
 
 ## Windows
 1. Navigate to `scripts` if you're on Windows.
@@ -113,10 +113,9 @@ Built contents will be in the `out` folder on the root of the repo.
 <br/>
 
 # 🎨 Custom Textures
-*Follow [**Building**](#building) first in order to properly follow this guide.*
-
-* Copy any `.jpg`, `.png`, or `.bmp` file to the appropriate place in  `\_ark\dx\custom_textures\***\`.
-* Re-build the game!
+*Follow **[[Building]](#-building)** first in order to properly follow this guide.*
+1. Copy any `.jpg`, `.png`, or `.bmp` file to the appropriate place in  `\_ark\dx\custom_textures\***\`.
+2. Re-build the game!
 
 ✅ ***Your custom textures have been converted and will show up ingame!***
 
@@ -174,7 +173,7 @@ Navigate to where your Rock Band 3 Deluxe was cloned to.
 15. Navigate into `platform/wii` within your Rock Band 3 Deluxe repository folder.
 16. Drag the files from the prototype you wish to debug with into the `wii` folder with the `readme.txt` file.  
 > ![Dragging files into the Wii build folder](dependencies/media/building/folderdrag.gif)
-17. You can now make a [[build]](#building).  
+17. You can now make a [[build]](#-building).  
 If you're on Windows and haven't done so, make sure you follow step 2 in the build instructions to automatically copy the files.
 
 After building and placing the files, launch your new build.  
