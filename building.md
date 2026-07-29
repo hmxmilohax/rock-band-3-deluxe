@@ -48,6 +48,10 @@ We have a few recommendations for beginners:
 # 📚 Creating a Fork
 > [!TIP]
 > If you're not contributing anything to Rock Band 3 Deluxe, you can ignore this section.
+
+<details>
+<summary>Click here if you want to contribute to the project</summary>
+
 1. Click on the `Fork` button near the top of the page then on `Create a new fork`.
 > ![Forks](dependencies/media/building/ghfork.webp)
 2. Click on the green `Create fork` button at the bottom.
@@ -59,6 +63,7 @@ You usually want to name the branch based on what you're changing.
 Change `Source` to `hmxmilohax/rock-band-3-deluxe` and the branch to `develop`.  
 Click on `Create new branch` after that.  
 > ![Branches](dependencies/media/building/ghbranchcreate.webp)
+</details>
 <br/>
 
 # 💾 Cloning the Repository
@@ -75,6 +80,9 @@ Click on `Create new branch` after that.
 From here, you can make any personal modifications to the game or [[build it yourself]](#-building).
 
 ## To Contribute
+<details>
+<summary>Click here if you want to contribute to the project</summary>
+
 1. If you're contributing to the project, make sure you clone the repository you forked instead.  
 It will typically be prefixed by your username, like `YourUsername/rock-band-3-deluxe`.  
 > ![Clone a Forked Repository](dependencies/media/building/gitclonefork.webp)
@@ -83,10 +91,11 @@ It will typically be prefixed by your username, like `YourUsername/rock-band-3-d
 3. Verify the repository cloned correctly by checking the file structure.  
 > ![Repo Folder](dependencies/media/building/repofolder.webp)
 4. Make any changes then [[build]](#-building) Rock Band 3 Deluxe to see if it works.
-> ![Commit](dependencies/media/building/gitbranch.webp)
+> ![Commit](dependencies/media/building/gitcommit.webp)
 5. When you've verified your changes work, push your changes and open a pull request to send your changes back to the main repository.
 > ![Pull Request](dependencies/media/building/ghpullrequest.webp)
 <br/>
+</details>
 
 # 🚧 Building
 > [!CAUTION]
@@ -117,6 +126,8 @@ Built contents will be in the `out` folder on the root of the repo.
 1. Copy any `.jpg`, `.png`, or `.bmp` file to the appropriate place in  `\_ark\dx\custom_textures\***\`.
 2. Re-build the game!
 
+For more information about the way textures are laid out, [[please read this document]](https://docs.google.com/document/d/1ELUI8Q2W7PH9tdugeKnsjhqa-IH3T-oy6uGTDY_8z30).
+
 ✅ ***Your custom textures have been converted and will show up ingame!***
 
 <br/>
@@ -124,6 +135,9 @@ Built contents will be in the `out` folder on the root of the repo.
 # ⛔ Debugging
 > [!TIP]
 > If you're not debugging any scripts, you can ignore this section.
+
+<details>
+<summary>Click here if you want to set up debugging with Dolphin</summary>
 
 Thanks to community efforts, we have access to multiple prototype builds with debugging features.  
 This allows us to easily figure out what caused a crash when writing new scripts.
@@ -184,6 +198,7 @@ This information also shows up in Dolphin's log.
 If you want to keep both prototypes, it's recommended to assign tags to the extracted copies of the prototypes to differentiate them.  
 > ![Dolphin: New Tag](dependencies/media/building/doltags.webp)
 
+</details>
 <br/>
 
 # 🖥️ Dependencies
