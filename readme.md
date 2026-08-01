@@ -2,13 +2,13 @@
 
 <a href="https://rb3dx.milohax.org"><img src="dependencies/media/header.gif" width="100%" alt="Header GIF"></a>
 
-# ⚠️STOP!⚠
+# ⚠️STOP!⚠️
 Downloads and install instructions are located on our [website](https://rb3dx.milohax.org)!
 
-# ⚠️¡ALTO!⚠
+# ⚠️¡ALTO!⚠️
 ¡Descargas e instrucciones de instalación están disponible en nuestro [sitio](https://rb3dx.milohax.org/es/)!
 
-# ⚠️PARE!⚠
+# ⚠️PARE!⚠️
 Downloads e instruções para instalação estão disponíveis no nosso [website](https://rb3dx.milohax.org/pt/)!
 
 <br/> <br/>
