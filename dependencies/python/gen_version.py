@@ -5,7 +5,11 @@ import subprocess
 import sys
 
 branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"],text=True).strip("\n")
-commit = subprocess.check_output(["git", "describe", "--always", "--dirty"],text=True).strip("\n")
+
+if sys.argv[1] != "ci":
+    commit = subprocess.check_output(["git", "describe", "--always", "--dirty"],text=True).strip("\n")
+else:
+    commit = subprocess.check_output(["git", "describe", "--always"],text=True).strip("\n")
 
 # revision number is number of days since jan 9, 2022 (rb3dx's initial commit)
 epoch = 1641743933
@@ -17,7 +21,7 @@ if branch == "develop":
 else:
     version = f"{branch}+{commit}"
 
-path = sys.argv[1]
+path = sys.argv[2]
 
 f = open(path, "w")
 

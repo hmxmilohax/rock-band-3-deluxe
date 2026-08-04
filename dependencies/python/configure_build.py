@@ -14,6 +14,7 @@ parser.add_argument(
     "--no-updates", action="store_true", help="disable dx song updates"
 )
 parser.add_argument("--define", action="append", help="Defines a macro in dx_build_marcos.dta, for debugging")
+parser.add_argument("--ci", action="store_true", help="used by CI")
 
 
 args = parser.parse_args()
@@ -49,7 +50,10 @@ match sys.platform:
         ninja.variable("silence", ">nul")
         ninja.rule("copy", "cmd /c copy $in $out $silence", description="COPY $in")
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
-        ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python dependencies\\python\\gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python dependencies\\python\\gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies\\python\\gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python dependencies\\python\\gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
@@ -70,7 +74,10 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
-        ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python3 dependencies/python/gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python3 dependencies/python/gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python3 dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python3 dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
@@ -91,7 +98,10 @@ match sys.platform:
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
-        ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python dependencies/python/gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python dependencies/python/gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
