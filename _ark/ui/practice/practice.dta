@@ -1,4 +1,36 @@
-#include ../../dx/ui/practice/dx_practice_handles.dta
+#define DX_PRACTICE_HANDLES
+(
+   (dx_practice_enter
+      {dx_presence_manager}
+      {speed_control.grp set_local_pos $speed_controlpos_0 $speed_controlpos_1 $speed_controlpos_2}
+      {score.grp set_local_pos $scorepos_0 $scorepos_1 $scorepos_2}
+      {section.lbl set_local_pos $sectionpos_0 $sectionpos_1 $sectionpos_2}
+      ;{guide_pitch.grp set_local_pos $guide_pitchpos_0 $guide_pitchpos_1 $guide_pitchpos_2}
+      ;{drum_buttons.grp set_local_pos $drum_buttonspos_0 $drum_buttonspos_1 $drum_buttonspos_2}
+      ;{score_parts.grp set_local_pos $score_partspos_0 $score_partspos_1 $score_partspos_2}
+      ;{splash.grp set_local_pos $splashpos_0 $splashpos_1 $splashpos_2}
+      {all_item.grp set_local_pos $all_itempos_0 $all_itempos_1 $all_itempos_2}
+   )
+   (dx_reset
+      {do
+         ($player {beatmatch active_player 0})
+         {dx_clean_solo_box $player {$player instrument}}
+         {dx_track_fc_reset $dx_fc_glow $player}
+      }
+   )
+   (keyboard_msg ($key $shift $ctrl $alt)
+      {if {! {$this in_vocal_mode}}
+         {if {== $key KB_RIGHT}
+            {$this inc_speed}
+            {dpad_right.trig trigger}
+         }
+         {if {== $key KB_LEFT}
+            {$this dec_speed}
+            {dpad_left.trig trigger}
+         }
+      }
+   )
+)
 {new UIPanel
    practice_mode_panel
    (enter {gamecfg set practice_mode TRUE})
@@ -195,33 +227,22 @@
    sel_speed_panel
    (file sel_speed.milo)
    (enter
-      {set $list_selected TRUE}
+      {set $list_selected TRUE} ;reset below hack
       {speeds.lst set scroll_time 0} ; dx - makes the scrolling for the speeds list faster
+      ; dx - add additional practice speeds
       {speeds.lst set_data
-         (practice_speed_0
-            practice_speed_1
-            practice_speed_2
-            practice_speed_3
-            practice_speed_4
-            practice_speed_5
-            practice_speed_6
-            practice_speed_7
-            practice_speed_8
-            practice_speed_9
-            practice_speed_10
-            practice_speed_11
-            practice_speed_12
-            practice_speed_13
-            practice_speed_14
-            practice_speed_15
-            practice_speed_16
-            practice_speed_17
-            practice_speed_18
+         (
+            practice_speed_0 practice_speed_1 practice_speed_2 practice_speed_3
+            practice_speed_4 practice_speed_5 practice_speed_6 practice_speed_7
+            practice_speed_8 practice_speed_9 practice_speed_10 practice_speed_11
+            practice_speed_12 practice_speed_13 practice_speed_14 practice_speed_15
+            practice_speed_16 practice_speed_17 practice_speed_18
          )
       }
-   ) ; dx - add additional practice speeds
+   )
    (focus speeds.lst)
    (SELECT_MSG
+      ;HACK, this is stupid. block additional selection while waiting for delay
       {if $list_selected
          {switch $component
             (speeds.lst
@@ -230,18 +251,17 @@
             )
          }
       }
+      ;hide lst so it doesnt look like you can press other things
       {speeds.lst set_showing FALSE}
       {session_mgr set_active_roster TRUE}
       {training_mgr unparticipate_users}
       {script_task ;delay going to practice to let the game catch up
          kTaskUISeconds
-         (delay
-            #ifdef HX_PS3
-            2
-            #else
-            0
-            #endif
-         )
+         #ifdef HX_PS3
+         (delay 2)
+         #else
+         (delay 0)
+         #endif
          (script {ui goto_screen preloading_screen})
       }
    )
@@ -352,7 +372,7 @@
    (file practice_panel.milo)
    DX_PRACTICE_HANDLES
    (enter
-      {dx_practice_enter}
+      {$this dx_practice_enter}
       {if
          {&&
             {> {beatmatch num_active_players} 0}
@@ -561,7 +581,7 @@
       {{{beatmatch active_player 0} track} track_in}
       {{{beatmatch active_player 0} track} set_playing_intro 1000}
       {$this track_in}
-      {dx_practice_on_extend}
+      {$this dx_reset}
       {if {== {{beatmatch active_player 0} instrument} vocals}
          {{beatmatch active_player 0} reset_scoring}
       }
@@ -576,7 +596,12 @@
    (loop
       {$this set_best_percent {percentage_callback get percent}}
       {coop_track_panel set_showing FALSE}
-      {dx_practice_loop_reset}
+      ;clean dx stuff on loop
+      {if {! {gamemode in_mode trainer}}
+         {dx_game_var_reset}
+         {coop_track_panel track_texture_reset_handler}
+         {$this dx_reset}
+      }
       {$this jump_to_start}
       {$this fade_song_in {/ {'*' 4.0 {beatmatch ms_per_beat}} 1000.0}}
       {$this mark_gems_as_processed}
@@ -601,28 +626,13 @@
    (keep_section_text FALSE)
    (ignore_section '')
    (speed_modifier
-      (
-         1.0
-         0.95
-         0.9
-         0.85
-         0.8
-         0.75
-         0.7
-         0.65
-         0.6
-         0.55
-         0.5
-         0.45
-         0.4
-         0.35
-         0.3
-         0.25
-         0.2
-         0.15
-         0.1
+      ( ; dx - add additional practice speeds
+         1.0 0.95 0.9 0.85 0.8
+         0.75 0.7 0.65 0.6 0.55
+         0.5 0.45 0.4 0.35 0.3
+         0.25 0.2 0.15 0.1
       )
-   ) ; dx - add additional practice speeds
+   )
    (best_percent 0.0)
    (update_best_percent TRUE)
    (uses_harmony FALSE)
@@ -658,7 +668,10 @@
       {do
          ($track_sym {$user get_track_sym})
          {if {&& {!= none $track_sym} {! {game is_game_over}} {session is_in_game}}
-            {dx_practice_select_restart_action}
+            ; dx - restart the current section as long as overdrive isnt enabled
+            {if {&& {== $action kAction_ViewModify} {! $practiceoverdrive}}
+               {session end_game kRestart}
+            }
             {if {&& {== $action kAction_Start} {beatmatch can_user_pause}}
                {practice_panel pause}
                {input_mgr set_user $user}

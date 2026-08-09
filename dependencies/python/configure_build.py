@@ -14,6 +14,7 @@ parser.add_argument(
     "--no-updates", action="store_true", help="disable dx song updates"
 )
 parser.add_argument("--define", action="append", help="Defines a macro in dx_build_marcos.dta, for debugging")
+parser.add_argument("--ci", action="store_true", help="used by CI")
 
 
 args = parser.parse_args()
@@ -49,7 +50,10 @@ match sys.platform:
         ninja.variable("silence", ">nul")
         ninja.rule("copy", "cmd /c copy $in $out $silence", description="COPY $in")
         ninja.rule("bswap", "dependencies\\windows\\swap_art_bytes.exe $in $out", description="BSWAP $in")
-        ninja.rule("version", "python dependencies\\python\\gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python dependencies\\python\\gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python dependencies\\python\\gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies\\python\\gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python dependencies\\python\\gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies\\python\\png_list.py $dir $out", description="PNGLIST $dir")
@@ -64,11 +68,16 @@ match sys.platform:
         ninja.variable("arkhelper", "dependencies\\windows\\arkhelper.exe")
         ninja.variable("dtab", "dependencies\\windows\\dtab.exe")
         ninja.variable("dtacheck", "dependencies\\windows\\dtacheck.exe")
+        ninja.variable("prefabulous", "dependencies\\windows\\prefabulous.exe")
+        ninja.rule("prefab_import", '$prefabulous $scene $in && type nul > $out', description="PREFAB $in -> $scene", pool="console",)
     case "darwin":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp $in $out", description="COPY $in")
         ninja.rule("bswap", "python3 dependencies/python/swap_rb_art_bytes.py $in $out", description="BSWAP $in")
-        ninja.rule("version", "python3 dependencies/python/gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python3 dependencies/python/gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python3 dependencies/python/gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python3 dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python3 dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python3 dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
@@ -83,11 +92,16 @@ match sys.platform:
         ninja.variable("arkhelper", "dependencies/macos/arkhelper")
         ninja.variable("dtab", "dependencies/macos/dtab")
         ninja.variable("dtacheck", "dependencies/macos/dtacheck")
+        ninja.variable("prefabulous", "dependencies/macos/prefabulous")  # or linux path
+        ninja.rule("prefab_import", '"$prefabulous" "$scene" "$in" && touch "$out"', description="PREFAB $in -> $scene", pool="console",)
     case "linux":
         ninja.variable("silence", "> /dev/null")
         ninja.rule("copy", "cp --reflink=auto $in $out",description="COPY $in")
         ninja.rule("bswap", "dependencies/linux/swap_art_bytes $in $out", "BSWAP $in")
-        ninja.rule("version", "python dependencies/python/gen_version.py $out", description="Writing version info")
+        if args.ci:
+            ninja.rule("version", "python dependencies/python/gen_version.py ci $out", description="Writing version info")
+        else:
+            ninja.rule("version", "python dependencies/python/gen_version.py local $out", description="Writing version info")
         ninja.rule("song_update_hash", "python dependencies/python/gen_song_update_hash.py $out", description="Writing song hash")
         ninja.rule("defines", "python dependencies/python/gen_defines.py $out $defines", description="Generating build defines")
         ninja.rule("png_list", "python dependencies/python/png_list.py $dir $out", description="PNGLIST $dir")
@@ -102,6 +116,8 @@ match sys.platform:
         ninja.variable("arkhelper", "dependencies/linux/arkhelper")
         ninja.variable("dtab", "dependencies/linux/dtab")
         ninja.variable("dtacheck", "dependencies/linux/dtacheck")
+        ninja.variable("prefabulous", "dependencies/linux/prefabulous")
+        ninja.rule("prefab_import", '"$prefabulous" "$scene" "$in" && touch "$out"', description="PREFAB $in -> $scene", pool="console",)
 
 match args.platform:
     case "ps3":
@@ -153,6 +169,8 @@ def ark_file_filter(file: Path):
     if ".DS_Store" in file.parts:
         return False
     if file.is_dir():
+        return False
+    if file.name.startswith("prefabs.milo_"):
         return False
     if file.suffix.endswith("_ps3") and args.platform != "ps3":
         return False
@@ -240,8 +258,8 @@ mip_entries = {
     # Score box
     #Path("_ark", "dx", "custom_textures", "score", "scoreboard_frame"): 3,
     #Path("_ark", "dx", "custom_textures", "score", "scoreboard_lens"): 3,
-    Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_frame"): 4,
-    Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_lens"): 4,
+    #Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_frame"): 4,
+    #Path("_ark", "dx", "custom_textures", "score", "star_multiplier_meter_lens"): 4,
 
     # Font
     Path("_ark", "dx", "custom_textures", "font"): 6,
@@ -281,12 +299,12 @@ mip_entries = {
     #Path("_ark", "dx", "custom_textures", "vocal_highway", "vocal_highway_bg_brown"): 2,
 
     # Vocal arrows
-    Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"): 4,
-    Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow_outline"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_arrows", "vocal_arrow_outline"): 4,
 
     # Vocal notes
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tube"): 5,
-    Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_talkie"): 4,
+    #Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_talkie"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_tamb_gem"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_off"): 4,
     Path("_ark", "dx", "custom_textures", "vocal_note", "vocal_note_on"): 4,
@@ -378,6 +396,50 @@ for f in filter(ark_file_filter, Path("_ark").rglob("*")):
             if not out_path.name.endswith("_update.txt"):
                 ninja.build(str(out_path), "copy", str(f))
                 ark_files.append(str(out_path))
+
+if args.platform in ("ps3", "xbox"):
+    milo_name = f"prefabs.milo_{'ps3' if args.platform == 'ps3' else 'xbox'}"
+
+    # Prefer main/shared, fallback to shared
+    src_candidates = [
+        Path("_ark", "char", "main", "shared", "gen", milo_name),
+        Path("_ark", "char", "shared", "gen", milo_name),
+    ]
+    src_scene = next((p for p in src_candidates if p.exists()), None)
+
+    staged_scene = Path("obj", args.platform, "ark", "char", "main", "shared", "gen", milo_name)
+
+    if src_scene is not None:
+        # Always stage the base scene (this ensures it lands in obj/... even if no prefabs to add)
+        ninja.build(str(staged_scene), "copy", str(src_scene))
+        ark_files.append(str(staged_scene))
+
+        custom_dir = Path("_ark", "char", "custom_prefabs")
+        if custom_dir.exists() and src_scene is not None:
+            stamps_dir = Path("obj", args.platform, "stamps")
+            stamps_dir.mkdir(parents=True, exist_ok=True)
+
+            last_stamp = None
+            for pf in sorted(custom_dir.iterdir()):
+                if not (pf.is_file() and pf.suffix == "" and pf.name != ".gitkeep"):
+                    continue
+
+                stamp = stamps_dir / f"prefab_{pf.name}.stamp"
+
+                implicit_inputs = [str(staged_scene)]
+                if last_stamp is not None:
+                    implicit_inputs.append(str(last_stamp))
+
+                # NOTE: pf is the *explicit input*, so rule can use $in
+                ninja.build(
+                    str(stamp),
+                    "prefab_import",
+                    str(pf),
+                    implicit=implicit_inputs,
+                    variables={"scene": str(staged_scene)},
+                )
+                ark_files.append(str(stamp))
+                last_stamp = stamp
 
 # write version info
 dta = Path("obj", args.platform, "raw", "dx", "locale", "dx_version.dta")

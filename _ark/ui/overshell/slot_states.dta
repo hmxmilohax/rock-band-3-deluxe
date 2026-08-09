@@ -28,12 +28,21 @@
       {play_instr_sfx $user button_select}
    )
    (BUTTON_DOWN_MSG
-      {if_else {== $action kAction_Confirm}
-         {do
-            {overshell attempt_to_add_user $user}
-            {play_instr_sfx $user button_select}
+      {if_else
+         {&&
+            {!= $dx_nav_controller_port -1}
+            {== {$user get_pad_num} $dx_nav_controller_port}
          }
-         kDataUnhandled
+         ; nav pad
+         {dx_handle_nav_pad $action}
+         ; vanilla behavior, drop in a player
+         {if_else {== $action kAction_Confirm}
+            {do
+               {overshell attempt_to_add_user $user}
+               {play_instr_sfx $user button_select}
+            }
+            kDataUnhandled
+         }
       }
    )
 )
@@ -109,6 +118,23 @@
    (view choose_char)
    (choose_char_flow TRUE)
    (remote_status remote_status_choose_char)
+   #define UPDATE_CHAR_PIC
+   (
+      {do
+         ($ext
+            #ifdef HX_PS3 "_keep.bmp_ps3" #endif
+            #ifdef HX_XBOX "_keep.bmp_xbox" #endif
+            #ifdef HX_WII "_keep.bmp_wii" #endif
+         )
+         ($exists {file_exists {sprint "char/prefab/images/gen/" {chars.lst selected_sym} $ext}})
+         {if {exists choose_character.tex}
+            {if_else $exists
+               {choose_character.tex set_bitmap {sprint "char/prefab/images/" {chars.lst selected_sym} "_keep.bmp"}}
+               {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+            }
+         }
+      }
+   )
    (enter
       {choose_char.grp set_showing TRUE}
       {chars.lst set_showing TRUE}
@@ -116,22 +142,37 @@
       {chars.lst refresh}
       {chars.lst set display_num 7}
       {chars.lst set_type character_list}
-      {prefab_mgr load_portraits $this}
+      {if {! {session_mgr is_local}}
+         {prefab_mgr load_portraits $this}
+      }
       {if {{$this get_user} is_local}
          {$this update_character_list}
       }
       {chars.lst refresh}
       {handle ($this set_default_option '')}
       {handle ($this set_default_option_index {$this get_default_char_index})}
+      {if {session_mgr is_local}
+         UPDATE_CHAR_PIC
+      }
    )
-   (exit {prefab_mgr unload_portraits $this})
+   (exit
+      {if_else {session_mgr is_local}
+         {prefab_mgr unload_portraits $this}
+         {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+      }
+   )
    (update_view
       {if {== {$this focus_name} chars.lst}
          {$this update_character_list}
          {$this refresh_highlighted_char {chars.lst selected_pos}}
       }
    )
-   (SCROLL_MSG {$this update})
+   (SCROLL_MSG
+      {$this update}
+      {if {session_mgr is_local}
+         UPDATE_CHAR_PIC
+      }
+   )
    (SELECT_MSG {$this select_char {chars.lst selected_pos}})
    (on_cancel
       {if_else {{$this get_user} has_char}
@@ -932,6 +973,7 @@
             )
             (overshell_game_options {$this show_game_options})
             (os_event_options {ui push_screen dx_EventModeWelcome_screen})
+            (overshell_leave_small {$this attempt_remove_user}) ; dx - esl only
             (overshell_leave {$this attempt_remove_user})
             (overshell_dx_bot_settings
                {set $in_dx_settings TRUE}
@@ -1042,6 +1084,7 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_confirm_yes
+            {dx_char_hider FALSE} ;force restore chars
             {set $dx_mtvup FALSE}
             {world_panel unload}
             {dx_countdown_var_reset}
@@ -1058,8 +1101,8 @@
                {if_else $dx_playing_a_show
                   {do
                      {set $dx_in_show_flow TRUE}
-                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE) kNetReliable}}
-                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies) kNetReliable}}
+                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE)} kNetReliable}
+                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies)} kNetReliable}
                      {meta_performer set_song antibodies}
                      {ui sync_screen meta_loading_continue_screen 0}
                   }
@@ -1068,8 +1111,8 @@
                {if_else $dx_playing_a_show
                   {do
                      {set $dx_in_show_flow TRUE}
-                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE) kNetReliable}}
-                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies) kNetReliable}}
+                     ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE)} kNetReliable}
+                     ;{session send_msg_to_all {'`' (meta_performer set_song antibodies)} kNetReliable}
                      {meta_performer set_song antibodies}
                      {ui sync_screen meta_loading_continue_screen 0}
                   }
@@ -1545,13 +1588,13 @@
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_calibration
-            {if_else {&& {== {ui current_screen} game_screen} {session_mgr is_local}}
+            {if_else {&& {== {ui current_screen} game_screen} {! {session_mgr is_local}}}
+               {$this show_enter_calibration} ; dx - vanilla behavior
                {do
                   {set $in_dx_settings TRUE}
                   {set $this_state dxState_CalibrationInGame}
-                  {$this show_state kState_OptionsExtras} ; dx - enter custom in-game calibration tool when in-game and offline
+                  {$this show_state kState_OptionsExtras} ; dx - enter custom in-game calibration tool
                }
-               {$this show_enter_calibration} ; dx - vanilla behavior
             }
          )
          (overshell_dolby
@@ -2713,6 +2756,9 @@
       }
       {choose_part.lst restart_highlight_matanim}
       {choose_part.lst refresh}
+      {if {gamemode in_mode trainer}
+         {$this update_part_select_list}
+      }
       DX_UPDATE_ICON
    )
    (enter
@@ -3204,10 +3250,12 @@
    (part_unresolved TRUE)
    (shows_extended_mic_arrows TRUE)
    (enter
-      {if_else {dx_check_for_dupe {$this get_slot_num}}
-         {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
-         {$this show_state kState_ChoosePart} ; dx - returns to ChoosePart if another player already has the part
-         ;{$this show_choose_part_wait} ; dx - deprecated vanilla behavior
+      {if {{$this get_user} is_local}   
+         {if_else {dx_check_for_dupe {$this get_slot_num}}
+            {$this show_state kState_ChooseDiff} ; dx - force enter ChooseDiff state if Pro player exists but not 5L and vice-versa
+            {$this show_state kState_ChoosePart} ; dx - returns to ChoosePart if another player already has the part
+            ;{$this show_choose_part_wait} ; dx - deprecated vanilla behavior
+         }
       }
    )
    (update_remote_feedback
@@ -3393,7 +3441,8 @@
          {if {== {ui current_screen} coop_endgame_screen}
             {set $dx_restart_allowed FALSE}
             {session send_msg_to_all
-               {'`' ({set $dx_restart_allowed FALSE}) kNetReliable}
+               {'`' ({set $dx_restart_allowed FALSE})}
+               kNetReliable
             }
          }
          ; dx - re-run track textures on drop-in
@@ -3488,6 +3537,7 @@
             }
          )
          (overshell_confirm_no {$this show_song_options})
+         (overshell_leave_small {$this attempt_remove_user})
          (overshell_leave {$this attempt_remove_user})
       }
    )

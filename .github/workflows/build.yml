@@ -53,7 +53,7 @@ jobs:
           python-version: '3.11'
       - name: Build ARK
         run: |
-          dependencies/python/configure_build.py xbox
+          dependencies/python/configure_build.py xbox --ci
           dependencies/linux/ninja
       - name: Remove .gitkeep
         run: |
@@ -62,6 +62,48 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RB3DX-Xbox
+          path: out/xbox
+
+  build_xbox_char:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Merge assets into _ark
+        run: |
+          cp -r rb3dx_assets/char/. _ark/char/
+          cp -r rb3dx_assets/dx/. _ark/dx/
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build ARK
+        run: |
+          dependencies/python/configure_build.py xbox --ci --define CUSTOMCHARS
+          dependencies/linux/ninja
+      - name: Remove .gitkeep
+        run: |
+          find . -name ".gitkeep" -type f -delete
+      - name: Create character warning
+        run: |
+          echo "Custom characters are still experimental! You may encounter bugs such as face deformation. This can be solved by making sure the stock RB character you are switching from matches the body type of the custom character. You can also set the characters on your profile on first boot." > "Please read before installing.txt"
+          echo "Should you decide to uninstall the custom characters build, please make sure to remove any characters as stand-ins prior to updating or your game may crash!" >> "Please read before installing.txt"
+          cp "Please read before installing.txt" out/xbox/
+      - name: Create character warning Spanish
+        run: |
+          echo "Los personajes custom todavía son experimentales, así que puedes tener deformaciones con caras. Puedes arreglar esto cambiando a un personaje "vanilla" de Rock Band con el mismo sexo del personaje custom. También puedes asignar personajes custom a tu banda como sustitutos para evitar este problema." > "ES - Lee antes de instalar.txt"
+          echo "Si quieres borrar la versión de personajes custom, ¡por favor elimina cualquier personaje custom de la lista de sustitutos o juego puede crashear!" >> "ES - Lee antes de instalar.txt"
+          cp "ES - Lee antes de instalar.txt" out/xbox/
+      - name: Create character warning Portuguese
+        run: |
+          echo "Os personagems personalizados ainda estão em fase de testes! Você pode encontrar, como o bug que deforma a face de certos personagens. Este erro pode ser resolvido se certificando que o personagem que você está trocando possui o mesmo gênero do personagem personalizado. Você também pode selecionar personagens do seu perfil como padrão." > "PT - Leia antes de instalar.txt"
+          echo "Se você decidir desinstalar esta versão com personagens personalizados, certifique-se de remover qualquer personagem personalizado como substituto, ou o jogo irá crashar!" >> "PT - Leia antes de instalar.txt"
+          cp "PT - Leia antes de instalar.txt" out/xbox/
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: RB3DX-Xbox-CustomCharacters
           path: out/xbox
 
   build_xbox_no_updates:
@@ -74,7 +116,7 @@ jobs:
           python-version: '3.11'
       - name: Build ARK
         run: |
-          dependencies/python/configure_build.py xbox --no-updates
+          dependencies/python/configure_build.py xbox --ci --no-updates
           dependencies/linux/ninja
       - name: Remove .gitkeep
         run: |
@@ -95,7 +137,7 @@ jobs:
           python-version: '3.11'
       - name: Build ARK
         run: |
-          python dependencies/python/configure_build.py ps3
+          python dependencies/python/configure_build.py ps3 --ci
           dependencies/windows/ninja.exe
       - name: Build PKG
         run: |
@@ -108,7 +150,59 @@ jobs:
           name: RB3DX-PS3
           path: '*.pkg'
 
-  build_xbox_ptbr:
+  build_ps3_char:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Merge assets into _ark
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "_ark/char"
+          New-Item -ItemType Directory -Force -Path "_ark/dx"
+          Copy-Item -Path "rb3dx_assets/char/*" -Destination "_ark/char" -Recurse -Force
+          Copy-Item -Path "rb3dx_assets/dx/*" -Destination "_ark/dx" -Recurse -Force
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build ARK
+        run: |
+          python dependencies/python/configure_build.py ps3 --ci --define CUSTOMCHARS
+          dependencies/windows/ninja.exe
+      - name: Build PKG
+        run: |
+          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
+          $content="RB3DXNITE"
+          dependencies/windows/RB3DXBuildPkgPS3.exe out/ps3 usa ($content + $sha_short) .
+      - name: Create character warning
+        shell: bash
+        run: |
+          mkdir -p artifact
+          cp *.pkg artifact/
+          echo "Custom characters are still experimental! You may encounter bugs such as face deformation. This can be solved by making sure the stock RB character you are switching from matches the body type of the custom character. You can also set the characters on your profile on first boot." > artifact/"Please read before installing.txt"
+          echo "Should you decide to uninstall the custom characters build, please make sure to remove any characters as stand-ins prior to updating or your game may crash!" >> artifact/"Please read before installing.txt"
+      - name: Create character warning Spanish
+        shell: bash
+        run: |
+          mkdir -p artifact
+          echo "Los personajes custom todavía son experimentales, así que puedes tener deformaciones con caras. Puedes arreglar esto cambiando a un personaje "vanilla" de Rock Band con el mismo sexo del personaje custom. También puedes asignar personajes custom a tu banda como sustitutos para evitar este problema." > artifact/"ES - Lee antes de instalar.txt"
+          echo "Si quieres borrar la versión de personajes custom, ¡por favor elimina cualquier personaje custom de la lista de sustitutos o juego puede crashear!" >> artifact/"ES - Lee antes de instalar.txt"
+      - name: Create character warning Portuguese
+        shell: bash
+        run: |
+          mkdir -p artifact
+          echo "Os personagems personalizados ainda estão em fase de testes! Você pode encontrar, como o bug que deforma a face de certos personagens. Este erro pode ser resolvido se certificando que o personagem que você está trocando possui o mesmo gênero do personagem personalizado. Você também pode selecionar personagens do seu perfil como padrão." > artifact/"PT - Leia antes de instalar.txt"
+          echo "Se você decidir desinstalar esta versão com personagens personalizados, certifique-se de remover qualquer personagem personalizado como substituto, ou o jogo irá crashar!" >> artifact/"PT - Leia antes de instalar.txt"
+      - name: Upload result
+        uses: actions/upload-artifact@v4
+        with:
+          name: RB3DX-PS3-CustomCharacters
+          path: |
+            artifact
+
+  build_rockshelf:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -116,13 +210,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Translate locale
-        run: |
-          python dependencies/python/ptbr.py
-        working-directory: ${{ github.workspace }}
       - name: Build ARK
         run: |
-          dependencies/python/configure_build.py xbox
+          dependencies/python/configure_build.py ps3 --ci
           dependencies/linux/ninja
       - name: Remove .gitkeep
         run: |
@@ -130,35 +220,35 @@ jobs:
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
-          name: RB3DX-Xbox-BRAZIL
-          path: out/xbox
-
-  build_ps3_ptbr:
-    runs-on: windows-2025
+          name: RB3DX-Rockshelf
+          path: out/ps3
+  
+  build_rockshelf_char:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Merge assets into _ark
+        run: |
+          cp -r rb3dx_assets/char/. _ark/char/
+          cp -r rb3dx_assets/dx/. _ark/dx/
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Translate locale
-        run: |
-          python dependencies/python/ptbr.py
-        working-directory: ${{ github.workspace }}
       - name: Build ARK
         run: |
-          python dependencies/python/configure_build.py ps3
-          dependencies/windows/ninja.exe
-      - name: Build PKG
+          dependencies/python/configure_build.py ps3 --ci --define CUSTOMCHARS
+          dependencies/linux/ninja
+      - name: Remove .gitkeep
         run: |
-          $sha_short="$(git rev-parse --short HEAD)".ToUpper()
-          $content="RB3DXNITE"
-          dependencies/windows/RB3DXBuildPkgPS3.exe out/ps3 usa ($content + $sha_short) .
+          find . -name ".gitkeep" -type f -delete
       - name: Upload result
         uses: actions/upload-artifact@v4
         with:
-          name: RB3DX-PS3-BRAZIL
-          path: '*.pkg'
+          name: RB3DX-Rockshelf-CustomCharacters
+          path: out/ps3
 
   build_wii:
     runs-on: ubuntu-latest
@@ -188,7 +278,7 @@ jobs:
           truncate -s 300667016 platform/wii/files/gen/main_wii_9.ark
       - name: Build ARK
         run: |
-          dependencies/python/configure_build.py wii
+          dependencies/python/configure_build.py wii --ci
           dependencies/linux/ninja
       - uses: edgarrc/action-7z@v1
         with:

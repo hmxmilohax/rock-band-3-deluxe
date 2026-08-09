@@ -87,7 +87,7 @@
                         )
                         ($song {symbol {meta_performer song}})
                         ($meta {song_mgr get_meta_data $song})
-                        ($has_part {$meta has_part $inst_map})
+                        ($has_part {if_else $enabled {$meta has_part $inst_map} TRUE})
                         ($scale {if_else $has_part 1 0})
                         {$c iterate RndDir $y
                            {set_this $y}
@@ -292,46 +292,150 @@
       )
    }
 }
+{func dx_get_festive ($worlddir)
+   {with $worlddir
+      {new ParticleSys snow.part}
+      {snow.part set fancy TRUE}
+      {snow.part set_local_pos -1300 1300 1256}
+      {new Mat snow.mat}
+      {snow.mat copy star_particle.mat kCopyShallow}
+      {new Tex snow.tex}
+      {snow.tex set_bitmap "dx/custom_textures/_additional_textures/snow_particle.png"}
+      {snow.mat set diffuse_tex snow.tex}
+      {snow.part set mat snow.mat}
+      ; The Wii barely likes 32 particles in one particle system, let alone 300!
+      #ifndef HX_WII
+      {snow.part set max_parts 300}
+      #else
+      {snow.part set max_parts 32}
+      #endif
+      ; Many of these Vector2 properties are actually a range.
+      ; x = min, y = max
+      {snow.part set (emit_rate x) 2.0}
+      {snow.part set (emit_rate y) 3.0}
+
+      {snow.part set (speed x) 0.2}
+      {snow.part set (speed y) 2}
+
+      {snow.part set (life x) 90}
+      {snow.part set (life y) 110}
+
+      {snow.part set (start_size x) 15}
+      {snow.part set (start_size y) 20}
+
+      {snow.part set (force_dir z) -0.5}
+      {snow.part set (force_dir x) -0.2}
+
+      {snow.part set start_alpha_high 0.8}
+      {snow.part set start_alpha_low 0.6}
+      {snow.part set end_alpha_low 0}
+      {snow.part set end_alpha_high 0}
+
+      {snow.part set (box_extent_1 x) -1700}
+      {snow.part set (box_extent_1 y) -1700}
+      {snow.part set (box_extent_1 z) 0}
+      {snow.part set (box_extent_2 x) 1700}
+      {snow.part set (box_extent_2 y) 1700}
+      {snow.part set (box_extent_2 z) 20}
+      {cityscape.grp add_object snow.part}
+      {$this sync_objects}
+
+      {difference_clouds.tex set_bitmap "dx/custom_textures/_additional_textures/difference_clouds.png"}
+      {difference_clouds.mat set color {pack_color 0.3 0.3 0.3}}
+      {sky_dome02.mesh set_showing FALSE}
+      {new Mesh sky_dome_inverted.mesh}
+      {sky_dome_inverted.mesh copy sky_dome.mesh kCopyShallow}
+      {sky_dome_inverted.mesh set_local_scale_index 2 -0.493}
+      {sky_dome_inverted.mesh set_local_pos_index 2 -215}
+      {sky_dome.mat set cull FALSE}
+      {sky.grp add_object sky_dome_inverted.mesh}
+
+      {new PropAnim wind.anim}
+
+      {wind.anim add_keys snow.part (force_dir x) kPropFloat}
+      {wind.anim add_keys snow.part (force_dir y) kPropFloat}
+
+      {set $forcex {snow.part get (force_dir x)}}
+      {set $forcey {snow.part get (force_dir y)}}
+      {thread_task kTaskUISeconds (script
+         {wind.anim set_key_val snow.part (force_dir x) 0 $forcex}
+         {wind.anim set_key_val snow.part (force_dir y) 0 $forcey}
+         {set $forcex {random_float -0.3 -0.02}}
+         {set $forcey {random_float -0.05 0.05}}
+         {wind.anim set_key_val snow.part (force_dir x) 1 $forcex}
+         {wind.anim set_key_val snow.part (force_dir y) 1 $forcey}
+         {set $animtime {random_float 10 20}}
+         ;{dx_log_writer insane {sprint "Animating for " $animtime " seconds, prev: " {snow.part get (force_dir x)} " " {snow.part get (force_dir y)}}}
+         {wind.anim animate (range 0 1) (period $animtime) (units kTaskUISeconds)}
+         {$task sleep $animtime}
+         {$task loop}
+      )}
+   }
+}
+; Hides that crowd full of ~200 people in line at the theater, MASSIVELY improves performance
+{func dx_optimize_splash ($worlddir)
+   {with $worlddir
+      {foreach $camshot (main.shot outro_shell.shot)
+         {while {> {$camshot size (crowds)} 0}
+            {$camshot remove (crowds 0)}
+         }
+      }
+      {WorldCrowdTheater.crd set_showing FALSE}
+      {WorldCrowdTheater2.crd set_showing FALSE}
+   }
+}
 {func
    dx_sv_menu_logo_set
    ($panel)
    {if $dx_sv8_dx_vers
-      {if_else $dx_event_mode
-         {if_else $dx_event_logo_path
-            {if_else {file_exists #ifdef HX_PS3 {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $dx_event_logo_path} #endif #ifdef HX_XBOX {sprint "GAME:/" $dx_event_logo_path} #endif }
-               {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap #ifdef HX_PS3 {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $dx_event_logo_path} #endif #ifdef HX_XBOX {sprint "GAME:/" $dx_event_logo_path} #endif}
-               {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap {sprint "dx/custom_textures/_additional_textures/logo-standard.png"}}
-            }
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap {sprint "dx/custom_textures/_additional_textures/logo-standard.png"}}
-         }
-         {do
-            {set $dx_main_logo_number {random_int 1 4}}
-            {if {== $dx_main_logo_number 4} {set $dx_main_logo_number 1}}
-            #ifndef RB3E
-            {if {== $dx_main_logo_number 2} {set $dx_main_logo_number 1}}
-            #endif
-            {set $dx_random_number_logo {random_int 0 4096}}
-            {switch $dx_random_number_logo
-               (69 {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/milo-harmonix_logo.png"})
-               (420 {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/the_game_logo.png"})
-               (666 {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/milohax-harm_logo.png"})
-               {switch $dx_main_logo_number
-                  ((1 3) {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap {sprint "dx/custom_textures/_additional_textures/logo-" $dx_season ".png"}})
-                  (2 {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap "dx/custom_textures/_additional_textures/rb3enhanced_logo.png"})
-                  kDataUnhandled
+      {do
+         ($dir "dx/custom_textures/_additional_textures/")
+         {if {== {sprint {$panel loaded_dir}} sv8_a}
+            {set_this {{$panel find sv8_a} find cityscape_ao}}
+            {if_else $dx_event_mode
+               {if_else $dx_event_logo_path
+                  {if_else {file_exists #ifdef HX_PS3 {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $dx_event_logo_path} #endif #ifdef HX_XBOX {sprint "GAME:/" $dx_event_logo_path} #endif }
+                     {logo.tex set_bitmap #ifdef HX_PS3 {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/" $dx_event_logo_path} #endif #ifdef HX_XBOX {sprint "GAME:/" $dx_event_logo_path} #endif}
+                     {logo.tex set_bitmap {sprint $dir "logo-standard.png"}}
+                  }
+                  {logo.tex set_bitmap {sprint $dir "logo-standard.png"}}
+               }
+               {do
+                  {set $dx_main_logo_number {random_int 1 4}}
+                  {if {== $dx_main_logo_number 4} {set $dx_main_logo_number 1}}
+                  #ifndef RB3E
+                  {if {== $dx_main_logo_number 2} {set $dx_main_logo_number 1}}
+                  #endif
+                  {set $dx_random_number_logo {random_int 0 4096}}
+                  {switch $dx_random_number_logo
+                     (69 {logo.tex set_bitmap {sprint $dir "milo-harmonix_logo.png"}})
+                     (420 {logo.tex set_bitmap {sprint $dir "the_game_logo.png"}})
+                     (666 {logo.tex set_bitmap {sprint $dir "milohax-harm_logo.png"}})
+                     {switch $dx_main_logo_number
+                        ((1 3) {logo.tex set_bitmap {sprint $dir "logo-" $dx_season ".png"}})
+                        (2 {logo.tex set_bitmap {sprint $dir "rb3enhanced_logo.png"}})
+                        kDataUnhandled
+                     }
+                  }
+                  {if {== $dx_season halloween}
+                     {moon.tex set_bitmap {sprint $dir "blood_moon.png"}}
+                  }
+                  {if {== $dx_season christmas}
+                     {dx_get_festive $this}
+                  }
+                  ; Always optimize the splash on the menu even on console, since that crowd is mostly covered up by overshell
+                  {dx_optimize_splash $this}
+                  {logo.tex set_bitmap {sprint $dir "logo-" $dx_season #ifdef RB3E "-rb3e" #endif ".png"}}
+                  {logo.mesh set_local_pos_index 0 -750}
+                  {logo.mesh set_local_rot_index 2 -30}
+                  {logo.mesh set_local_scale_index 0 .45}
+                  {logo.mesh set_local_scale_index 1 .35}
+                  {logo.mesh set_local_scale_index 2 .45}
+                  {moon.mesh set_local_scale_index 0 2.5}
+                  {moon.mesh set_local_scale_index 2 1.3}
                }
             }
-            {if {== $dx_season halloween}
-               {{{{$panel find sv8_a} find cityscape_ao} find moon.tex} set_bitmap "dx/custom_textures/_additional_textures/blood_moon.png"}
-            }
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.tex} set_bitmap {sprint "dx/custom_textures/_additional_textures/logo-" $dx_season #ifdef RB3E "-rb3e" #endif ".png"}}
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.mesh} set_local_pos_index 0 -750}
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.mesh} set_local_rot_index 2 -30}
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.mesh} set_local_scale_index 0 .45}
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.mesh} set_local_scale_index 1 .35}
-            {{{{$panel find sv8_a} find cityscape_ao} find logo.mesh} set_local_scale_index 2 .45}
-            {{{{$panel find sv8_a} find cityscape_ao} find moon.mesh} set_local_scale_index 0 2.5}
-            {{{{$panel find sv8_a} find cityscape_ao} find moon.mesh} set_local_scale_index 2 1.3}
+            {roll_splash_art}
          }
       }
    }

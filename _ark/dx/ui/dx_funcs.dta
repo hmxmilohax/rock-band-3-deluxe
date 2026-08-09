@@ -1,6 +1,38 @@
 #include dx_mesh_funcs.dta
 #include dx_search_funcs.dta
 #include dx_fix_special_chars.dta
+{set $dx_metamusic_list (
+   #include dx_metamusic.dta
+)}
+#ifndef HX_WII
+; Seasonal metaloops
+{do
+   ($alliwantforchristmas ("alliwantforchristmas" "loops/others/alliwantforchristmas" -0.86))
+   {get_date_time $year $month $day $hour $minute $second}
+   {if {== $month 12}
+      ; Add to rotation during December, only play it on Christmas Day
+      {if_else {== $day 25}
+         {set $dx_metamusic_list {array ($alliwantforchristmas)}}
+         {do
+            ($to_remove {array 0})
+            ; Randomly remove half of the metaloops so christmas is more common
+            ; Done in two loops because removing elements from an array while you're iterating it is a bad idea
+            {foreach $metaloop $dx_metamusic_list
+               {set $num {random_int 0 100}}
+               {if {<= $num 50}
+                  {push_back $to_remove $metaloop}
+               }
+            }
+            {foreach $metaloop $to_remove
+               {remove_elem $dx_metamusic_list $metaloop}
+            }
+            {push_back $dx_metamusic_list $alliwantforchristmas}
+         }
+      }
+   }
+}
+#endif
+{set $dx_current_metamusic_volume -2}
 {func
    dx_store_meta_info
    ($shortname $song $artist $verb)
@@ -10,9 +42,25 @@
    {set $metaartist {symbol $artist}}
    {set $verblist (verb_play verb_rock verb_jam verb_groove)}
    {set $num {random_int 0 10}}
+   
    {if_else {|| {> $num 6} {== {localize $verb} "none"}}
       {set $metaverb {random_elem $verblist}}
       {set $metaverb $verb}
+   }
+}
+{func dx_get_metamusic_file
+   {get_date_time $year $month $day $hour $minute $second}
+   ; Call a random int based off of current time
+   ; This will increase the entropy of the game's RNG greatly
+   {foreach_int $i 0 {+ $second $day $hour}
+      {random_int 0 1}
+   }
+   {do
+      ($picked {random_elem $dx_metamusic_list})
+      ($shortname {elem $picked 0})
+      {dx_store_meta_info $shortname {sprint $shortname "_title"} {sprint $shortname "_artist"} {symbol {sprint $shortname "_desc"}}}
+      {set $dx_current_metamusic_volume {elem $picked 2}}
+      {elem $picked 1}
    }
 }
 {func
@@ -153,10 +201,12 @@
       {if {! {exists dx_admin_script}}
          {thread_task kTaskSeconds (name dx_admin_script)
             (script
-               {run {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/ace_admin.dta"}}
-               {if {== $dx_command_ran 1}
-                  {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/ace_admin.dta"} ""}
-                  {set $dx_command_ran 0}
+               {unless {ui in_transition}
+                  {run {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/ace_admin.dta"}}
+                  {if {== $dx_command_ran 1}
+                     {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/ace_admin.dta"} ""}
+                     {set $dx_command_ran 0}
+                  }
                }
                {$task sleep 1.5}
                {$task loop}
@@ -166,31 +216,21 @@
    }
 }
 {func get_trill_interval
-   ($default $pro)
+   ($default)
    {do
       ($return $default)
-      ;looser lanes from lysix, only apply to the correct input var if enabled
-      ;{if {&& $extended_lanes {== $default 165}}
-         ;extended is 190, but you can change it here
-      ;   {set $return {+ $default 15}}
-      ;} This was breaking all trill making them only visible but not applying their functionality.
       {if
          {&&
-            {! $pro}
             ;if we do not have rb4 lanes enabled
             {! {modifier_mgr is_modifier_active mod_rb4_lanes}}
-            ;and its an updated song
-            {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
-            ; the song is a candidate within the list of valid pre rb3 sources
-            {||
-               {== $sourcevar rb1} {== $sourcevar rb1_dlc} {== $sourcevar rb2}
-               {== $sourcevar ugc1} {== $sourcevar rbtp_vol_1} {== $sourcevar dlc}
-               {== $sourcevar rbtp_vol_2} {== $sourcevar rbtp_classic_rock}
-               {== $sourcevar rbtp_country_1} {== $sourcevar rbtp_metal}
-               {== $sourcevar lego} {== $sourcevar rbtp_acdc} {== $sourcevar greenday}
+            ;and its an rb4lanesvar is true for this song
+            {== $rb4lanesvar TRUE}
+            {&& {!= {$user get_track_type} kTrackRealBass} {!= {$user get_track_type} kTrackRealGuitar}
+                {!= {$user get_track_type} kTrackRealKeys} {!= {$user get_track_type} kTrackKeys}
             }
          }
          ;disable lanes
+         ;{dx_log_writer beatmatch {sprint "[El DEPURADOR] - Rieles desactivados ¿Pro Hard?" }}
          {set $return -100}
       }
       ;if lanes are disabled
@@ -215,31 +255,21 @@
    }
 }
 {func get_lane_interval
-   ($default $pro)
+   ($default)
    {do
       ($return $default)
-      ;looser lanes from lysix, only apply to the correct input var if enabled
-      {if {&& $extended_lanes {== $default 165}}
-         ;extended is 190, but you can change it here
-         {set $return {+ $default 15}}
-      }
       {if
          {&&
-            {! $pro}
             ;if we do not have rb4 lanes enabled
             {! {modifier_mgr is_modifier_active mod_rb4_lanes}}
-            ;and its an updated song
-            {file_exists {sprint "songs/updates/" {meta_performer song} "/" {meta_performer song} "_update.mid"}}
-            ; the song is a candidate within the list of valid pre rb3 sources
-            {||
-               {== $sourcevar rb1} {== $sourcevar rb1_dlc} {== $sourcevar rb2}
-               {== $sourcevar ugc1} {== $sourcevar rbtp_vol_1} {== $sourcevar dlc}
-               {== $sourcevar rbtp_vol_2} {== $sourcevar rbtp_classic_rock}
-               {== $sourcevar rbtp_country_1} {== $sourcevar rbtp_metal}
-               {== $sourcevar lego} {== $sourcevar rbtp_acdc} {== $sourcevar greenday}
+            ;and its an rb4lanesvar is true for this song
+            {== $rb4lanesvar TRUE}
+            {&& {!= {$user get_track_type} kTrackRealBass} {!= {$user get_track_type} kTrackRealGuitar}
+                {!= {$user get_track_type} kTrackRealKeys} {!= {$user get_track_type} kTrackKeys}
             }
          }
          ;disable lanes
+         ;{dx_log_writer beatmatch {sprint "[El DEPURADOR] - Rieles desactivados ¿Pro Hard?" }}
          {set $return -100}
       }
       ;if lanes are disabled
@@ -263,33 +293,6 @@
       }
    }
 }
-{func dx_unlock_pre_orders
-   ($user)
-   {if {== {ui current_screen} main_hub_screen}
-      {switch {$user get_slot_num}
-         (0
-            {main_hub_panel unlock_gamestop_award 0}
-            {main_hub_panel unlock_x79_award 0}
-            {main_hub_panel unlock_d2010_award 0}
-         )
-         (1
-            {main_hub_panel unlock_gamestop_award 1}
-            {main_hub_panel unlock_x79_award 1}
-            {main_hub_panel unlock_d2010_award 1}
-         )
-         (2
-            {main_hub_panel unlock_gamestop_award 2}
-            {main_hub_panel unlock_x79_award 2}
-            {main_hub_panel unlock_d2010_award 2}
-         )
-         (3
-            {main_hub_panel unlock_gamestop_award 3}
-            {main_hub_panel unlock_x79_award 3}
-            {main_hub_panel unlock_d2010_award 3}
-         )
-      }
-   }
-}
 {func dx_array_eq ($left $right)
    {do
       ($pass {== {size $left} {size $right}})
@@ -303,6 +306,32 @@
          }
       }
       $pass
+   }
+}
+{func enable_modifier
+   ($modifier)
+   {if {! {modifier_mgr is_modifier_active $modifier}}
+      {modifier_mgr toggle_modifier_enabled $modifier}
+   }
+}
+{func disable_modifier
+   ($modifier)
+   {if {modifier_mgr is_modifier_active $modifier}
+      {modifier_mgr toggle_modifier_enabled $modifier}
+   }
+}
+{func modifier_enabled
+   ($modifier)
+   {modifier_mgr is_modifier_active $modifier}
+}
+{func modifier_disabled
+   ($modifier)
+   {! {modifier_mgr is_modifier_active $modifier}}
+}
+{func dx_round_percent ($percent)
+   {if_else $dx_precise_percent
+      $percent
+      {int $percent}
    }
 }
 #ifdef RB3E
@@ -330,6 +359,84 @@
    }
 }
 #endif
+{func
+   dx_buildversion_label
+   ($label)
+   #ifdef RB3E
+   {do
+      ($name {localize rb3e_name})
+      ($string {localize rb3e_mod_string})
+      ($tag
+         {if_else {rb3e_allowed}
+            {rb3e_build_tag}
+            {localize unknown}
+         }
+      )
+      {$label set_token_fmt stringify
+         {sprint $string "\n" $name " " $tag}
+      }
+   }
+   #else
+   {$label set_token_fmt rb3e_mod_string}
+   #endif
+}
+{func dx_generate_updates_dta
+   {do
+      ($tempwrite {array 0})
+      ($found FALSE)
+      {foreach $entry {find $syscfg missing_song_data}
+         {if {!= $entry "missing_song_data"}
+            {push_back $tempwrite $entry}
+         }
+      }
+      {foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
+         {if {find_exists $tempwrite {elem $entry 0}}
+            {set $found TRUE}
+            {foreach $entry2 $entry
+               {if {!= $entry2 {elem $entry 0}}
+                  {push_back {find $tempwrite {elem $entry 0}} $entry2}
+               }
+            }
+         }
+         {if {! $found}
+            {push_back $tempwrite $entry}
+         }
+         {set $found FALSE}
+      }
+      {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/songs_updates.dta"} $tempwrite}
+   }
+   {do
+      ($tempwrite {array 0})
+      {foreach $entry {read_file "dx/song_updates/rb3_songs.dta"}
+         {push_back $tempwrite $entry}
+      }
+      {write_file {sprint "GD:/dev_hdd0/game/" DX_TITLE_ID "/USRDIR/songs.dta"} $tempwrite}
+   }
+}
+{func roll_splash_art
+   ;randomly set the album images for style points
+   {do
+      ($bit FALSE)
+      {foreach_int $i 0 25
+         {do
+            ($ext
+               #ifdef HX_PS3 "png_ps3" #endif
+               #ifdef HX_XBOX "png_xbox" #endif
+               #ifdef HX_WII "png_wii" #endif
+            )
+            ($token {elem {random_elem {find $syscfg missing_song_data}} 0})
+            {if {file_exists {sprint "songs/updates/" $token "/gen/" $token "_keep." $ext}}
+               ;{dx_passive_messenger_symbol {sprint $token}}
+               {if_else $bit
+                  {{adboard_01.mat get diffuse_tex} set_bitmap {sprint "songs/updates/" $token "/" $token "_keep.png"}}
+                  {{adboard_02.mat get diffuse_tex} set_bitmap {sprint "songs/updates/" $token "/" $token "_keep.png"}}
+               }
+               {set $bit TRUE}
+            }
+         }
+      }
+   }
+}
 #include ../world/dx_camera_funcs.dta
 #include ../game/dx_game_funcs.dta
 #include ../game/dx_game_reset_funcs.dta
@@ -341,4 +448,3 @@
 #include ../read_write/dx_presence_funcs.dta
 #include ../read_write/dx_currentsong_funcs.dta
 #endif
-#include practice/dx_practice_funcs.dta

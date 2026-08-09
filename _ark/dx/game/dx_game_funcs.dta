@@ -85,7 +85,7 @@
                {set $speedmod $leaderspeed}
                ;{set $speedmod_top $leaderspeed}
                {unless {session_mgr is_local}
-                  {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed}) kNetReliable}}
+                  {session send_msg_to_all {'`' (set $speedmod  {',' $leaderspeed})} kNetReliable}
                }
             }
          }
@@ -106,7 +106,7 @@
                            (real_bass
                               {if {== $dx_trainer_real_bass FALSE}
                                  {set $dx_skip_game_setup TRUE}
-                                 {dx_passive_messenger_symbol "No Trainer for Pro-Bass found in song."}
+                                 {set $dx_trainer_error_msg dx_no_trainer_real_bass}
                                  {if {exists meta_performer} {meta_performer skip_song}}
                                  {overshell set_active_status kOvershellInShell}
                                  {overshell update_all}
@@ -117,7 +117,7 @@
                            (real_keys
                               {if {== $dx_trainer_real_keys FALSE}
                                  {set $dx_skip_game_setup TRUE}
-                                 {dx_passive_messenger_symbol "No Trainer for Pro-Keys found in song."}
+                                 {set $dx_trainer_error_msg dx_no_trainer_real_keys}
                                  {if {exists meta_performer} {meta_performer skip_song}}
                                  {overshell set_active_status kOvershellInShell}
                                  {overshell update_all}
@@ -128,18 +128,7 @@
                            (real_guitar
                               {if {== $dx_trainer_real_guitar FALSE}
                                  {set $dx_skip_game_setup TRUE}
-                                 {dx_passive_messenger_symbol "No Trainer for Pro-Guitar found in song."}
-                                 {if {exists meta_performer} {meta_performer skip_song}}
-                                 {overshell set_active_status kOvershellInShell}
-                                 {overshell update_all}
-                                 {meta_loading_continue_screen set state kMetaLoading_Loading}
-                                 {ui goto_screen meta_loading_continue_screen}
-                              }
-                           )
-                           (real_drum
-                              {if {== $dx_trainer_real_drum FALSE}
-                                 {set $dx_skip_game_setup TRUE}
-                                 {dx_passive_messenger_symbol "No Trainer for Pro-Drums found in song."}
+                                 {set $dx_trainer_error_msg dx_no_trainer_real_guitar}
                                  {if {exists meta_performer} {meta_performer skip_song}}
                                  {overshell set_active_status kOvershellInShell}
                                  {overshell update_all}
@@ -218,35 +207,36 @@
    ;   }
    ;}
 }
+;this function sucks actually
 {func
    dx_toggle_fail_feedback
-   {do
+   {if
+      {exists beatmatch}
       {if
-         {exists beatmatch}
-         {if
-            {&&
-               {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
+         {&&
+            {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}
+         }
+         {foreach_int $i 0 {beatmatch num_active_players} 
+            {
+               {beatmatch active_player $i} set_crowd_rating_active
+                  {||
+                     {modifier_mgr is_modifier_active mod_brutalmode} ; force on crowd meter if on brutal mode
+                     {== $dx_crowd_meter_hud dx_on}
+                     {== $dx_crowd_meter_hud dx_off}
+                  }
             }
-            {foreach_int $i 0 {beatmatch num_active_players} 
-               {
-                  {beatmatch active_player $i} set_crowd_rating_active
-                     {||
-                        {modifier_mgr is_modifier_active mod_brutalmode} ; force on crowd meter if on brutal mode
-                        {== $dx_crowd_meter_hud dx_on}
-                        {== $dx_crowd_meter_hud dx_off}
-                     }
-               }
+         }
+         {do
+            ($show {! {modifier_mgr is_modifier_active mod_karaoke}})
+            ($vox {if_else $vocalsplayeractive {{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} 0})
+            ($score {coop_track_panel find scoreboard})
+            {{coop_track_panel find crowd_meter} set_showing {&& $show {== $dx_crowd_meter_hud dx_on}}}
+            {foreach $entry (star_display numbers.grp sb_lens backplate.grp)
+               {{$score find $entry} set_showing $show}
             }
-            {{coop_track_panel find crowd_meter} set_showing {== $dx_crowd_meter_hud dx_on}}
-            {do
-               ($show {! {modifier_mgr is_modifier_active mod_karaoke}})
-               {{coop_track_panel find crowd_meter} set_showing $show}
-               {{{coop_track_panel find scoreboard} find star_display} set_showing $show}
-               {{{coop_track_panel find scoreboard} find numbers.grp} set_showing $show}
-               {{{coop_track_panel find scoreboard} find sb_lens} set_showing $show}
-               {{{coop_track_panel find scoreboard} find backplate.grp} set_showing $show}
-               {if {&& $vocalsplayeractive {! $show}}
-                  {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} set remote FALSE}
+            {if {! $show}
+               {if $vocalsplayeractive
+                  {$vox set remote FALSE}
                   {foreach $entry
                      (
                         tubes.grp tubes_milo.grp tube_range.grp
@@ -256,7 +246,7 @@
                      )
                      {{{{get_track_panel} find vocals} find $entry} set_showing FALSE}
                   }
-                  {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} milo_apply}
+                  {$vox milo_apply}
                }
             }
          }
@@ -358,44 +348,69 @@
 }
 
 {func
-   dx_update_gold_flash
-   {set_this coop_track_panel}
-   {if {&& {! {modifier_mgr is_modifier_active mod_nohud}} {! {modifier_mgr is_modifier_active mod_fakejuke}} {! {modifier_mgr is_modifier_active mod_karaoke}} $dx_gold_star_progress $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}}}
-      {set $dx_num_stars {{{coop_track_panel find scoreboard} find star_display} get num_stars}}
-      {if_else {&& {>= $dx_num_stars 5.0} {! {>= $dx_num_stars 6.0}}} ; We don't need the stars to flash when you achieve golds
-         {do
-            {if {! $dx_gold_flash_on}
-               {if {! $dx_gold_flash_spawned}
-                  {dx_init_gold_flash}
-               }
-               {set $dx_gold_flash_on TRUE}
-               {gold_star_handler show_stars}
-               {gold_star_handler start_anim}
+   dx_check_for_real_guitar_cheat
+   ($player $inst $user)
+   {if {&& {$user is_local} {modifier_disabled mod_auto_play}}
+      {if {&& {== $inst real_guitar} {== $inst real_bass}}
+         {if
+            {||
+               {!= {joypad_controller_type_padnum {$user get_pad_num}} hx_midi_guitar_xbox}
+               {!= {joypad_controller_type_padnum {$user get_pad_num}} hx_midi_guitar_ps3}
+               {!= {joypad_controller_type_padnum {$user get_pad_num}} hx_midi_guitar_wii}
             }
-            {gold_star_handler set_star_progress {- $dx_num_stars 5.0}}
-         }
-         {do
-            {if $dx_gold_flash_on
-               {set $dx_gold_flash_on FALSE}
-               {gold_star_handler hide_stars}
-               {gold_star_handler stop_anim}
-            }
+            {dx_reset_score}
          }
       }
    }
 }
-
-
+ 
+;super jank way of setting score to 0 and disabling scoring
 {func
-   dx_blink_gold_star_off
-   {if {&& $dx_mtvup {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}} {! {gamemode in_mode tour}} {! {gamemode in_mode campaign}} {>= $dx_num_stars 5.0}}
-      {set $star_transition_ran FALSE}
-      {{coop_track_panel find dx_star_base.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find dx_star_base.tex}}}
-      {{coop_track_panel find score_star_frame.tex} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find dx_star_base.tex}}}
-      {{coop_track_panel find {sprint "dx_star_gold_" $star_num_frame ".tex"}} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find dx_star_base.tex}}}
-      {if {> $star_num_frame 0}
-         {{coop_track_panel find {sprint "dx_star_gold_" {- $star_num_frame 1} ".tex"}} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find dx_star_base.tex}}}
-         {{coop_track_panel find {sprint "dx_star_gold_" {+ $star_num_frame 1} ".tex"}} iterate_refs $ref {$ref set diffuse_tex {coop_track_panel find dx_star_base.tex}}}
+   dx_reset_score
+   {unless {beatmatch is_invalid_score}
+      {beatmatch set_invalid_score TRUE}
+      {foreach_int $i 0 4
+         {cheat_toggle_difficulty}
+      }
+   }
+}
+
+{func dx_load_synth ($synth)
+   {if {game is_instrument_synth_on}
+      {game toggle_instrument_synth}
+   }
+   {set $path {elem {find $syscfg sound instruments chamberlin_selections $synth} 1}}
+   {dx_log_writer insane {sprint "Loading synth " $path}}
+   {set $newinstrument {load_objects $path}}
+   {$dx_chamberlin_dir iterate Object $obj
+      {dx_log_writer insane {sprint "old: " $obj}}
+      {unless {$obj is_a ObjectDir}
+         {delete $obj}
+      }
+   }
+   {$newinstrument iterate Object $obj
+      {dx_log_writer insane {sprint "new: " $obj}}
+      {unless {$obj is_a ObjectDir}
+         {$obj set_name {$obj name} $dx_chamberlin_dir}
+      }
+   }
+   {dx_log_writer insane {sprint "Loaded synth " $synth}}
+   {set $dx_loaded_synth $synth}
+}
+
+{func dx_update_synth
+   {if_else $dx_synth_enabled
+      {do
+         {if {!= $dx_loaded_synth $dx_selected_synth}
+            {dx_load_synth $dx_selected_synth}
+         }
+         {unless {game is_instrument_synth_on}
+            {game toggle_instrument_synth}
+         }
+         {game set_instrument_synth_volume 100}
+      }
+      {if {game is_instrument_synth_on}
+         {game toggle_instrument_synth}
       }
    }
 }

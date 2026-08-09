@@ -1,4 +1,486 @@
-#include ../../dx/ui/main/dx_main_handles.dta
+#define DX_MAIN_HANDLES
+(
+   ;this is the main non-vanilla call flow for entering the main menu (non PaS)
+   ;please put anything new in here
+   (dx_main_on_enter
+      #ifdef HX_XBOX
+      {$this dx_warn_cache_expired}
+      #endif
+
+      #ifdef HX_PS3
+      {$this dx_missing_highmem_check}
+      {$this dx_missing_tele_patch}
+      #endif
+
+      #ifndef HX_WII
+      DX_SET_SERVER_LOCALE ; dx - change button and label text when connected to gocentral
+      {dx_presence_manager}
+      #endif
+
+      {dx_sv_menu_logo_set sv3_panel}
+
+      {if_else $dx_event_mode
+         {$this dx_event_setup}
+         {$this dx_roll_prompts}
+      }
+
+      {$this dx_buildver_lbl}
+      
+      {dx_admin_mode}
+
+      {if {modifier_mgr is_modifier_active mod_auto_play}
+         {$this disable qp_fmp.btn}
+         {$this disable tour_fmp.btn}
+         {$this set_focus mb_playnow.btn}
+      }
+      #ifdef MHX_PC
+      {$this recomp_extra_button}
+      #endif
+   )
+   (recomp_extra_button
+      {new BandButton mb_exit.btn}
+      {mb_exit.btn copy mb_musicstore.btn kCopyShallow}
+      {new Group mb_exit.grp}
+      {mb_exit.grp copy mb_musicstore.grp kCopyShallow}
+      {mb_exit.grp add_object mb_exit.btn}
+      {mb_exit.btn set_trans_parent mb_exit.grp}
+      {mb_exit.grp remove_object mb_musicstore.btn}
+      {mb_exit.btn set_local_pos_index 2 -43}
+      {mb_exit.btn set_token_fmt exit_bye}
+      {mb_musicstore.btn set nav_down mb_exit.btn}
+      {menu_buttons.grp add_object mb_exit.grp}
+   )
+   (dx_event_setup
+      ;show welcome
+      {unless {&& $dx_event_type $dx_event_welcome_screen_seen}
+         {ui push_screen dx_EventModeWelcome_screen}
+      }
+
+      ;force set some modifiers
+      {enable_modifier mod_no_fail_band}
+      {enable_modifier mod_auto_vocals}
+      ;force DISABLE drum navigation (people like to fuck with the drums and i know from experience)
+      ;idk why this was commented out
+      ;{disable_modifier mod_drum_surface_navigation}
+      {disable_modifier mod_drum_fills}
+      {enable_modifier mod_independent_track_speeds}
+      {enable_modifier enable_popup_help}
+
+      ;setup the main menu
+      {menu_buttons.grp set_local_pos -350 0 -90}
+
+      {do
+         ($lbl event.lbl)
+         ($align kTopLeft)
+         ($event {if_else $dx_event_name $dx_event_name "the party"})
+         {if {! {exists $lbl}}
+            {switch $dx_event_type
+               (party kDataUnhandled)
+               (club
+                  {$this lbl_maker $lbl -30 -30 $align os_blnk}
+                  {$lbl set_local_scale 1.25 1.25 1.25}
+                  {$lbl set_token_fmt dx_event_club_lbl}
+               )
+               (convention
+                  {$this lbl_maker $lbl -30 -17 $align os_blnk}
+                  {$lbl set_local_scale 2 2 2}
+                  {$lbl set_token_fmt stringify
+                     {sprint
+                        {localize dx_welcome_to}
+                        $event
+                        {localize dx_event_convention_lbl}
+                     }
+                  }
+               )
+            }
+         }
+      }
+
+      {do
+         ($ev_lbl event_button_desc.lbl)
+         {if {! {exists $ev_lbl}}
+            {$this lbl_maker $ev_lbl -367 -150 kBottomLeft os_blnk}
+            {$ev_lbl set_local_scale 1.25 1.25 1.25}
+            {$ev_lbl set width 10000}
+         }
+         {$ev_lbl set_token_fmt dx_freeplay_desc}
+         {messages.grp set_showing FALSE}
+      }
+
+      {$this iterate BandButton $l
+         {if
+            {&&
+               {!= $l {sprint mb_playnow.btn}}
+               {!= $l {sprint mb_career.btn}}
+            }
+            {$this disable $l}
+            {$l set_showing FALSE}
+         }
+      }
+      {mb_playnow.btn set text_token dx_freeplay}
+      {mb_career.btn set text_token dx_play_a_show}
+   )
+
+   ;warning checks
+   (dx_warn_cache_expired
+      ;warn if out of date cache
+      {if
+         {&&
+            {! $dx_cache_warn_seen}
+            {!= $dx_song_update_hash $dx_song_update_hash_old}
+         }
+         {script_task kTaskSeconds
+            (delay 1)
+            (script
+               {ui push_screen dx_cache_warn_screen}
+            )
+         }
+      }
+   )
+   (dx_missing_highmem_check
+      {if {== $dx_detected_platform platform_rpcs3}
+         {if
+            {||
+               {! {file_exists DX_HI_MEM_PATH}}
+               {! {> {size {read_file DX_HI_MEM_PATH}} 0}}
+               {!
+                  {== {elem {find {read_file DX_HI_MEM_PATH} dx_high_memory} 1} 190000000}
+               }
+            }
+            {if {! $memwarned}
+               {set $memwarned TRUE}
+               {dx_modal_messenger dx_missing_highmem}
+            }
+         }
+      }
+   )
+   (dx_missing_tele_patch
+      {if
+         {||
+            {== $dx_detected_platform platform_rpcs3}
+            {== $dx_detected_platform platform_ps3}
+         }
+         {if
+            ;also has bass_patch.dtb, guitar_patch.dtb
+            ;mic_patch.dtb, and hair_patch.dtb
+            ;uncommented is latest we only check for now
+            {! {file_exists "dx/gen/mic_patch_5.dtb"}}
+            {if {! $telewarned}
+               {set $telewarned TRUE}
+               {dx_modal_messenger dx_missing_tele_patch}
+            }
+         }
+      }
+   )
+   (dx_check_first_time
+      #ifndef HX_WII
+      {if_else
+         {&&
+            {! $dx_event_mode}
+            {! {file_exists DX_SETTINGS_FILE_PATH}}
+            {! $dx_welcome_seen}
+         }
+         {do ;you're welcome
+            {profile_mgr set_voice_chat_volume 0}
+            {dx_log_writer info {sprint "Delxue Settings not found, showing welcome screen"}}
+            {set $dx_welcome_seen TRUE}
+            {ui push_screen dx_welcome_screen}
+         }
+         {$this check_rewards_and_hints}
+      }
+      #endif
+   )
+   (dx_roll_prompts
+      {do
+         ($num {random_int 0 4096})
+         ($num2 {random_int 0 100})
+         {get_date_time $year $month $day $hour $minute $second}
+         {if
+            {&&
+               {! $dx_msg_birth}
+               ;{> $year 2023}
+               {== $month 10}
+               {== $day 25}
+            }
+            {set $dx_msg_birth TRUE}
+            {dx_passive_messenger_symbol "Happy Birthday Shiloh!"}
+         }
+         ;if oct25th, congrats, no other rolls on this day
+         {if {! $dx_msg_birth}
+            {if {== $num 2112}
+               {dx_passive_messenger you_lost_game}
+            }
+            ;roll to prompt for translations wanted screen
+            {if {&& {!= $num 2112} {== $num2 42}}
+               {ui_event_mgr trigger_event error_message
+                  (dummy init localize_it)
+               }
+            }
+         }
+      }
+   )
+   (dx_unlock_pre_orders
+      ($user)
+      {switch {$user get_slot_num}
+         (0
+            {main_hub_panel unlock_gamestop_award 0}
+            {main_hub_panel unlock_x79_award 0}
+            {main_hub_panel unlock_d2010_award 0}
+         )
+         (1
+            {main_hub_panel unlock_gamestop_award 1}
+            {main_hub_panel unlock_x79_award 1}
+            {main_hub_panel unlock_d2010_award 1}
+         )
+         (2
+            {main_hub_panel unlock_gamestop_award 2}
+            {main_hub_panel unlock_x79_award 2}
+            {main_hub_panel unlock_d2010_award 2}
+         )
+         (3
+            {main_hub_panel unlock_gamestop_award 3}
+            {main_hub_panel unlock_x79_award 3}
+            {main_hub_panel unlock_d2010_award 3}
+         )
+      }
+   )
+
+   ;label functions
+   (lbl_maker
+      ($lbl $x $y $align $content)
+      {new BandLabel $lbl}
+      {$lbl set resource_name "pentatonic_outline"}
+      {$lbl set alt_style_enabled TRUE}
+      {$lbl set alt_font_resource_name pentatonic_outline}
+      {if {! {exists now_play_color.color}}
+         {new UIColor now_play_color.color}
+         {now_play_color.color set color {pack_color 1 1 1}}
+      }
+      {$lbl set markup TRUE}
+      {$lbl set_showing TRUE}
+      {$lbl set_local_scale 1 1 1}
+      {$lbl set_local_pos $x 0 $y}
+      {$lbl set_token_fmt stringify {sprint $content}}
+      {$lbl set text_size 15}
+      {$lbl set alt_text_size 15}
+      {$lbl set alt_z_offset -4}
+      {$lbl set fit_type 2}
+      {$lbl set alignment $align}
+      {$lbl set width 300}
+      {$lbl set height 40}
+      {$lbl set alpha 1}
+      ;{$label set color_override now_play_color.color}
+      {main_menu.grp add_object $lbl}
+   )
+   (dx_buildver_lbl
+      {do
+         ($lbl dx_build.lbl)
+         ;setup build label in case GoCentral is overriding our motd
+         {if {! {exists $lbl}}
+            {$this lbl_maker $lbl -377 216 kTopLeft os_blnk}
+         }
+         {$lbl set width 1000}
+         {dx_buildversion_label $lbl}
+      }
+   )
+   (dx_now_playing
+      {main_menu.grp set_showing TRUE}
+      {meta_performer reset_songs}
+      {meta_performer set_song {symbol $metashortname}}
+      {do
+         ($lbl_0 line0.lbl)
+         ($lbl_1 line1.lbl)
+         ($lbl_2 line2.lbl)
+         ($lbl_3 line3.lbl)
+         ($anim now_playing.anim)
+         {if {! {exists $lbl_0}}
+            {$this lbl_maker $lbl_0 385 145 kTopRight {sprint $currentshellmusic}}
+         }
+         {if {! {exists $lbl_1}}
+            {$this lbl_maker $lbl_1 385 160 kTopRight {sprint $currentshellmusic}}
+            {$lbl_1 set alt_z_offset -2}
+            {$lbl_1 set alt_text_size 12}
+         }
+         {if {! {exists $lbl_2}}
+            {$this lbl_maker $lbl_2 385 145 kTopRight {sprint $currentshellmusic}}
+         }
+         {unless $dx_event_mode
+            {if {! {exists $lbl_3}}
+               {$this lbl_maker $lbl_3 385 145 kTopRight " "}
+               {$lbl_3 set alt_font_resource_name buttons}
+               {$lbl_3 set alt_z_offset -1}
+               {$lbl_3 set alt_text_size 12}
+            }
+         }
+         {$lbl_0 set_token_fmt os_blnk}
+         {$lbl_1 set_token_fmt stringify {eval $metasong}}
+         {$lbl_2 set_token_fmt os_blnk}
+         {unless $dx_event_mode
+            {if_else {meta_performer song}
+               {if_else {&& {session is_local} {meta_performer song_id}}
+                  {$lbl_3 set_token_fmt press_to_play $metaverb}
+                  {$lbl_3 set_token_fmt os_blnk}
+               }
+               {$lbl_3 set_token_fmt os_blnk}
+            }
+         }
+         ;animate line1
+         {if {exists $anim}
+            {delete $anim}
+         }
+         {if {! {exists $anim}}
+            {new PropAnim $anim}
+            {$anim add_keys $lbl_1 (alt_alpha) kPropFloat}
+            {$anim add_keys $lbl_1 (text_token) kPropSymbol}
+
+            {do
+               ($keys (0 1 1 1 1 0 1 1 1 1 0 0))
+               {foreach_int $i 0 {size $keys}
+                  {$anim set_key_val $lbl_1 (alt_alpha) $i {elem $keys $i}}
+                  {$anim set_key_val $lbl_1 (text_token) $i {if_else {>= $i 5} {eval $metaartist} {eval $metasong}}}
+               }
+            }
+
+            {$anim set rate kTaskUISeconds}
+            {$anim set_frame 0}
+            {$anim animate (loop 0 10) (period 10) (units kTaskUISeconds)}
+         }
+      }
+   )
+   (dx_metamusic_play
+      {profile_mgr set_primary_profile_by_user $user}
+      {meta_performer reset_songs}
+      {meta_performer set_song {symbol $metashortname}}
+      {gamemode set_mode qp_coop}
+      {ui abstract_wipe}
+      {if {exists line1_fade}
+         {delete line1_fade}
+      }
+      {dx_restore_online_transitions}
+      {ui goto_screen {music_library get_next_screen}}
+   )
+
+   ;play a show
+   (dx_pas_reset_vars
+      ;setup play a show menu button
+      {mb_musicstore.btn set markup TRUE}
+      {mb_musicstore.btn set alt_style_enabled TRUE}
+      {mb_musicstore.btn set alt_font_resource_name {mb_musicstore.btn get resource_name}}
+      {if $dx_entered_play_a_show ;removes "new" flavor text if played already
+         {mb_musicstore.btn set text_token dx_play_a_show}
+      }
+      ;reset play a show vars in this enter branch (we arent in pas)
+      {if {&& {! $dx_playing_a_show} {! $dx_prep_show_flow} {! $dx_in_show_flow}}
+         {set $dx_play_a_show_active_instruments ()}
+         {resize $dx_play_a_show_active_instruments 0}
+      }
+   )
+   (dx_check_togo_play_a_show
+      #ifdef HX_PS3
+      {$this dx_go_to_play_a_show}
+      #else ;xbox and wii rely on rb3e for play a show
+         #ifndef RB3E
+         {dx_modal_messenger rb3e_install_warn}
+         #endif
+         #ifdef RB3E
+         {do
+            ($pass FALSE)
+            ($check {rb3e_get_song_name 1102})
+            {if {&& {content_mgr refresh_done} {rb3e_allowed} {== {sprint $check} "Imagine"}}
+               {set $pass TRUE}
+            }
+            {if {! {content_mgr refresh_done}}
+               {dx_modal_messenger wait_for_songs}
+            }
+            {if $pass
+               {$this dx_go_to_play_a_show}
+            }
+         }
+         #endif
+      #endif
+   )
+   (dx_go_to_play_a_show
+      {input_mgr set_user $user}
+      {set $stored_user $user}
+      {set $dx_entered_play_a_show TRUE}
+      {$this dx_play_a_show}
+   )
+   (dx_play_a_show ;TODO refactor when play a show is refactored because like, wtf
+      {if {! $play_a_show_mentioned}
+         {set $play_a_show_mentioned TRUE}
+         {set $read_array ()}
+         {set $song_array ()}
+         {set $dtaarray ()}
+         {resize $read_array 0}
+         {resize $song_array 0}
+         {resize $dtaarray 2}
+         {set $num_voted_songs 0}
+      }
+      {do
+         {set $dx_playing_a_show TRUE}
+         {dx_presence_manager}
+         {set $current_voted_song FALSE}
+         {set $dx_playlist_array ()}
+         {resize $dx_playlist_array 0}
+         {set $dx_playlist_queue_array ()}
+         {resize $dx_playlist_queue_array 0}
+         {set $dx_play_a_show_required_votes 0}
+         {set $dx_play_a_show_num_votes 0}
+         {set $slot1_voted FALSE}
+         {set $slot2_voted FALSE}
+         {set $slot3_voted FALSE}
+         {set $slot4_voted FALSE}
+         {set $slot1_vote FALSE}
+         {set $slot2_vote FALSE}
+         {set $slot3_vote FALSE}
+         {set $slot4_vote FALSE}
+         {gamemode set_mode qp_coop}
+         {if_else {== {size $dx_play_a_show_active_instruments} 0}
+            {do
+               {set $rb3_songlist
+                  (
+                     20thcenturyboy 25or6to4 antibodies
+                     beforeiforget bohemianrhapsody breakonthrough centerfold
+                     chinagrove coldasice combatbaby crosstowntraffic deadendfriends
+                     dontstandsoclosetome duhast everybodywantstorule flylikeaneagle
+                     foolin getupstandup goodvibrationslive heartofglass hereigoagain
+                     humanoid ifeelgoodalt iloverocknroll inabigcountry
+                     ineedtoknow inthemeantime justlikeheaven killingloneliness
+                     lastdance livinginamerica lowrider meenamora midlifecrisis
+                     needyoutonight ohmygod
+                     oyemiamor portionsforfoxes radarlove rainbowinthedark rehab rocklobster roundabout
+                     saturdaynightsalright sisterchristian smokeonthewater somethingbigger spaceoddity
+                     stopmeifyouthink thebeautifulpeople thecon thekillingmoon thelook
+                     thepoweroflove thisbastardslife walkinonthesun walkoflife
+                     werewolvesoflondon whipit yoshimibattles
+                  )
+               }
+               {meta_performer set_song {random_elem $rb3_songlist}}
+               {set $dx_prep_show_flow TRUE}
+               {ui abstract_wipe}
+               #ifndef HX_WII
+               {ui goto_screen dx_playashow_intro_screen}
+               #else
+               {ui goto_screen song_select_enter_screen}
+               #endif
+            }
+            {do
+               {if_else $dx_hardware
+                  {dx_passive_messenger play_a_show_loading_hw}
+                  {dx_passive_messenger play_a_show_loading_emu}
+               }
+               {set $dx_in_show_flow TRUE}
+               {meta_performer set_song antibodies}
+               {if {is_leader_local}
+                  ;{session send_msg_to_all {'`' (set $dx_in_show_flow TRUE)} kNetReliable}
+                  ;{session send_msg_to_all {'`' (meta_performer set_song antibodies)} kNetReliable}
+                  {ui sync_screen dx_play_a_show_screen 0}
+               }
+            }
+         }
+      }
+   )
+)
 {new MainHubPanel
    main_hub_panel
    (file "main_hub.milo")
@@ -58,71 +540,7 @@
    (motd {$this get_motd})
    (dlc_motd {$this get_dlcmotd})
    (is_loaded {saveload_mgr is_initial_load_done})
-   DX_MAIN_HANDLES
    (enter
-      {if {== $dx_detected_platform platform_rpcs3}
-         {if
-            {||
-               {! {file_exists DX_HI_MEM_PATH}}
-               {! {> {size {read_file DX_HI_MEM_PATH}} 0}}
-               {!
-                  {== {elem {find {read_file DX_HI_MEM_PATH} dx_high_memory} 1} 190000000}
-               }
-            }
-            {if {! $memwarned}
-               {set $memwarned TRUE}
-               {dx_modal_messenger dx_missing_highmem}
-            }
-         }
-      }
-      {if
-         {||
-            {== $dx_detected_platform platform_rpcs3}
-            {== $dx_detected_platform platform_ps3}
-         }
-         {if
-            {||
-               {! {file_exists "dx/gen/bass_patch.dtb"}}
-               {! {file_exists "dx/gen/guitar_patch.dtb"}}
-               {! {file_exists "dx/gen/mic_patch.dtb"}}
-               {! {file_exists "dx/gen/hair_patch.dtb"}}
-            }
-            {if {! $telewarned}
-               {set $telewarned TRUE}
-               {dx_modal_messenger dx_missing_tele_patch}
-            }
-         }
-      }
-      {if
-         {||
-            {== $dx_detected_platform platform_rpcs3}
-            {== $dx_detected_platform platform_ps3}
-         }
-         {if
-            {&&
-               {file_exists "dx/gen/bass_patch.dtb"}
-               {file_exists "dx/gen/guitar_patch.dtb"}
-               {file_exists "dx/gen/mic_patch.dtb"}
-               {file_exists "dx/gen/hair_patch.dtb"}
-               ;add revisions below this, ensure the incremented/added revisions
-               ;are present in the patch ark
-               {! {file_exists "dx/gen/mic_patch_5.dtb"}}
-            }
-            {if {! $tele2warned}
-               {set $tele2warned TRUE}
-               {dx_modal_messenger dx_missing_tele2_patch}
-            }
-         }
-      }
-      {if $dx_event_mode
-         {$this iterate BandButton $l {$this disable $l} {$l set_showing FALSE}}
-         {$this enable mb_playnow.btn}
-         {mb_playnow.btn set_showing TRUE}
-         {mb_playnow.btn set text_token dx_freeplay}
-         {$this enable mb_career.btn}
-         {mb_career.btn set_showing TRUE}
-         {mb_career.btn set text_token dx_play_a_show}
-      }
       {if [first_user]
          {profile_mgr set_primary_profile_by_user [first_user]}
          {$this set first_user ""}
@@ -157,17 +575,34 @@
       {input_mgr check_trigger_auto_vocals_confirm}
       {overshell set_allow_real_guitar_flow TRUE}
       {overshell update_all}
-      {$this dx_main_on_enter}
-      {set $got_meta FALSE}
+      #ifndef HX_PS3 ;on ps3 we enumerate on splash screen
+      {content_mgr start_refresh}
+      #endif
       {campaign clear_current_goal}
       {$this set_state kMainHubState_Main}
+      ;end vanilla setup
+
+      ;everything else on enter should be done in dx_main_on_enter handler
+      ;via calling other handlers
+      {$this dx_pas_reset_vars} ;this always needs to happen
+      {if_else {&& $dx_playing_a_show {is_leader_local}}
+         {$this dx_play_a_show}
+         {$this dx_main_on_enter}
+      }
+      {set $got_meta FALSE} ;setup now playing via poll
    )
+   DX_MAIN_HANDLES ;hook all of our added handles
    #ifndef HX_WII
    (poll
       {if {&& {! $got_meta} {content_mgr refresh_done}}
          {set $got_meta TRUE}
          {$this dx_now_playing}
       }
+      #ifdef MHX_PC
+      {if {exists mb_exit.btn}
+         {mb_exit.btn set_showing {== {$this get_state} kMainHubState_Main}}
+      }
+      #endif
    )
    #endif
    (exit
@@ -178,314 +613,274 @@
       #endif
    )
    (SELECT_MSG
-      {switch $component
-         (mb_playnow.btn
-            {if_else $dx_event_mode
-               {do
-                  {profile_mgr set_primary_profile_by_user $user}
-                  {net_sync set_ui_state kNetUI_WaitingChooseSong}
-                  {$this set_override kMainHubOverride_Waiting}
+      {if_else $dx_event_mode
+         {switch $component
+            (mb_playnow.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {net_sync set_ui_state kNetUI_WaitingChooseSong}
+               {$this set_override kMainHubOverride_Waiting}
+            )
+            (mb_career.btn
+               {input_mgr set_user $user}
+               {set $stored_user $user}
+               {$this dx_play_a_show}
+            )
+            kDataUnhandled
+         }
+         {switch $component
+            (mb_playnow.btn {$this set_state kMainHubState_PlayNow})
+            (mb_career.btn {$this set_state kMainHubState_Career})
+            (mb_trainers.btn
+               {if_else {session_mgr is_local}
+                  {$this set_state kMainHubState_Training}
+                  {push_basic_confirm_dialog no_trainers_when_online}
                }
-               {$this set_state kMainHubState_PlayNow}
-            }
-         )
-         (mb_career.btn
-            {if_else $dx_event_mode
-               {do
-                  {input_mgr set_user $user}
-                  {set $stored_user $user}
-                  {$this dx_play_a_show}
-               }
-               {$this set_state kMainHubState_Career}
-            }
-         )
-         (mb_trainers.btn
-            {if_else {session_mgr is_local}
-               {$this set_state kMainHubState_Training}
-               {push_basic_confirm_dialog no_trainers_when_online}
-            }
-         )
-         (mb_shop.btn {$this set_state kMainHubState_Customize})
-         (customize_band.btn
-            {if_else {profile_mgr has_primary_profile}
-               {do
-                  {profile_mgr set_primary_profile_by_user $user}
-                  {manage_band_panel set_profile {profile_mgr get_primary_profile}}
-                  {manage_band_screen set back_override main_hub_screen}
-                  {ui goto_screen manage_band_screen}
-               }
-               {push_signin_needed_dialog manage_band_no_profile}
-            }
-         )
-         (customize_character.btn
-            {if_else TRUE ;lol customize all characters
-               {do
-                  {critical_user_listener set_critical_user $user}
-                  {if {profile_mgr has_primary_profile}
-                     {dx_unlock_pre_orders $user}
+            )
+            (mb_shop.btn {$this set_state kMainHubState_Customize})
+            (mb_exit.btn {ui push_screen confirm_exit_game_screen})
+            (customize_band.btn
+               {if_else {profile_mgr has_primary_profile}
+                  {do
+                     {profile_mgr set_primary_profile_by_user $user}
+                     {manage_band_panel set_profile {profile_mgr get_primary_profile}}
+                     {manage_band_screen set back_override main_hub_screen}
+                     {ui goto_screen manage_band_screen}
                   }
-                  {closet_mgr set_user $user}
-                  {ui goto_screen customize_clothing_enter_screen}
+                  {push_signin_needed_dialog manage_band_no_profile}
                }
-               {do
-                  ($profile {profile_mgr get_profile $user})
-                  {if_else {&& $profile {== {$profile get_num_chars} 0} {session_mgr is_local}}
-                     {do
-                        {input_mgr set_user $user}
-                        {critical_user_listener set_critical_user $user}
-                        {ui push_screen customize_create_character_screen}
+            )
+            (customize_character.btn
+               {if_else TRUE ;lol customize all characters ; vanilla - {$user is_char_customizable}
+                  {do
+                     {critical_user_listener set_critical_user $user}
+                     ;unlock pre-order bonus's before going to character edit
+                     {if {profile_mgr has_primary_profile}
+                        {dx_unlock_pre_orders $user}
                      }
-                     {ui push_screen customize_no_prefabs_screen}
+                     {closet_mgr set_user $user}
+                     {ui goto_screen customize_clothing_enter_screen}
+                  }
+                  {do
+                     ($profile {profile_mgr get_profile $user})
+                     {if_else {&& $profile {== {$profile get_num_chars} 0} {session_mgr is_local}}
+                        {do
+                           {input_mgr set_user $user}
+                           {critical_user_listener set_critical_user $user}
+                           {ui push_screen customize_create_character_screen}
+                        }
+                        {ui push_screen customize_no_prefabs_screen}
+                     }
                   }
                }
-            }
-         )
-         (create_character.btn
-            {if_else {! {profile_mgr get_profile $user}}
-               {push_signin_needed_dialog create_character_must_signin}
-               {do
-                  {if_else {session_mgr is_local}
-                     {do
-                        ($profile {profile_mgr get_profile $user})
-                        {if_else {< {$profile get_num_chars} {$profile max_chars}}
-                           {do
-                              {critical_user_listener set_critical_user $user}
-                              {closet_mgr set_user $user}
-                              {closet_mgr set_return_screen main_hub_screen}
-                              {net_sync disable}
-                              {ui goto_screen charactercreator_screen}
-                              #ifdef HX_WII
-                              {overshell set_active_status kOvershellInactive}
-                              #endif
+            )
+            (create_character.btn
+               {if_else {! {profile_mgr get_profile $user}}
+                  {push_signin_needed_dialog create_character_must_signin}
+                  {do
+                     {if_else {session_mgr is_local}
+                        {do
+                           ($profile {profile_mgr get_profile $user})
+                           {if_else {< {$profile get_num_chars} {$profile max_chars}}
+                              {do
+                                 {critical_user_listener set_critical_user $user}
+                                 {closet_mgr set_user $user}
+                                 {closet_mgr set_return_screen main_hub_screen}
+                                 {net_sync disable}
+                                 {ui goto_screen charactercreator_screen}
+                                 #ifdef HX_WII
+                                 {overshell set_active_status kOvershellInactive}
+                                 #endif
+                              }
+                              {ui push_screen create_character_maxed_screen}
                            }
-                           {ui push_screen create_character_maxed_screen}
+                        }
+                        {ui push_screen create_character_notonline_screen}
+                     }
+                  }
+               }
+            )
+            (mb_musicstore.btn {$this dx_check_togo_play_a_show})
+            (pn_quickplay.btn {$this set_state kMainHubState_Quickplay})
+            (pn_tour.btn {$this set_state kMainHubState_Tour})
+            (qp_quickplay.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {net_sync set_ui_state kNetUI_WaitingChooseSong}
+               {$this set_override kMainHubOverride_Waiting}
+            )
+            (qp_setlist.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {net_sync set_ui_state kNetUI_WaitingChooseSetlist}
+               {$this set_override kMainHubOverride_Waiting}
+            )
+            (qp_fmp.btn
+               {if_else {overshell is_full}
+                  {push_basic_confirm_dialog no_fmp_when_full}
+                  {do
+                     {profile_mgr set_primary_profile_by_user $user}
+                     {net_sync set_ui_state kNetUI_WaitingQpFindPlayers}
+                     {$this set_override kMainHubOverride_Waiting}
+                  }
+               }
+            )
+            (tour_new.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {$this handle_tournew_chosen}
+            )
+            (tour_fmp.btn
+               {if_else {overshell is_full}
+                  {push_basic_confirm_dialog no_fmp_when_full}
+                  {do
+                     {profile_mgr set_primary_profile_by_user $user}
+                     {$this handle_tourfmp_chosen}
+                  }
+               }
+            )
+            (career_progress.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {$this handle_campaign_chosen}
+            )
+            (career_songs.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {$this handle_campaign_songs_chosen}
+            )
+            (career_leaderboard.btn
+               {profile_mgr set_primary_profile_by_user $user}
+               {$this handle_campaign_lb_chosen}
+            )
+            (training_band_practice.btn
+               {if_else {session_mgr is_local}
+                  {do
+                     {gamemode set_mode practice}
+                     {ui abstract_wipe}
+                     {input_mgr set_user $user}
+                     {critical_user_listener set_critical_user $user}
+                     {training_mgr set_return_info song_select_screen pause_quit}
+                     {training_mgr set_user $user}
+                     {ui goto_screen song_select_enter_screen}
+                  }
+                  {push_basic_confirm_dialog no_trainers_when_online}
+               }
+            )
+            (training_trainers.btn
+               {cond
+                  ({!
+                        {session_mgr is_local}}
+                     {push_basic_confirm_dialog no_trainers_when_online}
+                  )
+                  ({!
+                        {profile_mgr has_primary_profile}}
+                     {push_signin_needed_dialog trainer_must_signin}
+                  )
+                  {gamemode set_mode trainer}
+                  {profile_mgr set_primary_profile_by_user $user}
+                  {ui goto_screen training_screen}
+               }
+            )
+            (training_pro_song_lessons.btn
+               {cond
+                  ({!
+                        {session_mgr is_local}}
+                     {push_basic_confirm_dialog no_trainers_when_online}
+                  )
+                  ({!
+                        {profile_mgr get_profile $user}}
+                     {push_signin_needed_dialog trainer_must_signin}
+                  )
+                  ({==
+                        {$user get_controller_type}
+                        kControllerKeys}
+                     {gamemode set_mode pro_song_lessons_keyboard}
+                     {input_mgr set_user $user}
+                     {critical_user_listener set_critical_user $user}
+                     {training_mgr set_user $user}
+                     {training_mgr set_minimum_difficulty kDifficultyEasy}
+                     {training_mgr set_return_info song_select_screen pause_quit}
+                     {song_select_panel set trainer_from_main_menu kControllerKeys}
+                     {ui abstract_wipe}
+                     {ui goto_screen song_select_enter_screen}
+                  )
+                  ({||
+                        {== {$user get_controller_type} kControllerRealGuitar}
+                        ; dx - allow 5L guitar to enter Pro Guitar trainer for playtesting
+                        {&&
+                           {== {$user get_controller_type} kControllerGuitar}
+                           {modifier_mgr is_modifier_active mod_auto_play}
                         }
                      }
-                     {ui push_screen create_character_notonline_screen}
+                     {gamemode set_mode trainer_real_guitar}
+                     {input_mgr set_user $user}
+                     {critical_user_listener set_critical_user $user}
+                     {training_mgr set_user $user}
+                     {training_mgr set_minimum_difficulty kDifficultyEasy}
+                     {training_mgr set_return_info song_select_screen pause_quit}
+                     {song_select_panel set trainer_from_main_menu kControllerRealGuitar}
+                     {ui abstract_wipe}
+                     {ui goto_screen song_select_enter_screen}
+                  )
+                  {push_basic_confirm_dialog pro_song_lessons_wrong_controller}
+               }
+            )
+            (training_drum_freestyle.btn
+               {cond
+                  ({!
+                        {session_mgr is_local}}
+                     {push_basic_confirm_dialog no_trainers_when_online}
+                  )
+                  ({==
+                        {$user get_controller_type}
+                        kControllerDrum}
+                     {gamemode set_mode drum_freestyle}
+                     {input_mgr set_user $user}
+                     {critical_user_listener set_critical_user $user}
+                     {training_mgr set_user $user}
+                     {training_mgr set_return_info main_hub_screen overshell_quit_freestyle}
+                     {ui goto_screen drum_freestyle_screen}
+                  )
+                  {push_basic_confirm_dialog drum_freestyle_wrong_controller}
+               }
+            )
+            (
+               (dlc_store.btn redeem_token.btn wii_manageAOC.btn)
+               {store_real_loading_screen set
+                  store_mode
+                  {switch $component
+                     (dlc_store.btn dlc)
+                     (redeem_token.btn token)
+                     (wii_manageAOC.btn manage)
                   }
                }
-            }
-         )
-         #define GOTO_PLAY_A_SHOW (
-            {input_mgr set_user $user}
-            {set $stored_user $user}
-            {set $dx_entered_play_a_show TRUE}
-            {if_else {session is_local}
-               {$this dx_play_a_show}
-               {do
-                  {if {is_leader_local}
-                     {$this dx_play_a_show}
-                  }
-                  ;{session send_msg_to_all {'`' (set $dx_playing_a_show TRUE) kNetReliable}}
-                  ;{session send_msg_to_all {'`' (main_hub_panel dx_play_a_show) kNetReliable}}
-                  ;{session send_msg_to_all {'`' (set $dx_playing_a_show TRUE) kNetReliable}}
-               }
-            }
-         )
-         (mb_musicstore.btn
-            #ifdef HX_PS3
-            GOTO_PLAY_A_SHOW
-            #else
-               #ifndef RB3E
-               {dx_modal_messenger rb3e_install_warn}
+               #ifndef HX_WII
+               {input_mgr set_user $user}
                #endif
-               #ifdef RB3E
-               {do
-                  ($pass FALSE)
-                  ($check {rb3e_get_song_name 1102})
-                  {if {&& {content_mgr refresh_done} {rb3e_allowed} {== {sprint $check} "Imagine"}}
-                     {set $pass TRUE}
+               #ifdef HX_XBOX
+               {if_else
+                  {'||'
+                     {! {platform_mgr is_user_signed_into_live $user}}
+                     {platform_mgr is_user_a_guest $user}
                   }
-                  {if {! {content_mgr refresh_done}}
-                     {dx_modal_messenger wait_for_songs}
-                  }
-                  {if $pass
-                     GOTO_PLAY_A_SHOW
+                  {ui push_screen main_store_signin_screen}
+                  {do
+                     {ui abstract_wipe}
+                     {ui goto_screen store_loading_screen}
                   }
                }
                #endif
-            #endif
-         )
-         (pn_quickplay.btn {$this set_state kMainHubState_Quickplay})
-         (pn_tour.btn {$this set_state kMainHubState_Tour})
-         (qp_quickplay.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {net_sync set_ui_state kNetUI_WaitingChooseSong}
-            {$this set_override kMainHubOverride_Waiting}
-         )
-         (qp_setlist.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {net_sync set_ui_state kNetUI_WaitingChooseSetlist}
-            {$this set_override kMainHubOverride_Waiting}
-         )
-         (qp_fmp.btn
-            {if_else {overshell is_full}
-               {push_basic_confirm_dialog no_fmp_when_full}
-               {do
-                  {profile_mgr set_primary_profile_by_user $user}
-                  {net_sync set_ui_state kNetUI_WaitingQpFindPlayers}
-                  {$this set_override kMainHubOverride_Waiting}
+               #ifdef HX_PS3
+               {if_else {== $component dlc_store.btn}
+                  {set [waiting_for_store_entry] TRUE}
+                  {set [waiting_for_token_entry] TRUE}
                }
-            }
-         )
-         (tour_new.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {$this handle_tournew_chosen}
-         )
-         (tour_fmp.btn
-            {if_else {overshell is_full}
-               {push_basic_confirm_dialog no_fmp_when_full}
-               {do
-                  {profile_mgr set_primary_profile_by_user $user}
-                  {$this handle_tourfmp_chosen}
-               }
-            }
-         )
-         (career_progress.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {$this handle_campaign_chosen}
-         )
-         (career_songs.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {$this handle_campaign_songs_chosen}
-         )
-         (career_leaderboard.btn
-            {profile_mgr set_primary_profile_by_user $user}
-            {$this handle_campaign_lb_chosen}
-         )
-         (training_band_practice.btn
-            {if_else {session_mgr is_local}
-               {do
-                  {gamemode set_mode practice}
-                  {ui abstract_wipe}
-                  {input_mgr set_user $user}
-                  {critical_user_listener set_critical_user $user}
-                  {training_mgr set_return_info song_select_screen pause_quit}
-                  {training_mgr set_user $user}
-                  {ui goto_screen song_select_enter_screen}
-               }
-               {push_basic_confirm_dialog no_trainers_when_online}
-            }
-         )
-         (training_trainers.btn
-            {cond
-               ({!
-                     {session_mgr is_local}}
-                  {push_basic_confirm_dialog no_trainers_when_online}
-               )
-               ({!
-                     {profile_mgr has_primary_profile}}
-                  {push_signin_needed_dialog trainer_must_signin}
-               )
-               {gamemode set_mode trainer}
-               {profile_mgr set_primary_profile_by_user $user}
-               {ui goto_screen training_screen}
-            }
-         )
-         (training_pro_song_lessons.btn
-            {cond
-               ({!
-                     {session_mgr is_local}}
-                  {push_basic_confirm_dialog no_trainers_when_online}
-               )
-               ({!
-                     {profile_mgr get_profile $user}}
-                  {push_signin_needed_dialog trainer_must_signin}
-               )
-               ({==
-                     {$user get_controller_type}
-                     kControllerKeys}
-                  {gamemode set_mode pro_song_lessons_keyboard}
-                  {input_mgr set_user $user}
-                  {critical_user_listener set_critical_user $user}
-                  {training_mgr set_user $user}
-                  {training_mgr set_minimum_difficulty kDifficultyEasy}
-                  {training_mgr set_return_info song_select_screen pause_quit}
-                  {song_select_panel set trainer_from_main_menu kControllerKeys}
-                  {ui abstract_wipe}
-                  {ui goto_screen song_select_enter_screen}
-               )
-               ({||
-                     {== {$user get_controller_type} kControllerRealGuitar}
-                     ; dx - allow 5L guitar to enter Pro Guitar trainer for playtesting
-                     {&&
-                        {== {$user get_controller_type} kControllerGuitar}
-                        {modifier_mgr is_modifier_active mod_auto_play}
-                     }
-                  }
-                  {gamemode set_mode trainer_real_guitar}
-                  {input_mgr set_user $user}
-                  {critical_user_listener set_critical_user $user}
-                  {training_mgr set_user $user}
-                  {training_mgr set_minimum_difficulty kDifficultyEasy}
-                  {training_mgr set_return_info song_select_screen pause_quit}
-                  {song_select_panel set trainer_from_main_menu kControllerRealGuitar}
-                  {ui abstract_wipe}
-                  {ui goto_screen song_select_enter_screen}
-               )
-               {push_basic_confirm_dialog pro_song_lessons_wrong_controller}
-            }
-         )
-         (training_drum_freestyle.btn
-            {cond
-               ({!
-                     {session_mgr is_local}}
-                  {push_basic_confirm_dialog no_trainers_when_online}
-               )
-               ({==
-                     {$user get_controller_type}
-                     kControllerDrum}
-                  {gamemode set_mode drum_freestyle}
-                  {input_mgr set_user $user}
-                  {critical_user_listener set_critical_user $user}
-                  {training_mgr set_user $user}
-                  {training_mgr set_return_info main_hub_screen overshell_quit_freestyle}
-                  {ui goto_screen drum_freestyle_screen}
-               )
-               {push_basic_confirm_dialog drum_freestyle_wrong_controller}
-            }
-         )
-         (
-            (dlc_store.btn redeem_token.btn wii_manageAOC.btn)
-            {store_real_loading_screen set
-               store_mode
-               {switch $component
-                  (dlc_store.btn dlc)
-                  (redeem_token.btn token)
-                  (wii_manageAOC.btn manage)
-               }
-            }
-            #ifndef HX_WII
-            {input_mgr set_user $user}
-            #endif
-            #ifdef HX_XBOX
-            {if_else
-               {'||'
-                  {! {platform_mgr is_user_signed_into_live $user}}
-                  {platform_mgr is_user_a_guest $user}
-               }
-               {ui push_screen main_store_signin_screen}
-               {do
-                  {ui abstract_wipe}
-                  {ui goto_screen store_loading_screen}
-               }
-            }
-            #endif
-            #ifdef HX_PS3
-            {if_else {== $component dlc_store.btn}
-               {set [waiting_for_store_entry] TRUE}
-               {set [waiting_for_token_entry] TRUE}
-            }
-            {platform_mgr run_net_start_utility}
-            #endif
-            #ifdef HX_PC
-            {ui goto_screen store_loading_screen}
-            #endif
-            #ifdef HX_WII
-            {$this set_state kMainHubState_Main}
-            {ui goto_screen store_wii_enter_screen}
-            #endif
-         )
+               {platform_mgr run_net_start_utility}
+               #endif
+               #ifdef HX_PC
+               {ui goto_screen store_loading_screen}
+               #endif
+               #ifdef HX_WII
+               {$this set_state kMainHubState_Main}
+               {ui goto_screen store_wii_enter_screen}
+               #endif
+            )
+         }
       }
    )
    (handle_goto_tour
@@ -597,22 +992,6 @@
       {$this set_override kMainHubOverride_None}
    )
    (BUTTON_DOWN_MSG
-      {if $dx_event_mode
-         {if_else {== $action kAction_Up}
-            {do
-               {event_button_desc.lbl set_token_fmt {sprint {localize dx_freeplay_desc}}}
-            }
-            kDataUnhandled
-         }
-         {if_else {== $action kAction_Down}
-            {do
-               {event_button_desc.lbl set_token_fmt
-                  {sprint {localize dx_play_a_show_desc}}
-               }
-            }
-            kDataUnhandled
-         }
-      }
       {cond
          ({$this in_waiting_lock} TRUE)
          ({== $action kAction_Cancel}
@@ -701,32 +1080,24 @@
          )
          ({== $action kAction_ViewModify}
             {profile_mgr set_primary_profile_by_user $user}
-            {$this dx_check_first_time}
+            {$this check_rewards_and_hints}
          )
          #ifndef HX_WII
+         ;play metamusic shortcut
          ({|| {== $action kAction_PageUp} {== $action kAction_PageDown}}
-            {if {! {ui in_transition}}
-               {if_else {content_mgr refresh_done}
-                  {if_else {meta_performer song}
-                     {if_else {&& {session is_local} {meta_performer song_id}}
-                        {do
-                           {profile_mgr set_primary_profile_by_user $user}
-                           {meta_performer reset_songs}
-                           {meta_performer set_song {symbol $metashortname}}
-                           {gamemode set_mode qp_coop}
-                           {ui abstract_wipe}
-                           {if {exists line1_fade}
-                              {delete line1_fade}
-                           }
-                           {dx_restore_online_transitions}
-                           {ui goto_screen {music_library get_next_screen}}
-                        }
-                        kDataUnhandled
-                     }
+            {if_else ;we need to check in stages or it will crash
+               {&&
+                  {content_mgr refresh_done}
+                  {! {ui in_transition}}
+               }
+               {if_else {meta_performer song}
+                  {if_else {&& {session is_local} {meta_performer song_id}}
+                     {$this dx_metamusic_play}
                      kDataUnhandled
                   }
                   kDataUnhandled
                }
+               kDataUnhandled
             }
          )
          #endif
@@ -834,6 +1205,17 @@
    (FOCUS_MSG
       {if {== $panel_dir main_hub}
          {$this set last_focused_button $new_focus}
+         ;show detailed description based on focus
+         {if $dx_event_mode
+            {do
+               ($lbl event_button_desc.lbl)
+               {switch $new_focus
+                  (mb_playnow.btn {$lbl set_token_fmt dx_freeplay_desc})
+                  (mb_career.btn {$lbl set_token_fmt dx_play_a_show_desc})
+                  {$lbl set_token_fmt os_blnk}
+               }
+            }
+         }
       }
    )
    (update_pool_info
@@ -905,7 +1287,7 @@
                   award_gamestop
                   campaign_award_reason_preorder
                }
-               {$this dx_check_first_time}
+               {$this check_rewards_and_hints}
             }
          }
       }
@@ -921,7 +1303,7 @@
                   award_bonus_x79
                   campaign_award_reason_preorder
                }
-               {$this dx_check_first_time}
+               {$this check_rewards_and_hints}
             }
          }
       }
@@ -937,7 +1319,7 @@
                   award_bonus_d2010
                   campaign_award_reason_preorder
                }
-               {$this dx_check_first_time}
+               {$this check_rewards_and_hints}
             }
          }
       }
@@ -956,7 +1338,13 @@
          }
       }
    )
-   (TRANSITION_COMPLETE_MSG {$this dx_check_first_time} DX_AUTOSAVE)
+   (TRANSITION_COMPLETE_MSG
+      ;this is commented out because it is moved in the dx flow below
+      ;it is left here as a reminder that it has been moved.
+      ;{$this check_rewards_and_hints}
+      {$this dx_check_first_time}
+      DX_AUTOSAVE
+   )
    (update_finding_help
       {finding_continue.ihp set_showing {session_mgr is_leader_local}}
       {do

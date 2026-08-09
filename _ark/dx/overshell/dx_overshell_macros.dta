@@ -317,7 +317,7 @@
       }
    )
    (mod_static_fills
-      {if {$this in_game}
+      {if {== {ui current_screen} game_screen}
          {do
             {session disconnect}
             {session_mgr disconnect}
@@ -496,9 +496,6 @@
       {push_back $options overshell_bass}
       {push_back $options overshell_keys}
       {if {|| $dx_additional_parts {! {session_mgr is_local}}}
-         {if {== $dx_joypad_type_vocals kControllerGuitar}
-            {push_back $options overshell_drums}
-         }
          {unless {== {ui current_screen} game_screen}
             {push_back $options overshell_vocal_solo}
             {push_back $options overshell_vocal_harmony}
@@ -515,21 +512,6 @@
       {push_back $options overshell_drums}
       {push_back $options overshell_drums_pro}
       {if {|| $dx_additional_parts {! {session_mgr is_local}}}
-         {if 
-            {||
-               {== $dx_joypad_type_guitar kControllerDrum}
-               {== $dx_joypad_type_keys kControllerDrum}
-               {== $dx_joypad_type_vocals kControllerDrum}
-            }
-            {do
-               {push_back $options overshell_guitar}
-               {push_back $options overshell_bass}
-               {push_back $options overshell_keys}
-            }
-         }
-         {if {== $dx_joypad_type_keys kControllerDrum}
-            {push_back $options overshell_real_keys}
-         }
          {unless {== {ui current_screen} game_screen}
             {push_back $options overshell_vocal_solo}
             {push_back $options overshell_vocal_harmony}
@@ -551,12 +533,32 @@
                {push_back $options overshell_guitar}
                {push_back $options overshell_bass}
                {push_back $options overshell_keys}
-               {if {== $dx_joypad_type_keys kControllerVocals}
-                  {push_back $options overshell_real_keys}}
                {push_back $options overshell_drums}
             }
          }
       }
+      {choose_part.lst set_data $options}
+   }
+)
+#define DX_PART_SELECT_PAD_INGAME
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options overshell_guitar}
+      {push_back $options overshell_bass}
+      {push_back $options overshell_keys}
+      {push_back $options overshell_drums}
+      {choose_part.lst set_data $options}
+   }
+)
+#define DX_PART_SELECT_VOCALS_INGAME
+(
+   {do
+      ($options
+         {array 0})
+      {push_back $options overshell_vocal_solo}
+      {push_back $options overshell_vocal_harmony}
       {choose_part.lst set_data $options}
    }
 )
@@ -634,14 +636,47 @@
       ;makes every instrument selectable when autoplay is on
       DX_PART_SELECT_AUTOPLAY
       ;otherwise set instrument selection normally
-      {do
+      {if_else {{$this get_user} is_local}
+         {if_else {&& {== {ui current_screen} game_screen} {== {{$this get_user} get_controller_type} kControllerVocals}}
+            DX_PART_SELECT_VOCALS_INGAME
+            {switch {joypad_controller_type_padnum {{$this get_user} get_pad_num}}
+               (
+                  (ro_guitar ro_guitar_xbox strat_xbox strat_xbox_rb2
+                  hx_guitar_ps3 ps3_rb2_guitar ro_guitar_ps3
+                  wii_guitar wii_guitar_rb2 wii_roguitar)
+                  DX_PART_SELECT_GUITAR
+               )
+               (
+                  (midi hx_drums_xbox hx_drums_xbox_rb2 ro_drums_xbox
+                  hx_drums_ps3 hx_drums_ps3_rb2 ro_drums_ps3_ghwt konami_drums_ps3_rr ps3_rb2_drums
+                  wii_drums wii_drums_rb2 wii_rodrums)
+                  DX_PART_SELECT_DRUMS
+               )
+               (
+                  (hx_xbox digital analog dualshock stagekit_xbox wii_remote wii_classic gamecube)
+                  {if_else {&& {== {ui current_screen} game_screen} {! {{$this get_user} get_controller_type} kControllerVocals}}
+                     DX_PART_SELECT_PAD_INGAME
+                     DX_PART_SELECT_VOCALS
+                  }
+               )
+               (
+                  (hx_midi_keys_xbox hx_midi_keys_ps3 hx_midi_keys_wii)
+                  DX_PART_SELECT_KEYS
+               )
+               (
+                  (hx_midi_guitar_xbox hx_midi_guitar_ps3 hx_midi_guitar_wii)
+                  DX_PART_SELECT_REAL_GUITAR
+               )
+               DX_PART_SELECT_VOCALS
+            }
+         }
          {switch {{$this get_user} get_controller_type}
             (kControllerGuitar DX_PART_SELECT_GUITAR)
             (kControllerDrum DX_PART_SELECT_DRUMS)
             (kControllerVocals DX_PART_SELECT_VOCALS)
             (kControllerKeys DX_PART_SELECT_KEYS)
             (kControllerRealGuitar DX_PART_SELECT_REAL_GUITAR)
-            {fail "No choose part view for this controller type"}
+            DX_PART_SELECT_VOCALS
          }
       }
    }
@@ -668,12 +703,13 @@
    {set_elem {find $syscfg joypad controller_mapping gamecube} 1 {if_else {== $dx_joypad_pad_mapping joypad} gamecube $dx_joypad_pad_mapping}}
    #endif
    {dx_log_writer info {sprint "Pad mapping has been changed to: " {find $syscfg joypad controller_mapping analog}}}
-   {overshell update_all}
 )
-#define DX_SWAP_INSTRUMENT_TYPE_GUITAR
+#define DX_SWAP_INSTRUMENT_TYPE
 (
    
-   ;Appends newly selected instrument configuration to guitar instrument arrays
+   ;Appends newly selected instrument configuration instrument arrays
+
+   ;guitar
    {set_elem {find $syscfg joypad instrument_mapping ro_guitar} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping ro_guitar_xbox} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping strat_xbox} 1 $dx_joypad_type_guitar}
@@ -681,44 +717,49 @@
    {set_elem {find $syscfg joypad instrument_mapping hx_guitar_ps3} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping ps3_rb2_guitar} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping ro_guitar_ps3} 1 $dx_joypad_type_guitar}
-   #ifdef HX_WII
    {set_elem {find $syscfg joypad instrument_mapping wii_guitar} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping wii_guitar_rb2} 1 $dx_joypad_type_guitar}
    {set_elem {find $syscfg joypad instrument_mapping wii_roguitar} 1 $dx_joypad_type_guitar}
-   #endif
-   {overshell update_all}
-)
-#define DX_SWAP_INSTRUMENT_TYPE_KEYS
-(
-   ;Appends newly selected instrument configuration to keys instrument arrays
+   
+   ;keys
    {set_elem {find $syscfg joypad instrument_mapping hx_midi_keys_xbox} 1 $dx_joypad_type_keys}
    {set_elem {find $syscfg joypad instrument_mapping hx_midi_keys_ps3} 1 $dx_joypad_type_keys}
-   #ifdef HX_WII
    {set_elem {find $syscfg joypad instrument_mapping hx_midi_keys_wii} 1 $dx_joypad_type_keys}
-   #endif
-   {overshell update_all}
-)
-#define DX_SWAP_INSTRUMENT_TYPE_VOCALS
-(   
-   ;Appends newly selected instrument configuration to vocals instrument arrays
+
+   ;vocals
    {set_elem {find $syscfg joypad instrument_mapping hx_xbox} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping digital} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping analog} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping dualshock} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping stagekit_xbox} 1 $dx_joypad_type_vocals}
-   #ifdef HX_WII
    {set_elem {find $syscfg joypad instrument_mapping wii_remote} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping wii_classic} 1 $dx_joypad_type_vocals}
    {set_elem {find $syscfg joypad instrument_mapping gamecube} 1 $dx_joypad_type_vocals}
-   #endif
-   {overshell update_all}
+   
+   ;drum
+   {set_elem {find $syscfg joypad instrument_mapping midi} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping hx_drums_xbox} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping hx_drums_xbox_rb2} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping ro_drums_xbox} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping hx_drums_ps3} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping hx_drums_ps3_rb2} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping ro_drums_ps3_ghwt} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping konami_drums_ps3_rr} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping ps3_rb2_drums} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping wii_drums} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping wii_drums_rb2} 1 $dx_joypad_type_drum}
+   {set_elem {find $syscfg joypad instrument_mapping wii_rodrums} 1 $dx_joypad_type_drum}
+   
+   ;real_guitar
+   {set_elem {find $syscfg joypad instrument_mapping hx_midi_guitar_xbox} 1 $dx_joypad_type_real_guitar}
+   {set_elem {find $syscfg joypad instrument_mapping hx_midi_guitar_ps3} 1 $dx_joypad_type_real_guitar}
+   {set_elem {find $syscfg joypad instrument_mapping hx_midi_guitar_wii} 1 $dx_joypad_type_real_guitar}
 )
 #define DX_RESET_INST_TYPES ;sets all controllers back to their default instrument
 (
    {set $dx_joypad_type_guitar kControllerGuitar}
    {set $dx_joypad_type_keys kControllerKeys}
    {set $dx_joypad_type_vocals kControllerVocals}
-   DX_SWAP_INSTRUMENT_TYPE_GUITAR
-   DX_SWAP_INSTRUMENT_TYPE_KEYS
-   DX_SWAP_INSTRUMENT_TYPE_VOCALS
+   {set $dx_joypad_type_drum kControllerDrum}
+   {set $dx_joypad_type_real_guitar kControllerRealGuitar}
 )

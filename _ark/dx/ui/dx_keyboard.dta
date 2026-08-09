@@ -1,4 +1,5 @@
 {set $focused_input_field 0}
+{set $clipboard ""}
 {func dx_create_input_field ($name)
     {do
         ($fielddir {new RndDir $name 
@@ -19,6 +20,19 @@
                         {switch $key
                             (KB_a {set [highlight_start] 0} {set [highlight_end] {strlen [buf]}} {set [caret] [highlight_end]} {$this sync_caret})
                             (KB_BACKSPACE {$this delete_char}) ; This should be delete word but it's not implemented yet
+                            (KB_SPACE {[sink_obj] input_field_swap_shortcut})
+                            (KB_c
+                                {if {$this has_highlight}
+                                    {set $clipboard {substr [buf] [highlight_start] {- [highlight_end] [highlight_start]}}}
+                                }
+                            )
+                            (KB_x
+                                {if {$this has_highlight}
+                                    {set $clipboard {substr [buf] [highlight_start] {- [highlight_end] [highlight_start]}}}
+                                    {$this erase_highlight}
+                                }
+                            )
+                            (KB_v {$this insert_char $clipboard})
                         }
                     }
                     {do
@@ -30,6 +44,8 @@
                             (KB_BACKSPACE {$this delete_char})
                             (KB_LEFT {if_else $shift {$this sel_left} {$this shift_caret -1}})
                             (KB_RIGHT {if_else $shift {$this sel_right} {$this shift_caret 1}})
+                            (KB_UP {$this seek_history 1})
+                            (KB_DOWN {$this seek_history -1})
                             (KB_ENTER {$this accept})
                         }
                     }
@@ -47,12 +63,15 @@
                         {$this set buf {sprint {substr [buf] 0 [caret]} $char {substr [buf] [caret] {- {strlen [buf]} [caret]}}}}
                     }
                 }
-                {+= [caret] 1}
+                {+= [caret] {strlen $char}}
                 {$this update_label}
                 {$this sync_caret}
                 {$this send_update_msg}
             )
             (delete_char
+                {if {== {strlen [buf]} 0}
+                    {[sink_obj] input_field_overdelete}
+                }
                 {if_else {$this has_highlight}
                     {$this erase_highlight}
                     {if {> [caret] 0}
@@ -97,6 +116,9 @@
                         {$this sync_caret}
                     }
                 }
+                {if {== {strlen [buf]} 0}
+                    {[sink_obj] input_field_swap_shortcut}
+                }
             )
             (sel_left
                 {unless {$this has_highlight}
@@ -136,8 +158,43 @@
             )
 
             (accept
-                {dx_keyboard_unfocus}
+                ; Remove a string from history if it already exists and place it at the front
+                ; find_elem is the only one that actually strcmps the elements instead of just doing a simple pointer comparison
+                {if {find_elem [history] [buf] $found}
+                    {remove_elem [history] {elem [history] $found}}
+                }
+                {insert_elem [history] 0 [buf]}
+                {if {> {size [history]} 30}
+                    {resize [history] 30}
+                }
+                {set [history_index] -1}
+                {if [unfocus_on_accept]
+                    {dx_keyboard_unfocus}
+                }
                 {[sink_obj] input_field_accept $this [buf]}
+            )
+
+            (seek_history ($offset)
+                {+= [history_index] $offset}
+
+                {clamp_eq [history_index] -1 {- {size [history]} 1}}
+
+                {$this clear_highlight}
+
+                {if_else {== [history_index] -1}
+                    {do
+                        {set [buf] ""}
+                        {set [caret] 0}
+                    }
+                    {do
+                        {set [buf] {elem [history] [history_index]}}
+                        {set [caret] {strlen [buf]}}
+                    }
+                }
+
+                {$this update_label}
+                {$this sync_caret}
+                {$this send_update_msg}
             )
 
             (send_update_msg
@@ -242,11 +299,15 @@
             {text.lbl set alignment kMiddleLeft}
             {text.lbl set width 600}
             {text.lbl set height 40}
+            {text.lbl set draw_order 10}
             {text.lbl set_trans_parent $this}
             {$this set sink_obj kDataUnhandled}
+            {$this set history {array 0}}
+            {$this set history_index -1}
             {$this set buf ""}
             {$this set caret 0}
             {$this set focused FALSE}
+            {$this set unfocus_on_accept TRUE}
             {$this set highlight_start -1}
             {$this set highlight_end -1}
             {$this set length_limit 32} ; Note: only applies to the virtual keyboard at the moment
@@ -263,7 +324,7 @@
             {highlight.mat set color {pack_color 1 0 0}}
             {highlight.mat set alpha 0.5}
             {highlight.mesh set mat highlight.mat}
-            {highlight.mesh set draw_order -1}
+            {highlight.mesh set draw_order 2}
             {highlight.mesh set_trans_parent $this}
             {highlight.mesh set_showing FALSE}
 
@@ -287,13 +348,60 @@
     }
 }
 
-{func dx_keyboard_handler ($key $shift $ctrl $alt)
-    {if_else {!= {type $focused_input_field} kDataObject}
-        {do
-            {{ui focus_panel} keyboard_msg $key $shift $ctrl $alt}
+{func try_toggle_console
+    {do
+        {with overshell
+            {unless {find_elem {slots.grp get_array objects} {object dx_console}}
+                {slots.grp add_object dx_console}
+            }
         }
-        {do
-            {$focused_input_field keyboard_msg $key $shift $ctrl $alt}
+        {if_else {dx_console get is_open}
+            {dx_console close}
+            {dx_console open}
+        }
+    }
+}
+; Shortcut for opening the console by pressing enter without any text fields focused
+; Intended for the 360 chatpad, where pressing backtick isn't very easy and also causes some other characters to be entered.
+{func enter_console_shortcut ($key)
+    {do 
+        ($out FALSE)
+        {if {!= {type $focused_input_field} kDataObject}
+            {unless {dx_console get is_open}
+                {if {== $key 10}
+                    {set $out TRUE}
+                }
+            }
+        }
+        {if {== {char $key} "`"}
+            {set $out TRUE}
+        }
+        $out
+    }
+}
+
+{func dx_shortcut_handler ($key $shift $ctrl $alt)
+    {set $consume_input FALSE}
+    {if {&& $debug_mode {session_mgr is_local} $alt {== {char $key} "a"}}
+        {run DX_ACE_PATH}
+        {set $consume_input TRUE}
+    }
+    {if {enter_console_shortcut $key}
+        {try_toggle_console}
+        {set $consume_input TRUE}
+    }
+    $consume_input
+}
+
+{func dx_keyboard_handler ($key $shift $ctrl $alt)
+    {unless {dx_shortcut_handler $key $shift $ctrl $alt}
+        {if_else {!= {type $focused_input_field} kDataObject}
+            {do
+                {{ui focus_panel} keyboard_msg $key $shift $ctrl $alt}
+            }
+            {do
+                {$focused_input_field keyboard_msg $key $shift $ctrl $alt}
+            }
         }
     }
 }

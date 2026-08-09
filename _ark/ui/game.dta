@@ -1,4 +1,110 @@
-#include ../dx/game/dx_game_handles.dta
+#define DX_GAME_PANEL_HANDLES
+(
+   (dx_on_game_enter
+      {$this revert_autoplay}
+      {dx_game_var_reset}
+      {unless {gamemode in_mode trainer}
+         {set $dx_reported_highscore FALSE}
+         {dx_presence_manager}
+         {dx_set_auto_play}
+         {game set_kick_autoplay {modifier_mgr is_modifier_active mod_auto_kick}} ; dx - auto kick
+         {gamemode set allow_drum_fills {! {modifier_mgr is_modifier_active mod_static_fills}}} ; dx - static fills
+         {set $dx_apply_postproc TRUE} ; needed to avoid microstutter in-game
+         {dx_admin_mode}
+      }
+   )
+   (dx_on_game_exit
+      {unless {gamemode in_mode trainer}
+         {set $dx_already_restarted FALSE} ; dx - track resets for no BRE modifier
+         {set $dx_mtvup FALSE} ;we have to make sure and turn off mtv overlay when it is unloaded or it can crash in places where we call it (overshell)
+         {dx_send_leader_song_speed}
+         #ifndef HX_WII
+         DX_CURRENT_SONG_CLEAR
+         DX_JSON_CLEAR
+         #endif
+         {set $dx_current_free_cam "Free camera: off"}
+      }
+      {dx_game_over_clean_highways}
+      {$this revert_autoplay}
+   )
+   (dx_on_game_reset
+      {dx_game_var_reset}
+      {dx_game_over_clean_highways}
+   )
+   (dx_on_game_coda
+      ; auto-deploy vocal BRE if using a low deploy sensitivity
+      {beatmatch foreach_active_player $player
+         {if {{$player get_user} is_local}
+            {if {&& {== {$player instrument} vocals} {modifier_mgr is_modifier_active mod_vocal_coda}}
+               {script_task
+                  kTaskSeconds
+                  (delay 1.5) ; gives time for the BRE shield to pop-in before activating
+                  (script
+                     {$player remote_hit_last_coda_gem}
+                     {$player send_hit_last_coda_gem}
+                  )
+               }
+            }
+         }
+      }
+   )
+   (hide_mtv
+      {if $dx_mtvup {{{gamemode get track_panel} find mtv_overlay} set_showing FALSE}}
+   )
+   (you_rock
+      ($enabled)
+      {if $enabled
+         {do
+            ($dis {coop_track_panel find tracker_broadcast_display})
+            ($msg
+               {if_else $dx_event_mode
+                  {switch $dx_event_type
+                     (party {$this you_rock_msg $dis {localize dx_you_rock_msg}})
+                     (club {$this you_rock_msg $dis {sprint {localize dx_you_rock_club_msg} $dx_event_name "!"}})
+                     (convention {$this you_rock_msg $dis {sprint {localize dx_you_rock_convention_msg} $dx_event_name "!"}})
+                  }
+                  {localize dx_you_rock_msg}
+               }
+            )
+            {$dis set_showing TRUE}
+            {{$dis find band_message.lbl} set_showing TRUE}
+            {$dis set_challenge_type kTrackerChallengeType_Overdrive}
+            {$dis set_display_type kBroadcastTrackerDisplay_BandMessage}
+            {$dis show_brief_band_message {symbol $msg}}
+         }
+      }
+   )
+   (revert_autoplay
+      {beatmatch foreach_active_player $player
+         {if {{$player get_user} is_local}
+            {if {! {modifier_mgr is_modifier_active mod_auto_play}}
+               {$player set_auto_play FALSE}
+            }
+         }
+      }
+   )
+   (dx_on_game_over
+      {$this hide_mtv}
+      {dx_char_hider FALSE} ;force restore characters
+      {set $dx_mtvup FALSE}
+      {$this dx_on_game_reset}
+      {dx_invalidate_scores}
+   )
+   (dx_on_game_won
+      {dx_game_over_clean_highways}
+      {dx_char_hider FALSE} ;force restore characters
+      {if {&& {! {gamemode in_mode practice}} {! {gamemode in_mode trainer}}}
+         {if $dx_mtvup
+            {$this hide_mtv}
+            {beatmatch foreach_active_player $player
+               {dx_clean_solo_box $player {$player instrument}}
+            }
+         }
+         {$this you_rock $dx_you_rock}
+      }
+      {set $dx_mtvup FALSE}
+   )
+)
 #include track_panel.dta
 #include pause_mics_helper.dta
 #define LOSE_MUSIC_SLOW_SEC (2)
@@ -186,7 +292,7 @@
    world_panel
    (file "../world/world.milo")
    (unload_async TRUE)
-   (enter {world_panel set_showing {! {== $dx_venue none}}})
+   (enter {world_panel set_showing {!= $dx_venue none}})
    (unload
       {if $bandwardrobe
          {$bandwardrobe unload_venue}
@@ -204,6 +310,9 @@
          {$this dx_on_game_enter}
       }
       #endif
+      {if {gamemode in_mode practice}
+         {trainer_background_panel set_showing {!= $dx_venue none}}
+      }
       {$this set_showing TRUE}
       {set [delayed_mic_check] FALSE}
       {rnd set_in_game TRUE}
@@ -245,7 +354,7 @@
    )
    (on_guide_change {overshell update_all} PAUSE_MICS_ON_GUIDE_CHANGE)
 )
-#ifndef HX_WII
+#ifdef THIS_IS_DISABLED
 {new UIPanel
    outro_vignette_loader
    (chosen_vignette '')

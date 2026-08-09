@@ -1,0 +1,322 @@
+{func split_str ($str $seperator)
+   {do
+      ($start_index 0)
+      ($buf {array 0})
+      ($finalindex 0)
+      {foreach_int $i 0 {strlen $str}
+         {do
+            ($elem {str_elem $str $i})
+            ($inquotes FALSE)
+            ;{dx_log_writer insane {sprint $elem}}
+            {if {== $elem {char 34}}
+                {set $inquotes {! $inquotes}}
+            }
+            {if {&& {== $elem $seperator} {! $inquotes}}
+               {push_back $buf {substr $str $start_index {- $i $start_index}}}
+               {set $start_index {+ $i 1}}
+            }
+         }
+         {set $finalindex $i}
+      }
+      ;{dx_log_writer insane {sprint {array ($finalindex {- {strlen $str} 1})}}}
+      {if {!= $start_index {strlen $str}}
+         {push_back $buf {substr $str $start_index 999999}}
+      }
+      $buf
+   }
+}
+
+{func sym_array ($arr)
+   {do
+      ($buf {array 0})
+      {foreach $str $arr
+         {push_back $buf {symbol $str}}
+      }
+      $buf
+   }
+}
+
+{func console_clear
+    {script_task kTaskUISeconds (delay 0.016) (script
+        {dx_console clear_log}
+    )}
+}
+
+{func console_set_this ($obj)
+    {do 
+        ($new_this {object $obj})
+        {if_else $new_this
+            {do
+                {dx_console set console_this $new_this}
+                "Switched console context"
+            }
+            "Object not found"
+        }
+    }
+}
+
+{func enablelog
+    {dx_console set logging_enabled TRUE}
+    {dx_console print_log "Logging enabled. Type disablelog to disable it again"}
+}
+
+{func disablelog
+    {dx_console set logging_enabled FALSE}
+    {dx_console clear_log}
+}
+
+{func clearchat
+    {dx_console clear_chat}
+}
+
+#define MAX_LOGLINES (23)
+
+{new RndDir dx_console
+    (input_field_accept ($field $text)
+        {if {> {strlen $text} 0}
+            {if_else {== [mode] console}
+                {do
+                    {$this send_command $text}
+                    {cmd.input set_text ""}
+                    {cmd.input set_focused}
+                }
+                {do
+                    {$this send_chat $text}
+                    {cmd.input set_text ""}
+                    {if_else {== {ui current_screen} game_screen}
+                        {$this close}
+                        {cmd.input set_focused}
+                    }
+                }
+            }
+            
+        }
+        ;{$this close}
+    )
+    (send_chat ($message)
+        ; Just pick a local user to send the message
+        {user_mgr foreach_local_user $iteruser
+            {set $user $iteruser}
+        }
+        {dx_quick_chat $message}
+    )
+    #ifdef DX_CONSOLE
+    (send_command ($text)
+        {$this print_log {sprint "] " $text}}
+        {set $text {sprint "{" $text "}"}}
+        {set $cmd {sym_array {split_str $text " "}}}
+        {write_file {sprint DX_GAMEDATA_ROOT "console_exec.dta"} $cmd}
+        {$this print_log {sprint {with [console_this] {run {sprint DX_GAMEDATA_ROOT "console_exec.dta"}}}}}
+    )
+    #endif
+    (input_field_overdelete
+        {$this close}
+    )
+    #ifdef DX_CONSOLE
+    (input_field_swap_shortcut
+        {tabs.grp set_showing TRUE}
+        {if_else {== [mode] console}
+            {$this set_mode chat}
+            {$this set_mode console}
+        }
+    )
+    #endif
+    (open
+        {slide.anim animate (dest 1) (period 0.25) (units kTaskUISeconds)}
+        {dx_keyboard_focus {object cmd.input}}
+        {$this set is_open TRUE}
+    )
+    (close
+        {slide.anim animate (dest 0) (period 0.25) (units kTaskUISeconds)}
+        {$this set is_open FALSE}
+        {dx_keyboard_unfocus}
+    )
+    (update_log
+        {do
+            ($buf "")
+            {if {> {size [loglines]} MAX_LOGLINES}
+                {resize [loglines] MAX_LOGLINES}
+            }
+            {foreach $line [loglines]
+                {set $buf {sprint $line "\n" $buf}}
+            }
+            {log.lbl set_token_fmt stringify $buf}
+        }
+    )
+    (update_chat
+        {do
+            ($buf "")
+            {if {> {size [chatlines]} MAX_LOGLINES}
+                {resize [chatlines] MAX_LOGLINES}
+            }
+            {foreach $line [chatlines]
+                {set $buf {sprint $line "\n" $buf}}
+            }
+            {chat.lbl set_token_fmt stringify $buf}
+        }
+    )
+    (print_log ($str)
+        {if [logging_enabled]
+            {insert_elem [loglines] 0 $str}
+            {$this update_log}
+        }
+    )
+    (clear_log
+        {set [loglines] {array 0}}
+        {$this update_log}
+    )
+    (print_chat ($str)
+        {insert_elem [chatlines] 0 $str}
+        {$this update_chat}
+    )
+    (clear_chat
+        {set [chatlines] {array 0}}
+        {$this update_chat}
+    )
+    (set_mode ($mode)
+        {if {== $mode chat}
+            {chat.lbl set_showing TRUE}
+            {log.lbl set_showing FALSE}
+
+            {mode_chat.color set color {pack_color 0 0 0}}
+            {mode_chat.mesh set mat bg_active.mat} 
+            {mode_console.color set color {pack_color 1 1 1}}
+            {mode_console.mesh set mat bg.mat}
+        }
+        {if {== $mode console}
+            {chat.lbl set_showing FALSE}
+            {log.lbl set_showing TRUE}
+
+            {mode_chat.color set color {pack_color 1 1 1}}
+            {mode_chat.mesh set mat bg.mat}
+            {mode_console.color set color {pack_color 0 0 0}}
+            {mode_console.mesh set mat bg_active.mat} 
+        }
+        {set [mode] $mode}
+    )
+}
+#define DX_CONSOLE_HEIGHT (350)
+{with dx_console
+    {$this set_local_pos 0 0 214}
+    {new Mesh bg.mesh}
+    {bg.mesh set_trans_parent $this}
+
+    {new Mat bg.mat}
+    {bg.mat set z_mode kZModeDisable}
+    {bg.mat set color {pack_color 0 0 0}}
+    {bg.mat set alpha 0.75}
+    {bg.mat set blend kBlendSrcAlpha}
+
+    {new Mat bg_active.mat}
+    {bg_active.mat set z_mode kZModeDisable}
+    {bg_active.mat set color {pack_color 1 1 1}}
+    {bg_active.mat set alpha 1}
+    {bg_active.mat set blend kBlendSrcAlpha}
+
+    {bg.mesh set mat bg.mat}
+
+    {dx_create_input_field cmd.input}
+    {cmd.input set_trans_parent $this}
+    {cmd.input set draw_order 1000}
+    {{cmd.input label} set width 840}
+    {cmd.input set unfocus_on_accept FALSE}
+    {cmd.input set_sink $this}
+    {dx_generate_quad_mesh bg.mesh 848 DX_CONSOLE_HEIGHT}
+    {bg.mesh set_local_pos 0 0 {/ DX_CONSOLE_HEIGHT -2}}
+
+    {new BandLabel log.lbl}
+    {log.lbl set resource_name default}
+    {log.lbl set text_size 15}
+    {log.lbl set alignment kBottomLeft}
+    {log.lbl set width 835}
+    {log.lbl set height 400}
+    {log.lbl set_trans_parent $this}
+    {log.lbl set draw_order 1000}
+
+    {new BandLabel chat.lbl}
+    {chat.lbl set resource_name default}
+    {chat.lbl set alt_style_enabled TRUE}
+    {chat.lbl set alt_font_resource_name instrument_icons_small}
+    {chat.lbl set alt_text_size 15}
+    {chat.lbl set text_size 15}
+    {chat.lbl set alignment kBottomLeft}
+    {chat.lbl set width 835}
+    {chat.lbl set height 400}
+    {chat.lbl set_trans_parent $this}
+    {chat.lbl set draw_order 1000}
+    {chat.lbl set markup TRUE}
+
+    {new Environ tabs.env}
+    {tabs.env set ambient_color {pack_color 1 1 1}}
+
+    {new Group tabs.grp}
+    {tabs.grp set environ tabs.env}
+
+    {set $cursor -400}
+    {foreach $mode ((chat console_tab_chat) (console console_tab_console))
+        {do
+            ($lbl {new BandLabel {sprint "mode_" {elem $mode 0} ".lbl"}})
+            ($mesh {new Mesh {sprint "mode_" {elem $mode 0} ".mesh"}}) 
+            ($col {new UIColor {sprint "mode_" {elem $mode 0} ".color"}})
+            {$lbl set resource_name default}
+            {$lbl set_trans_parent $this}
+            {$lbl set draw_order 1001}
+            {$lbl set width 200}
+            {$lbl set height 200}
+            {$lbl set alignment kMiddleLeft}
+            {$lbl set text_size 18}
+            {$lbl set color_override $col}
+            {set $wide {$lbl get_string_width {localize {elem $mode 1}}}}
+            {set $meshwide {+ $wide 15}}
+            {$lbl set_local_pos $cursor 0 {- -17 DX_CONSOLE_HEIGHT}}
+            {$lbl set_token_fmt {elem $mode 1}}
+
+            {$mesh set_trans_parent $this}
+            {$mesh set_local_pos {+ $cursor {/ $wide 2}} 0 {- -17 DX_CONSOLE_HEIGHT}}
+            {dx_generate_quad_mesh $mesh $meshwide 25}
+            {$mesh set mat bg.mat}
+
+            {tabs.grp add_object $mesh}
+            {tabs.grp add_object $lbl}
+            {+= $cursor $wide}
+            {+= $cursor 20}
+        }
+    }
+
+    {new PropAnim slide.anim}
+
+    {slide.anim add_keys $this (position) kPropVector3}
+    {slide.anim set_key_val $this (position) 0 (0 0 {+ 240 DX_CONSOLE_HEIGHT})}
+    {slide.anim set_key_val $this (position) 1 (0 0 240)}
+    {slide.anim set_interp_type $this (position) kPropHermite}
+
+    {slide.anim add_keys tabs.env (ambient_alpha) kPropFloat}
+    {slide.anim set_key_val tabs.env (ambient_alpha) 0 0}
+    {slide.anim set_key_val tabs.env (ambient_alpha) 1 1}
+    {slide.anim set_interp_type tabs.env (ambient_alpha) kPropHermite}
+
+    {slide.anim add_keys $this (showing) kPropBool}
+    {slide.anim set_key_val $this (showing) 0 FALSE}
+    {slide.anim set_key_val $this (showing) 0.0001 TRUE}
+    {slide.anim set_key_val $this (showing) 1 TRUE}
+
+    {slide.anim set_frame 0}
+
+    {cmd.input set_local_pos -410 0 {- 15 DX_CONSOLE_HEIGHT}}
+    {log.lbl set_local_pos -410 0 {- 25 DX_CONSOLE_HEIGHT}}
+    {chat.lbl set_local_pos -410 0 {- 25 DX_CONSOLE_HEIGHT}}
+
+    {$this set is_open FALSE}
+    #ifndef DX_CONSOLE
+    {$this set logging_enabled FALSE}
+    {log.lbl set_token_fmt stringify "Logging is disabled. Type enablelog to enable it."}
+    {tabs.grp set_showing FALSE}
+    #else
+    {$this set logging_enabled TRUE}
+    #endif
+    {$this set loglines {array 0}}
+    {$this set chatlines {array 0}}
+    {$this set console_this $this}
+    {$this set_mode chat}
+    {$this sync_objects}
+}

@@ -3,6 +3,7 @@
          #ifndef HX_WII os_menu_options #endif
          os_functional_options
          os_pedantic_settings
+         os_controller_input_offsets
          {if_else {&& $debug_mode {session_mgr is_local}}
             os_debug
             0
@@ -22,6 +23,7 @@
          (os_menu_options {dx_state dxState_MenuOptions})
          (os_pedantic_settings {dx_state dxState_WhoCares})
          (os_functional_options {dx_state dxState_FunctionalOptions})
+         (os_controller_input_offsets {dx_state dxState_ControllerInputOffsets})
          (os_debug
             {if_else $dx_debug_first
                {dx_state dxState_DebugWarn}
@@ -39,7 +41,10 @@
          {platform_color.mat set color {pack_color $dx_menu_color_r $dx_menu_color_g $dx_menu_color_b}}
       )
       (view
+         os_menu_theme
+         os_menu_color
          #ifndef HX_WII
+         {if_else $dx_player_icons os_player_icons_on os_player_icons_off}
          {if_else $dx_song_select_rings os_song_rings_on os_song_rings_off}
          #ifndef RB3E
          {if_else $dx_more_info_toggle os_more_info_toggle_on os_more_info_toggle_off}
@@ -62,6 +67,28 @@
          SET_STRIP_COLOR
       )
       (select
+         (os_menu_theme {dx_state dxState_MenuTheme})
+         (os_menu_color
+            ;setup/reset the list tracking info
+            {set $dx_list_item_selected FALSE}
+            {set $dx_list_pos 0}
+            {dx_state dxState_MenuColor}
+         )
+         (os_player_icons
+            {set $dx_player_icons {! $dx_player_icons}}
+            {if_else $dx_player_icons
+               #ifdef HX_PS3
+               {set $dx_overshell_platform ps3}
+               #endif
+               #ifdef HX_XBOX
+               {set $dx_overshell_platform xbox}
+               #endif
+               {set $dx_overshell_platform wii}
+            }
+            {overshell exit}
+            {overshell enter}
+            SET_STRIP_COLOR
+         )
          (os_song_rings
             {set $dx_song_select_rings {! $dx_song_select_rings}}
             {if {== {ui current_screen} song_select_screen}
@@ -141,7 +168,7 @@
          )
          
       )
-      (cancel {dx_state dxState_MenuThemer})
+      (cancel {dx_state dxState_MenuOptions})
    )
 
    (dxState_MenuColor
@@ -225,7 +252,7 @@
          (kAction_Cancel
             {if_else $dx_list_item_selected
                {set $dx_list_item_selected FALSE}
-               {dx_state dxState_MenuThemer}
+               {dx_state dxState_MenuOptions}
             }
          )
          ;if we pressed Up or Down while inside a selected list item
@@ -242,14 +269,6 @@
          #ifndef HX_WII
          {if_else $dx_prompt_save os_prompt_save_on os_prompt_save_off}
          #endif
-         {switch $dx_mic_deploy_sens 
-            (0.9 os_dx_mic_od_1)
-            (0.7 os_dx_mic_od_2)
-            (0.5 os_dx_mic_od_3)
-            (0.3 os_dx_mic_od_4)
-            (0.1 os_dx_mic_od_5)
-            os_dx_mic_od_unknown
-         }
          {if_else $dx_additional_parts os_additional_parts_on os_additional_parts_off}
          ;{if_else $dx_song_delay os_songdelay_on os_songdelay_off}
          #ifndef HX_WII
@@ -261,45 +280,16 @@
          {if_else $dx_splash_screen os_splash_on os_splash_off}
          ;remove high song count warn
          ;{if_else $dx_confirm_song_count os_confirm_songcount_on os_confirm_songcount_off}
-         #ifdef RB3E
-         {switch $dx_connected_server
-            (none os_server_online)
-            (live os_server_live)
-            (liveless os_server_liveless)
-         }
-         #endif
          #endif
       )
       (select
          (os_prompt_save {set $dx_prompt_save {! $dx_prompt_save}})
-         #define MIC_OD_LIST
-         (
-            {set $dx_mic_deploy_sens
-               {switch $dx_mic_deploy_sens
-                  (0.9 0.7)
-                  (0.7 0.5)
-                  (0.5 0.3)
-                  (0.3 0.1)
-                  (0.1 0.9)
-                  0.9
-               }
-            }
-         )
-         (os_dx_mic_od_1 MIC_OD_LIST)
-         (os_dx_mic_od_2 MIC_OD_LIST)
-         (os_dx_mic_od_3 MIC_OD_LIST)
-         (os_dx_mic_od_4 MIC_OD_LIST)
-         (os_dx_mic_od_5 MIC_OD_LIST)
-         (os_dx_mic_od_unkown MIC_OD_LIST)
          (os_additional_parts {set $dx_additional_parts {! $dx_additional_parts}})
          (os_songdelay {set $dx_song_delay {! $dx_song_delay}})
          (os_intro_deluxe {set $dx_current_intro_movie vanilla})
          (os_intro_vanilla {set $dx_current_intro_movie disabled})
          (os_intro_disabled {set $dx_current_intro_movie deluxe})
          (os_splash {set $dx_splash_screen {! $dx_splash_screen}})
-         (os_server_online {set $dx_connected_server live})
-         (os_server_live {set $dx_connected_server liveless})
-         (os_server_liveless {set $dx_connected_server none})
          (os_confirm_songcount {set $dx_confirm_song_count {! $dx_confirm_song_count}})
       )
       (cancel
@@ -392,6 +382,9 @@
          os_testsongs  ; Songs folder is removed on Wii
          #endif
          os_testfeatures
+         #ifndef HX_WII ; no
+         os_system_lag_offsets
+         #endif
          os_uptime
          #ifdef HX_PS3
          {if_else {file_exists DX_HI_MEM_PATH}
@@ -414,7 +407,7 @@
                {array
                   (
                      (dx_high_memory 190000000)
-                     (dx_song_count 16000)
+                     (dx_song_count 32000)
                   )
                }
             }
@@ -434,6 +427,7 @@
          (os_dumps {dx_state dxState_Dumps})
          (os_testsongs {dx_state dxState_TestSongs})
          (os_testfeatures {dx_state dxState_TestFeatures})
+         (os_system_lag_offsets {dx_state dxState_SystemLagOffsets})
          (os_uptime
             {dx_uptime_onscreen}
          )
@@ -458,11 +452,18 @@
    (dxState_TestSongs
       (view
          dx_calibrationtest
+         stresstest
       )
       (select
          (dx_calibrationtest
             ;{set $dx_test_song TRUE}  ; TODO: Implement score invalidation
             {meta_performer set_song dx_calibrationtest}
+            {gamemode set_mode qp_coop}
+            {ui sync_screen {music_library get_next_screen} 0}
+         )
+         (stresstest
+            ;{set $dx_test_song TRUE}  ; TODO: Implement score invalidation
+            {meta_performer set_song stresstest}
             {gamemode set_mode qp_coop}
             {ui sync_screen {music_library get_next_screen} 0}
          )
@@ -490,11 +491,12 @@
 
    (dxState_Dumps
       (view
+         generate_updates_dta
          os_dumproot
          os_dumproot2
          print_hmx
          print_objects
-         os_dumplyrics
+         ;os_dumplyrics
       )
       (select
          (os_dumproot
@@ -530,16 +532,83 @@
             #endif
          )
          (generate_updates_dta
-            {set $tempwrite {find_exists $syscfg missing_song_data}}
-            {foreach $entry {read_file "dx/song_updates/songs_yarg.dta"}
-               {push_back $tempwrite $entry}
-            }
-            {write_file DX_SONGS_UPDATES_FILE_PATH $tempwrite}
-            {set $tempwrite FALSE}
-            {dx_passive_messenger songs_updates_generated}
+            {dx_generate_updates_dta}
          )
       )
       (cancel {dx_state dxState_Debug})
+   )
+
+   (dxState_SystemLagOffsets
+      (view
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 0}} os_blnk os_vanilla_offsets}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 1}} os_blnk os_corrected_offsets}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 2}} os_blnk {sprintf {localize os_syslag_audio} {int {floor {'+' 0.5 {profile_mgr get_platform_audio_latency}}}}}}
+         {if_else {&& $dx_list_item_selected {!= $dx_list_pos 3}} os_blnk {sprintf {localize os_syslag_video} {int {floor {'+' 0.5 {profile_mgr get_platform_video_latency}}}}}}
+      )
+      (message
+         {switch {$current_list selected_data}
+            (0 os_vanilla_offsets_desc)
+            (1 os_corrected_offsets_desc)
+            os_system_lag_offsets_help
+         }
+      )
+      #define LIST_SYSTEM_LAG_OFFSETS_DIREC
+      (
+         {if {&& {!= {$current_list selected_data} 0} {!= {$current_list selected_data} 1}}
+            ;track our current list position for hiding other list elements while we have selected this one
+            {set $dx_list_pos {$current_list selected_data}}
+            ;actually set our variable, based on the pressed action
+            {switch $action
+               ((kAction_Left kAction_Down)
+                  {switch {$current_list selected_data}
+                     (2 {profile_mgr set_platform_audio_latency {- {profile_mgr get_platform_audio_latency} 1}})
+                     (3 {profile_mgr set_platform_video_latency {- {profile_mgr get_platform_video_latency} 1}})
+                  }
+                  {if {$this in_game} {dx_reset_score}}
+               )
+               ((kAction_Right kAction_Up)
+                  {switch {$current_list selected_data}
+                     (2 {profile_mgr set_platform_audio_latency {+ {profile_mgr get_platform_audio_latency} 1}})
+                     (3 {profile_mgr set_platform_video_latency {+ {profile_mgr get_platform_video_latency} 1}})
+                  }
+                  {if {$this in_game} {dx_reset_score}}
+               )
+            }
+         }
+      )
+      (button
+         (kAction_Confirm
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {switch {$current_list selected_data}
+                  (0 ; reset button
+                     {profile_mgr set_platform_audio_latency #ifdef HX_XBOX 5 #endif #ifdef HX_PS3 31 #endif}
+                     {profile_mgr set_platform_video_latency #ifdef HX_XBOX 22 #endif #ifdef HX_PS3 45 #endif}
+                     {if {$this in_game} {dx_reset_score}}
+                  )
+                  (1 ; corrected                                                                                         vv   emu numbers are experimental, pc hardware might be different and rpcs3 can update this over time maybe. accomidates for rpcs3 buffer lag at 34ms (default)
+                     {profile_mgr set_platform_audio_latency #ifdef HX_XBOX 5 #endif #ifdef HX_PS3 {if_else $dx_emulator 112 39} #endif} ; note: audio lag has to be increased according to difference between 59.94fps frametime (16.67ms) and whatever, i don't compensate for this here
+                     {profile_mgr set_platform_video_latency #ifdef HX_XBOX 49 #endif #ifdef HX_PS3 {if_else $dx_emulator 77 72} #endif}
+                     {if {$this in_game} {dx_reset_score}}
+                  )
+                  {set $dx_list_item_selected TRUE}
+                  {set $dx_list_pos {$current_list selected_data}}
+               }
+            }
+         )
+         (kAction_Cancel
+            {if_else $dx_list_item_selected
+               {set $dx_list_item_selected FALSE}
+               {dx_state dxState_Debug}
+            }
+         )
+         ;if we pressed Up or Down while inside a selected list item
+         (kAction_Down LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         (kAction_Up LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         ;if we pressed left or right while hovering on a specific list item
+         (kAction_Left LIST_SYSTEM_LAG_OFFSETS_DIREC)
+         (kAction_Right LIST_SYSTEM_LAG_OFFSETS_DIREC)
+      )
    )
 
    (dxState_PositionRemapper

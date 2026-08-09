@@ -1,102 +1,74 @@
-#define DX_ALL_BOTS_ENABLED
-(
-   {&& $dx_bot_1 $dx_bot_2 $dx_bot_3 $dx_bot_4 $dx_bot_5}
-)
 {func
    dx_bot_overdrive_handler
-   ;runs in beatmatcher, do not add log
-   ;{dx_log_writer beatmatch {sprint "func: dx_bot_overdrive_handler"}}
-   ;{dx_log_writer beatmatch
-   ;   {sprintf "Executed dx_bot_overdrive_handler - time: %.4fms"
-   ;      {time
-            {cond
-               ($dx_customizer
-                  {do
-                     {beatmatch foreach_active_player $player
-                        {$player deploy_if_possible}
-                     }
-                  }
-               )
-               ({&& {session_mgr is_local} {modifier_mgr is_modifier_active mod_auto_play} {== $dx_bot_overdrive dx_on} {! DX_ALL_BOTS_ENABLED}}
-                  {do
-                     {set $dx_tmp FALSE}
-                     {beatmatch foreach_active_player $player
-                        {if {$player is_deploying} {set $dx_tmp TRUE}}
-                     }
-                     {if {&& {>= {beatmatch num_active_players} 1} $dx_bot_1}
-                        {set $player {beatmatch active_player 0}}
-                        {if $dx_tmp {$player deploy_if_possible}}
-                        {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                     }
-                     {if {&& {>= {beatmatch num_active_players} 2} $dx_bot_2}
-                        {set $player {beatmatch active_player 1}}
-                        {if $dx_tmp {$player deploy_if_possible}}
-                        {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                     }
-                     {if {&& {>= {beatmatch num_active_players} 3} $dx_bot_3}
-                        {set $player {beatmatch active_player 2}}
-                        {if $dx_tmp {$player deploy_if_possible}}
-                        {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                     }
-                     {if {&& {>= {beatmatch num_active_players} 4} $dx_bot_4}
-                        {set $player {beatmatch active_player 3}}
-                        {if $dx_tmp {$player deploy_if_possible}}
-                        {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                     }
-                     {if {&& {>= {beatmatch num_active_players} 5} $dx_bot_5}
-                        {set $player {beatmatch active_player 4}}
-                        {if $dx_tmp {$player deploy_if_possible}}
-                        {if {>= {$player band_energy} 1} {$player deploy_if_possible}}
-                     }
-                  }
-               )
-               ({&& {session_mgr is_local} {modifier_mgr is_modifier_active mod_auto_play} {== $dx_bot_overdrive dx_on} DX_ALL_BOTS_ENABLED}
-                  {do
-                     {beatmatch foreach_active_player $player
-                        {$player deploy_if_possible}
-                     }
-                  }
-               )
+   {if {session_mgr is_local}
+      {if {|| $dx_customizer {&& {modifier_mgr is_modifier_active mod_auto_play} {== $dx_bot_overdrive dx_on}}}
+         {do
+            ($tmp FALSE)
+            ($player FALSE)
+            ;these are set to false if an active player cannot activate
+            ($act1 TRUE) ($act2 TRUE) ($act3 TRUE) ($act4 TRUE) ($act5 TRUE)
+            ;if any player is deploying already, queue bots to activate
+            {beatmatch foreach_active_player $player
+               {if {$player is_deploying} {set $tmp TRUE}}
             }
-   ;      }
-   ;   }
-   ;}
-}
-{func
-   dx_bot_overdrive_depletor
-   ;runs in beatmatcher, do not add log
-   ;{dx_log_writer beatmatch {sprint "func: dx_bot_overdrive_depletor"}}
-   ;{dx_log_writer beatmatch
-   ;   {sprintf "Executed dx_bot_overdrive_depletor - time: %.4fms"
-   ;      {time
-            ; this is likely the single dumbest thing in the whole codebase
-            {if {== $dx_bot_overdrive dx_drain}
-               {beatmatch foreach_active_player $player {$player empty_band_energy}}
+
+            {foreach_int $i 1 5
+               ;don't queue activate for a real player
+               {if {! {eval {var {sprint "dx_bot_" $i}}}}
+                  {switch $i ;i didnt want to mess with set_var on local scopes
+                     ;setting 2 to false here forces bots to wait to activate until a human does
+                     (1 {set $act1 FALSE} {set $act2 FALSE}) (2 {set $act1 FALSE} {set $act2 FALSE})
+                     (3 {set $act1 FALSE} {set $act3 FALSE}) (4 {set $act1 FALSE} {set $act4 FALSE})
+                     (5 {set $act1 FALSE} {set $act5 FALSE})
+                  }
+               }
+
+               ;unqueue activations until threshold is met for active bots
+               {if
+                  {&&
+                     {>= {beatmatch num_active_players} $i}
+                     {||
+                        $dx_customizer
+                        {eval {var {sprint "dx_bot_" $i}}}
+                     }
+                  }
+                  {set $player {beatmatch active_player {- $i 1}}}
+                  ;if someone is already activated, activate this bot
+                  {if $tmp {$player deploy_if_possible}}
+                  ;don't activate if someone cant activate
+                  {if {< {$player band_energy} 0.5}
+                     {switch $i ;i didnt want to mess with set_var on local scopes
+                        (1 {set $act1 FALSE}) (2 {set $act2 FALSE})
+                        (3 {set $act3 FALSE}) (4 {set $act4 FALSE})
+                        (5 {set $act5 FALSE})
+                     }
+                  }
+               }
             }
-   ;      }
-   ;   }
-   ;}
-}
-{func
-   dx_drum_overdrive_deployer
-   ;runs in beatmatcher, do not add log
-   ;{dx_log_writer beatmatch {sprint "func: dx_drum_overdrive_deployer"}}
-   ;{dx_log_writer beatmatch
-   ;   {sprintf "Executed dx_drum_overdrive_deployer - time: %.4fms"
-   ;      {time
-            {if_else {&& {== $dx_bot_overdrive dx_on} {&& {modifier_mgr is_modifier_active mod_auto_play} DX_ALL_BOTS_ENABLED}}
-               {beatmatch foreach_active_player $player {unless {mod $measure 4} {$player deploy_if_possible}}}
-               {if {&& {== {gamemode get allow_drum_fills} FALSE} {modifier_mgr is_modifier_active mod_static_fills}}
-                  {beatmatch foreach_active_player $player
-                     {if {== {$player instrument} drum}
+
+            ;activate bots
+            {foreach_int $i 1 5
+               {if
+                  {&&
+                     {>= {beatmatch num_active_players} $i}
+                     {||
+                        $dx_customizer
+                        {eval {var {sprint "dx_bot_" $i}}}
+                     }
+                  }
+                  ;now that the loop is done, allow activation if up to 1 person doesnt have od
+                  {if {>= {+ $act1 $act2 $act3 $act4 $act5} 4}
+                     {if {== {mod $measure 4} 2}
+                        {set $player {beatmatch active_player {- $i 1}}}
                         {$player deploy_if_possible}
                      }
                   }
                }
             }
-   ;      }
-   ;   }
-   ;}
+
+         }
+      }
+   }
 }
 {func
    dx_invalidate_scores
@@ -108,54 +80,25 @@
          {modifier_mgr is_modifier_active mod_karaoke}
          {modifier_mgr is_modifier_active mod_auto_play}
       }
-      {if {>= {beatmatch num_active_players} 1}
-         {beatmatch set_invalid_score 0}
-      }
-      {if {>= {beatmatch num_active_players} 2}
-         {beatmatch set_invalid_score 1}
-      }
-      {if {>= {beatmatch num_active_players} 3}
-         {beatmatch set_invalid_score 2}
-      }
-      {if {>= {beatmatch num_active_players} 4}
-         {beatmatch set_invalid_score 3}
-      }
-      {if {>= {beatmatch num_active_players} 5}
-         {beatmatch set_invalid_score 4}
+      {foreach_int $i 1 5
+         {if {>= {beatmatch num_active_players} $i}
+            {beatmatch set_invalid_score {- $i 1}}
+         }
       }
    }
 }
 {func
    dx_set_auto_play
-   ;{dx_log_writer info {sprint "func: dx_set_auto_play" " - Setting Autoplayers - 1: " $dx_bot_1 " - 2: " $dx_bot_2 " - 3: " $dx_bot_3 " - 4: " $dx_bot_4 " - 5: " $dx_bot_5}}
-   ;{dx_log_writer info
-   ;   {sprintf "Executed dx_set_auto_play - time: %.4fms"
-   ;      {time
-            {if_else {|| $dx_customizer {modifier_mgr is_modifier_active mod_auto_play} $otherautoplay}
-               {do
-                  {if {>= {beatmatch num_active_players} 1}
-                     {{beatmatch active_player 0} set_auto_play $dx_bot_1}
-                  }
-                  {if {>= {beatmatch num_active_players} 2}
-                     {{beatmatch active_player 1} set_auto_play $dx_bot_2}
-                  }
-                  {if {>= {beatmatch num_active_players} 3}
-                     {{beatmatch active_player 2} set_auto_play $dx_bot_3}
-                  }
-                  {if {>= {beatmatch num_active_players} 4}
-                     {{beatmatch active_player 3} set_auto_play $dx_bot_4}
-                  }
-                  {if {>= {beatmatch num_active_players} 5}
-                     {{beatmatch active_player 4} set_auto_play $dx_bot_5}
-                  }
-               }
-               {do
-                  {beatmatch foreach_active_player $player
-                     {$player set_auto_play 0}
-                  }
-               }
+   {if_else {|| $dx_customizer {modifier_mgr is_modifier_active mod_auto_play} $otherautoplay}
+      {foreach_int $i 1 6
+         {if {>= {beatmatch num_active_players} $i}
+            {{beatmatch active_player {- $i 1}} set_auto_play
+               {eval {var {sprint "dx_bot_" $i}}}
             }
-   ;      }
-   ;   }
-   ;}
+         }
+      }
+      {beatmatch foreach_active_player $player
+         {$player set_auto_play 0}
+      }
+   }
 }

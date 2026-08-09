@@ -61,27 +61,6 @@
       ;{dx_log_writer info {sprint "keys trainer checker - " $dx_trainer_real_keys}}
    )
 }
-{new
-   MidiParser
-   check_trainer_pro_drums
-   (track_name 'PART DRUMS')
-   (text
-      ;{dx_log_writer info {sprint "func: check_trainer_pro_drums"}}
-      ;{dx_log_writer info
-      ;   {sprintf "Executed check_trainer_pro_drums - time: %.4fms"
-      ;      {time
-               {if
-                  {has_any_substr
-                        $mp.val
-                        (_drm drm_ challenge)}
-                  {set $dx_trainer_real_drum TRUE}
-               }
-      ;      }
-      ;   }
-      ;}
-      ;{dx_log_writer info {sprint "drum trainer checker - " $dx_trainer_real_drum}}
-   )
-}
 {func dx_get_latest_phrase ()
    {elem $dx_lyric_display_phrases {- {size $dx_lyric_display_phrases} 1}}
 }
@@ -215,6 +194,33 @@
          {set $lasttime {dx_get_max_phrase_time $_current_lyric_phrase}}
          {dx_lyric_display_push_phrase {+ $lasttime 1} {+ $lasttime 2}} 
          {dx_lyric_display_push_phrase {+ $lasttime 2} {+ $lasttime 2}}
+      }
+   )
+}
+{new
+   MidiParser
+   dx_drum_fill_end
+   (track_name 'PART DRUMS')
+   (message_self TRUE)
+   (allowed_notes (120))
+   (midi
+      {$this add_message_se {- $mp.end 0.05} {- $mp.end 0.05} dx_drum_fill_ended}
+   )
+   (dx_drum_fill_ended
+      {beatmatch foreach_active_player $player
+         {if
+            {&&
+               {{$player get_user} is_local}
+               {== {{$player get_user} get_track_type} kTrackDrum}
+               {||
+                  {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_keys_xbox}
+                  {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_keys_ps3}
+                  {== {joypad_controller_type_padnum {{$player get_user} get_pad_num}} hx_midi_keys_wii}
+               }
+               {$player in_freestyle_section}
+            }
+            {$player deploy_if_possible}
+         }
       }
    )
 }

@@ -101,6 +101,13 @@
                         }
                      }
                   )
+                  ((overshell_vocal_solo overshell_vocal_harmony)
+                     {user_mgr foreach_user $user
+                        {unless {== {$user get_slot_num} $slot} ; don't compare user against themself
+                           {if {&& {== {$user get_track_type} kTrackVocals} {$user is_local}} {set $dupe_allowed FALSE}} ; block dupe if another player already has this part
+                        }
+                     }
+                  )
                }
                $dupe_allowed ; returns dupe TRUE/FALSE check back to slot_states
             }
@@ -473,7 +480,7 @@
    dx_quick_chat
    ($message)
    {set $user_name " "} {set $track_icon "G"} ; set default values if user_name or track icon cannot be obtained
-   {set $user_name {$user get_user_name}}
+   {set $user_name {dx_sanitize_player_name {$user get_user_name}}}
    {if {== {ui current_screen} game_screen} {set $track_icon {$user get_track_icon}}}
    {if_else {== {ui current_screen} game_screen}
       {do ;if in-game, use Road Challange's tracker display to show a chat message
@@ -482,33 +489,42 @@
          {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
          {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
          {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon {localize $message}}}}
+         {dx_console print_chat {sprintf "%s <alt>%s</alt>: %s" $user_name $track_icon {localize $message}}}
          {unless {session_mgr is_local}
             {session send_msg_to_all
                {'`' 
                   (
                      {do
-                        {{coop_track_panel find tracker_broadcast_display} set_showing TRUE}
-                        {{{coop_track_panel find tracker_broadcast_display} find band_message.lbl} set_showing TRUE}
-                        {{coop_track_panel find tracker_broadcast_display} set_challenge_type kTrackerChallengeType_Streak}
-                        {{coop_track_panel find tracker_broadcast_display} set_display_type kBroadcastTrackerDisplay_BandMessage}
-                        {{coop_track_panel find tracker_broadcast_display} show_brief_band_message {symbol {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' {localize $message}}}}}
+                        ($disp {coop_track_panel find tracker_broadcast_display})
+                        ($msg {sprintf "%s <alt>%s</alt>: %s" {',' $user_name} {',' $track_icon} {',' {localize $message}}})
+                        {$disp set_showing TRUE}
+                        {{$disp find band_message.lbl} set_showing TRUE}
+                        {$disp set_challenge_type kTrackerChallengeType_Streak}
+                        {$disp set_display_type kBroadcastTrackerDisplay_BandMessage}
+                        {$disp show_brief_band_message {symbol $msg}}
+                        {dx_console print_chat $msg}
                      }
                   )
-                  kNetReliable
                }
+               kNetReliable
             }
          }
       }
       {do ;if not in-game, use passive_messages_panel instead to show a chat message
          {passive_messages_panel queue_message {symbol {sprintf "%s: %s" $user_name {localize $message}}}}
+         {dx_console print_chat {sprintf "%s: %s" $user_name {localize $message}}}
          {unless {session_mgr is_local}
             {session send_msg_to_all
                {'`' 
                   (
-                     {passive_messages_panel queue_message {symbol {sprintf "%s: %s" {',' $user_name} {',' {localize $message}}}}}
+                     {do
+                        ($msg {sprintf "%s: %s" {',' $user_name} {',' {localize $message}}})
+                        {passive_messages_panel queue_message {symbol $msg}}
+                        {dx_console print_chat $msg}
+                     }
                   )
-                  kNetReliable
                }
+               kNetReliable
             }
          }
       }
@@ -580,15 +596,72 @@
       {dx_track_update_lengths}
    }
 }
-{func enable_modifier
-   ($modifier)
-   {unless {modifier_mgr is_modifier_active $modifier}
-      {modifier_mgr toggle_modifier_enabled $modifier}
+{func dx_get_local_leader
+   {if_else {session_mgr is_leader_local}
+      {session_mgr get_leader_user}
+      {do
+         ($result FALSE)
+         {user_mgr foreach_local_user $user
+            {if {&& {! $result} {$user is_participating}}
+               {set $result $user}
+            }
+         }
+         $result
+      }
    }
 }
-{func disable_modifier
-   ($modifier)
-   {if {modifier_mgr is_modifier_active $modifier}
-      {modifier_mgr toggle_modifier_enabled $modifier}
+{func dx_handle_nav_pad
+   ($action)
+   {if {&& {session_mgr has_leader_user} {! {ui in_transition}}}
+      {do
+         ($leader {dx_get_local_leader})
+         ($slot {overshell get_slot $leader})
+         ($overshell_open
+            {&&
+               $slot
+               {! {{$slot get_state} get allows_input_to_shell}}
+            }
+         )
+         {if_else $overshell_open
+            {handle ($slot button_down $leader FALSE $action {$leader get_pad_num})}
+            {if_else {== $action kAction_Start}
+               {if $slot {$slot show_options}}
+               {switch {ui current_screen}
+                  (practice_game_screen
+                     {switch $action
+                        (kAction_Right {practice_panel inc_speed})
+                        (kAction_Left {practice_panel dec_speed})
+                     }
+                  )
+                  ((gem_preview_screen rk_trainer_screen rg_trainer_screen drum_trainer_screen)
+                     {switch $action
+                        (kAction_Right {{gamemode get game_panel} goto_preview 1} {gem_preview_panel inc_section} {gem_preview_panel update_labels})
+                        (kAction_Left {{gamemode get game_panel} goto_preview -1} {gem_preview_panel dec_section} {gem_preview_panel update_labels})
+                        (kAction_Up {{gamemode get game_panel} inc_speed})
+                        (kAction_Down {{gamemode get game_panel} dec_speed})
+                        {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+                     }
+                  )
+                  (song_select_screen
+                     {switch $action
+                        (kAction_PageUp {{ui current_screen} on_button_held $leader kPad_L1 kAction_PageDown {$leader get_pad_num}})
+                        (kAction_ExtendedOption2 {{ui current_screen} on_button_held $leader kPad_R2 kAction_Confirm {$leader get_pad_num}})
+                        (kAction_ExtendedOption1 {{ui current_screen} on_button_held $leader kPad_L2 kAction_Cancel {$leader get_pad_num}})
+                        {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+                     }
+                  )
+                  {{ui current_screen} button_down $leader FALSE $action {$leader get_pad_num}}
+               }
+            }
+         }
+      }
    }
+}
+{func adjust_input_offset ($pad $operator)
+   {profile_mgr set_joypad_extra_lag $pad 0 {$operator {profile_mgr get_joypad_extra_lag $pad 0} 1}}
+   {set $upper_limit #ifdef HX_XBOX 58 #endif #ifdef HX_PS3 58 #endif #ifdef HX_WII 44 #endif}
+   {set $lower_limit #ifdef HX_XBOX 10 #endif #ifdef HX_PS3 -12 #endif #ifdef HX_WII -100 #endif}
+   {if {> {profile_mgr get_joypad_extra_lag $pad 0} $upper_limit} {profile_mgr set_joypad_extra_lag $pad 0 $upper_limit}}
+   {if {< {profile_mgr get_joypad_extra_lag $pad 0} $lower_limit} {profile_mgr set_joypad_extra_lag $pad 0 $lower_limit}}
+   {if {$this in_game} {dx_reset_score}}
 }

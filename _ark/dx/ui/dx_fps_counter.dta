@@ -1,0 +1,70 @@
+{set $dx_fps_counter FALSE}
+{set $dx_fps_counter_init FALSE}
+{set $fpscounterpadding 4}
+
+{new RndDir dx_fps_counter
+    (set_visible ($visible)
+        {set $dx_fps_counter $visible}
+        {$this set_showing $visible}
+    )
+    ; Polled from Overshell
+    (do_poll
+        ; TODO: Possibly use something akin to a ring buffer with moving indices
+        {insert_elem [samples] 0 {taskmgr ui_delta_seconds}}
+        {if {> {size [samples]} 60}
+            {resize [samples] 60}
+        }
+        {set $sum 0}
+        {set $min 99999}
+        {set $max -99999}
+        {foreach $sample [samples]
+            {+= $sum $sample}
+            {if {< $sample $min}
+                {set $min $sample}
+            }
+            {if {> $sample $max}
+                {set $max $sample}
+            }
+        }
+        {set $avg {/ $sum {size [samples]}}}
+        {set $fps {round {/ 1.0 $avg}}}
+        {set $text {sprintf "<alt>%i</alt> fps (<alt>%.0f</alt>ms avg, <alt>%.0f</alt>ms min, <alt>%.0f</alt>ms max)" $fps {* $avg 1000} {* $min 1000} {* $max 1000}}}
+        {fps.lbl set_token_fmt stringify $text}
+        {set $width {fps.lbl get_string_width $text}}
+        {bg.mesh set_local_scale {+ $width $fpscounterpadding} 1 {+ 15 $fpscounterpadding}}
+        {bg.mesh set_local_pos {+ {/ $width 2.0} 1} 0 {/ -15 2.0}}
+    )
+}
+
+{with dx_fps_counter
+    {set [samples] {array 0}}
+
+    {new Mat bg.mat}
+    {bg.mat set z_mode kZModeDisable}
+    {bg.mat set color {pack_color 0 0 0}}
+    {bg.mat set alpha 0.75}
+    {bg.mat set blend kBlendSrcAlpha}
+
+    {new Mesh bg.mesh}
+    {dx_generate_quad_mesh bg.mesh 1 1}
+    {bg.mesh set mat bg.mat}
+
+    {new BandLabel fps.lbl}
+    {fps.lbl set resource_name pentatonic}
+    {fps.lbl set alt_style_enabled TRUE}
+    {fps.lbl set markup TRUE}
+    {fps.lbl set alt_font_resource_name pentatonic_mononumerals}
+    {fps.lbl set alt_text_size 13.25}
+    {fps.lbl set text_size 15}
+    {fps.lbl set alignment kTopLeft}
+    {fps.lbl set width 500}
+    {fps.lbl set height 500}
+    {fps.lbl set_trans_parent $this}
+    {fps.lbl set draw_order 1000}
+    {fps.lbl set_token_fmt stringify "fps label"}
+    {bg.mesh set_trans_parent fps.lbl}
+
+    {$this set_local_pos -420 0 233.25}
+    {$this sync_objects}
+    {$this set_showing FALSE}
+}
