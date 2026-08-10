@@ -11,8 +11,32 @@
                }
             )
             ($arr {eval {var {sprint $inst "_note_tracker"}}}) ;array of countdown arrays
-            {if {== {type $arr} kDataArray} ;add protections to not enumerate non arrays in endgame instrument swap situations
-               {if {>= {size $arr} 1}
+            #ifdef RB3E
+            ;setup the initial note delat
+            {do
+               ($tracktype {{$player get_user} get_track_type})
+               ($diff
+                  {switch {{$player get_user} get_difficulty_sym}
+                     (expert kDifficultyExpert)
+                     (hard kDifficultyHard)
+                     (medium kDifficultyMedium)
+                     (easy kDifficultyEasy)
+                  }
+               )
+               {if {&& {== {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}} 0} {== {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}} 0}}
+                  {set_var {sprint "tracked_beat_no_notes_start_" $inst}
+                     0
+                  }
+
+                  {set_var {sprint "tracked_beat_no_notes_end_" $inst}
+                     {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff 0} 1000}}
+                  }
+               }
+            }
+            #endif
+            {if #ifdef RB3E TRUE #else {== {type $arr} kDataArray} #endif ;add protections to not enumerate non arrays in endgame instrument swap situations
+               {if #ifdef RB3E TRUE #else {>= {size $arr} 1} #endif
+                  #ifndef RB3E
                   {unless {eval {var {sprint "delay_tracked_" $inst}}} ;while countdown is currently not showing
                      {foreach $entry $arr
                         {if {== {elem $entry 0} {sprint "delay_" {eval {var {sprint "current_tracked_beat_" $inst}}}}} ;iterate the list and match to our current index in the countdown
@@ -28,41 +52,51 @@
                         }
                      }
                   }
-                  {if {eval {var {sprint "delay_tracked_" $inst}}} ;if countdown is currently... counting down
+                  #endif
+                  {if #ifdef RB3E TRUE #else {eval {var {sprint "delay_tracked_" $inst}}} #endif ;if countdown is currently... counting down
                      ;while before the final note of a song, but after the start of the currently tracked countdown
-                     {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}}}
-                        {do
-                           ($remaining {- {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}} {dx_get_current_beat}}) ;beats until player has to play again
-                           {if {>= $remaining 0}
-                              {if_else {|| {== $inst vocals} {== $inst harm}}
-                                 {set_this {find_obj DX_VOCALDIR}}
-                                 {set_this {find_obj DX_GEMTRACKDIR}}
-                              }
-                              ; Not a switch statement because I want to use the order of execution.
-                              {if {== {countdown.grp countdown_state} hidden}
-                                 {countdown.grp set_countdown_state showing}
-                                 {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
-                                 {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $remaining 8}) (units kTaskBeats)}
-                                 {dx_hide_everything $player $inst}
-                              }
-                              {if {== {countdown.grp countdown_state} showing}
-                                 {countdown.grp set_timer_count {int {ceil {/ $remaining 4}}}}
-                                 {if {<= $remaining 8}
-                                    {countdown.grp set_countdown_state getready}
-                                    {dx_restore_everything $player $inst}
+                     {if
+                        {> 
+                           {-
+                              {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}}
+                              {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}
+                           }
+                           8
+                        }
+                        {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}}}
+                           {do
+                              ($remaining {- {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}} {dx_get_current_beat}}) ;beats until player has to play again
+                              {if {>= $remaining 0}
+                                 {if_else {|| {== $inst vocals} {== $inst harm}}
+                                    {set_this {find_obj DX_VOCALDIR}}
+                                    {set_this {find_obj DX_GEMTRACKDIR}}
                                  }
-                              }
-                              {if {== {countdown.grp countdown_state} getready}
-                                 {if {<= $remaining 6}
-                                    {countdown.grp set_countdown_state fading}
-                                    {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
+                                 ; Not a switch statement because I want to use the order of execution.
+                                 {if {== {countdown.grp countdown_state} hidden}
+                                    {countdown.grp set_countdown_state showing}
+                                    {{countdown.grp get_fade_anim} animate (range 0 1) (period 0.4) (units kTaskUISeconds)}
+                                    {{countdown.grp get_wipe_anim} animate (range 0 1) (period {- $remaining 8}) (units kTaskBeats)}
+                                    {dx_hide_everything $player $inst}
                                  }
-                              }
-                              {if {<= $remaining 0}
-                                 ;set as inactive and increment counter for next countdown list check
-                                 {set_var {sprint "delay_tracked_" $inst} FALSE}
-                                 {set_var {sprint "current_tracked_beat_" $inst} {+ {eval {var {sprint "current_tracked_beat_" $inst}}} 1}}
-                                 {countdown.grp set_countdown_state hidden}
+                                 {if {== {countdown.grp countdown_state} showing}
+                                    {countdown.grp set_timer_count {int {ceil {/ $remaining 4}}}}
+                                    {if {<= $remaining 8}
+                                       {countdown.grp set_countdown_state getready}
+                                       {dx_restore_everything $player $inst}
+                                    }
+                                 }
+                                 {if {== {countdown.grp countdown_state} getready}
+                                    {if {<= $remaining 6}
+                                       {countdown.grp set_countdown_state fading}
+                                       {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
+                                    }
+                                 }
+                                 {if {<= $remaining 0}
+                                    ;set as inactive and increment counter for next countdown list check
+                                    {set_var {sprint "delay_tracked_" $inst} FALSE}
+                                    {set_var {sprint "current_tracked_beat_" $inst} {+ {eval {var {sprint "current_tracked_beat_" $inst}}} 1}}
+                                    {countdown.grp set_countdown_state hidden}
+                                 }
                               }
                            }
                         }
