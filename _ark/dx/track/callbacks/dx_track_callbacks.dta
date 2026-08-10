@@ -64,26 +64,28 @@
          ;store gem_id as fast as possible
          {set [gem_id] $gem_id} ;0-indexed
          #ifdef RB3E
-         {do
-            ($tracktype {{user_mgr get_user_from_slot [slot]} get_track_type})
-            ($diff
-               {switch {{$player get_user} get_difficulty_sym}
-                  (expert kDifficultyExpert)
-                  (hard kDifficultyHard)
-                  (medium kDifficultyMedium)
-                  (easy kDifficultyEasy)
+         {if {rb3e_allowed}
+            {do
+               ($tracktype {{user_mgr get_user_from_slot [slot]} get_track_type})
+               ($diff
+                  {switch {{$player get_user} get_difficulty_sym}
+                     (expert kDifficultyExpert)
+                     (hard kDifficultyHard)
+                     (medium kDifficultyMedium)
+                     (easy kDifficultyEasy)
+                  }
+               )
+               ($next_gem {+ [gem_id] 1})
+               {set_var {sprint "tracked_beat_no_notes_start_" [track_instrument]}
+                  {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]} 1000}}
                }
-            )
-            ($next_gem {+ [gem_id] 1})
-            {set_var {sprint "tracked_beat_no_notes_start_" [track_instrument]}
-               {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]} 1000}}
-            }
 
-            {if_else {< $next_gem {[player] get_gem_count}}
-               {set_var {sprint "tracked_beat_no_notes_end_" [track_instrument]}
-                  {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff $next_gem} 1000}}
+               {if_else {< $next_gem {[player] get_gem_count}}
+                  {set_var {sprint "tracked_beat_no_notes_end_" [track_instrument]}
+                     {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff $next_gem} 1000}}
+                  }
+                  {set_var {sprint "tracked_beat_no_notes_end_" [track_instrument]} 0}
                }
-               {set_var {sprint "tracked_beat_no_notes_end_" [track_instrument]} 0}
             }
          }
          #endif
