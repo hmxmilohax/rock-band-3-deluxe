@@ -2,367 +2,114 @@
 #include dx_writer_macros.dta
 #define LOADING_DX_SETTINGS_OPTIONS
 (
-   {dx_read_setting debug_mode bool}
-   {dx_read_setting dx_song_update_hash_old string}
-   {dx_read_setting dx_judgment_dbg bool}
-   {dx_read_setting dx_admin_mode bool}
+   {do
+      ($truth FALSE)
+      {foreach $elem {find $syscfg setting_storage}
+         {if {== {type $elem} kDataArray}
+            {if {== {elem $elem 0} {elem $entry 0}}
+               {set $truth {find $syscfg setting_storage {elem $entry 0}}}
+            }
+         }
+      }
+      {if_else $truth
+         {if {== {type $entry} kDataArray}
+            {do
+               ($size {size $truth})
+               ($name {elem $truth 0})
+               ($type {elem $truth 1})
+               ($arr {if_else {== $size 3} {elem $truth 2} 0})
+               {if_else {&& {!= {type $type} kDataInt} {== {sprint $type} "triple"}}
+                  {if_else {&& $arr {== {type $arr} kDataArray}}
+                     {dx_read_setting_triplet $name $arr}
+                     kDataUnhandled
+                  }
+                  {if_else {== {type $type} kDataInt}
+                     {do
+                        ($hold {array 0})
+                        {foreach_int $i 1 $type
+                           {push_back $hold {eval {var {sprint $name $i}}}}
+                        }
+                        {dx_read_num_of_settings $type $name $name}
+                     }
+                     {dx_read_setting $name $type}
+                  }
+               }
+            }
+         }
+         {if {== {elem $entry 0} debug_mode}
+            {dx_log_writer insane
+               {sprint
+                  "DEBUG_MODE REJECTED: entry="
+                  $entry
+                  " truth="
+                  $truth
+               }
+            }
+         }
+      }
+   }
 
-   {dx_read_setting_with_name selected_track_theme dx_track_theme_name string}
-   {dx_read_setting_with_name tracked_themes dx_tracked_track_themes array}
-
-   {dx_read_setting dx_linear_join_order bool}
-
-   {dx_read_setting dx_instruments_slot_1 array}
-   {dx_read_setting dx_instruments_slot_2 array}
-   {dx_read_setting dx_instruments_slot_3 array}
-   {dx_read_setting dx_instruments_slot_4 array}
-   {dx_read_setting dx_instruments_aim_slot_1 array}
-   {dx_read_setting dx_instruments_aim_slot_2 array}
-   {dx_read_setting dx_instruments_aim_slot_3 array}
-   {dx_read_setting dx_instruments_aim_slot_4 array}
-
-   {dx_read_setting_triplet dx_menu_color dx_menu_color_r dx_menu_color_g dx_menu_color_b}
-   {dx_read_setting_triplet solo_box_pos solo_boxpos_0 solo_boxpos_1 solo_boxpos_2}
-   {dx_read_setting_triplet practice_section_pos sectionpos_0 sectionpos_1 sectionpos_2}
-   {dx_read_setting_triplet practice_all_item_pos all_itempos_0 all_itempos_1 all_itempos_2}
-   {dx_read_setting_triplet practice_score_pos scorepos_0 scorepos_1 scorepos_2}
-   {dx_read_setting_triplet practice_speed_control_pos speed_controlpos_0 speed_controlpos_1 speed_controlpos_2}
-
-   {dx_read_setting_triplet dx_mtv_position dx_mtv_pos_x dx_mtv_pos_z dx_mtv_pos_y}
-   {dx_read_setting_triplet dx_score_base dx_score_base_0 dx_score_base_1 dx_score_base_2}
-   {dx_read_setting dx_mtv_text_font string}
-   {dx_read_setting dx_mtv_text_alignment int}
-   {dx_read_setting dx_mtv_text_kerning float}
-   {dx_read_setting dx_mtv_text_size float}
-
-   {dx_read_setting dx_kick_color int}
-
-   {dx_read_setting dx_stored_main_menu_bg array}
-   {dx_read_setting dx_black_main_menu bool}
-   {dx_read_setting dx_default_main_menu bool}
-
-   {dx_read_setting dx_stored_song_select_bg array}
-   {dx_read_setting dx_black_song_select bool}
-   {dx_read_setting dx_default_song_select bool}
-
-   {dx_read_setting dx_stored_practice_bg array}
-   {dx_read_setting dx_black_practice bool}
-   {dx_read_setting dx_default_practice bool}
-
-   {dx_read_setting dx_sv8_dx_vers bool}
-
-   {dx_read_setting dx_stored_outro_vignette array}
-   {dx_read_setting dx_black_song_transition bool}
-   {dx_read_setting dx_default_transitions bool}
-
-   {dx_read_setting dx_60fps int}
-   {dx_read_setting emulatefps int}
-   {dx_read_setting dx_vsync bool}
-
-   {dx_read_setting_with_name track_speed trackspeed float}
-
-   {dx_read_setting trackspeed_guitar float}
-   {dx_read_setting trackspeed_bass float}
-   {dx_read_setting trackspeed_drum float}
-   {dx_read_setting trackspeed_keys float}
-   {dx_read_setting trackspeed_real_keys float}
-   {dx_read_setting trackspeed_real_guitar float}
-   {dx_read_setting trackspeed_real_bass float}
-
-   {dx_read_setting tracklength_guitar float}
-   {dx_read_setting tracklength_bass float}
-   {dx_read_setting tracklength_drum float}
-   {dx_read_setting tracklength_keys float}
-   {dx_read_setting tracklength_real_keys float}
-   {dx_read_setting tracklength_real_guitar float}
-   {dx_read_setting tracklength_real_bass float}
-
-   {dx_read_setting dx_multiangle float}
-   {dx_read_setting dx_allow_lower_angle bool}
-
-   {dx_read_setting dx_fullcombo_sound string}
-   {dx_read_setting dx_jurgen_sound bool}
-   {dx_read_setting dx_precise_percent bool}
-
-   {dx_read_setting dx_song_select_noise bool}
-   {dx_read_setting dx_scroll_sound bool}
-
-   {dx_read_setting_with_name dx_whammy_fx_enabled dx_whammy_fx bool}
-   {dx_read_setting dx_instrument_fx bool}
-   {dx_read_setting dx_fail_flash bool}
-
-   {dx_read_setting dx_long_mtv_delay bool}
-   {dx_read_setting dx_postfx bool}
-   {dx_read_setting dx_currentsong_prefix bool}
-   {dx_read_setting dx_mtv_visibility string}
-   {dx_read_setting dx_mtv_line_artist bool}
-   {dx_read_setting dx_mtv_year bool}
-   {dx_read_setting dx_mtv_line_coveredby bool}
-   {dx_read_setting dx_mtv_line_album bool}
-   {dx_read_setting dx_mtv_line_genre bool}
-   {dx_read_setting dx_mtv_line_sub_genre bool}
-   {dx_read_setting dx_mtv_line_game_origin bool}
-   {dx_read_setting dx_mtv_line_author bool}
-   {dx_read_setting dx_mtv_line_song_key bool}
-   {dx_read_setting dx_mtv_line_section bool}
-   {dx_read_setting dx_mtv_line_bpm bool}
-
-   {dx_read_setting dx_countdown_enabled bool}
-   {dx_read_setting dx_song_select_rings bool}
-
-   {dx_read_setting dx_fps_counter bool}
    {dx_fps_counter set_visible $dx_fps_counter}
-
-   #ifndef RB3E
-   {dx_read_setting dx_more_info_toggle bool}
-   #endif
-
-   #ifdef RB3E
-   {dx_read_setting rb3e_party_ip bool}
-   #endif
-
-   {dx_read_setting dx_high_score_report bool}
-   {dx_read_setting dx_hide_on_countdown string}
-
-   {dx_read_setting dx_end_song_feedback bool}
-   {dx_read_setting dx_you_rock bool}
-   {dx_read_setting dx_enable_mv_venues bool}
-   {dx_read_setting dx_prompt_save bool}
-
-   #ifdef RB3E
-   {dx_read_setting dx_connected_server string}
-   #endif
-
-   {dx_read_setting dx_rb3dx_venue unsafe}
-
-   {dx_read_setting dx_joypad_type_guitar int}
-   {dx_read_setting dx_joypad_type_keys int}
-   {dx_read_setting dx_joypad_type_vocals int}
-   {dx_read_setting dx_joypad_pad_mapping string}
-   {dx_read_setting dx_joypad_pad_remap_0 int}
-   {dx_read_setting dx_joypad_pad_remap_1 int}
-   {dx_read_setting dx_joypad_pad_remap_2 int}
-   {dx_read_setting dx_joypad_pad_remap_3 int}
-   {dx_read_setting dx_joypad_pad_remap_4 int}
-   {dx_read_setting dx_joypad_pad_remap_5 int}
-
-   {dx_read_setting dx_overshell_theme string}
-   {dx_read_setting dx_player_icons bool}
-   {dx_read_setting dx_instrument_icons string}
-
-   {dx_read_setting dx_lyric_display_enabled bool}
-   {dx_read_setting dx_vox_lyric_display bool}
-   {dx_read_setting_triplet dx_lyric_highlight_color dx_lyric_highlight_r dx_lyric_highlight_g dx_lyric_highlight_b}
-
-   {dx_read_setting_with_name dx_crowd_meter_state dx_crowd_meter_hud string}
-   {dx_read_setting dx_score_meter_visibility bool}
-   {dx_read_setting dx_gold_star_progress bool}
-
-   {dx_read_setting dx_logging_essential bool}
-   {dx_read_setting dx_logging_default bool}
-   {dx_read_setting dx_logging_info bool}
-   {dx_read_setting dx_logging_insane bool}
-   {dx_read_setting dx_logging_beatmatch bool}
-   {dx_read_setting dx_logging_countdown bool}
-
-   {dx_read_setting dx_fctype string}
-
-   {dx_read_setting dx_selected_guitar_fx int}
-
-   {dx_read_setting dx_current_intro_movie string}
-   {dx_read_setting dx_splash_screen bool}
-
-   {dx_read_setting dx_streak_counter string}
-   {dx_read_setting dx_note_streak_popups bool}
-   {dx_read_setting dx_od_ready_popups bool}
-   {dx_read_setting dx_diff_popups bool}
-
-   {dx_read_setting dx_force_remote_vox bool}
-   {dx_read_setting dx_dim_remote_players bool}
-
-   {dx_read_setting dx_track_overdrive bool}
-   {dx_read_setting dx_track_overdrive_size float}
-   {dx_read_setting dx_track_overdrive_font string}
-   {dx_read_setting dx_track_overdrive_alignment int}
-   {dx_read_setting dx_track_overdrive_kerning float}
-   {dx_read_setting dx_track_overdrive_x float}
-   {dx_read_setting dx_track_overdrive_z float}
-   {dx_read_setting dx_track_overdrive_y float}
-   {dx_read_setting dx_track_overdrive_r float}
-   {dx_read_setting dx_track_overdrive_g float}
-   {dx_read_setting dx_track_overdrive_b float}
-
-   {dx_read_setting dx_track_username bool}
-   {dx_read_setting dx_track_username_inst bool}
-   {dx_read_setting dx_track_username_sp_inst bool}
-   {dx_read_setting dx_track_username_size float}
-   {dx_read_setting dx_track_username_font string}
-   {dx_read_setting dx_track_username_alignment int}
-   {dx_read_setting dx_track_username_kerning float}
-   {dx_read_setting dx_track_username_x float}
-   {dx_read_setting dx_track_username_z float}
-   {dx_read_setting dx_track_username_y float}
-   {dx_read_setting dx_track_username_r float}
-   {dx_read_setting dx_track_username_g float}
-   {dx_read_setting dx_track_username_b float}
-
-   {dx_read_setting dx_perfects_indicator bool}
-   {dx_read_setting dx_perfects_ctr bool}
-   {dx_read_setting dx_detailed_hit_stats bool}
-   {dx_read_setting dx_detailed_hit_timing bool}
-
-   {dx_read_setting dx_track_streak bool}
-   {dx_read_setting dx_track_streak_gh3_delay bool}
-   {dx_read_setting dx_track_streak_size float}
-   {dx_read_setting dx_track_streak_font string}
-   {dx_read_setting dx_track_streak_alignment int}
-   {dx_read_setting dx_track_streak_kerning float}
-   {dx_read_setting dx_track_streak_x float}
-   {dx_read_setting dx_track_streak_z float}
-   {dx_read_setting dx_track_streak_y float}
-   {dx_read_setting dx_track_streak_r float}
-   {dx_read_setting dx_track_streak_g float}
-   {dx_read_setting dx_track_streak_b float}
-
-   {dx_read_setting dx_time_remaining_direction string}
-   {dx_read_setting dx_time_remaining_pos_top bool}
-   {dx_read_setting dx_disp_total_time bool}
-   {dx_read_setting dx_song_progress_bar bool}
-   {dx_read_setting dx_overdrive_progress bool}
-   {dx_read_setting dx_solo_progress bool}
-   {dx_read_setting dx_bre_progress bool}
-   {dx_read_setting dx_icon_progress bool}
-
-   {dx_read_setting dx_black_menu bool}
-   {dx_read_setting dx_song_delay bool}
-
-   {dx_read_setting dx_venue_intro bool}
-   {dx_read_setting dx_venue_swap bool}
-   {dx_read_setting dx_rotate_backup_band bool}
-
-   {dx_read_setting dx_additional_parts bool}
-
-   {dx_read_setting dx_motion_blur bool}
-   {dx_read_setting dx_camera_shake bool}
-   {dx_read_setting dx_camera_blur bool}
-   {dx_read_setting dx_noise_enabled bool}
-   {dx_read_setting dx_venue_lights bool}
-
-   {dx_read_setting dx_hd_characters bool}
-   {dx_read_setting dx_ultra_shadows bool}
-
-   {dx_read_setting dx_air_guitar bool}
-
-   {dx_read_setting dx_auto_endgame bool}
-
-   {dx_read_setting dx_mic_deploy_sens float}
-   {dx_read_num_of_settings 8 dx_chat_preset_ dx_chat_preset}
-   {dx_read_setting dx_anim_genres bool}
-   {dx_read_setting dx_all_instruments_band bool}
-   {dx_read_setting dx_synth_enabled bool}
-   {dx_read_setting dx_selected_synth string}
-   {dx_read_setting dx_nav_controller_port int}
-
    #ifndef HX_WII
-   {dx_read_setting platform_audio_latency float}
    {profile_mgr set_platform_audio_latency $platform_audio_latency}
-   {dx_read_setting platform_video_latency float}
    {profile_mgr set_platform_video_latency $platform_video_latency}
    #endif
-   {dx_read_setting dx_pad_lag_gamepad float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_GAMEPAD 0 $dx_pad_lag_gamepad}
-   {dx_read_setting dx_pad_lag_guitar_rb1 float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB1 0 $dx_pad_lag_guitar_rb1}
-   {dx_read_setting dx_pad_lag_guitar_rb2 float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB2 0 $dx_pad_lag_guitar_rb2}
-   {dx_read_setting dx_pad_lag_guitar_gh float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_GH 0 $dx_pad_lag_guitar_gh}
-   {dx_read_setting dx_pad_lag_drums_rb1 float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB1 0 $dx_pad_lag_drums_rb1}
-   {dx_read_setting dx_pad_lag_drums_rb2 float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB2 0 $dx_pad_lag_drums_rb2}
-   {dx_read_setting dx_pad_lag_drums_gh float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_GH 0 $dx_pad_lag_drums_gh}
-   {dx_read_setting dx_pad_lag_keys float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_KEYS 0 $dx_pad_lag_keys}
-   {dx_read_setting dx_pad_lag_pro_guitar float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR 0 $dx_pad_lag_pro_guitar}
-   {dx_read_setting dx_pad_lag_pro_guitar_squier float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0 $dx_pad_lag_pro_guitar_squier}
    #ifdef HX_PS3
-   {dx_read_setting dx_pad_lag_drums_rr float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RR 0 $dx_pad_lag_drums_rr}
    #endif
    #ifdef HX_XBOX
-   {dx_read_setting dx_pad_lag_stage_kit float}
    {profile_mgr set_joypad_extra_lag PAD_NUM_STAGE_KIT 0 $dx_pad_lag_stage_kit}
    #endif
 )
 #define LOADING_TRACK_THEME_OPTIONS
 (
-   {dx_read_setting_with_name track_theme_name dx_track_theme_name string}
-   {dx_read_num_of_settings 5 dx_guitar_gem_color dx_guitar_gem_color}
-   {dx_read_num_of_settings 5 dx_guitar_sustain_color dx_guitar_sustain_color}
-   {dx_read_num_of_settings 5 dx_guitar_smasher_color dx_guitar_smasher_color}
-   {dx_read_num_of_settings 4 dx_drum_smasher_color drum_smasher_colors}
-   {dx_read_num_of_settings 4 dx_drum_tom_color drum_tom_colors}
-   {dx_read_num_of_settings 4 dx_drum_cymbal_color drum_cymbal_color}
-   {dx_read_num_of_settings 6 dx_protar_color protar_gem_color}
-   {dx_read_setting_with_name highway_guitar dx_highway_guitar string}
-   {dx_read_setting_with_name highway_real_guitar dx_highway_real_guitar string}
-   {dx_read_setting_with_name highway_bass dx_highway_bass string}
-   {dx_read_setting_with_name highway_real_bass dx_highway_real_bass string}
-   {dx_read_setting_with_name highway_drums dx_highway_drum string}
-   {dx_read_setting_with_name highway_keys dx_highway_keys string}
-   {dx_read_setting_with_name highway_guitar_shading dx_highway_guitar_shading bool}
-   {dx_read_setting_with_name highway_bass_shading dx_highway_bass_shading bool}
-   {dx_read_setting_with_name highway_drum_shading dx_highway_drum_shading bool}
-   {dx_read_setting_with_name highway_keys_shading dx_highway_keys_shading bool}
-   {dx_read_setting_with_name streak_guitar dx_streak_guitar string}
-   {dx_read_setting_with_name streak_real_guitar dx_streak_real_guitar string}
-   {dx_read_setting_with_name streak_bass dx_streak_bass string}
-   {dx_read_setting_with_name streak_real_bass dx_streak_real_bass string}
-   {dx_read_setting_with_name streak_drums dx_streak_drum string}
-   {dx_read_setting_with_name streak_keys dx_streak_keys string}
-   {dx_read_setting_with_name streak_prokeys dx_streak_real_keys string}
-   {dx_read_setting_with_name overdrive_guitar dx_overdrive_guitar string}
-   {dx_read_setting_with_name overdrive_real_guitar dx_overdrive_real_guitar string}
-   {dx_read_setting_with_name overdrive_bass dx_overdrive_bass string}
-   {dx_read_setting_with_name overdrive_real_bass dx_overdrive_real_bass string}
-   {dx_read_setting_with_name overdrive_drums dx_overdrive_drum string}
-   {dx_read_setting_with_name overdrive_keys dx_overdrive_keys string}
-   {dx_read_setting_with_name overdrive_prokeys dx_overdrive_real_keys string}
-   {dx_read_setting_with_name overdrive_guitar_shading dx_overdrive_guitar_shading bool}
-   {dx_read_setting_with_name overdrive_bass_shading dx_overdrive_bass_shading bool}
-   {dx_read_setting_with_name overdrive_drum_shading dx_overdrive_drum_shading bool}
-   {dx_read_setting_with_name overdrive_keys_shading dx_overdrive_keys_shading bool}
-   {dx_read_setting_triplet overdrive_color dx_overdrive_r dx_overdrive_g dx_overdrive_b}
-   {dx_read_setting_with_name gems dx_gem string}
-   {dx_read_setting_with_name gem_models dx_current_gem_model_theme string}
-   {dx_read_setting_with_name animated_gems dx_animated_gem string}
-   {dx_read_setting_with_name strikeline dx_smasher string}
-   {dx_read_setting_with_name flares dx_flares string}
-   {dx_read_setting_with_name particles dx_particles string}
-   {dx_read_setting_with_name sustains dx_sustain string}
-   {dx_read_setting_with_name lanes dx_lanes string}
-   {dx_read_setting_with_name score_box dx_score_box string}
-   {dx_read_setting_with_name stars dx_stars string}
-   {dx_read_setting_with_name font dx_font string}
-   {dx_read_setting_with_name solo_box dx_solo_box string}
-   {dx_read_setting_with_name bre dx_bre string}
-   {dx_read_setting_with_name crowd_meter dx_crowd_meter string}
-   {dx_read_setting_with_name track_rails dx_rails string}
-   {dx_read_setting_with_name beat_lines dx_beatlines string}
-   {dx_read_setting_with_name multiplier_ring dx_multiplier_ring string}
-   {dx_read_setting_with_name keyboard dx_highway_real_keys string}
-   {dx_read_setting_with_name vocal_highway dx_vocal_highway string}
-   {dx_read_setting_with_name vocal_arrows dx_vocal_arrow string}
-   {dx_read_setting_with_name vocal_notes dx_vocal_notes string}
-   {dx_read_setting_with_name vocal_overdrive dx_vocal_overdrive string}
+   {do
+      ($truth
+         {if {find_exists $syscfg theme_storage {elem $entry 0}}
+            {find $syscfg theme_storage {elem $entry 0}}
+         }
+      )
+      {if $truth
+         {if {== {type $entry} kDataArray}
+            {do
+               ($size {size $truth})
+               ($name {elem $truth 0})
+               ($type {elem $truth 1})
+               ($arr {if_else {== $size 3} {elem $truth 2} 0})
+               {if_else {&& {!= {type $type} kDataInt} {== {sprint $type} "triple"}}
+                  {if_else {&& $arr {== {type $arr} kDataArray}}
+                     {dx_read_setting_triplet $name $arr}
+                     kDataUnhandled
+                  }
+                  {if_else {== {type $type} kDataInt}
+                     {do
+                        ($hold {array 0})
+                        {foreach_int $i 1 $type
+                           {push_back $hold {eval {var {sprint $name $i}}}}
+                        }
+                        {dx_read_num_of_settings $type $name $name}
+                     }
+                     {dx_read_setting $name $type}
+                  }
+               }
+            }
+         }
+      }
+   }
 )
 #define LOADING_VALUES_OPTIONS
 (
-   {dx_read_setting_triplet mic_vols mic_vol_1 mic_vol_2 mic_vol_3}
+   {dx_read_setting_triplet mic_vols (mic_vol_1 mic_vol_2 mic_vol_3)}
    {dx_read_setting default_slot0 string}
    {dx_read_setting default_slot1 string}
    {dx_read_setting default_slot2 string}
