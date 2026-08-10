@@ -67,14 +67,29 @@
          {thread_task kTaskBeats
             (name {sprint "perfect_task_" [track_instrument]})
             (script
-               {if {&& $dx_perfects_indicator {{[player] get_user} is_local} {== [diff] expert} {gamemode in_mode qp_coop}}
+               {if {&& $dx_perfects_indicator {{[player] get_user} is_local} #ifndef RB3E {== [diff] expert} #endif #ifdef RB3E {|| {gamemode in_mode qp_coop} {gamemode in_mode practice}} #else {gamemode in_mode qp_coop} #endif}
                   {set [curr_ms] {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
                   ;[note_time] is also used in a commented debug line
+                  #ifdef RB3E
+                  {do
+                     ($tracktype {{user_mgr get_user_from_slot [slot]} get_track_type})
+                     ($diff
+                        {switch {{$player get_user} get_difficulty_sym}
+                           (expert kDifficultyExpert)
+                           (hard kDifficultyHard)
+                           (medium kDifficultyMedium)
+                           (easy kDifficultyEasy)
+                        }
+                     )
+                     {set [note_time] {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]}}
+                  }
+                  #else
                   {set [note_time] {elem {eval {var {sprint [track_instrument] "_note_tracker_2"}}} [gem_id]}}
+                  #endif
                   ;failsafe, ensure the size of our tracker is the same as the reported total note count
-                  {if {== [total_notes] {[player] get_gem_count}}
+                  {if #ifdef RB3E TRUE #else {== [total_notes] {[player] get_gem_count}} #endif
                      {if {>= [gem_id] 0}
                         {set [accuracy] {'-' [curr_ms] [note_time]}}
                      }
@@ -261,7 +276,9 @@
    {{sprint "fc_" $instrument "_callback"} set player $player}
    {{sprint "fc_" $instrument "_callback"} set slot $slot}
    {{sprint "fc_" $instrument "_callback"} set diff {{$player get_user} get_difficulty_sym}}
+   #ifndef RB3E
    {{sprint "fc_" $instrument "_callback"} set total_notes {eval {var {sprint $instrument "_note_tracker_2_size"}}}}
+   #endif
 }
 {new Object dx_streak_callback
    (hit {$this update_streak})
