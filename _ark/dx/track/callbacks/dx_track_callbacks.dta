@@ -105,7 +105,7 @@
                      {gamemode in_mode qp_coop}
                      #endif
                   }
-                  {set [curr_ms] {- {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}} #ifdef HX_XBOX 22 #endif #ifdef HX_PS3 11 #endif #ifdef HX_WII 0 #endif}}  ; fuck da wee
+                  {set [curr_ms] {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
                   ;[note_time] is also used in a commented debug line
@@ -243,8 +243,8 @@
             {if [offset]
                ;TODO make this a setting
                {set [timing] perfect}
-               {if {>= [offset] 0} {set [timing] late}}
-               {if {<= [offset] 0} {set [timing] early}}
+               {if {>= [offset] $dx_window_offset} {set [timing] late}}
+               {if {<= [offset] $dx_window_offset} {set [timing] early}}
                ; autoplay is weird and dumb, always show perfects
                {if_else {modifier_enabled mod_auto_play}
                   {do
@@ -254,15 +254,15 @@
                      {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
                   }
                   {cond
-                     ({&& {< [offset] 25} {> [offset] -25}}
+                     ({&& {< [offset] {+ 25 $dx_window_offset}} {> [offset] {+ -25 $dx_window_offset}}}
                         {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
                         {++ [perfects]} ;increment local counter
                         {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
                      )
-                     ({&& {< [offset] 40} {> [offset] -40}}
+                     ({&& {< [offset] {+ 40 $dx_window_offset}} {> [offset] {+ -40 $dx_window_offset}}}
                         {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
                      )
-                     ({&& {< [offset] 55} {> [offset] -55}}
+                     ({&& {< [offset] {+ 55 $dx_window_offset}} {> [offset] {+ -55 $dx_window_offset}}}
                         {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] good}
                      )
                      {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] bad}
@@ -286,8 +286,8 @@
                ;debug, show values
                {if {|| $dx_judgment_dbg $linoscal}
                   {do
-                     ($avg {/ [total_offset] [num_gems_hit]})
-                     ($offset [offset])
+                     ($avg {- {/ [total_offset] [num_gems_hit]} $dx_window_offset})
+                     ($offset {- [offset] $dx_window_offset})
                      ($print {sprint {localize os_dx_bot_skill} ": " $offset "\nAvg: " $avg})
                      ($dbg {sprint "Note time (ms): " [note_time] "\nHit time: " [curr_ms]})
                      {with {coop_track_panel find tracker_broadcast_display}
