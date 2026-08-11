@@ -75,9 +75,10 @@
                      (easy kDifficultyEasy)
                   }
                )
-               ($next_gem {+ [gem_id] 1})
+               ($gem [gem_id])
+               ($next_gem {+ $gem 1})
                {set_var {sprint "tracked_beat_no_notes_start_" [track_instrument]}
-                  {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]} 1000}}
+                  {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff gem} 1000}}
                }
 
                {if_else {< $next_gem {[player] get_gem_count}}
@@ -93,14 +94,24 @@
          {thread_task kTaskBeats
             (name {sprint "perfect_task_" [track_instrument]})
             (script
-               {if {&& $dx_perfects_indicator {{[player] get_user} is_local} #ifndef RB3E {== [diff] expert} #endif #ifdef RB3E {|| {gamemode in_mode qp_coop} {gamemode in_mode practice}} #else {gamemode in_mode qp_coop} #endif}
+               {if
+                  {&&
+                     $dx_perfects_indicator
+                     {{[player] get_user} is_local}
+                     #ifndef RB3E {== [diff] expert} #endif
+                     #ifdef RB3E
+                     {|| {gamemode in_mode qp_coop} {gamemode in_mode practice}}
+                     #else
+                     {gamemode in_mode qp_coop}
+                     #endif
+                  }
                   {set [curr_ms] {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
                   ;[note_time] is also used in a commented debug line
                   #ifdef RB3E
                   {do
-                     ($tracktype {{user_mgr get_user_from_slot [slot]} get_track_type})
+                     ($tracktype {{$player get_user} get_track_type})
                      ($diff
                         {switch {{$player get_user} get_difficulty_sym}
                            (expert kDifficultyExpert)
