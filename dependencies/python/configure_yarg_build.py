@@ -119,11 +119,25 @@ def copy_yarg_rawfiles():
 
     return output_files
 
+def copy_yarg_milo_files():
+    files = list(Path("_ark", "songs", "vanilla").rglob("*.milo_xbox"))
+
+    output_files = []
+    for f in files:
+        index = f.parts.index("vanilla")
+        out_path = Path("out", "yarg", "songs").joinpath(*f.parts[index + 1 :])
+        out_path = yarg_rewrite_output_path(out_path)
+
+        ninja.build(str(out_path), "copy", str(f))
+        output_files.append(str(out_path))
+
+    return output_files
 
 arkfiles = convert_pngs()
 
 # copy files
 buildfiles = copy_yarg_built_files(arkfiles)
 buildfiles += copy_yarg_rawfiles()
+buildfiles += copy_yarg_milo_files()
 
 ninja.build("all", "phony", buildfiles)
