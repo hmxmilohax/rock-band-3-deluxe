@@ -34,19 +34,7 @@
 }
 {func
    dx_setting_saver
-   ($category $name $value)
-   {dx_log_writer insane
-{sprint
-   "SAVE DEBUG: name="
-   $name
-   " value="
-   $value
-   " eval(name)="
-   {eval $name}
-   " type="
-   {type $value}
-}
-}
+   ($category $name $value $possiblevalues)
    ;{dx_log_writer insane {sprint "func: dx_setting_saver - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $category ", " $name ", " $value}}
    ;{dx_log_writer insane
    ;   {sprintf "Executed dx_setting_saver - time: %.4fms"
@@ -90,6 +78,7 @@
                         {do
                            ($out {array 0})
                            ($hold {array 0})
+                           ($val_hold {array 0})
                            ($clean $name)
                            ($temp FALSE)
                            {push_back $out {eval $name}}
@@ -99,7 +88,9 @@
                            ;{push_back $hold {eval $value}}
                            ;{push_back $out {eval $hold}}
                            ;make sub-array for description
-                           {push_back $out {eval $value}}
+                           {push_back $val_hold value}
+                           {push_back $val_hold {eval $value}}
+                           {push_back $out {eval $val_hold}}
                            {push_back $hold description}
                            ;stupidly find close enough locale token
                            {set $clean $name}
@@ -144,6 +135,34 @@
                            {if {! {has_substr {eval $clean} "os_"}}
                               {push_back $hold {eval $clean}}
                               {push_back $out {eval $hold}}
+                           }
+                           {if {== {type $possiblevalues} kDataArray}
+                              {if {> {size $possiblevalues} 1}
+                                 {push_back $out {eval $possiblevalues}}
+                              }
+                           }
+                           {if {find_exists $syscfg setting_storage $name}
+                              {if {find_exists $syscfg setting_storage $name type}
+                                 {if {== {sprint {elem {find $syscfg setting_storage $name type} 1}} "bool"}
+                                    {push_back $out {array (values FALSE TRUE)}}
+                                 }
+                              }
+                           }
+                           {if {find_exists $syscfg setting_storage $name}
+                              {if {find_exists $syscfg setting_storage $name range}
+                                 {if {== {size {find $syscfg setting_storage $name range}} 3}
+                                    {do
+                                       ($dxarr {find $syscfg setting_storage $name range})
+                                       ($foo {elem $dxarr 1})
+                                       ($bar {elem $dxarr 2})
+                                       ($thisarr {array 0})
+                                       {push_back $thisarr range}
+                                       {push_back $thisarr {eval $foo}}
+                                       {push_back $thisarr {eval $bar}}
+                                       {push_back $out {eval $thisarr}}
+                                    }
+                                 }
+                              }
                            }
                            {push_back $dx_settings {eval $out}}
                            {set $dx_settings {array $dx_settings}}
@@ -190,17 +209,33 @@
                FALSE
             }
          )
-         ($this_setting
-             {if_else $is_deeper
-                 {elem $entry 1}
-                 $entry
-             }
+         ($this_setting {if_else $is_deeper {elem $entry 1} $entry})
+         ($truth_type {elem {find $syscfg setting_storage {elem $this_setting 0} type} 1})
+         ($has_range
+            {if_else {find_exists $syscfg setting_storage {elem $this_setting 0} range}
+               TRUE
+               FALSE
+            }
          )
-         ($truth_type
-             {elem {find $syscfg setting_storage {elem $this_setting 0}} 1}
+         ($truth_range_low
+            {if_else $has_range
+               {elem {find $syscfg setting_storage {elem $this_setting 0} range} 1}
+               "null"
+            }
          )
-         ($setting_enum {elem $this_setting 1})
-         {if {== {type $this_setting} kDataArray}
+         ($truth_range_high
+            {if_else $has_range
+               {elem {find $syscfg setting_storage {elem $this_setting 0} range} 2}
+               "null"
+            }
+         )
+         ($setting_enum
+            {if_else {find_exists $this_setting value}
+               {elem {find $this_setting value} 1}
+               "null"
+            }
+         )
+         {if {&& {!= {sprint $setting_enum} "null"} {== {type $this_setting} kDataArray}}
             {switch $type
                (bool
                   {if {&& {== $truth_type bool} {== {type $setting_enum} kDataInt}}
@@ -230,36 +265,58 @@
                      {set $safe TRUE}
                   }
                )
+               (triple
+                  {if {&& {== $truth_type triple} {== {type $setting_enum} kDataArray}}
+                     {if {== {size $setting_enum} 3}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
                (unsafe {set $safe TRUE})
             }
+            {if {&& $safe $has_range}
+               {if {|| {== $type array} {== $type triple}}
+                  {foreach $innie $setting_enum
+                     {if {! {&& {>= $innie $truth_range_low} {<= $innie $truth_range_high}}}
+                        {set $safe FALSE}
+                     }
+                  }
+               }
+               {if {|| {== $type int} {== $type float}}
+                  {if {! {&& {>= $setting_enum $truth_range_low} {<= $setting_enum $truth_range_high}}}
+                     {set $safe FALSE}
+                  }
+               }
+            }
             {if $safe
-{do
-{dx_log_writer insane
-{sprint
-"READ: "
-$setting
-" = "
-$setting_enum
-" type="
-{type $setting_enum}
-}
-}
-{set_var {eval $setting} $setting_enum}
-{dx_log_writer insane
-{sprint
-"AFTER READ: "
-$setting
-" = "
-{eval $setting}
-" type="
-{type {eval $setting}}
-}
-}
-}
+               {if {!= {sprint $type} triple}
+                  {set_var {eval $setting} $setting_enum}
+               }
+               {if {== {sprint $type} triple}
+                  {if {find_exists $syscfg setting_storage {elem $this_setting 0} vars}
+                     {do
+                        ($thisarr {elem {find $syscfg setting_storage {elem $this_setting 0} vars} 1})
+                        {if {== {type $thisarr} kDataArray}
+                           {if {== {size $thisarr} 3}
+                              {set_var {eval {elem $thisarr 0}}
+                                 {elem $setting_enum 0}
+                              }
+                              {set_var {eval {elem $thisarr 1}}
+                                 {elem $setting_enum 1}
+                              }
+                              {set_var {eval {elem $thisarr 2}}
+                                 {elem $setting_enum 2}
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            }
          }
       }
    }
-}}
+}
 {func dx_read_setting_with_name
    ($name $setting $type)
    {notify $setting}
@@ -317,40 +374,10 @@ $setting
                   }
                )
             }
-            {if $safe
+            {if {&& $safe {!= {sprint $type} triple}}
                {set_var {eval $setting} $setting_enum}
             }
-         }
-      }
-   }
-}
-{func dx_read_setting_triplet
-   ($name $settings)
-   {notify $name}
-   {if {== {elem $entry 0} {basename $name}}
-      {do
-         ($safe FALSE)
-         ($is_deeper ;support older style dx_settings with nested basename
-            {if_else {== {type {elem $entry 1}} kDataArray}
-               {if_else {> {size {elem $entry 1}} 0}
-                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $name}}
-                     TRUE
-                     FALSE
-                  }
-                  FALSE
-               }
-               FALSE
-            }
-         )
-         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
-         ($setting_enum {elem $this_setting 1})
-         {if {== {type $this_setting} kDataArray}
-            {if {== {type $setting_enum} kDataArray}
-               {if {== {size $setting_enum} 3}
-                  {set $safe TRUE}
-               }
-            }
-            {if $safe
+            {if {&& $safe {== {sprint $type} triple}}
                {set_var {eval {elem $settings 0}}
                   {elem $setting_enum 0}
                }
