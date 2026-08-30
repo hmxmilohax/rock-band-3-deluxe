@@ -1,27 +1,40 @@
-{func
-   dx_modifier_reader
-   ($dx_modifier_reader)
-   ;{dx_log_writer insane {sprint "func: dx_modifier_reader - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $dx_modifier_reader}}
-   ;{dx_log_writer insane
-   ;   {sprintf "Executed dx_modifier_reader - time: %.4fms"
-         ;{time
-            ;{foreach $entry {read_file DX_MODIFIER_FILE_PATH}
-               {if {== {elem $entry 0} {basename $dx_modifier_reader}}
-                  {if {== {elem {find $entry $dx_modifier_reader} 1} 1}
-                     {enable_modifier $dx_modifier_reader}
+{func dx_modifier_reader
+   ($setting)
+   {notify $setting}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
+   {if {== {elem $entry 0} {basename $setting}}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {> {size {elem $entry 1}} 0}
+                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $setting}}
+                     TRUE
+                     FALSE
                   }
-                  {if {== {elem {find $entry $dx_modifier_reader} 1} 0}
-                     {disable_modifier $dx_modifier_reader}
-                  }
+                  FALSE
                }
-            ;}
-         ;}
-   ;   }
-   ;}
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $setting} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {if {== {type $setting_enum} kDataInt}
+               {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                  {set $safe TRUE}
+               }
+            }
+            {if {&& $safe {== $setting_enum 1}}
+               {modifier_mgr toggle_modifier_enabled $setting}
+            }
+         }
+      }
+   }
 }
 {func
    dx_setting_saver
-   ($category $name $value)
+   ($category $name $value $possiblevalues)
    ;{dx_log_writer insane {sprint "func: dx_setting_saver - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $category ", " $name ", " $value}}
    ;{dx_log_writer insane
    ;   {sprintf "Executed dx_setting_saver - time: %.4fms"
@@ -36,9 +49,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_modifiers {eval $out}}
                            {set $dx_modifiers {array $dx_modifiers}}
                         }
@@ -48,9 +64,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_track_theme {eval $out}}
                            {set $dx_track_theme {array $dx_track_theme}}
                         }
@@ -59,10 +78,92 @@
                         {do
                            ($out {array 0})
                            ($hold {array 0})
+                           ($val_hold {array 0})
+                           ($clean $name)
+                           ($temp FALSE)
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           ;make sub-array for description
+                           {push_back $val_hold value}
+                           {push_back $val_hold {eval $value}}
+                           {push_back $out {eval $val_hold}}
+                           {push_back $hold description}
+                           ;stupidly find close enough locale token
+                           {set $clean $name}
+                           {search_replace $clean "dx_" "" $clean}
+                           {if_else $value
+                              {set $clean {localize {sprint "os_" $clean "_on_desc"}}}
+                              {set $clean {localize {sprint "os_" $clean "_off_desc"}}}
+                           }
+                           {if {has_substr {eval $clean} "os_"}
+                              {set $clean $name}
+                              {search_replace $clean "dx_" "" $clean}
+                              {set $clean {localize {sprint "os_" $clean "_desc"}}}
+                           }
+                           {if {has_substr {eval $clean} "os_"}
+                              {set $clean $name}
+                              {search_replace $clean "dx_" "" $clean}
+                              {set $clean {localize {sprint $clean "_desc"}}}
+                           }
+                           {if {has_substr {eval $clean} "_desc"}
+                              {set $clean $name}
+                              {search_replace $clean "dx_" "" $clean}
+                              {if_else $value
+                                 {set $clean {localize {sprint "os_" $clean "_on"}}}
+                                 {set $clean {localize {sprint "os_" $clean "_off"}}}
+                              }
+                           }
+                           {if {has_substr {eval $clean} "os_"}
+                              {set $clean $name}
+                              {search_replace $clean "dx_" "" $clean}
+                              {set $clean {localize {sprint "os_" $clean}}}
+                           }
+                           {if {has_substr {eval $clean} "os_"}
+                              {set $clean {sprint $name "_" $value}}
+                              {search_replace $clean "dx_" "" $clean}
+                              {set $clean {localize {sprint "os_" $clean "_desc"}}}
+                           }
+                           {if {has_substr {eval $clean} "os_"}
+                              {set $clean {sprint $name "_" $value}}
+                              {search_replace $clean "dx_" "" $clean}
+                              {set $clean {localize {sprint "os_" $clean}}}
+                           }
+                           {if {! {has_substr {eval $clean} "os_"}}
+                              {push_back $hold {eval $clean}}
+                              {push_back $out {eval $hold}}
+                           }
+                           {if {== {type $possiblevalues} kDataArray}
+                              {if {> {size $possiblevalues} 1}
+                                 {push_back $out {eval $possiblevalues}}
+                              }
+                           }
+                           {if {find_exists $syscfg setting_storage $name}
+                              {if {find_exists $syscfg setting_storage $name type}
+                                 {if {== {sprint {elem {find $syscfg setting_storage $name type} 1}} "bool"}
+                                    {push_back $out {array (values FALSE TRUE)}}
+                                 }
+                              }
+                           }
+                           {if {find_exists $syscfg setting_storage $name}
+                              {if {find_exists $syscfg setting_storage $name range}
+                                 {if {== {size {find $syscfg setting_storage $name range}} 3}
+                                    {do
+                                       ($dxarr {find $syscfg setting_storage $name range})
+                                       ($foo {elem $dxarr 1})
+                                       ($bar {elem $dxarr 2})
+                                       ($thisarr {array 0})
+                                       {push_back $thisarr range}
+                                       {push_back $thisarr {eval $foo}}
+                                       {push_back $thisarr {eval $bar}}
+                                       {push_back $out {eval $thisarr}}
+                                    }
+                                 }
+                              }
+                           }
                            {push_back $dx_settings {eval $out}}
                            {set $dx_settings {array $dx_settings}}
                         }
@@ -72,9 +173,12 @@
                            ($out {array 0})
                            ($hold {array 0})
                            {push_back $out {eval $name}}
-                           {push_back $hold {eval $name}}
-                           {push_back $hold {eval $value}}
-                           {push_back $out {eval $hold}}
+                           ;this used to make a sub array to hold the value
+                           ;it was dumb
+                           ;{push_back $hold {eval $name}}
+                           ;{push_back $hold {eval $value}}
+                           ;{push_back $out {eval $hold}}
+                           {push_back $out {eval $value}}
                            {push_back $dx_values {eval $out}}
                            {set $dx_values {array $dx_values}}
                         }
@@ -87,58 +191,260 @@
    ;}
 }
 {func dx_read_setting
-   ($setting)
+   ($setting $type)
    {notify $setting}
-   {if {== {elem $entry 0} {basename {eval $setting}}}
-      {set_var {eval $setting}
-         {elem {find $entry $setting} 1}
-      }
-   }
-}
-{func dx_read_setting_with_name
-   ($name $setting)
-   {notify $setting}
-   {if {== {elem $entry 0} {basename {eval $name}}}
-      {set_var {eval $setting}
-         {elem {find $entry $name} 1}
-      }
-   }
-}
-{func dx_read_setting_triplet
-   ($name $setting1 $setting2 $setting3)
-   {notify $name}
-   {if {== {elem $entry 0} {basename {eval $name}}}
-      {set_var {eval $setting1}
-         {elem {elem {find $entry $name} 1} 0}
-      }
-      {set_var {eval $setting2}
-         {elem {elem {find $entry $name} 1} 1}
-      }
-      {set_var {eval $setting3}
-         {elem {elem {find $entry $name} 1} 2}
-      }
-   }
-}
-{func dx_read_num_of_settings
-   ($num $name $basesetting)
-   {notify $name}
-   {foreach_int $i 0 $num
-      {if {== {elem $entry 0} {basename {eval $name}}}
-         {set_var {sprint {eval $basesetting} {+ $i 1}}
-            {if {<= {size $entry} $i}
-               {elem {elem {find $entry $name} 1} $i}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
+   {if {== {elem $entry 0} {basename $setting}}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {> {size {elem $entry 1}} 0}
+                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $setting}}
+                     TRUE
+                     FALSE
+                  }
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {elem $entry 1} $entry})
+         ($truth_type {elem {find $syscfg setting_storage {elem $this_setting 0} type} 1})
+         ($has_range
+            {if_else {find_exists $syscfg setting_storage {elem $this_setting 0} range}
+               TRUE
+               FALSE
+            }
+         )
+         ($truth_range_low
+            {if_else $has_range
+               {elem {find $syscfg setting_storage {elem $this_setting 0} range} 1}
+               "null"
+            }
+         )
+         ($truth_range_high
+            {if_else $has_range
+               {elem {find $syscfg setting_storage {elem $this_setting 0} range} 2}
+               "null"
+            }
+         )
+         ($setting_enum
+            {if_else {find_exists $this_setting value}
+               {elem {find $this_setting value} 1}
+               "null"
+            }
+         )
+         {if {&& {!= {sprint $setting_enum} "null"} {== {type $this_setting} kDataArray}}
+            {switch $type
+               (bool
+                  {if {&& {== $truth_type bool} {== {type $setting_enum} kDataInt}}
+                     {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
+               (int
+                  {if {&& {== $truth_type int} {== {type $setting_enum} kDataInt}}
+                     {set $safe TRUE}
+                  }
+               )
+               (float
+                  {if {&& {== $truth_type float} {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataFloat}}}
+                     {set $safe TRUE}
+                  }
+               )
+               (string
+                  {if {&& {== $truth_type string} {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}}
+                     {set $safe TRUE}
+                     {set $setting_enum {symbol $setting_enum}}
+                  }
+               )
+               (array
+                  {if {&& {== $truth_type array} {== {type $setting_enum} kDataArray}}
+                     {set $safe TRUE}
+                  }
+               )
+               (triple
+                  {if {&& {== $truth_type triple} {== {type $setting_enum} kDataArray}}
+                     {if {== {size $setting_enum} 3}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
+               (unsafe {set $safe TRUE})
+            }
+            {if {&& $safe $has_range}
+               {if {|| {== $type array} {== $type triple}}
+                  {foreach $innie $setting_enum
+                     {if {! {&& {>= $innie $truth_range_low} {<= $innie $truth_range_high}}}
+                        {set $safe FALSE}
+                     }
+                  }
+               }
+               {if {|| {== $type int} {== $type float}}
+                  {if {! {&& {>= $setting_enum $truth_range_low} {<= $setting_enum $truth_range_high}}}
+                     {set $safe FALSE}
+                  }
+               }
+            }
+            {if $safe
+               {if {!= {sprint $type} triple}
+                  {set_var {eval $setting} $setting_enum}
+               }
+               {if {== {sprint $type} triple}
+                  {if {find_exists $syscfg setting_storage {elem $this_setting 0} vars}
+                     {do
+                        ($thisarr {elem {find $syscfg setting_storage {elem $this_setting 0} vars} 1})
+                        {if {== {type $thisarr} kDataArray}
+                           {if {== {size $thisarr} 3}
+                              {set_var {eval {elem $thisarr 0}}
+                                 {elem $setting_enum 0}
+                              }
+                              {set_var {eval {elem $thisarr 1}}
+                                 {elem $setting_enum 1}
+                              }
+                              {set_var {eval {elem $thisarr 2}}
+                                 {elem $setting_enum 2}
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
             }
          }
       }
    }
 }
+{func dx_read_setting_with_name
+   ($name $setting $type)
+   {notify $setting}
+   ;ensures the read setting from user dta matches the read type defined in the ark, then sets it
+   {if {== {elem $entry 0} {basename $name}}
+      {do
+         ($safe FALSE)
+         ($is_deeper ;support older style dx_settings with nested basename
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {> {size {elem $entry 1}} 0}
+                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $name}}
+                     TRUE
+                     FALSE
+                  }
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
+         ($setting_enum {elem $this_setting 1})
+         {if {== {type $this_setting} kDataArray}
+            {switch $type
+               (bool
+                  {if {== {type $setting_enum} kDataInt}
+                     {if {|| {== $setting_enum 0} {== $setting_enum 1}}
+                        {set $safe TRUE}
+                     }
+                  }
+               )
+               (int
+                  {if {== {type $setting_enum} kDataInt}
+                     {set $safe TRUE}
+                  }
+               )
+               (float
+                  {if {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataFloat}}
+                     {set $safe TRUE}
+                  }
+               )
+               (string
+                  {if {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}
+                     {set $safe TRUE}
+                     {set $setting_enum {symbol $setting_enum}}
+                  }
+               )
+               (array
+                  {if {== {type $setting_enum} kDataArray}
+                     {set $safe TRUE}
+                  }
+               )
+               (unsafe
+                  {if {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataString}}
+                     {set $safe TRUE}
+                  }
+               )
+            }
+            {if {&& $safe {!= {sprint $type} triple}}
+               {set_var {eval $setting} $setting_enum}
+            }
+            {if {&& $safe {== {sprint $type} triple}}
+               {set_var {eval {elem $settings 0}}
+                  {elem $setting_enum 0}
+               }
+               {set_var {eval {elem $settings 1}}
+                  {elem $setting_enum 1}
+               }
+               {set_var {eval {elem $settings 2}}
+                  {elem $setting_enum 2}
+               }
+            }
+         }
+      }
+   }
+}
+{func dx_read_num_of_settings
+   ($num $basesetting $name)
+   {notify $name}
+   {if {== {elem $entry 0} {basename $name}}
+      {do
+         ($is_deeper
+            {if_else {== {type {elem $entry 1}} kDataArray}
+               {if_else {> {size {elem $entry 1}} 0}
+                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $name}}
+                     TRUE
+                     FALSE
+                  }
+                  FALSE
+               }
+               FALSE
+            }
+         )
+         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
+         ($arr {elem $this_setting 1})
+         ($protected {if_else {== {type $arr} kDataArray} TRUE FALSE})
+         ($arr_size {if_else $protected {size $arr} 0})
+         {if $protected
+            {foreach_int $i 0 $num
+               {if {< $i $arr_size}
+                  {set_var {sprint {eval $basesetting} {+ $i 1}}
+                     {elem $arr $i}
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+
 {func
    dx_settings_dta_reader
    {notify {sprint "Attempting to read dx.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   {foreach $entry {read_file DX_SETTINGS_FILE_PATH} 
-      LOADING_DX_SETTINGS_OPTIONS
-      {dx_log_writer default {sprint $entry}}
+   {foreach $entry {read_file DX_SETTINGS_FILE_PATH}
+   {if {== {elem $entry 0} debug_mode}
+      {dx_log_writer insane
+         {sprint
+            "FOUND DEBUG ENTRY: "
+            $entry
+            " type="
+            {type $entry}
+         }
+      }
    }
+
+   LOADING_DX_SETTINGS_OPTIONS
+   {dx_log_writer default {sprint $entry}}
+}
 }
 {func
    dx_track_theme_dta_reader
@@ -179,6 +485,12 @@
       {dx_modifier_reader mod_nopause}
       {dx_modifier_reader mod_remote_texture_sync}
       {dx_modifier_reader mod_highlight_key}
+      #ifndef RB3E
+      {dx_modifier_reader mod_mhx_color_shuffle}
+      #endif
+      {unless {modifier_mgr is_modifier_active mod_doublespeed}
+         {dx_modifier_reader mod_doublespeed}
+      }
       {dx_modifier_reader mod_vocal_coda}
       #ifndef RB3E
       {dx_modifier_reader mod_mhx_color_shuffle}
