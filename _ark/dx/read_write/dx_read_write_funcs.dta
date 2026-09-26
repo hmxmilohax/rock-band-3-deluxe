@@ -1,184 +1,111 @@
 {func
    dx_setting_saver
    ($category $name $value $possiblevalues)
-   ;{dx_log_writer insane {sprint "func: dx_setting_saver - Current Screen: " {ui current_screen}  " - Gamemode: " $dx_gamemode " - Args: " $category ", " $name ", " $value}}
-   ;{dx_log_writer insane
-   ;   {sprintf "Executed dx_setting_saver - time: %.4fms"
-         ;{time
-            ; we do allow this function to pass when only mod_auto_play is enabled
-            ; this is because dx_values passes through here, which directly store autoplay configuration
-            {unless {|| {modifier_mgr is_modifier_active mod_karaoke} {modifier_mgr is_modifier_active mod_fakejuke}}
-               ;{unless {|| {== $value none} {! $value}}
-                  ;{switch $category
-                     ;(dx_modifiers
-                     ;   {do
-                     ;      ($out {array 0})
-                     ;      ($hold {array 0})
-                     ;      {push_back $out {eval $name}}
-                     ;      ;this used to make a sub array to hold the value
-                     ;      ;it was dumb
-                     ;      ;{push_back $hold {eval $name}}
-                     ;      ;{push_back $hold {eval $value}}
-                     ;      ;{push_back $out {eval $hold}}
-                     ;      {push_back $out {eval $value}}
-                     ;      {push_back $dx_modifiers {eval $out}}
-                     ;      {set $dx_modifiers {array $dx_modifiers}}
-                     ;   }
-                     ;)
-                     ;(dx_track_theme
-                     ;   {do
-                     ;      ($out {array 0})
-                     ;      ($hold {array 0})
-                     ;      {push_back $out {eval $name}}
-                     ;      ;this used to make a sub array to hold the value
-                     ;      ;it was dumb
-                     ;      ;{push_back $hold {eval $name}}
-                     ;      ;{push_back $hold {eval $value}}
-                     ;      ;{push_back $out {eval $hold}}
-                     ;      {push_back $out {eval $value}}
-                     ;      {push_back $dx_track_theme {eval $out}}
-                     ;      {set $dx_track_theme {array $dx_track_theme}}
-                     ;   }
-                     ;)
-                     ;(dx_settings
-                        {do
-                           ($out {array 0})
-                           ($hold {array 0})
-                           ($val_hold {array 0})
-                           ($clean $name)
-                           ($temp FALSE)
-                           ($storage
-                              {switch $category
-                                 (dx_modifiers modifier_storage)
-                                 (dx_track_theme theme_storage)
-                                 (dx_settings setting_storage)
-                                 (dx_values value_storage)
-                              }
-                           )
-                           {push_back $out {eval $name}}
-                           ;this used to make a sub array to hold the value
-                           ;it was dumb
-                           ;{push_back $hold {eval $name}}
-                           ;{push_back $hold {eval $value}}
-                           ;{push_back $out {eval $hold}}
-                           ;make sub-array for description
-                           {push_back $val_hold value}
-                           {push_back $val_hold {eval $value}}
-                           {push_back $out {eval $val_hold}}
-                           {push_back $hold description}
-                           ;stupidly find close enough locale token
-                           {set $clean $name}
-                           {search_replace $clean "dx_" "" $clean}
-                           {if_else $value
-                              {set $clean {localize {sprint "os_" $clean "_on_desc"}}}
-                              {set $clean {localize {sprint "os_" $clean "_off_desc"}}}
-                           }
-                           {if {has_substr {eval $clean} "os_"}
-                              {set $clean $name}
-                              {search_replace $clean "dx_" "" $clean}
-                              {set $clean {localize {sprint "os_" $clean "_desc"}}}
-                           }
-                           {if {has_substr {eval $clean} "os_"}
-                              {set $clean $name}
-                              {search_replace $clean "dx_" "" $clean}
-                              {set $clean {localize {sprint $clean "_desc"}}}
-                           }
-                           {if {has_substr {eval $clean} "_desc"}
-                              {set $clean $name}
-                              {search_replace $clean "dx_" "" $clean}
-                              {if_else $value
-                                 {set $clean {localize {sprint "os_" $clean "_on"}}}
-                                 {set $clean {localize {sprint "os_" $clean "_off"}}}
-                              }
-                           }
-                           {if {has_substr {eval $clean} "os_"}
-                              {set $clean $name}
-                              {search_replace $clean "dx_" "" $clean}
-                              {set $clean {localize {sprint "os_" $clean}}}
-                           }
-                           {if {has_substr {eval $clean} "os_"}
-                              {set $clean {sprint $name "_" $value}}
-                              {search_replace $clean "dx_" "" $clean}
-                              {set $clean {localize {sprint "os_" $clean "_desc"}}}
-                           }
-                           {if {has_substr {eval $clean} "os_"}
-                              {set $clean {sprint $name "_" $value}}
-                              {search_replace $clean "dx_" "" $clean}
-                              {set $clean {localize {sprint "os_" $clean}}}
-                           }
-                           {if {! {has_substr {eval $clean} "os_"}}
-                              {push_back $hold {eval $clean}}
-                              {push_back $out {eval $hold}}
-                           }
-                           {if {== {type $possiblevalues} kDataArray}
-                              {if {> {size $possiblevalues} 1}
-                                 {push_back $out {eval $possiblevalues}}
-                              }
-                           }
-                           {if {find_exists $syscfg $storage $name}
-                              {if {find_exists $syscfg $storage $name type}
-                                 {if {== {sprint {elem {find $syscfg $storage $name type} 1}} "bool"}
-                                    {push_back $out {array (values FALSE TRUE)}}
-                                 }
-                              }
-                           }
-                           {if {find_exists $syscfg $storage $name}
-                              {if {find_exists $syscfg $storage $name range}
-                                 {if {== {size {find $syscfg $storage $name range}} 3}
-                                    {do
-                                       ($dxarr {find $syscfg $storage $name range})
-                                       ($foo {elem $dxarr 1})
-                                       ($bar {elem $dxarr 2})
-                                       ($thisarr {array 0})
-                                       {push_back $thisarr range}
-                                       {push_back $thisarr {eval $foo}}
-                                       {push_back $thisarr {eval $bar}}
-                                       {push_back $out {eval $thisarr}}
-                                    }
-                                 }
-                              }
-                           }
-                           {switch $category
-                              (dx_settings
-                                 {push_back $dx_settings {eval $out}}
-                                 {set $dx_settings {array $dx_settings}}
-                              )
-                              (dx_modifiers
-                                 {push_back $dx_modifiers {eval $out}}
-                                 {set $dx_modifiers {array $dx_modifiers}}
-                              )
-                              (dx_values
-                                 {push_back $dx_values {eval $out}}
-                                 {set $dx_values {array $dx_values}}
-                              )
-                              (dx_track_theme
-                                 {push_back $dx_track_theme {eval $out}}
-                                 {set $dx_track_theme {array $dx_track_theme}}
-                              )
-                           }
-                        }
-                     ;)
-                     ;(dx_values
-                     ;   {do
-                     ;      ($out {array 0})
-                     ;      ($hold {array 0})
-                     ;      {push_back $out {eval $name}}
-                     ;      ;this used to make a sub array to hold the value
-                     ;      ;it was dumb
-                     ;      ;{push_back $hold {eval $name}}
-                     ;      ;{push_back $hold {eval $value}}
-                     ;      ;{push_back $out {eval $hold}}
-                     ;      {push_back $out {eval $value}}
-                     ;      {push_back $dx_values {eval $out}}
-                     ;      {set $dx_values {array $dx_values}}
-                     ;   }
-                     ;)
-                  ;}
-               ;}
-            ;}
+      ; we do allow this function to pass when only mod_auto_play is enabled
+      ; this is because dx_values passes through here, which directly store autoplay configuration
+      {unless {|| {modifier_mgr is_modifier_active mod_karaoke} {modifier_mgr is_modifier_active mod_fakejuke}}
+      {do
+         ($out {array 0})
+         ($hold {array 0})
+         ($val_hold {array 0})
+         ($clean $name)
+         ($temp FALSE)
+         ($storage
+            {switch $category
+               (dx_modifiers modifier_storage)
+               (dx_track_theme theme_storage)
+               (dx_settings setting_storage)
+               (dx_values value_storage)
+            }
+         )
+         {push_back $out {eval $name}}
+         ;this used to make a sub array to hold the value
+         ;it was dumb
+         ;{push_back $hold {eval $name}}
+         ;{push_back $hold {eval $value}}
+         ;{push_back $out {eval $hold}}
+         ;make sub-array for description
+         {push_back $val_hold value}
+         {push_back $val_hold {eval $value}}
+         {push_back $out {eval $val_hold}}
+         {push_back $hold description}
+         ;stupidly find close enough locale token
+         {set $clean $name}
+         {search_replace $clean "dx_" "" $clean}
+         {if_else $value
+            {set $clean {localize {sprint "os_" $clean "_on_desc"}}}
+            {set $clean {localize {sprint "os_" $clean "_off_desc"}}}
          }
-   ;   }
-   ;}
+         {if {has_substr {eval $clean} "os_"}
+            {set $clean $name}
+            {search_replace $clean "dx_" "" $clean}
+            {set $clean {localize {sprint "os_" $clean "_desc"}}}
+         }
+         {if {has_substr {eval $clean} "os_"}
+            {set $clean $name}
+            {search_replace $clean "dx_" "" $clean}
+            {set $clean {localize {sprint $clean "_desc"}}}
+         }
+         {if {has_substr {eval $clean} "_desc"}
+            {set $clean $name}
+            {search_replace $clean "dx_" "" $clean}
+            {if_else $value
+               {set $clean {localize {sprint "os_" $clean "_on"}}}
+               {set $clean {localize {sprint "os_" $clean "_off"}}}
+            }
+         }
+         {if {has_substr {eval $clean} "os_"}
+            {set $clean $name}
+            {search_replace $clean "dx_" "" $clean}
+            {set $clean {localize {sprint "os_" $clean}}}
+         }
+         {if {has_substr {eval $clean} "os_"}
+            {set $clean {sprint $name "_" $value}}
+            {search_replace $clean "dx_" "" $clean}
+            {set $clean {localize {sprint "os_" $clean "_desc"}}}
+         }
+         {if {has_substr {eval $clean} "os_"}
+            {set $clean {sprint $name "_" $value}}
+            {search_replace $clean "dx_" "" $clean}
+            {set $clean {localize {sprint "os_" $clean}}}
+         }
+         {if {! {has_substr {eval $clean} "os_"}}
+            {push_back $hold {eval $clean}}
+            {push_back $out {eval $hold}}
+         }
+         {if {== {type $possiblevalues} kDataArray}
+            {if {> {size $possiblevalues} 1}
+               {push_back $out {eval $possiblevalues}}
+            }
+         }
+         {if {find_exists $syscfg $storage $name}
+            {if {find_exists $syscfg $storage $name type}
+               {if {== {sprint {elem {find $syscfg $storage $name type} 1}} "bool"}
+                  {push_back $out {array (values FALSE TRUE)}}
+               }
+            }
+         }
+         {if {find_exists $syscfg $storage $name}
+            {if {find_exists $syscfg $storage $name range}
+               {if {== {size {find $syscfg $storage $name range}} 3}
+                  {do
+                     ($dxarr {find $syscfg $storage $name range})
+                     ($foo {elem $dxarr 1})
+                     ($bar {elem $dxarr 2})
+                     ($thisarr {array 0})
+                     {push_back $thisarr range}
+                     {push_back $thisarr {eval $foo}}
+                     {push_back $thisarr {eval $bar}}
+                     {push_back $out {eval $thisarr}}
+                  }
+               }
+            }
+         }
+         ;did you forget after all of this where we are?
+         {push_back $dx_settings {eval $out}}
+         {set $dx_settings {array $dx_settings}}
+      }
+   }
 }
 {func dx_read_setting
    ($category $setting $type)
@@ -230,7 +157,7 @@
          ($setting_enum
             {if_else {find_exists $this_setting value}
                {elem {find $this_setting value} 1}
-               "null"
+               {if_else $is_deeper {elem $this_setting 1} "null"}
             }
          )
          {if {&& {!= {sprint $setting_enum} "null"} {== {type $this_setting} kDataArray}}
@@ -254,8 +181,10 @@
                )
                (string
                   {if {&& {== $truth_type string} {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}}
-                     {set $safe TRUE}
-                     {set $setting_enum {symbol $setting_enum}}
+                     {do
+                        {set $safe TRUE}
+                        {set $setting_enum {symbol $setting_enum}}
+                     }
                   }
                )
                (array
@@ -268,6 +197,11 @@
                      {if {== {size $setting_enum} 3}
                         {set $safe TRUE}
                      }
+                  }
+               )
+               (num
+                  {if {&& {== $truth_type num} {== {type $setting_enum} kDataArray}}
+                     {set $safe TRUE}
                   }
                )
                (unsafe {set $safe TRUE})
@@ -287,7 +221,50 @@
                }
             }
             {if $safe
-               {if {!= {sprint $type} triple}
+               {switch {sprint $type}
+                  (triple
+                     {if {find_exists $syscfg $storage {elem $this_setting 0} vars}
+                        {do
+                           ($thisarr {elem {find $syscfg $storage {elem $this_setting 0} vars} 1})
+                           {if {== {type $thisarr} kDataArray}
+                              {if {== {size $thisarr} 3}
+                                 {set_var {eval {elem $thisarr 0}}
+                                    {elem $setting_enum 0}
+                                 }
+                                 {set_var {eval {elem $thisarr 1}}
+                                    {elem $setting_enum 1}
+                                 }
+                                 {set_var {eval {elem $thisarr 2}}
+                                    {elem $setting_enum 2}
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  )
+                  (num
+                     {if {find_exists $syscfg $storage {elem $this_setting 0} num}
+                        {do
+                           ($int {== {type {elem {find $syscfg $storage {elem $this_setting 0} num} 1}} kDataInt})
+                           ($arr {== {type $setting_enum} kDataArray})
+                           {if {&& $int $arr}
+                              {do
+                                 ($name {elem $this_setting 0})
+                                 ($num {elem {find $syscfg $storage {elem $this_setting 0} num} 1})
+                                 ($size {size $setting_enum})
+                                 {foreach_int $i 0 $num
+                                    {if {< $i $size}
+                                       {set_var
+                                          {sprint {elem $this_setting 0} {+ $i 1}}
+                                          {elem $setting_enum $i}
+                                       }
+                                    }
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  )
                   {if_else {== $category dx_modifiers}
                      {switch $setting_enum
                         (0 {disable_modifier {eval $setting}})
@@ -295,59 +272,6 @@
                         kDataUnhandled
                      }
                      {set_var {eval $setting} $setting_enum}
-                  }
-               }
-               {if {== {sprint $type} triple}
-                  {if {find_exists $syscfg $storage {elem $this_setting 0} vars}
-                     {do
-                        ($thisarr {elem {find $syscfg $storage {elem $this_setting 0} vars} 1})
-                        {if {== {type $thisarr} kDataArray}
-                           {if {== {size $thisarr} 3}
-                              {set_var {eval {elem $thisarr 0}}
-                                 {elem $setting_enum 0}
-                              }
-                              {set_var {eval {elem $thisarr 1}}
-                                 {elem $setting_enum 1}
-                              }
-                              {set_var {eval {elem $thisarr 2}}
-                                 {elem $setting_enum 2}
-                              }
-                           }
-                        }
-                     }
-                  }
-               }
-            }
-         }
-      }
-   }
-}
-{func dx_read_num_of_settings
-   ($num $basesetting $name)
-   {notify $name}
-   {if {== {elem $entry 0} {basename $name}}
-      {do
-         ($is_deeper
-            {if_else {== {type {elem $entry 1}} kDataArray}
-               {if_else {> {size {elem $entry 1}} 0}
-                  {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $name}}
-                     TRUE
-                     FALSE
-                  }
-                  FALSE
-               }
-               FALSE
-            }
-         )
-         ($this_setting {if_else $is_deeper {find $entry $name} $entry})
-         ($arr {elem $this_setting 1})
-         ($protected {if_else {== {type $arr} kDataArray} TRUE FALSE})
-         ($arr_size {if_else $protected {size $arr} 0})
-         {if $protected
-            {foreach_int $i 0 $num
-               {if {< $i $arr_size}
-                  {set_var {sprint {eval $basesetting} {+ $i 1}}
-                     {elem $arr $i}
                   }
                }
             }
@@ -376,39 +300,48 @@
                ($arr {if_else {find_exists $entry vars} {elem {find $entry vars} 1} 0})
                {if {find_exists $entry values}
                   {if {== {type {find $entry values}} kDataArray}
-                     {foreach $val {find $entry values}
-                        {push_back $values $val}
+                     {do
+                        ($arr {find $entry values})
+                        {foreach_int $i 1 {size $arr}
+                           {push_back $values {elem $arr $i}}
+                        }
                      }
                   }
                }
-               {if_else {&& {!= {type $type} kDataInt} {== {sprint $type} "triple"}}
-                  {if_else {&& $arr {== {type $arr} kDataArray}}
-                     {do
-                        ($hold {array 0})
-                        {push_back $hold {eval {var {elem $arr 0}}}}
-                        {push_back $hold {eval {var {elem $arr 1}}}}
-                        {push_back $hold {eval {var {elem $arr 2}}}}
-                        {dx_setting_saver $category $name {eval $hold} {array $values}}
-                     }
-                     kDataUnhandled
-                  }
-                  {if_else {== {type $type} kDataInt}
-                     {do
-                        ($hold {array 0})
-                        {foreach_int $i 1 $type
-                           {push_back $hold {eval {var {sprint $name $i}}}}
+               {switch {sprint $type}
+                  (triple
+                     {if_else {&& $arr {== {type $arr} kDataArray}}
+                        {do
+                           ($hold {array 0})
+                           {push_back $hold {eval {var {elem $arr 0}}}}
+                           {push_back $hold {eval {var {elem $arr 1}}}}
+                           {push_back $hold {eval {var {elem $arr 2}}}}
+                           {dx_setting_saver $category $name {eval $hold} {array $values}}
                         }
-                        {dx_setting_saver $category $name {eval $hold} {array $values}}
+                        kDataUnhandled
                      }
+                  )
+                  (num
                      {do
-                        ($map
-                           {if_else {== $category dx_modifiers}
-                              {modifier_enabled $name}
-                              {eval {var $name}}
+                        ($hold {array 0})
+                        ($has {find_exists $syscfg $storage $name num})
+                        ($num {if_else $has {elem {find $syscfg $storage $name num} 1} FALSE})
+                        {if $has
+                           {foreach_int $i 0 $num
+                              {push_back $hold {eval {var {sprint $name {+ $i 1}}}}}
                            }
-                        )
-                        {dx_setting_saver $category $name $map {array $values}}
+                           {dx_setting_saver $category $name {eval $hold} {array $values}}
+                        }
                      }
+                  )
+                  {do
+                     ($map
+                        {if_else {== $category dx_modifiers}
+                           {modifier_enabled $name}
+                           {eval {var $name}}
+                        }
+                     )
+                     {dx_setting_saver $category $name $map {array $values}}
                   }
                }
             }
@@ -441,135 +374,124 @@
             {do
                ($name {elem $truth 0})
                ($type {elem {find $truth type} 1})
-               ($arr {if_else {find_exists $truth vars} {elem {find $truth vars} 1} 0})
-               {if_else {&& {!= {type $type} kDataInt} {== {sprint $type} "triple"}}
-                  {if_else {&& $arr {== {type $arr} kDataArray}}
-                     {dx_read_setting $category $name $type}
-                     kDataUnhandled
-                  }
-                  {if_else {== {type $type} kDataInt}
-                     {do
-                        ($hold {array 0})
-                        {foreach_int $i 1 $type
-                           {push_back $hold {eval {var {sprint $name $i}}}}
-                        }
-                        {dx_read_num_of_settings $type $name $name}
-                     }
-                     {dx_read_setting $category $name $type}
-                  }
-               }
+               ;($arr {if_else {find_exists $truth vars} {elem {find $truth vars} 1} 0})
+               ;{if_else {&& $arr {== {type $arr} kDataArray}}
+                  {dx_read_setting $category $name $type}
+               ;   kDataUnhandled
+               ;}
             }
          }
       }
    }
 }
 
-{func
-   dx_settings_dta_reader
+{func dx_settings_dta_reader
+   ($type)
    {do
-      ($read {read_file DX_SETTINGS_FILE_PATH})
-      {foreach $entry $read
-         {mmm_yummy_entry_reader dx_settings}
-      }
-   }
-
-   {dx_fps_counter set_visible $dx_fps_counter}
-   #ifndef HX_WII
-   {profile_mgr set_platform_audio_latency $platform_audio_latency}
-   {profile_mgr set_platform_video_latency $platform_video_latency}
-   #endif
-   {profile_mgr set_joypad_extra_lag PAD_NUM_GAMEPAD 0 $dx_pad_lag_gamepad}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB1 0 $dx_pad_lag_guitar_rb1}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB2 0 $dx_pad_lag_guitar_rb2}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_GH 0 $dx_pad_lag_guitar_gh}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB1 0 $dx_pad_lag_drums_rb1}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB2 0 $dx_pad_lag_drums_rb2}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_GH 0 $dx_pad_lag_drums_gh}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_KEYS 0 $dx_pad_lag_keys}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR 0 $dx_pad_lag_pro_guitar}
-   {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0 $dx_pad_lag_pro_guitar_squier}
-   #ifdef HX_PS3
-   {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RR 0 $dx_pad_lag_drums_rr}
-   #ifdef HX_XBOX
-   {profile_mgr set_joypad_extra_lag PAD_NUM_STAGE_KIT 0 $dx_pad_lag_stage_kit}
-   #endif
-   {dx_log_writer default {sprint $entry}}
-}
-{func
-   dx_track_theme_dta_reader
-   {dx_log_writer info {sprint "Attempting to read track_theme.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
-      {do
-         ($read {read_file {dx_track_theme_name $dx_track_theme_name}})
+      ($read
+         {switch $type
+            (dx_settings {read_file DX_SETTINGS_FILE_PATH})
+            (dx_track_theme {read_file {dx_track_theme_name $dx_track_theme_name}})
+            (dx_values {read_file DX_VALUES_FILE_PATH})
+            (dx_modifiers {read_file DX_MODIFIER_FILE_PATH})
+         }
+      )
+      ($wait
+         {if_else {== {sprint $type} "dx_track_theme"}
+            TRUE
+            FALSE
+         }
+      )
+      ($exists
+         {if_else $wait
+            {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
+               TRUE
+               FALSE
+            }
+            FALSE
+         }
+      )
+      {if {|| {! $wait} {&& $wait $exists}}
          {foreach $entry $read
-            {mmm_yummy_entry_reader dx_track_theme}
+            {cond
+               ({&& {== {sprint {elem $entry 0}} "mod_doublespeed"} {modifier_enabled mod_doublespeed}}
+                  kDataUnhandled
+               )
+               ({&& {== {sprint {elem $entry 0}} "mod_dx_no_overdrive"} {modifier_enabled mod_dx_no_overdrive}}
+                  kDataUnhandled
+               )
+               {mmm_yummy_entry_reader $type}
+            }
          }
-         {dx_passive_messenger track_theme_successfully_loaded}
       }
-      {dx_passive_messenger no_track_theme_found}
-   }
-}
-{func
-   dx_values_dta_reader
-   {dx_log_writer info {sprint "Attempting to read val.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   {do
-      ($read {read_file DX_VALUES_FILE_PATH})
-      {foreach $entry $read
-         {mmm_yummy_entry_reader dx_values}
-      }
-   }
-}
-{func
-   dx_modifier_dta_reader
-   {dx_log_writer info {sprint "Attempting to read mod.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   {do
-      ($read {read_file DX_MODIFIER_FILE_PATH})
-      {foreach $entry $read
-         {cond
-            ({modifier_enabled mod_doublespeed}
-               kDataUnhandled
-            )
-            ({modifier_enabled mod_dx_no_overdrive}
-               kDataUnhandled
-            )
-            {mmm_yummy_entry_reader dx_modifiers}
+      ;print if we loaded a theme or not
+      {if $wait
+         {if_else $exists
+            {dx_passive_messenger track_theme_successfully_loaded}
+            {dx_passive_messenger no_track_theme_found}
          }
       }
    }
+   ;apply some things quickly
+   {if {== {sprint $type} dx_settings}
+      {dx_fps_counter set_visible $dx_fps_counter}
+      #ifndef HX_WII
+      {profile_mgr set_platform_audio_latency $platform_audio_latency}
+      {profile_mgr set_platform_video_latency $platform_video_latency}
+      #endif
+      {profile_mgr set_joypad_extra_lag PAD_NUM_GAMEPAD 0 $dx_pad_lag_gamepad}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB1 0 $dx_pad_lag_guitar_rb1}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_RB2 0 $dx_pad_lag_guitar_rb2}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_GUITAR_GH 0 $dx_pad_lag_guitar_gh}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB1 0 $dx_pad_lag_drums_rb1}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RB2 0 $dx_pad_lag_drums_rb2}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_GH 0 $dx_pad_lag_drums_gh}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_KEYS 0 $dx_pad_lag_keys}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR 0 $dx_pad_lag_pro_guitar}
+      {profile_mgr set_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0 $dx_pad_lag_pro_guitar_squier}
+      #ifdef HX_PS3
+      {profile_mgr set_joypad_extra_lag PAD_NUM_DRUMS_RR 0 $dx_pad_lag_drums_rr}
+      #endif
+      #ifdef HX_XBOX
+      {profile_mgr set_joypad_extra_lag PAD_NUM_STAGE_KIT 0 $dx_pad_lag_stage_kit}
+      #endif
+   }
 }
-{func
-   dx_event_dta_reader
-   {dx_log_writer info {sprint "Attempting to read dx_event_config.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
-   ;{foreach $entry {read_file DX_EVENT_FILE_PATH} 
-   ;   LOADING_EVENT_OPTIONS
-   ;}
-}
+;{func
+;   dx_event_dta_reader
+;   {dx_log_writer info {sprint "Attempting to read dx_event_config.dta. Current Screen: " {ui current_screen} " - Gamemode: " $dx_gamemode}}
+;   ;{foreach $entry {read_file DX_EVENT_FILE_PATH} 
+;   ;   LOADING_EVENT_OPTIONS
+;   ;}
+;}
 #ifdef _SHIP
-{func
-   dx_settings_dta_writer
+{func dx_settings_dta_writer
+   ($type)
    ;we cant do this right now because xbox crashes on startup, presumabely these modifiers arent populated?
-   ;{if {! {|| {modifier_mgr is_modifier_active mod_fakejuke} {modifier_mgr is_modifier_active mod_karaoke} {modifier_mgr is_modifier_active mod_auto_play}}}
-      ; do not write dx_settings in modes that force autoplay
-      {do
-         {set $dx_settings {array 0}}
-         #ifndef HX_WII
-         {set $platform_audio_latency {profile_mgr get_platform_audio_latency}}
-         {set $platform_video_latency {profile_mgr get_platform_video_latency}}
-         #endif
-         {set $dx_pad_lag_gamepad {profile_mgr get_joypad_extra_lag PAD_NUM_GAMEPAD 0}}
-         {set $dx_pad_lag_guitar_rb1 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB1 0}}
-         {set $dx_pad_lag_guitar_rb2 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB2 0}}
-         {set $dx_pad_lag_guitar_gh {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_GH 0}}
-         {set $dx_pad_lag_drums_rb1 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB1 0}}
-         {set $dx_pad_lag_drums_rb2 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB2 0}}
-         {set $dx_pad_lag_drums_gh {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_GH 0}}
-         {set $dx_pad_lag_keys {profile_mgr get_joypad_extra_lag PAD_NUM_KEYS 0}}
-         {set $dx_pad_lag_pro_guitar {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR 0}}
-         {set $dx_pad_lag_pro_guitar_squier {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0}}
-         #ifdef HX_PS3 {set $dx_pad_lag_drums_rr {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RR 0}} #endif
-         #ifdef HX_XBOX {set $dx_pad_lag_stage_kit {profile_mgr get_joypad_extra_lag PAD_NUM_STAGE_KIT 0}} #endif
-
-         {mmm_writin_dat_dta dx_settings}
+   {set $dx_settings {array 0}}
+   ;prep some values before save
+   {if {== {sprint $type} dx_settings}
+      #ifndef HX_WII
+      {set $platform_audio_latency {profile_mgr get_platform_audio_latency}}
+      {set $platform_video_latency {profile_mgr get_platform_video_latency}}
+      #endif
+      {set $dx_pad_lag_gamepad {profile_mgr get_joypad_extra_lag PAD_NUM_GAMEPAD 0}}
+      {set $dx_pad_lag_guitar_rb1 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB1 0}}
+      {set $dx_pad_lag_guitar_rb2 {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_RB2 0}}
+      {set $dx_pad_lag_guitar_gh {profile_mgr get_joypad_extra_lag PAD_NUM_GUITAR_GH 0}}
+      {set $dx_pad_lag_drums_rb1 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB1 0}}
+      {set $dx_pad_lag_drums_rb2 {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RB2 0}}
+      {set $dx_pad_lag_drums_gh {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_GH 0}}
+      {set $dx_pad_lag_keys {profile_mgr get_joypad_extra_lag PAD_NUM_KEYS 0}}
+      {set $dx_pad_lag_pro_guitar {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR 0}}
+      {set $dx_pad_lag_pro_guitar_squier {profile_mgr get_joypad_extra_lag PAD_NUM_PRO_GUITAR_SQUIER 0}}
+      #ifdef HX_PS3 {set $dx_pad_lag_drums_rr {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RR 0}} #endif
+      #ifdef HX_XBOX {set $dx_pad_lag_stage_kit {profile_mgr get_joypad_extra_lag PAD_NUM_STAGE_KIT 0}} #endif
+   }
+   {mmm_writin_dat_dta $type}
+   {switch $type
+      (dx_settings
+         ;really kinda need to figure this one out
          {dx_setting_saver dx_settings dx_rb3dx_venue
             {if_else
                {&&
@@ -582,56 +504,21 @@
             {array 0}
          }
          {write_file DX_SETTINGS_FILE_PATH $dx_settings}
-         {set $dx_settings {array 0}}
-      }
-   ;}
-}
-{func
-   dx_track_theme_dta_writer
-   ;{dx_log_writer info {sprint "Macro: dx_track_theme_dta_writer"}}
-   ;{dx_log_writer info
-   ;   {sprintf "Executed dx_track_theme_dta_writer - time: %.4fms"
-         {do
-            {set $dx_track_theme {array 0}}
-            {mmm_writin_dat_dta dx_track_theme}
-            {write_file {dx_track_theme_name $dx_track_theme_name} $dx_track_theme}
-            {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
-               {dx_passive_messenger track_theme_successfully_written}
-               {dx_passive_messenger track_theme_failed_writing}
-            }
-            {set $dx_track_theme {array 0}}
+      )
+      (dx_track_theme
+         {write_file {dx_track_theme_name $dx_track_theme_name} $dx_settings}
+         {if_else {file_exists {dx_track_theme_name $dx_track_theme_name}}
+            {dx_passive_messenger track_theme_successfully_written}
+            {dx_passive_messenger track_theme_failed_writing}
          }
-   ;   }
-   ;}
-}
-{func
-   dx_values_dta_writer
-   ;{dx_log_writer info {sprint "Macro: dx_values_dta_writer"}}
-   ;{dx_log_writer info
-   ;   {sprintf "Executed dx_values_dta_writer - time: %.4fms"
-         {do
-            {set $dx_values {array 0}}
-            {mmm_writin_dat_dta dx_values}
-            {if {! {session is_in_game}}
-               {write_file DX_VALUES_FILE_PATH $dx_values}
-            }
-            {set $dx_values {array 0}}
-         }
-   ;   }
-   ;}
-}
-{func
-   dx_modifier_dta_writer
-   ;{dx_log_writer info {sprint "Macro: dx_modifier_dta_writer"}}
-   ;{dx_log_writer info
-   ;   {sprintf "Executed dx_modifier_dta_writer - time: %.4fms"
-         {do
-            {set $dx_modifiers {array 0}}
-            {mmm_writin_dat_dta dx_modifiers}
-            {write_file DX_MODIFIER_FILE_PATH $dx_modifiers}
-            {set $dx_modifiers {array 0}}
-         }
-   ;   }
-   ;}
+      )
+      (dx_values
+         {write_file DX_VALUES_FILE_PATH $dx_settings}
+      )
+      (dx_modifiers
+         {write_file DX_MODIFIER_FILE_PATH $dx_settings}
+      )
+   }
+   {set $dx_settings {array 0}}
 }
 #endif
