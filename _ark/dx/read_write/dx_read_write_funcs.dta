@@ -254,9 +254,14 @@
                                  ($size {size $setting_enum})
                                  {foreach_int $i 0 $num
                                     {if {< $i $size}
-                                       {set_var
-                                          {sprint {elem $this_setting 0} {+ $i 1}}
-                                          {elem $setting_enum $i}
+                                       {do
+                                          ($has {find_exists $syscfg $storage {elem $this_setting 0} key})
+                                          ($key {if_else $has {find $syscfg $storage {elem $this_setting 0} key} 0})
+                                          ($print {if_else $key {elem $key 1} {elem $this_setting 0}})
+                                          {set_var
+                                             {sprint $print {+ $i 1}}
+                                             {elem $setting_enum $i}
+                                          }
                                        }
                                     }
                                  }
@@ -266,12 +271,19 @@
                      }
                   )
                   {if_else {== $category dx_modifiers}
-                     {switch $setting_enum
-                        (0 {disable_modifier {eval $setting}})
-                        (1 {enable_modifier {eval $setting}})
-                        kDataUnhandled
+                     {do
+                        {switch $setting_enum
+                           (0 {disable_modifier {eval $setting}})
+                           (1 {enable_modifier {eval $setting}})
+                           kDataUnhandled
+                        }
                      }
-                     {set_var {eval $setting} $setting_enum}
+                     {do
+                        ($has {find_exists $syscfg $storage {elem $this_setting 0} key})
+                        ($key {if_else $has {find $syscfg $storage {elem $this_setting 0} key} 0})
+                        ($print {if_else $key {elem $key 1} {eval $setting}})
+                        {set_var {eval $print} $setting_enum}
+                     }
                   }
                }
             }
@@ -324,21 +336,27 @@
                   (num
                      {do
                         ($hold {array 0})
-                        ($has {find_exists $syscfg $storage $name num})
-                        ($num {if_else $has {elem {find $syscfg $storage $name num} 1} FALSE})
-                        {if $has
+                        ($hasnum {find_exists $syscfg $storage $name num})
+                        ($has {find_exists $syscfg $storage {elem $entry 0} key})
+                        ($key {if_else $has {find $syscfg $storage {elem $entry 0} key} 0})
+                        ($print {if_else $key {elem $key 1} $name})
+                        ($num {if_else $hasnum {elem {find $syscfg $storage $print num} 1} FALSE})
+                        {if $hasnum
                            {foreach_int $i 0 $num
-                              {push_back $hold {eval {var {sprint $name {+ $i 1}}}}}
+                              {push_back $hold {eval {var {sprint $print {+ $i 1}}}}}
                            }
                            {dx_setting_saver $category $name {eval $hold} {array $values}}
                         }
                      }
                   )
                   {do
+                     ($has {find_exists $syscfg $storage {elem $entry 0} key})
+                     ($key {if_else $has {find $syscfg $storage {elem $entry 0} key} 0})
+                     ($print {if_else $key {elem $key 1} $name})
                      ($map
                         {if_else {== $category dx_modifiers}
                            {modifier_enabled $name}
-                           {eval {var $name}}
+                           {eval {var $print}}
                         }
                      )
                      {dx_setting_saver $category $name $map {array $values}}
@@ -491,18 +509,6 @@
    {mmm_writin_dat_dta $type}
    {switch $type
       (dx_settings
-         ;really kinda need to figure this one out
-         {dx_setting_saver dx_settings dx_rb3dx_venue
-            {if_else
-               {&&
-                  {== $force TRUE}
-                  {contains $dx_valid_venues $dx_venue}
-               }
-               $dx_venue
-               FALSE
-            }
-            {array 0}
-         }
          {write_file DX_SETTINGS_FILE_PATH $dx_settings}
       )
       (dx_track_theme
