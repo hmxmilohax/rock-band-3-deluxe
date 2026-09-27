@@ -81,7 +81,7 @@
          {if {find_exists $syscfg $storage $name}
             {if {find_exists $syscfg $storage $name type}
                {if {== {sprint {elem {find $syscfg $storage $name type} 1}} "bool"}
-                  {push_back $out {array (values FALSE TRUE)}}
+                  {push_back $out {array (supported_values FALSE TRUE)}}
                }
             }
          }
@@ -154,6 +154,20 @@
                "null"
             }
          )
+         ($supported_values {array 0})
+         ($supported
+            {if_else {find_exists $syscfg $storage {elem $this_setting 0} supported_values}
+               {if {== {type {find $syscfg $storage {elem $this_setting 0} supported_values}} kDataArray}
+                  {do
+                     ($arr {find $syscfg $storage {elem $this_setting 0} supported_values})
+                     {foreach_int $i 1 {size $arr}
+                        {push_back $supported_values {elem $arr $i}}
+                     }
+                  }
+               }
+               FALSE
+            }
+         )
          ($setting_enum
             {if_else {find_exists $this_setting value}
                {elem {find $this_setting value} 1}
@@ -171,25 +185,75 @@
                )
                (int
                   {if {&& {== $truth_type int} {== {type $setting_enum} kDataInt}}
-                     {set $safe TRUE}
+                     {if_else {> {size $supported_values} 0}
+                        {do
+                           ($match FALSE)
+                           {foreach $val $supported_values
+                              {if {== {sprint $val} {sprint $setting_enum}}
+                                 {set $safe TRUE}
+                              }
+                           }
+                        }
+                        {set $safe TRUE}
+                     }
                   }
                )
                (float
                   {if {&& {== $truth_type float} {|| {== {type $setting_enum} kDataInt} {== {type $setting_enum} kDataFloat}}}
-                     {set $safe TRUE}
+                     {if_else {> {size $supported_values} 0}
+                        {do
+                           ($match FALSE)
+                           {foreach $val $supported_values
+                              {if {== {sprint $val} {sprint $setting_enum}}
+                                 {set $safe TRUE}
+                              }
+                           }
+                        }
+                        {set $safe TRUE}
+                     }
                   }
                )
                (string
                   {if {&& {== $truth_type string} {|| {== {type $setting_enum} kDataString} {== {type $setting_enum} kDataSymbol}}}
-                     {do
-                        {set $safe TRUE}
-                        {set $setting_enum {symbol $setting_enum}}
+                     {if_else {> {size $supported_values} 0}
+                        {do
+                           ($match FALSE)
+                           {foreach $val $supported_values
+                              {if {== {sprint $val} {sprint $setting_enum}}
+                                 {set $safe TRUE}
+                                 {set $setting_enum {symbol $setting_enum}}
+                              }
+                           }
+                        }
+                        {do
+                           {set $safe TRUE}
+                           {set $setting_enum {symbol $setting_enum}}
+                        }
                      }
                   }
                )
                (array
                   {if {&& {== $truth_type array} {== {type $setting_enum} kDataArray}}
-                     {set $safe TRUE}
+                     {if_else {> {size $supported_values} 0}
+                        {do
+                           ($all_found TRUE)
+                           {foreach $setenum $setting_enum
+                              {do
+                                 ($found FALSE)
+                                 {foreach $val $supported_values
+                                    {if {== {sprint $val} {sprint $setenum}}
+                                       {set $found TRUE}
+                                    }
+                                 }
+                                 {if {! $found}
+                                    {set $all_found FALSE}
+                                 }
+                              }
+                           }
+                           {set $safe $all_found}
+                        }
+                        {set $safe TRUE}
+                     }
                   }
                )
                (triple
@@ -310,11 +374,11 @@
                ($type {elem {find $entry type} 1})
                ($values {array 0})
                ($arr {if_else {find_exists $entry vars} {elem {find $entry vars} 1} 0})
-               {if {find_exists $entry values}
-                  {if {== {type {find $entry values}} kDataArray}
+               {if {find_exists $entry supported_values}
+                  {if {== {type {find $entry supported_values}} kDataArray}
                      {do
-                        ($arr {find $entry values})
-                        {foreach_int $i 1 {size $arr}
+                        ($arr {find $entry supported_values})
+                        {foreach_int $i 0 {size $arr}
                            {push_back $values {elem $arr $i}}
                         }
                      }
