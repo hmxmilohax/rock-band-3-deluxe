@@ -129,62 +129,66 @@
       {set $last_phrase_time -1}
    )
    (midi
-      {if {!= $last_phrase_time $mp.start} ; Filter out duplicate phrases because rb2 got quirky with note 106
-         ; {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
-         {dx_lyric_display_push_phrase $mp.start $mp.end}
-         {set $last_phrase_time $mp.start}
+      {if {dx_allow_loading_lyrics}
+         {if {!= $last_phrase_time $mp.start} ; Filter out duplicate phrases because rb2 got quirky with note 106
+            ; {dx_log_writer insane {sprint " - Lyric phrase at " $mp.start " - "}}
+            {dx_lyric_display_push_phrase $mp.start $mp.end}
+            {set $last_phrase_time $mp.start}
+         }
       }
    )
    (lyric
-      {set $buf {sprint $mp.data}}
-      {search_replace $buf "%" "" $buf}
-      {unless {== $buf "+"}
-         {set $lyriclist {elem $_current_lyric_phrase 1}}
-         ; {dx_log_writer insane {sprint "Syllables already in $lyriclist: " {size $lyriclist}}}
-         ;{if {> {size $lyriclist} 0}
-         ;   {dx_log_writer insane {sprint "Getting previous lyric"}}
-         ;   {set $prevlyric {elem $lyriclist {- {size $lyriclist} 1}}}
-         ;   {dx_log_writer insane {sprint "Prev lyric: " $prevlyric}}
-         ;   {if_else {> {- $mp.start {elem $prevlyric 0}} 2} ; Split by 2 beat delays
-         ;      {dx_lyric_display_push_phrase $mp.start}
-         ;      {if {> {size $lyriclist} 10} ; Split if phrase contains more than 10 syllables TODO: use the length of text instead
-         ;         {dx_lyric_display_push_phrase $mp.start}
-         ;      }
-         ;   }
-         ;}
-         ; {dx_log_writer insane {sprint "Lyric event at " $mp.start ": " $buf}}
-         {set $talkie {|| {has_substr $buf "#"} {has_substr $buf "^"}}}
-         {search_replace $buf "#" "" $buf}
-         {search_replace $buf "^" "" $buf}
-         {search_replace $buf "*" "" $buf}
-         {search_replace $buf "+" "" $buf}
-         {search_replace $buf "_" " " $buf}
-         {set $buf {fix_special_chars $buf}}
-         {search_replace $buf "‿" " " $buf} ; Pentatonic outline doesn't have the undertie character :sadge:
-         {if_else {|| {has_substr $buf "-"} {has_substr $buf "="}}
-            {do
-               {search_replace $buf "-" "" $buf}
-               {search_replace $buf "=" "-" $buf}
-               {set $word FALSE}
+      {if {dx_allow_loading_lyrics}
+         {set $buf {sprint $mp.data}}
+         {search_replace $buf "%" "" $buf}
+         {unless {== $buf "+"}
+            {set $lyriclist {elem $_current_lyric_phrase 1}}
+            ; {dx_log_writer insane {sprint "Syllables already in $lyriclist: " {size $lyriclist}}}
+            ;{if {> {size $lyriclist} 0}
+            ;   {dx_log_writer insane {sprint "Getting previous lyric"}}
+            ;   {set $prevlyric {elem $lyriclist {- {size $lyriclist} 1}}}
+            ;   {dx_log_writer insane {sprint "Prev lyric: " $prevlyric}}
+            ;   {if_else {> {- $mp.start {elem $prevlyric 0}} 2} ; Split by 2 beat delays
+            ;      {dx_lyric_display_push_phrase $mp.start}
+            ;      {if {> {size $lyriclist} 10} ; Split if phrase contains more than 10 syllables TODO: use the length of text instead
+            ;         {dx_lyric_display_push_phrase $mp.start}
+            ;      }
+            ;   }
+            ;}
+            ; {dx_log_writer insane {sprint "Lyric event at " $mp.start ": " $buf}}
+            {set $talkie {|| {has_substr $buf "#"} {has_substr $buf "^"}}}
+            {search_replace $buf "#" "" $buf}
+            {search_replace $buf "^" "" $buf}
+            {search_replace $buf "*" "" $buf}
+            {search_replace $buf "+" "" $buf}
+            {search_replace $buf "_" " " $buf}
+            {set $buf {fix_special_chars $buf}}
+            {search_replace $buf "‿" " " $buf} ; Pentatonic outline doesn't have the undertie character :sadge:
+            {if_else {|| {has_substr $buf "-"} {has_substr $buf "="}}
+               {do
+                  {search_replace $buf "-" "" $buf}
+                  {search_replace $buf "=" "-" $buf}
+                  {set $word FALSE}
+               }
+               {do
+                  {set $buf {sprint $buf " "}}
+                  {set $word TRUE}
+               }
             }
-            {do
-               {set $buf {sprint $buf " "}}
-               {set $word TRUE}
+            {+= $_lyric_char_count {strlen $buf}}
+            {set $slashsplit {has_substr $buf "/"}}
+            {search_replace $buf "/" "" $buf}
+            {if $talkie
+               {set $buf {sprint "<it>" $buf "</it>"}}
             }
-         }
-         {+= $_lyric_char_count {strlen $buf}}
-         {set $slashsplit {has_substr $buf "/"}}
-         {search_replace $buf "/" "" $buf}
-         {if $talkie
-            {set $buf {sprint "<it>" $buf "</it>"}}
-         }
-         {if {> $_lyric_char_count {if_else {&& $word {! $prev_word}} 120 130}} ; Make it more likely to split phrases on a word rather than a syllable
-            {dx_lyric_display_push_phrase $mp.start $mp.start}
-         }
-         {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf)}}
-         {set $prev_word $word}
-         {if $slashsplit
-            {dx_lyric_display_push_phrase $mp.start $mp.start}
+            {if {> $_lyric_char_count {if_else {&& $word {! $prev_word}} 120 130}} ; Make it more likely to split phrases on a word rather than a syllable
+               {dx_lyric_display_push_phrase $mp.start $mp.start}
+            }
+            {push_back {elem $_current_lyric_phrase 1} {array ($mp.start $buf)}}
+            {set $prev_word $word}
+            {if $slashsplit
+               {dx_lyric_display_push_phrase $mp.start $mp.start}
+            }
          }
       }
    )
