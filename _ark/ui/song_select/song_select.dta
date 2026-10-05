@@ -1548,31 +1548,32 @@
                {song.lst set_scroll_user $user}
                {if_else {&& $dx_jump_to_artist_heading {music_library can_headers_be_selected} {== {music_library get_current_sort_name} by_artist}}
                   {do
-                     {song.lst set_selected_simulate_scroll {+ {song.lst selected_pos} 1}}
-                     {set $pause_scroll_sound TRUE}
+                     ($target_ix {song.lst selected_pos})
+                     ($num {song.lst num_data})
+                     ($found FALSE)
                      {foreach_int $i 0 $dx_heading_scroll_try_cap
-                        {if_else
-                           {&&
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
-                              ;{!= {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeHeader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeFunction}
+                        {if {&& {! $found} {< $target_ix {- $num 1}}}
+                           {do
+                              {set $target_ix {+ $target_ix 1}}
+                              {music_library set_highlight_ix $target_ix FALSE}
+                              {if
+                                 {||
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeHeader}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeFunction}
+                                 }
+                                 {set $found TRUE}
+                              }
                            }
-                           {song.lst set_selected_simulate_scroll {+ {song.lst selected_pos} 1}}
-                           kDataUnhandled
-                        }
-                        {if
-                           {&&
-                              {== $i {- $dx_heading_scroll_try_cap 1}}
-                              ;{!= {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeHeader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeFunction}
-                           }
-                           {music_library skip_to_next_shortcut}
                         }
                      }
-                     {set $pause_scroll_sound FALSE}
+                     {if $found
+                        {music_library set_highlight_ix $target_ix TRUE}
+                     }
+                     {if {! $found}
+                        {music_library skip_to_next_shortcut}
+                     }
                   }
                   {music_library skip_to_next_shortcut}
                }
