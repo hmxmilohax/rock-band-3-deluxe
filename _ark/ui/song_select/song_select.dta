@@ -1548,31 +1548,35 @@
                {song.lst set_scroll_user $user}
                {if_else {&& $dx_jump_to_artist_heading {music_library can_headers_be_selected} {== {music_library get_current_sort_name} by_artist}}
                   {do
-                     {song.lst set_selected_simulate_scroll {+ {song.lst selected_pos} 1}}
-                     {set $pause_scroll_sound TRUE}
+                     ($target_ix {song.lst selected_pos})
+                     ($num {song.lst num_data})
+                     ($found FALSE)
+                     {set $dx_probe_suppress_refresh TRUE}
                      {foreach_int $i 0 $dx_heading_scroll_try_cap
-                        {if_else
-                           {&&
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
-                              ;{!= {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeHeader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeFunction}
+                        {if {&& {! $found} {< $target_ix {- $num 1}}}
+                           {do
+                              {set $target_ix {+ $target_ix 1}}
+                              {music_library set_highlight_ix $target_ix FALSE}
+                              {if
+                                 {||
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeHeader}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
+                                    {== {{music_library get_highlighted_node} get_node_type} kNodeFunction}
+                                 }
+                                 {set $found TRUE}
+                              }
                            }
-                           {song.lst set_selected_simulate_scroll {+ {song.lst selected_pos} 1}}
-                           kDataUnhandled
-                        }
-                        {if
-                           {&&
-                              {== $i {- $dx_heading_scroll_try_cap 1}}
-                              ;{!= {{music_library get_highlighted_node} get_node_type} kNodeSubheader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeShortcut}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeHeader}
-                              {!= {{music_library get_highlighted_node} get_node_type} kNodeFunction}
-                           }
-                           {music_library skip_to_next_shortcut}
                         }
                      }
-                     {set $pause_scroll_sound FALSE}
+                     {set $dx_probe_suppress_refresh FALSE}
+                     {if $found
+                        {music_library set_highlight_ix $target_ix FALSE}
+                        {song.lst set_selected $target_ix}
+                     }
+                     {if {! $found}
+                        {music_library skip_to_next_shortcut}
+                     }
                   }
                   {music_library skip_to_next_shortcut}
                }
@@ -2632,89 +2636,93 @@
       }
    )
    (refresh_selected_song
-      {$this refresh_top}
-      {do
-         ($item {music_library get_highlighted_node})
-         ($type {$item get_node_type})
-         {if_else {&& {== $type kNodeSong} {profile_mgr has_primary_profile}}
+      {if {! $dx_probe_suppress_refresh}
+         {do
+            {$this refresh_top}
             {do
-               {header_review.rvw set_values {$item get_review} TRUE}
-               {song_review.grp set_showing TRUE}
-               ;{$this
-               ;   dx_get_highscore ;???? doesnt exist
-               ;   {profile_mgr get_primary_profile}
-               ;}
-            }
-            {song_review.grp set_showing FALSE}
-         }
-         {if_else {'||' {== $type kNodeSong} {== $type kNodeStoreSong}}
-            {do
-               {leaderboard.mld update_leaderboard
-                  {$item id}
-                  {music_library active_score_type}
-               }
-               {$this restart_leaderboard_timer}
-            }
-            {$this cancel_leaderboard_timer}
-         }
-         {if_else {== $type kNodeSetlist}
-            {do
-               {setlist_main.lst set_provider {music_library get setlist_scores_provider}}
-               {setlist_main.lst set_selected 0}
-               {setlist_main.lst auto_scroll}
-               {setlist_creator.lbl set_setlist_owner {$item get_record}}
-               {if_else {$item is_battle}
-                  {setlist_info.lbl set_battle_time_left {$item get_battle_time_left}}
-                  {setlist_info.lbl set_song_count {$item get_song_count}}
-               }
-               {right_side_setlist.grp set_showing TRUE}
-            }
-            {right_side_setlist.grp set_showing FALSE}
-         }
-         #ifdef HX_PS3
-         {ps3_storelogo.grp set_showing {== $type kNodeStoreSong}}
-         #endif
-         {switch $type
-            (kNodeSong
-               {do
-                  ($token {$item get_token})
-                  {$this call_diffs $token}
-                  {if $dx_song_select_rings
-                     {$this dx_diff_setter}
+               ($item {music_library get_highlighted_node})
+               ($type {$item get_node_type})
+               {if_else {&& {== $type kNodeSong} {profile_mgr has_primary_profile}}
+                  {do
+                     {header_review.rvw set_values {$item get_review} TRUE}
+                     {song_review.grp set_showing TRUE}
+                     ;{$this
+                     ;   dx_get_highscore ;???? doesnt exist
+                     ;   {profile_mgr get_primary_profile}
+                     ;}
                   }
-                  {live_diffs.grp set_showing TRUE}
+                  {song_review.grp set_showing FALSE}
                }
-            )
-            (kNodeStoreSong
-               {guitar.idd set_rank {$item get_data (rank guitar)}}
-               {bass.idd set_rank {$item get_data (rank bass)}}
-               {drum.idd set_rank {$item get_data (rank drum)}}
-               {vocals.idd set_rank {$item get_data (rank vocals)}}
-               {harmony.idd set_rank {$item get_data (rank vocals)}}
-               {keys.idd set_rank {$item get_data (rank keys)}}
-               {guitar_pro.idd set_rank {$item get_data (rank real_guitar)}}
-               {bass_pro.idd set_rank {$item get_data (rank real_bass)}}
-               {drum_pro.idd set_rank {$item get_data (rank drum)}}
-               {keys_pro.idd set_rank {$item get_data (rank real_keys)}}
-               {harmony.idd set
-                  num_vocal_parts
-                  {if_else {$item has_data vocal_parts}
-                     #ifdef HX_WII
-                     {$item vocal_parts}
-                     #else
-                     {$item get_data (vocal_parts)}
-                     #endif
-                     0
+               {if_else {'||' {== $type kNodeSong} {== $type kNodeStoreSong}}
+                  {do
+                     {leaderboard.mld update_leaderboard
+                        {$item id}
+                        {music_library active_score_type}
+                     }
+                     {$this restart_leaderboard_timer}
                   }
+                  {$this cancel_leaderboard_timer}
                }
-               {live_diffs.grp set_showing TRUE}
-            )
-            {live_diffs.grp set_showing FALSE}
+               {if_else {== $type kNodeSetlist}
+                  {do
+                     {setlist_main.lst set_provider {music_library get setlist_scores_provider}}
+                     {setlist_main.lst set_selected 0}
+                     {setlist_main.lst auto_scroll}
+                     {setlist_creator.lbl set_setlist_owner {$item get_record}}
+                     {if_else {$item is_battle}
+                        {setlist_info.lbl set_battle_time_left {$item get_battle_time_left}}
+                        {setlist_info.lbl set_song_count {$item get_song_count}}
+                     }
+                     {right_side_setlist.grp set_showing TRUE}
+                  }
+                  {right_side_setlist.grp set_showing FALSE}
+               }
+               #ifdef HX_PS3
+               {ps3_storelogo.grp set_showing {== $type kNodeStoreSong}}
+               #endif
+               {switch $type
+                  (kNodeSong
+                     {do
+                        ($token {$item get_token})
+                        {$this call_diffs $token}
+                        {if $dx_song_select_rings
+                           {$this dx_diff_setter}
+                        }
+                        {live_diffs.grp set_showing TRUE}
+                     }
+                  )
+                  (kNodeStoreSong
+                     {guitar.idd set_rank {$item get_data (rank guitar)}}
+                     {bass.idd set_rank {$item get_data (rank bass)}}
+                     {drum.idd set_rank {$item get_data (rank drum)}}
+                     {vocals.idd set_rank {$item get_data (rank vocals)}}
+                     {harmony.idd set_rank {$item get_data (rank vocals)}}
+                     {keys.idd set_rank {$item get_data (rank keys)}}
+                     {guitar_pro.idd set_rank {$item get_data (rank real_guitar)}}
+                     {bass_pro.idd set_rank {$item get_data (rank real_bass)}}
+                     {drum_pro.idd set_rank {$item get_data (rank drum)}}
+                     {keys_pro.idd set_rank {$item get_data (rank real_keys)}}
+                     {harmony.idd set
+                        num_vocal_parts
+                        {if_else {$item has_data vocal_parts}
+                           #ifdef HX_WII
+                           {$item vocal_parts}
+                           #else
+                           {$item get_data (vocal_parts)}
+                           #endif
+                           0
+                        }
+                     }
+                     {live_diffs.grp set_showing TRUE}
+                  )
+                  {live_diffs.grp set_showing FALSE}
+               }
+               {song_demo.grp set_showing
+                  {&& {== $type kNodeSong} {song_mgr is_demo {$item id}}}
+               }
+               {$this update_helpbar}
+            }
          }
-         {song_demo.grp set_showing
-            {&& {== $type kNodeSong} {song_mgr is_demo {$item id}}}
-         }
-         {$this update_helpbar}
       }
    )
    (refresh_filter {status.lbl set_music_library_status})
