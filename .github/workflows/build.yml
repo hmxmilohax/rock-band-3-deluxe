@@ -297,3 +297,39 @@ jobs:
         with:
           name: RB3DX-Wii-Patcher
           path: rb3dx_wii_patcher
+
+  publish_nightly:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs:
+      - build_yarg
+      - build_xbox
+      - build_xbox_char
+      - build_xbox_no_updates
+      - build_ps3
+      - build_ps3_char
+      - build_rockshelf
+      - build_rockshelf_char
+      - build_wii
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each build
+        run: |
+          mkdir -p release_assets
+          for d in artifacts/*/; do
+            name=$(basename "$d")
+            (cd "$d" && zip -qr "../release_assets/$name.zip" .)
+          done
+
+      - name: Upload to rolling nightly release
+        run: |
+          TAG=nightly
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" 2>/dev/null || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "Rock Band 3 Deluxe Nightly Builds" \
+              --notes "Auto updated nightly builds for Rock Band 3 Deluxe. Here as a backup for Nightly.link issues."
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" release_assets/*.zip --clobber
