@@ -314,20 +314,21 @@ jobs:
     steps:
       - name: Download all build artifacts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.run_id }}
         run: |
           mkdir -p release_assets
           gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/artifacts" \
-            | jq -r --argjson run "$RUN_ID" \
-                '.[] | select(.workflow_run_id == $run) | "\(.name)\t\(.archive_download_url)"' \
+            --jq 'select(.workflow_run_id == env.RUN_ID) | "\(.name)\t\(.archive_download_url)"' \
             | while IFS=$'\t' read -r name url; do
-                curl -sSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+                curl -sSL -H "Authorization: Bearer $GH_TOKEN" \
                   -o "release_assets/$name.zip" "$url"
               done
           ls -l release_assets
 
       - name: Upload to rolling nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG=nightly
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" 2>/dev/null || \
