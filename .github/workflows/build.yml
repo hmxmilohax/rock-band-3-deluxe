@@ -313,17 +313,17 @@ jobs:
       - build_wii
     steps:
       - name: Download all build artifacts
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_ID: ${{ github.run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each build
         run: |
           mkdir -p release_assets
-          gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/artifacts" \
-            | jq -r --arg run "$RUN_ID" 'select((.workflow_run_id|tostring) == $run) | "\(.name)\t\(.archive_download_url)"' \
-            | while IFS=$'\t' read -r name url; do
-                curl -sSL -H "Authorization: Bearer $GH_TOKEN" \
-                  -o "release_assets/$name.zip" "$url"
-              done
+          for d in artifacts/*/; do
+            name=$(basename "$d")
+            (cd "$d" && zip -qr "../../release_assets/$name.zip" .)
+          done
           ls -l release_assets
 
       - name: Upload to rolling nightly release
