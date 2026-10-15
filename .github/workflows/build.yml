@@ -72,8 +72,7 @@ jobs:
           submodules: true
       - name: Merge assets into _ark
         run: |
-          cp -r rb3dx_assets/char/. _ark/char/
-          cp -r rb3dx_assets/dx/. _ark/dx/
+          cp -r rb3dx_assets/_ark/. _ark/
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -159,10 +158,8 @@ jobs:
       - name: Merge assets into _ark
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "_ark/char"
-          New-Item -ItemType Directory -Force -Path "_ark/dx"
-          Copy-Item -Path "rb3dx_assets/char/*" -Destination "_ark/char" -Recurse -Force
-          Copy-Item -Path "rb3dx_assets/dx/*" -Destination "_ark/dx" -Recurse -Force
+          New-Item -ItemType Directory -Force -Path "_ark"
+          Copy-Item -Path "rb3dx_assets/_ark/*" -Destination "_ark" -Recurse -Force
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -231,8 +228,7 @@ jobs:
           submodules: true
       - name: Merge assets into _ark
         run: |
-          cp -r rb3dx_assets/char/. _ark/char/
-          cp -r rb3dx_assets/dx/. _ark/dx/
+          cp -r rb3dx_assets/_ark/. _ark/
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -301,3 +297,42 @@ jobs:
         with:
           name: RB3DX-Wii-Patcher
           path: rb3dx_wii_patcher
+
+  publish_nightly:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs:
+      - build_yarg
+      - build_xbox
+      - build_xbox_char
+      - build_xbox_no_updates
+      - build_ps3
+      - build_ps3_char
+      - build_rockshelf
+      - build_rockshelf_char
+      - build_wii
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each build
+        run: |
+          mkdir -p release_assets
+          for d in artifacts/*/; do
+            name=$(basename "$d")
+            (cd "$d" && zip -qr "../../release_assets/$name.zip" .)
+          done
+          ls -l release_assets
+
+      - name: Upload to rolling nightly release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=nightly
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" 2>/dev/null || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "Rock Band 3 Deluxe Nightly Builds" \
+              --notes "Auto updated nightly builds for Rock Band 3 Deluxe. Here as a backup for Nightly.link issues."
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" release_assets/*.zip --clobber

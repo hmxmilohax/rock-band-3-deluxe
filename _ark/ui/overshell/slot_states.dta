@@ -184,13 +184,21 @@
       {if_else $dx_event_mode
          ;disallow character deletion in event mode
          kDataUnhandled
-         {if_else {== $action kAction_Option}
-            {do
-               ($index {chars.lst selected_pos})
-               {if {$this can_edit_character $index}
-                  {$this show_char_edit {chars.lst selected_pos}}
+         {switch $action
+            (kAction_Option
+               {do
+                  ($index {chars.lst selected_pos})
+                  {if {$this can_edit_character $index}
+                     {$this show_char_edit {chars.lst selected_pos}}
+                  }
                }
-            }
+            )
+            (kAction_Right
+               {chars.lst set_selected_simulate_scroll {+ {chars.lst selected_pos} 5}}
+            )
+            (kAction_Left
+               {chars.lst set_selected_simulate_scroll {- {chars.lst selected_pos} 5}}
+            )
             kDataUnhandled
          }
       }
@@ -799,6 +807,25 @@
       }
       ;HACK dx settings fucks up the display num on this list in game so just hard set it back whatever sure
       {if {$this in_game} {options.lst set display_num 6}}
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {if_else {'||' {$this in_game} {gamemode in_mode drum_freestyle}}
+               {do ;sure
+                  {options_in_game.grp set_showing TRUE}
+                  {game_options.lst conceal}
+                  {options.grp set_showing TRUE}
+                  {options.lst reveal}
+               }
+               {do
+                  {options_in_game.grp set_showing FALSE}
+                  {game_options.lst conceal}
+                  {options.grp set_showing TRUE}
+                  {options.lst reveal}
+               }
+            }
+         )
+      }
    )
    (update_view
       {handle ($this update_online_options_allowed {! {session_mgr is_busy}})}
@@ -940,12 +967,12 @@
                }
             )
             (overshell_return {$this leave_options})
-            ; dx - allow entering the online options state when gocentral/live/liveless is connected
-            ((overshell_online_options go_overshell_online_options live_overshell_online_options liveless_overshell_online_options)
+            ; dx - allow entering the online options state when alt server is connected
+            ((overshell_online_options go_overshell_online_options live_overshell_online_options)
                {set $dx_is_in_chat FALSE}
                {$this show_online_options}
             )
-            ((overshell_register_online go_overshell_register_online live_overshell_register_online liveless_overshell_register_online)
+            ((overshell_register_online go_overshell_register_online live_overshell_register_online)
                {set $dx_is_in_chat FALSE}
                ; dx - prevent going online if slots are not vanilla as it crashes others online
                {if_else
@@ -1081,6 +1108,15 @@
          }
       }
    )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
+         )
+      }
+   )
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_confirm_yes
@@ -1142,6 +1178,15 @@
          )
       }
    )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
+         )
+      }
+   )
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_confirm_yes
@@ -1166,6 +1211,15 @@
             set_confirm_actions
             confirm_quit
             (overshell_confirm_yes overshell_confirm_no)
+         )
+      }
+   )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
          )
       }
    )
@@ -1311,6 +1365,15 @@
          )
       }
    )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
+         )
+      }
+   )
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_confirm_yes {session disconnect})
@@ -1431,6 +1494,13 @@
          ($no_fail_enabled {modifier_mgr is_modifier_active mod_no_fail_band})
          {handle ($this update_no_fail_enabled $no_fail_enabled)}
       }
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {game_options.grp set_showing TRUE}
+            {game_options.lst reveal}
+         )
+      }
    )
    (update_view
       {do
@@ -1492,15 +1562,12 @@
             }
          )
          (overshell_register_online {$this attempt_register_online})
-         (go_overshell_register_online ; dx - allow entering the online options state when gocentral is connected
+         ; dx - allow entering the online options state when alt server is connected
+         (go_overshell_register_online 
             {set $dx_is_in_chat FALSE}
             {$this show_online_options}
          )
-         (live_overshell_register_online ; dx - allow entering the online options state when live is connected
-            {set $dx_is_in_chat FALSE}
-            {$this show_online_options}
-         )
-         (liveless_overshell_register_online ; dx - allow entering the online options state when liveless is connected
+         (live_overshell_register_online
             {set $dx_is_in_chat FALSE}
             {$this show_online_options}
          )
@@ -1508,15 +1575,11 @@
             {set $dx_is_in_chat FALSE}
             {$this show_online_options}
          )
-         (go_overshell_online_options ; dx - allow entering the online options state when gocentral is connected
+         (go_overshell_online_options
             {set $dx_is_in_chat FALSE}
             {$this show_online_options}
          )
-         (live_overshell_online_options ; dx - allow entering the online options state when live is connected
-            {set $dx_is_in_chat FALSE}
-            {$this show_online_options}
-         )
-         (liveless_overshell_online_options ; dx - allow entering the online options state when liveless is connected
+         (live_overshell_online_options
             {set $dx_is_in_chat FALSE}
             {$this show_online_options}
          )
@@ -1561,6 +1624,13 @@
          {set $in_dx_settings TRUE}
          {set $this_state dxState_AppearanceMenu}
          {$this show_state kState_OptionsExtras}
+      }
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+               {options_av_settings.grp set_showing TRUE}
+               {options_av_settings.lst reveal}
+         )
       }
    )
    (update_view
@@ -2133,9 +2203,12 @@
                   }
                   {dx_passive_messenger_symbol
                      {symbol
-                        {song_mgr song_file_path
-                           {{music_library get_highlighted_node} get_token}
-                           " "
+                        {dx_wrap_text
+                           {song_mgr song_file_path
+                              {{music_library get_highlighted_node} get_token}
+                              " "
+                           }
+                           40
                         }
                      }
                   }
