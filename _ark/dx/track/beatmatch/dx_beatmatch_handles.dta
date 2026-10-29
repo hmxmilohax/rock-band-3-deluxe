@@ -32,6 +32,10 @@
                      {set_var {sprint "tracked_beat_no_notes_end_" $inst}
                         {seconds_to_beat {/ {rb3e_get_game_gem_time_ms $tracktype $diff 0 kGemBeginning} 1000}}
                      }
+                     
+                     {if {dx_countdown_gap_ok $inst}
+                        {set_var {sprint "delay_tracked_" $inst} TRUE}
+                     }
                   }
                }
             }
@@ -50,21 +54,17 @@
                               }
                            }
                            {set_var {sprint "tracked_beat_no_notes_end_" $inst} {elem $entry 2}}
-                           {set_var {sprint "delay_tracked_" $inst} TRUE}
+                           {if_else {&& {dx_countdown_gap_ok $inst} {> {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}} {+ {dx_get_current_beat} 8}}}
+                              {set_var {sprint "delay_tracked_" $inst} TRUE}
+                              {set_var {sprint "current_tracked_beat_" $inst} {+ {eval {var {sprint "current_tracked_beat_" $inst}}} 1}}
+                           }
                         }
                      }
                   }
                   #endif
-                  {if #ifdef RB3E TRUE #else {eval {var {sprint "delay_tracked_" $inst}}} #endif ;if countdown is currently... counting down
+                  {if {eval {var {sprint "delay_tracked_" $inst}}} ;if countdown is currently... counting down
                      ;while before the final note of a song, but after the start of the currently tracked countdown
-                     {if
-                        {> 
-                           {-
-                              {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}}
-                              {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}
-                           }
-                           8
-                        }
+                     {if {dx_countdown_gap_ok $inst}
                         {if {&& {<= {dx_get_current_beat} $dx_final_note} {>= {dx_get_current_beat} {eval {var {sprint "tracked_beat_no_notes_start_" $inst}}}}}
                            {do
                               ($remaining {- {eval {var {sprint "tracked_beat_no_notes_end_" $inst}}} {dx_get_current_beat}}) ;beats until player has to play again
@@ -93,12 +93,12 @@
                                        {{countdown.grp get_fade_anim} animate (range 1 0) (period 2) (units kTaskBeats)}
                                     }
                                  }
-                                 {if {<= $remaining 0}
-                                    ;set as inactive and increment counter for next countdown list check
-                                    {set_var {sprint "delay_tracked_" $inst} FALSE}
-                                    {set_var {sprint "current_tracked_beat_" $inst} {+ {eval {var {sprint "current_tracked_beat_" $inst}}} 1}}
-                                    {countdown.grp set_countdown_state hidden}
-                                 }
+                              }
+                              {if {&& {<= $remaining 0} {!= {countdown.grp countdown_state} hidden}}
+                                 ;set as inactive and increment counter for next countdown list check
+                                 {set_var {sprint "delay_tracked_" $inst} FALSE}
+                                 {set_var {sprint "current_tracked_beat_" $inst} {+ {eval {var {sprint "current_tracked_beat_" $inst}}} 1}}
+                                 {countdown.grp set_countdown_state hidden}
                               }
                            }
                         }
