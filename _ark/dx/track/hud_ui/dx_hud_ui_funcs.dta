@@ -254,15 +254,20 @@
       ($outarray {array 0})
       ($size1 0) ($size2 0) ($size3 0)
       ($size4 0) ($size5 0) ($size6 0)
+      ($arr1 0) ($arr2 0) ($arr4 0)
+      ($inst1 none) ($inst2 none) ($inst4 none)
       {set $progress_bar_inst none}
       {set $this_local_player_count 0}
       {beatmatch foreach_active_player $player
          {if {{$player get_user} is_local} ;only track local player
             {switch {$player instrument}
-               ((real_guitar guitar) {set $size1 {dx_size_delay_array $guitar_note_tracker}} {set $outarray $guitar_note_tracker} {set $progress_bar_inst guitar})
-               ((real_bass bass) {set $size2 {dx_size_delay_array $bass_note_tracker}} {set $outarray $bass_note_tracker} {set $progress_bar_inst bass})
+               (guitar {set $size1 {dx_size_delay_array $guitar_note_tracker}} {set $arr1 $guitar_note_tracker} {set $inst1 guitar} {set $outarray $guitar_note_tracker} {set $progress_bar_inst guitar})
+               (real_guitar {set $size1 {dx_size_delay_array $real_guitar_note_tracker}} {set $arr1 $real_guitar_note_tracker} {set $inst1 real_guitar} {set $outarray $real_guitar_note_tracker} {set $progress_bar_inst real_guitar})
+               (bass {set $size2 {dx_size_delay_array $bass_note_tracker}} {set $arr2 $bass_note_tracker} {set $inst2 bass} {set $outarray $bass_note_tracker} {set $progress_bar_inst bass})
+               (real_bass {set $size2 {dx_size_delay_array $real_bass_note_tracker}} {set $arr2 $real_bass_note_tracker} {set $inst2 real_bass} {set $outarray $real_bass_note_tracker} {set $progress_bar_inst real_bass})
                ((real_drum drum) {set $size3 {dx_size_delay_array $drum_note_tracker}} {set $outarray $drum_note_tracker} {set $progress_bar_inst drum})
-               ((real_keys keys) {set $size4 {dx_size_delay_array $keys_note_tracker}} {set $outarray $keys_note_tracker} {set $progress_bar_inst keys})
+               (keys {set $size4 {dx_size_delay_array $keys_note_tracker}} {set $arr4 $keys_note_tracker} {set $inst4 keys} {set $outarray $keys_note_tracker} {set $progress_bar_inst keys})
+               (real_keys {set $size4 {dx_size_delay_array $real_keys_note_tracker}} {set $arr4 $real_keys_note_tracker} {set $inst4 real_keys} {set $outarray $real_keys_note_tracker} {set $progress_bar_inst real_keys})
                (vocals
                   {if_else {modifier_mgr is_modifier_active mod_auto_vocals}
                      {do
@@ -295,20 +300,20 @@
             {if {> $this_local_player_count 1}
                ;this is really fucking bad but its 3am and i dont care
                {if {&& {> $size1 $size2} {> $size1 $size3} {> $size1 $size4} {> $size1 $size5} {> $size1 $size6}}
-                  {set $outarray $guitar_note_tracker}
-                  {set $progress_bar_inst guitar}
+                  {set $outarray $arr1}
+                  {set $progress_bar_inst $inst1}
                }
                {if {&& {> $size2 $size1} {> $size2 $size3} {> $size2 $size4} {> $size2 $size5} {> $size2 $size6}}
-                  {set $outarray $bass_note_tracker}
-                  {set $progress_bar_inst bass}
+                  {set $outarray $arr2}
+                  {set $progress_bar_inst $inst2}
                }
                {if {&& {> $size3 $size1} {> $size3 $size2} {> $size3 $size4} {> $size3 $size5} {> $size3 $size6}}
                   {set $outarray $drum_note_tracker}
                   {set $progress_bar_inst drum}
                }
                {if {&& {> $size4 $size1} {> $size4 $size2} {> $size4 $size3} {> $size4 $size5} {> $size4 $size6}}
-                  {set $outarray $keys_note_tracker}
-                  {set $progress_bar_inst keys}
+                  {set $outarray $arr4}
+                  {set $progress_bar_inst $inst4}
                }
                {if {&& {> $size5 $size1} {> $size5 $size2} {> $size5 $size3} {> $size5 $size4} {> $size5 $size6}}
                   {set $outarray $vocals_note_tracker}
@@ -329,22 +334,18 @@
 }
 {func
    dx_get_final_note
-   {beatmatch foreach_active_player $player
-      {switch {$player instrument}
-         ((real_guitar guitar) {set $out_end $dx_final_note_guitar})
-         ((real_bass bass) {set $out_end $dx_final_note_bass})
-         ((real_drum drum) {set $out_end $dx_final_note_drum})
-         ((real_keys keys) {set $out_end $dx_final_note_keys})
-         (vocals
-            {if_else {> {$player get_singer_count} 1}
-               {set $out_end $dx_final_note_harm}
-               {set $out_end $dx_final_note_vocals}
-            }
-         )
-         $dx_final_note
-      }
+   {switch $progress_bar_inst
+      (guitar $dx_final_note_guitar)
+      (real_guitar $dx_final_note_real_guitar)
+      (bass $dx_final_note_bass)
+      (real_bass $dx_final_note_real_bass)
+      (drum $dx_final_note_drum)
+      (keys $dx_final_note_keys)
+      (real_keys $dx_final_note_real_keys)
+      (vocals $dx_final_note_vocals)
+      ((harm2 harm3) $dx_final_note_harm)
+      $dx_final_note
    }
-   $out_end
 }
 {func
    dx_generate_progress_bar_tracks
