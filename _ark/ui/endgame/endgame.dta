@@ -79,32 +79,28 @@
          {dx_randomize_backup_band} ;i moved the other one to outro vignette finished :)
       }
    )
-   (dx_auto_endgame
-      {if
-         {&&
-            $dx_auto_endgame
-            {|| ;modes to always autoskip in
-               {modifier_mgr is_modifier_active mod_karaoke}
-               {modifier_mgr is_modifier_active mod_fakejuke}
-               {modifier_mgr is_modifier_active mod_auto_play}
-            }
+   (dx_auto_endgame_active
+      {&&
+         $dx_auto_endgame
+         {|| ;modes to always autoskip in
+            {modifier_mgr is_modifier_active mod_karaoke}
+            {modifier_mgr is_modifier_active mod_fakejuke}
+            {modifier_mgr is_modifier_active mod_auto_play}
          }
+      }
+   )
+   (dx_auto_endgame
+      {if {$this dx_auto_endgame_active}
          {if $dx_auto_endurance
             {dx_uptime_onscreen}
          }
-         {do
-            ($once FALSE) ;this is hacky but idc, it only should run once per user loop, regardless of # of users
-            {script_task kTaskSeconds
-               (delay {if_else {modifier_mgr is_modifier_active mod_karaoke} 0 7})
-               (script ;fake press green to continue by calling it manually
-                  {user_mgr foreach_user $user
-                     {if {&& $user {! $once}}
-                        {set $once TRUE}
-                        {$this button_down $user kPad_X kAction_Confirm {$user get_pad_num}}
-                     }
-                  }
-               )
-            }
+         {script_task kTaskSeconds
+            (delay {if_else {modifier_mgr is_modifier_active mod_karaoke} 0 7})
+            (script
+               {if {&& {== {ui current_screen} coop_endgame_screen} {! {ui in_transition}} {is_leader_local}}
+                  {$this dx_endgame_continue {dx_get_local_leader}}
+               }
+            )
          }
       }
    )
@@ -460,6 +456,7 @@
    (BUTTON_DOWN_MSG
       {cond
          ({ui in_transition} TRUE)
+         ({$this dx_auto_endgame_active} TRUE)
          ({== $action kAction_Up}
             {$this scroll_expanded_details {$user get_slot_num} -1}
          )
@@ -478,33 +475,7 @@
          ({&&
                {== $action kAction_Confirm}
                {is_leader_local}}
-            {play_instr_sfx $user button_select}
-            {help.ihp set_config ()}
-            {if_else {meta_performer is_set_complete}
-               {cond
-                  ({gamemode in_mode audition}
-                     {ui_event_mgr trigger_event quit_early}
-                  )
-                  ({gamemode in_mode tour}
-                     {{tour performer} complete_quest}
-                     {ui sync_screen tour_challenge_results_screen 0}
-                  )
-                  ({&&
-                           {gamemode in_mode campaign}
-                           {campaign has_current_goal}}
-                     {ui sync_screen complete_screen 0}
-                  )
-                  ({meta_performer has_battle}
-                     {ui sync_screen complete_screen 0}
-                  )
-                  #ifdef HX_WII
-                  {ui sync_screen maybe_outro_to_meta_loading_continue_screen 0}
-                  #else
-                  {ui sync_screen {if_else {session_mgr is_local} outro_to_meta_loading_continue_screen meta_loading_continue_screen} 0}
-                  #endif
-               }
-               {ui sync_screen preload_nextsong_screen 0}
-            }
+            {$this dx_endgame_continue $user}
          )
          ({&&
                {== $action kAction_Option}
@@ -517,6 +488,36 @@
             }
          )
          kDataUnhandled
+      }
+   )
+   (dx_endgame_continue
+      ($user)
+      {play_instr_sfx $user button_select}
+      {help.ihp set_config ()}
+      {if_else {meta_performer is_set_complete}
+         {cond
+            ({gamemode in_mode audition}
+               {ui_event_mgr trigger_event quit_early}
+            )
+            ({gamemode in_mode tour}
+               {{tour performer} complete_quest}
+               {ui sync_screen tour_challenge_results_screen 0}
+            )
+            ({&&
+                  {gamemode in_mode campaign}
+                  {campaign has_current_goal}}
+               {ui sync_screen complete_screen 0}
+            )
+            ({meta_performer has_battle}
+               {ui sync_screen complete_screen 0}
+            )
+            #ifdef HX_WII
+            {ui sync_screen maybe_outro_to_meta_loading_continue_screen 0}
+            #else
+            {ui sync_screen {if_else {session_mgr is_local} outro_to_meta_loading_continue_screen meta_loading_continue_screen} 0}
+            #endif
+         }
+         {ui sync_screen preload_nextsong_screen 0}
       }
    )
    (handle_song_restart
