@@ -3,53 +3,57 @@
 ((hit miss pass first_note check_fc check_missed track_instrument num_gems_hit num_gems_combo num_gems_miss num_gems_pass))
 {func
    dx_add_player_sinks
+   ($all)
    ;{dx_log_writer info {sprint "func: dx_add_player_sinks"}}
    ;{dx_log_writer info
    ;   {sprintf "Executed dx_add_player_sinks - time: %.4fms"
          {time
+            {if $all {set $dx_player_check_ready TRUE}}
             {dx_active_player_var_reset}
             {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
                {unless {== {$player instrument} vocals}
                   {set $dx_num_active_instruments {+ $dx_num_active_instruments 1}}
                }
-               {$player add_sink fc_callback (hit miss pass num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}
-               {dx_create_instrument_callback {$player instrument} $player {{$player get_user} get_slot_num}}
+               {unless {&& {! $all} {$player get dx_sinks_added FALSE}}
+                  {unless {&& {! $all} {== {$player instrument} vocals}}
+                     {$player add_sink fc_callback (hit miss pass num_gems_hit num_gems_combo num_gems_miss num_gems_pass)}
+                     {dx_create_instrument_callback {$player instrument} $player {{$player get_user} get_slot_num}}
+                     {unless {== {$player instrument} vocals}
+                        {$player add_sink {sprint "fc_" {$player instrument} "_callback"} DX_CALLBACK_HANDLES}
+                     }
+                     {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)}
+                  }
+                  {unless $all {dx_reset_dropped_in_player $player}}
+                  {$player set dx_sinks_added TRUE}
+               }
                {switch {$player instrument}
                   (bass
                      {set $bassplayeractive true}
                      {set $dx_num_active_strings {+ $dx_num_active_strings 1}}
-                     {$player add_sink fc_bass_callback DX_CALLBACK_HANDLES}
                   )
                   (real_guitar
                      {set $real_guitarplayeractive true}
                      {set $dx_num_active_strings {+ $dx_num_active_strings 1}}
-                     {$player add_sink fc_real_guitar_callback DX_CALLBACK_HANDLES}
                   )
                   (real_bass
                      {set $real_bassplayeractive true}
                      {set $dx_num_active_strings {+ $dx_num_active_strings 1}}
-                     {$player add_sink fc_real_bass_callback DX_CALLBACK_HANDLES}
                   )
                   (keys
                      {set $keysplayeractive true}
-                     {$player add_sink fc_keys_callback DX_CALLBACK_HANDLES}
                   )
                   (real_keys
                      {set $real_keysplayeractive true}
-                     {$player add_sink fc_real_keys_callback DX_CALLBACK_HANDLES}
                   )
                   (guitar
                      {set $guitarplayeractive true}
                      {set $dx_num_active_strings {+ $dx_num_active_strings 1}}
-                     {$player add_sink fc_guitar_callback DX_CALLBACK_HANDLES}
                   )
                   (drum
                      {set $drumplayeractive true}
-                     {$player add_sink fc_drum_callback DX_CALLBACK_HANDLES}
                   )
                   (real_drum
                      {set $drumplayeractive true}
-                     {$player add_sink fc_real_drum_callback DX_CALLBACK_HANDLES}
                   )
                   (vocals
                      {if {modifier_mgr is_modifier_active mod_auto_vocals}
@@ -62,11 +66,84 @@
                      }
                   )
                }
-               {$player add_sink dx_streak_callback (hit miss pass fetch_all_streaks update_streak)}
             }
          }
    ;   }
    ;}
+}
+{func dx_check_player_drops
+   {do
+      ($new FALSE)
+      {foreach_int $i 0 4 {set_var {sprint "dx_slot_used_" $i} FALSE}}
+      {beatmatch foreach_active_player $p
+         {unless {$p get dx_sinks_added FALSE} {set $new TRUE}}
+         {unless {== {$p instrument} vocals} {set_var {sprint "dx_slot_used_" {{$p get_user} get_slot_num}} TRUE}}
+      }
+      {if $new
+         {dx_add_player_sinks {<= {beatmatch get_song_ms} 0}}
+         {if {|| $dx_customizer {modifier_mgr is_modifier_active mod_auto_play} $otherautoplay}
+            {dx_set_auto_play}
+         }
+      }
+      {foreach_int $i 0 4
+         {with {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $i}}
+            {if {exists countdown.grp}
+               {if_else {eval {var {sprint "dx_slot_used_" $i}}}
+                  {unless {== {countdown.grp countdown_state} hidden}
+                     {dx_countdown_place}
+                     {script_task kTaskUISeconds
+                        (delay 1.5)
+                        (script {countdown.grp set_trans_parent game.cam TRUE})
+                     }
+                  }
+                  {countdown.grp set_countdown_state hidden}
+               }
+            }
+         }
+      }
+   }
+}
+{func dx_reset_dropped_in_player
+   ($player)
+   {if_else {== {$player instrument} vocals}
+      {if {with {{get_track_panel} loaded_dir} {exists vocals}}
+         {dx_track_update_countdown {find_obj {{get_track_panel} loaded_dir} vocals}}
+      }
+      {do
+         ($slot {{$player get_user} get_slot_num})
+         ($inst {$player instrument})
+         ($cb {sprint "fc_" $inst "_callback"})
+         ($dir {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot}})
+         ($pass {max 1 {eval {var {sprint "num_gems_pass_" $inst}}}})
+         {set_var {sprint $inst "_firstnote"} TRUE}
+         {set_var {sprint $inst "_missed_once"} TRUE}
+         {set_var {sprint $inst "_combo_broken"} TRUE}
+         {$cb set num_gems_hit {eval {var {sprint "num_gems_hit_" $inst}}}}
+         {$cb set num_gems_miss {eval {var {sprint "num_gems_miss_" $inst}}}}
+         {$cb set num_gems_pass $pass}
+         {$cb store_note_hit_info}
+         {dx_fc_ring_textures $slot FALSE}
+         {dx_create_track_labels $player}
+         {set_var {sprint "track_out_" $slot} FALSE}
+         {dx_reset_player_track_meshes $player}
+         {dx_track_update_countdown $dir}
+         {if $dx_fc_glow
+            {with {$dir find streak_meter}
+               {end_streak.trig trigger}
+               {star_deploy_stop.trig trigger}
+            }
+         }
+         {dx_indv_note_streak $dx_track_streak $player $slot 0 $pass 0}
+      }
+   }
+}
+{func dx_create_track_labels
+   ($player)
+   {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
+   {dx_perfect_label $dx_track_perfect_size $dx_track_perfect_font $dx_track_perfect_alignment $dx_track_perfect_kerning {{$player get_user} get_slot_num} $dx_track_perfect_x $dx_track_perfect_y $dx_track_perfect_r $dx_track_perfect_g $dx_track_perfect_b TRUE}
+   {dx_track_label_streak dx_track_label_perfect_ctr $dx_track_perfect_ctr_size $dx_track_perfect_ctr_font $dx_track_perfect_ctr_alignment $dx_track_perfect_ctr_kerning {{$player get_user} get_slot_num} $dx_track_perfect_ctr_x $dx_track_perfect_ctr_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b TRUE}
+   {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
+   {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b TRUE}
 }
 {func
    dx_send_leader_song_speed
