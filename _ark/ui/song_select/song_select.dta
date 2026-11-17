@@ -712,6 +712,26 @@
          $picked_song
       }
    )
+   (dx_endurance_pick
+      ($rolls)
+      {song.lst refresh}
+      {song.lst set_selected_simulate_scroll {random_int 0 {song.lst num_data}}}
+      {script_task kTaskSeconds
+         (delay 2)
+         (script
+            {if {== {ui current_screen} song_select_screen}
+               {cond
+                  ({> $rolls 1} {$this dx_endurance_pick {- $rolls 1}})
+                  ({== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+                     {gamemode set_mode qp_coop}
+                     {music_library select_highlighted_node {input_mgr get_user}}
+                  )
+                  {$this dx_endurance_pick 1}
+               }
+            }
+         )
+      }
+   )
    (endurance_handler
       #ifdef RB3E
       {if {&& $dx_auto_endurance {! $dx_auto_endurance_overlays_set}}
@@ -730,36 +750,7 @@
                {if_else {== $dx_auto_endurance dx_random}
                   {script_task kTaskSeconds
                      (delay 2)
-                     (script
-                        {song.lst refresh}
-                        {song.lst set_selected_simulate_scroll {random_int 0 {song.lst num_data}}}
-                        {script_task kTaskSeconds
-                           (delay 2)
-                           (script
-                              {song.lst refresh}
-                              {song.lst set_selected_simulate_scroll {random_int 0 {song.lst num_data}}}
-                              {script_task kTaskSeconds
-                                 (delay 2)
-                                 (script
-                                    {song.lst refresh}
-                                    {song.lst set_selected_simulate_scroll {random_int 0 {song.lst num_data}}}
-                                    {script_task kTaskSeconds
-                                       (delay 2)
-                                       (script
-                                          {if_else {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
-                                             {do
-                                                {gamemode set_mode qp_coop}
-                                                {music_library select_highlighted_node {input_mgr get_user}}
-                                             }
-                                             {$task loop}
-                                          }
-                                       )
-                                    }
-                                 )
-                              }
-                           )
-                        }
-                     )
+                     (script {$this dx_endurance_pick 3})
                   }
                   {do
                      {gamemode set_mode qp_coop}
@@ -824,7 +815,7 @@
          }
          kDataUnhandled
       }
-      {if_else {ui in_transition}
+      {if_else {|| {ui in_transition} $dx_auto_endurance}
          TRUE
          {if_else [details_mode]
             {handle_ret
@@ -838,7 +829,7 @@
    )
    (on_button_held
       ($user $raw_button $action $pad_num)
-      {if_else {ui in_transition}
+      {if_else {|| {ui in_transition} $dx_auto_endurance}
          TRUE
          {if_else [details_mode]
             {handle_ret

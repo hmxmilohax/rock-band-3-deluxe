@@ -212,6 +212,41 @@
    }
 }
 
+{func dx_countdown_place
+   {do
+      ($tracks 0)
+      ($rx 0)
+      ($ry 0)
+      ($rz 0)
+      {beatmatch foreach_active_player $p
+         {unless {== {$p instrument} vocals} {'++' $tracks}}
+      }
+      {do
+         ($angle
+            {clamp
+               {if_else {&& $dx_use_multiangle {|| $dx_allow_lower_angle {> $dx_multiangle $tracks}}}
+                  $dx_multiangle
+                  $tracks
+               }
+               1
+               4
+            }
+         )
+         ($i {min 2 {int {- $angle 1}}})
+         ($t {- $angle {+ $i 1}})
+         ($y {+ {elem $dx_countdown_y $i} {* $t {- {elem $dx_countdown_y {+ $i 1}} {elem $dx_countdown_y $i}}}})
+         ($s {+ {elem $dx_countdown_scale $i} {* $t {- {elem $dx_countdown_scale {+ $i 1}} {elem $dx_countdown_scale $i}}}})
+         {player_feedback get_local_rot $rx $ry $rz}
+         {set $ry {* $ry {+ {elem $dx_countdown_roll $i} {* $t {- {elem $dx_countdown_roll {+ $i 1}} {elem $dx_countdown_roll $i}}}}}}
+         {countdown_getready.lbl set_local_rot $rx $ry $rz}
+         {countdown_getready_bg.mesh set_local_rot $rx $ry $rz}
+         {countdown.grp set_trans_parent feedback.grp}
+         {countdown.grp set_local_scale $s $s $s}
+         {countdown.grp set_local_pos 0 $y 8}
+         {countdown.grp set_trans_parent game.cam TRUE}
+      }
+   }
+}
 {func dx_track_update_countdown ($trackdir)
    {set_this $trackdir}
    {if_else {exists countdown.grp}
@@ -269,8 +304,6 @@
             }
             {do
                {feedback.grp add_object countdown.grp}
-               {countdown.grp set_local_scale 3.5 3.5 3.5}
-               {countdown.grp set_local_pos 0 0 13}
                {countdown.grp set_trans_parent feedback.grp}
                ;{countdown.grp set trans_constraint kConstraintBillboardXYZ}
                ;{countdown.grp set trans_target game.cam}
