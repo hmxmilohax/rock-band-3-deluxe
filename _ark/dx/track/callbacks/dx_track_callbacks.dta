@@ -69,7 +69,7 @@
             {do
                ($tracktype {{user_mgr get_user_from_slot [slot]} get_track_type})
                ($diff
-                  {switch {{$player get_user} get_difficulty_sym}
+                  {switch {{[player] get_user} get_difficulty_sym}
                      (expert kDifficultyExpert)
                      (hard kDifficultyHard)
                      (medium kDifficultyMedium)
@@ -114,19 +114,21 @@
                   {set [curr_ms] {+ {* {taskmgr seconds} 1000} {profile_mgr get_sync_offset {{[player] get_user} get_pad_num}}}}
                   {set [offset] FALSE}
                   {set [accuracy] -8675309}
-                  ;[note_time] is also used in a commented debug line
+                  {set [note_time] -1}
                   #ifdef RB3E
-                  {do
-                     ($tracktype {{$player get_user} get_track_type})
-                     ($diff
-                        {switch {{$player get_user} get_difficulty_sym}
-                           (expert kDifficultyExpert)
-                           (hard kDifficultyHard)
-                           (medium kDifficultyMedium)
-                           (easy kDifficultyEasy)
-                        }
-                     )
-                     {set [note_time] {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]}}
+                  {if {&& {rb3e_allowed} {>= [gem_id] 0}}
+                     {do
+                        ($tracktype {{[player] get_user} get_track_type})
+                        ($diff
+                           {switch {{[player] get_user} get_difficulty_sym}
+                              (expert kDifficultyExpert)
+                              (hard kDifficultyHard)
+                              (medium kDifficultyMedium)
+                              (easy kDifficultyEasy)
+                           }
+                        )
+                        {set [note_time] {rb3e_get_game_gem_time_ms $tracktype $diff [gem_id]}}
+                     }
                   }
                   #else
                   {if {< [gem_id] {size {eval {var {sprint [track_instrument] "_note_tracker_2"}}}}}
@@ -135,7 +137,7 @@
                   #endif
                   ;failsafe, ensure the size of our tracker is the same as the reported total note count
                   {if #ifdef RB3E TRUE #else {== [total_notes] {[player] get_gem_count}} #endif
-                     {if {>= [gem_id] 0}
+                     {if {>= [note_time] 0}
                         {set [accuracy] {'-' [curr_ms] [note_time]}}
                      }
                   }
