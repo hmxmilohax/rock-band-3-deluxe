@@ -69,10 +69,6 @@
             {search_replace $clean "dx_" "" $clean}
             {set $clean {localize {sprint "os_" $clean}}}
          }
-         {if {! {has_substr {eval $clean} "os_"}}
-            {push_back $hold {eval $clean}}
-            {push_back $out {eval $hold}}
-         }
          {if {== {type $possiblevalues} kDataArray}
             {if {> {size $possiblevalues} 1}
                {push_back $out {eval $possiblevalues}}
@@ -101,6 +97,10 @@
                }
             }
          }
+         {if {! {has_substr {eval $clean} "os_"}}
+            {push_back $hold {eval $clean}}
+            {push_back $out {eval $hold}}
+         }
          ;did you forget after all of this where we are?
          {push_back $dx_settings {eval $out}}
       }
@@ -114,8 +114,8 @@
       {do
          ($safe FALSE)
          ($is_deeper ;support older style dx_settings with nested basename
-            {if_else {== {type {elem $entry 1}} kDataArray}
-               {if_else {> {size {elem $entry 1}} 0}
+            {if_else {&& {> {size $entry} 1} {== {type {elem $entry 1}} kDataArray}}
+               {if_else {> {size {elem $entry 1}} 1}
                   {if_else {== {sprint {elem {elem $entry 1} 0}} {basename $setting}}
                      TRUE
                      FALSE
@@ -168,9 +168,15 @@
             }
          )
          ($setting_enum
-            {if_else {find_exists $this_setting value}
-               {elem {find $this_setting value} 1}
-               {if_else $is_deeper {elem $this_setting 1} "null"}
+            {if_else $is_deeper
+               {elem $this_setting 1}
+               {if_else {&& {> {size $this_setting} 1} {== {type {elem $this_setting 1}} kDataArray}}
+                  {if_else {&& {> {size {elem $this_setting 1}} 1} {== {sprint {elem {elem $this_setting 1} 0}} "value"}}
+                     {elem {elem $this_setting 1} 1}
+                     "null"
+                  }
+                  "null"
+               }
             }
          )
          {if {&& {!= {sprint $setting_enum} "null"} {== {type $this_setting} kDataArray}}
@@ -259,6 +265,11 @@
                   {if {&& {== $truth_type triple} {== {type $setting_enum} kDataArray}}
                      {if {== {size $setting_enum} 3}
                         {set $safe TRUE}
+                        {foreach $innie $setting_enum
+                           {unless {|| {== {type $innie} kDataInt} {== {type $innie} kDataFloat}}
+                              {set $safe FALSE}
+                           }
+                        }
                      }
                   }
                )
@@ -272,7 +283,10 @@
             {if {&& $safe $has_range}
                {if {|| {== $type array} {== $type triple}}
                   {foreach $innie $setting_enum
-                     {if {! {&& {>= $innie $truth_range_low} {<= $innie $truth_range_high}}}
+                     {if_else {|| {== {type $innie} kDataInt} {== {type $innie} kDataFloat}}
+                        {if {! {&& {>= $innie $truth_range_low} {<= $innie $truth_range_high}}}
+                           {set $safe FALSE}
+                        }
                         {set $safe FALSE}
                      }
                   }
@@ -443,9 +457,9 @@
             (dx_values value_storage)
          }
       )
-      {foreach $elem {find $syscfg $storage}
-         {if {== {type $elem} kDataArray}
-            {if {== {elem $elem 0} {elem $entry 0}}
+      {if {== {type $entry} kDataArray}
+         {if {== {type {elem $entry 0}} kDataSymbol}
+            {if {find_exists $syscfg $storage {elem $entry 0}}
                {set $truth {find $syscfg $storage {elem $entry 0}}}
             }
          }
@@ -501,6 +515,9 @@
                ({&& {== {sprint {elem $entry 0}} "mod_dx_no_overdrive"} {modifier_enabled mod_dx_no_overdrive}}
                   kDataUnhandled
                )
+               ({&& {== {sprint {elem $entry 0}} "mod_auto_vocals"} {! $dx_save_auto_vocals}}
+                  kDataUnhandled
+               )
                {mmm_yummy_entry_reader $type}
             }
          }
@@ -516,6 +533,7 @@
    ;apply some things quickly
    {if {== {sprint $type} dx_settings}
       {dx_fps_counter set_visible $dx_fps_counter}
+      {dx_set_postfx $dx_postfx}
       #ifndef HX_WII
       {profile_mgr set_platform_audio_latency $platform_audio_latency}
       {profile_mgr set_platform_video_latency $platform_video_latency}
@@ -569,7 +587,19 @@
       #ifdef HX_PS3 {set $dx_pad_lag_drums_rr {profile_mgr get_joypad_extra_lag PAD_NUM_DRUMS_RR 0}} #endif
       #ifdef HX_XBOX {set $dx_pad_lag_stage_kit {profile_mgr get_joypad_extra_lag PAD_NUM_STAGE_KIT 0}} #endif
    }
-   {mmm_writin_dat_dta $type}
+   {if {== {sprint $type} dx_values}
+      {set $mic_vol_1 {profile_mgr get_mic_vol 0}}
+      {set $mic_vol_2 {profile_mgr get_mic_vol 1}}
+      {set $mic_vol_3 {profile_mgr get_mic_vol 2}}
+   }
+   {do
+      ($hash_old $dx_song_update_hash_old)
+      {if {== {sprint $type} dx_settings}
+         {set $dx_song_update_hash_old $dx_song_update_hash}
+      }
+      {mmm_writin_dat_dta $type}
+      {set $dx_song_update_hash_old $hash_old}
+   }
    {switch $type
       (dx_settings
          {if {> {size $dx_settings} 0}
