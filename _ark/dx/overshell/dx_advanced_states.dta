@@ -386,42 +386,23 @@
          do_script
          os_logging
          os_dumps
+         #ifdef RB3E
+         os_rnd_overlay
+         #endif
          #ifndef HX_WII
          os_testsongs  ; Songs folder is removed on Wii
          #endif
          os_testfeatures
+         os_testpatterns
          #ifndef HX_WII ; no
          os_system_lag_offsets
          #endif
+         os_report_shortname
          os_uptime
          #ifdef HX_PS3
-         {if_else {file_exists DX_HI_MEM_PATH}
-            {if_else {> {size {read_file DX_HI_MEM_PATH}} 0}
-               {if_else {== {elem {find {read_file DX_HI_MEM_PATH} dx_high_memory} 1} 190000000}
-                  os_dx_himem_on
-                  os_dx_himem_off
-               }
-               os_dx_himem_off
-            }
-            os_dx_himem_off
-         }
+         os_himem
          #endif
       )
-      #ifdef HX_PS3
-      (enter
-         {if $dx_write_hi_mem
-            {set $dx_write_hi_mem FALSE}
-            {write_file DX_HI_MEM_PATH
-               {array
-                  (
-                     (dx_high_memory 190000000)
-                     (dx_song_count 32000)
-                  )
-               }
-            }
-         }
-      )
-      #endif
       (select
          (os_debug_mode
             {set $debug_mode FALSE}
@@ -433,24 +414,26 @@
          )
          (os_logging {dx_state dxState_LogSettings})
          (os_dumps {dx_state dxState_Dumps})
+         (os_rnd_overlay {dx_state dxState_RndOverlay})
          (os_testsongs {dx_state dxState_TestSongs})
          (os_testfeatures {dx_state dxState_TestFeatures})
+         (os_testpatterns {dx_state dxState_TestPatterns})
          (os_system_lag_offsets {dx_state dxState_SystemLagOffsets})
-         (os_uptime
-            {dx_uptime_onscreen}
-         )
-         (os_dx_himem_off {dx_state dxState_HimemWarn})
-         (os_dx_himem_on
-            {write_file 
-               {array
-                  (
-                     (dx_high_memory 131000000)
-                     (dx_song_count 8000)
-                  )
+         (os_report_shortname
+            {if
+               {&&
+                  {== {ui current_screen} song_select_screen}
+                  {== {{music_library get_highlighted_node} get_node_type} kNodeSong}
+               }
+               {dx_passive_messenger_symbol
+                  {{music_library get_highlighted_node} get_token}
                }
             }
          )
-         
+         (os_uptime
+            {dx_uptime_onscreen}
+         )
+         (os_himem {dx_state dxState_HimemMaker})
       )
       (cancel
          {dx_state dxState_Advanced}
@@ -497,6 +480,35 @@
       (cancel {dx_state dxState_Debug})
    )
 
+   (dxState_TestPatterns
+      (view
+         dx_test_focal
+         dx_test_colorbars
+         dx_test_brightnesscontrast
+      )
+      (message none)
+      (button
+         (kAction_Confirm
+            {dx_show_testpattern {$current_list selected_sym}}
+         )
+      )
+      (cancel
+         {with overshell
+            {if {exists testpattern.mesh}
+               {do
+                  {if $dx_need_revert_ar
+                     {rnd set_aspect kLetterboxAspect}
+                  }
+                  {delete testpattern.mesh}
+                  {delete testpattern.mat}
+                  {delete testpattern.tex}
+               }
+            }
+         }
+         {dx_state dxState_Debug}
+      )
+   )
+
    (dxState_Dumps
       (view
          generate_updates_dta
@@ -541,6 +553,41 @@
          )
          (generate_updates_dta
             {dx_generate_updates_dta}
+         )
+      )
+      (cancel {dx_state dxState_Debug})
+   )
+
+   (dxState_RndOverlay
+      (view
+         ; all the ones i tried that worked
+         {if_else $dx_rnd_overlay_position os_rnd_overlay_position_on os_rnd_overlay_position_off}
+         {if_else $dx_rnd_overlay_heap os_rnd_overlay_heap_on os_rnd_overlay_heap_off}
+         {if_else $dx_rnd_overlay_rate os_rnd_overlay_rate_on os_rnd_overlay_rate_off}
+         {if_else $dx_rnd_overlay_char_status os_rnd_overlay_char_status_on os_rnd_overlay_char_status_off}         
+         {if_else $dx_rnd_overlay_synth os_rnd_overlay_synth_on os_rnd_overlay_synth_off}
+      )
+      (message none)
+      (select
+         (os_rnd_overlay_position ; off=top, on=bottom
+            {set $dx_rnd_overlay_position {! $dx_rnd_overlay_position}}
+            {rnd toggle_overlay_position}
+         )
+         (os_rnd_overlay_heap
+            {set $dx_rnd_overlay_heap {! $dx_rnd_overlay_heap}}
+            {rnd toggle_overlay heap}
+         )
+         (os_rnd_overlay_rate
+            {set $dx_rnd_overlay_rate {! $dx_rnd_overlay_rate}}
+            {rnd toggle_overlay rate}
+         ) 
+         (os_rnd_overlay_char_status
+            {set $dx_rnd_overlay_char_status {! $dx_rnd_overlay_char_status}}
+            {rnd toggle_overlay char_status TRUE}
+         )
+         (os_rnd_overlay_synth
+            {set $dx_rnd_overlay_synth {! $dx_rnd_overlay_synth}}
+            {synth toggle_hud}
          )
       )
       (cancel {dx_state dxState_Debug})
@@ -691,6 +738,11 @@
                {set $dx_set_ui_pos_1 $dx_track_username_z}
                {set $dx_set_ui_pos_2 $dx_track_username_y}
             )
+            (vocal_phrase_pct_text
+               {set $dx_set_ui_pos_0 $dx_vocal_phrase_pct_x}
+               {set $dx_set_ui_pos_1 $dx_vocal_phrase_pct_z}
+               {set $dx_set_ui_pos_2 $dx_vocal_phrase_pct_y}
+            )
             kDataUnhandled
          }
          {if $findme
@@ -713,6 +765,7 @@
             (highway_overdrive_text {set $dx_set_ui_pos_0 0})
             (highway_streak_text {set $dx_set_ui_pos_0 2})
             (highway_username_text {set $dx_set_ui_pos_0 0})
+            (vocal_phrase_pct_text {set $dx_set_ui_pos_0 -0.2})
          }
          {switch $dx_set_ui_pos_tracked_ui
             (mtv {set $dx_set_ui_pos_1 57})
@@ -726,6 +779,7 @@
             (highway_overdrive_text {set $dx_set_ui_pos_1 -5})
             (highway_streak_text {set $dx_set_ui_pos_1 -5})
             (highway_username_text {set $dx_set_ui_pos_1 0})
+            (vocal_phrase_pct_text {set $dx_set_ui_pos_1 0})
          }
          {switch $dx_set_ui_pos_tracked_ui
             (mtv {set $dx_set_ui_pos_2 13.78})
@@ -739,6 +793,7 @@
             (highway_overdrive_text {set $dx_set_ui_pos_2 -2.5})
             (highway_streak_text {set $dx_set_ui_pos_2 -2})
             (highway_username_text {set $dx_set_ui_pos_2 -5.5})
+            (vocal_phrase_pct_text {set $dx_set_ui_pos_2 0.2})
          }
       )
 
@@ -879,6 +934,18 @@
                   }
                }
             )
+            (vocal_phrase_pct_text
+               {set $dx_vocal_phrase_pct_x $dx_set_ui_pos_0}
+               {set $dx_vocal_phrase_pct_z $dx_set_ui_pos_1}
+               {set $dx_vocal_phrase_pct_y $dx_set_ui_pos_2}
+               {if {&& {$this in_game} {! {gamemode in_mode trainer}}}
+                  {beatmatch foreach_active_player $player
+                     {if {== {$player instrument} vocals}
+                        {dx_vocal_phrase_label $dx_vocal_phrase_pct_size $dx_vocal_phrase_pct_font $dx_vocal_phrase_pct_alignment $dx_vocal_phrase_pct_kerning $dx_vocal_phrase_pct_x $dx_vocal_phrase_pct_y $dx_vocal_phrase_pct_r $dx_vocal_phrase_pct_g $dx_vocal_phrase_pct_b FALSE}
+                     }
+                  }
+               }
+            )
             kDataUnhandled
          }
          {if $findme
@@ -974,6 +1041,7 @@
                      (highway_username_text dxState_TrackHighwayUsername)
                      (highway_overdrive_text dxState_TrackHighwayOverdrive)
                      (highway_streak_text dxState_TrackHighwayStreak)
+                     (vocal_phrase_pct_text dxState_TrackVocalPhrase)
                      dxState_MiloFind
                   }
                }

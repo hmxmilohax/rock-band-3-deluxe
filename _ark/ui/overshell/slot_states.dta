@@ -100,15 +100,9 @@
          {if $linoscal
             {set $linoscal FALSE}
             {leave_dx_settings}
-            {$this iterate Mesh $m {$m set_showing TRUE}}
-            {$this iterate
-               UIList
-               $l
-               {$l set_local_pos_index 0 {- {$l get_local_pos_index 0} 200}}
-               {$l set_local_pos_index 2 {- {$l get_local_pos_index 2} 250}}
-            }
          }
       }
+      DX_CAL_SHOW_SLOT
       {if {'||' {$user is_participating} {! {$this in_song}}}
          {$this show_options}
       }
@@ -127,11 +121,16 @@
             #ifdef HX_WII "_keep.bmp_wii" #endif
          )
          ($exists {file_exists {sprint "char/prefab/images/gen/" {chars.lst selected_sym} $ext}})
-         {if {exists choose_character.tex}
-            {if_else $exists
-               {choose_character.tex set_bitmap {sprint "char/prefab/images/" {chars.lst selected_sym} "_keep.bmp"}}
-               {choose_character.tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+         ($tex {sprint "dx_choose_character_" {$this get_slot_num} ".tex"})
+         {if {exists choose_character.mat}
+            {unless {exists $tex}
+               {new Tex $tex}
             }
+            {if_else $exists
+               {$tex set_bitmap {sprint "char/prefab/images/" {chars.lst selected_sym} "_keep.bmp"}}
+               {$tex set_bitmap {sprint "dx/custom_textures/_additional_textures/choose_character.png"}}
+            }
+            {choose_character.mat set diffuse_tex $tex}
          }
       }
    )
@@ -807,6 +806,25 @@
       }
       ;HACK dx settings fucks up the display num on this list in game so just hard set it back whatever sure
       {if {$this in_game} {options.lst set display_num 6}}
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {if_else {'||' {$this in_game} {gamemode in_mode drum_freestyle}}
+               {do ;sure
+                  {options_in_game.grp set_showing TRUE}
+                  {game_options.lst conceal}
+                  {options.grp set_showing TRUE}
+                  {options.lst reveal}
+               }
+               {do
+                  {options_in_game.grp set_showing FALSE}
+                  {game_options.lst conceal}
+                  {options.grp set_showing TRUE}
+                  {options.lst reveal}
+               }
+            }
+         )
+      }
    )
    (update_view
       {handle ($this update_online_options_allowed {! {session_mgr is_busy}})}
@@ -1083,10 +1101,19 @@
          {handle
             ($this
                set_confirm_actions
-               confirm_quit_online
+               {if_else {is_leader_local} dx_confirm_quit_online_host confirm_quit_online}
                (overshell_confirm_yes overshell_confirm_no)
             )
          }
+      }
+   )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
+         )
       }
    )
    (SELECT_MSG
@@ -1125,7 +1152,7 @@
                      {ui sync_screen meta_loading_continue_screen 0}
                   }
                   {do
-                     {if_else {gamemode in_mode qp_coop}
+                     {if_else {&& {gamemode in_mode qp_coop} {! $dx_online_temp}}
                         {ui sync_screen meta_loading_continue_screen 0}
                         {ui_event_mgr trigger_event quit_early}
                      }
@@ -1147,6 +1174,15 @@
             set_confirm_actions
             confirm_restart
             (overshell_confirm_yes overshell_confirm_no)
+         )
+      }
+   )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
          )
       }
    )
@@ -1174,6 +1210,15 @@
             set_confirm_actions
             confirm_quit
             (overshell_confirm_yes overshell_confirm_no)
+         )
+      }
+   )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
          )
       }
    )
@@ -1319,6 +1364,15 @@
          )
       }
    )
+   (enter
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {confirm_action.grp set_showing TRUE}
+            {confirm_action.lst reveal}
+         )
+      }
+   )
    (SELECT_MSG
       {switch {$component selected_sym}
          (overshell_confirm_yes {session disconnect})
@@ -1438,6 +1492,13 @@
       {do
          ($no_fail_enabled {modifier_mgr is_modifier_active mod_no_fail_band})
          {handle ($this update_no_fail_enabled $no_fail_enabled)}
+      }
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+            {game_options.grp set_showing TRUE}
+            {game_options.lst reveal}
+         )
       }
    )
    (update_view
@@ -1562,6 +1623,13 @@
          {set $in_dx_settings TRUE}
          {set $this_state dxState_AppearanceMenu}
          {$this show_state kState_OptionsExtras}
+      }
+      {script_task kTaskUISeconds
+         (delay 0.026)
+         (script
+               {options_av_settings.grp set_showing TRUE}
+               {options_av_settings.lst reveal}
+         )
       }
    )
    (update_view
@@ -2134,9 +2202,12 @@
                   }
                   {dx_passive_messenger_symbol
                      {symbol
-                        {song_mgr song_file_path
-                           {{music_library get_highlighted_node} get_token}
-                           " "
+                        {dx_wrap_text
+                           {song_mgr song_file_path
+                              {{music_library get_highlighted_node} get_token}
+                              " "
+                           }
+                           40
                         }
                      }
                   }

@@ -104,18 +104,25 @@
    {set $track_out_2 FALSE}
    {set $track_out_3 FALSE}
    {beatmatch foreach_active_player $player
-      {unless {== {$player instrument} vocals}
+      {dx_reset_player_track_meshes $player}
+   }
+}
+{func dx_reset_player_track_meshes
+   ($player)
+   {unless {== {$player instrument} vocals}
+      {do
+         ($dir {find_obj {{get_track_panel} loaded_dir} {sprint "track_" {{$player get_user} get_slot_num}}})
          ;make sure to show the correct rails if the same slot was on a different instrument last song
-         {{{find_obj DX_GEMTRACKDIR} find guitar_draw.grp} set showing {|| {== {$player instrument} guitar} {== {$player instrument} bass} {== {$player instrument} keys}}}
-         {{{find_obj DX_GEMTRACKDIR} find drum_draw.grp} set showing {|| {== {$player instrument} drum} {== {$player instrument} real_drum}}}
-         {{{find_obj DX_GEMTRACKDIR} find keyboard_draw.grp} set showing {== {$player instrument} real_keys}}
-         {{{{find_obj DX_GEMTRACKDIR} get star_power_meter} find power_meter.grp} set showing TRUE}
-         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find draw.grp} set showing TRUE}
-         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find streak_meter.grp} set showing TRUE}
-         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find peak_state_sm_mesh.mesh} set showing TRUE}
-         {{{{find_obj DX_GEMTRACKDIR} get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing TRUE}
-         {{{find_obj DX_GEMTRACKDIR} find overdrive_plane.mesh} set showing TRUE}
-         {{{find_obj DX_GEMTRACKDIR} find rig.grp} set_local_pos 0 0 0}
+         {{$dir find guitar_draw.grp} set showing {|| {== {$player instrument} guitar} {== {$player instrument} bass} {== {$player instrument} keys}}}
+         {{$dir find drum_draw.grp} set showing {|| {== {$player instrument} drum} {== {$player instrument} real_drum}}}
+         {{$dir find keyboard_draw.grp} set showing {== {$player instrument} real_keys}}
+         {{{$dir get star_power_meter} find power_meter.grp} set showing TRUE}
+         {{{$dir get streak_meter} find draw.grp} set showing TRUE}
+         {{{$dir get streak_meter} find streak_meter.grp} set showing TRUE}
+         {{{$dir get streak_meter} find peak_state_sm_mesh.mesh} set showing TRUE}
+         {{{$dir get streak_meter} find peak_state_sm_mesh_counter.mesh} set showing TRUE}
+         {{$dir find overdrive_plane.mesh} set showing TRUE}
+         {{$dir find rig.grp} set_local_pos 0 0 0}
       }
    }
 }
@@ -172,6 +179,45 @@
       {kick_success.tnm set_trans cameras_top.grp} ; Do this for everyone because the trackdir could be used for drums sooner or later
    }
 }
+{func dx_mash_lane_colors
+   {beatmatch foreach_active_player $player
+      {switch {$player instrument}
+         ((guitar bass keys)
+            {set_this {find_obj DX_GEMTRACKDIR}}
+            {foreach_int $i 0 5
+               {do
+                  ($color {elem (DX_GEMCOLOR_SET) {eval {var {sprint "dx_guitar_gem_color" {+ $i 1}}}}})
+                  {{sprint "gem_mash" $i ".mat"} set emissive_map {sprint "gem_mash_" $color "_emmisive.tex"}}
+                  {{sprint "gem_mash" $i "_2nd_pass.mat"} set diffuse_tex {sprint "gem_mash_" $color "_emmisive_2nd_pass.tex"}}
+               }
+            }
+         )
+         ((drum real_drum)
+            {set_this {find_obj DX_GEMTRACKDIR}}
+            {foreach_int $i 0 4
+               {do
+                  ($mat {elem (1 2 3 0) $i})
+                  ($color {elem (DX_DRUMCOLOR_SET) {eval {var {sprint "dx_drum_tom_color" {+ $i 1}}}}})
+                  {{sprint "gem_mash" $mat ".mat"} set emissive_map {sprint "gem_mash_" $color "_emmisive.tex"}}
+                  {{sprint "gem_mash" $mat "_2nd_pass.mat"} set diffuse_tex {sprint "gem_mash_" $color "_emmisive_2nd_pass.tex"}}
+               }
+            }
+         )
+         ((real_guitar real_bass)
+            {set_this {find_obj DX_GEMTRACKDIR}}
+            {foreach_int $i 0 6
+               {do
+                  ($mat {elem (1 0 4 3 2 5) $i})
+                  ($color {elem (DX_PROTAR_COLOR_SET) {eval {var {sprint "dx_protar_color" {+ $i 1}}}}})
+                  ($suffix {if_else {== $color purple} "_nomip" ""})
+                  {{sprint "gem_mash" $mat ".mat"} set emissive_map {sprint "gem_mash_" $color "_emmisive" $suffix ".tex"}}
+                  {{sprint "gem_mash" $mat "_2nd_pass.mat"} set diffuse_tex {sprint "gem_mash_" $color "_emmisive_2nd_pass" $suffix ".tex"}}
+               }
+            }
+         )
+      }
+   }
+}
 
 {func dx_track_update_lengths
    {beatmatch foreach_active_player $player
@@ -209,10 +255,44 @@
       {dx_indv_note_streak $dx_track_streak $player {{$player get_user} get_slot_num} 0 0 0}
       {dx_show_user_overdrive $dx_track_overdrive $player {{$player get_user} get_slot_num} 0}
       {dx_perfect_hit_ctr FALSE $player {{$player get_user} get_slot_num} $dx_detailed_hit_stats 0}
-      {dx_fc_disabler $player {{$player get_user} get_slot_num} 0 0}
    }
 }
 
+{func dx_countdown_place
+   {do
+      ($tracks 0)
+      ($rx 0)
+      ($ry 0)
+      ($rz 0)
+      {beatmatch foreach_active_player $p
+         {unless {== {$p instrument} vocals} {'++' $tracks}}
+      }
+      {do
+         ($angle
+            {clamp
+               {if_else {&& $dx_use_multiangle {|| $dx_allow_lower_angle {> $dx_multiangle $tracks}}}
+                  $dx_multiangle
+                  $tracks
+               }
+               1
+               4
+            }
+         )
+         ($i {min 2 {int {- $angle 1}}})
+         ($t {- $angle {+ $i 1}})
+         ($y {+ {elem $dx_countdown_y $i} {* $t {- {elem $dx_countdown_y {+ $i 1}} {elem $dx_countdown_y $i}}}})
+         ($s {+ {elem $dx_countdown_scale $i} {* $t {- {elem $dx_countdown_scale {+ $i 1}} {elem $dx_countdown_scale $i}}}})
+         {player_feedback get_local_rot $rx $ry $rz}
+         {set $ry {* $ry {+ {elem $dx_countdown_roll $i} {* $t {- {elem $dx_countdown_roll {+ $i 1}} {elem $dx_countdown_roll $i}}}}}}
+         {countdown_getready.lbl set_local_rot $rx $ry $rz}
+         {countdown_getready_bg.mesh set_local_rot $rx $ry $rz}
+         {countdown.grp set_trans_parent feedback.grp}
+         {countdown.grp set_local_rot 0 0 0}
+         {countdown.grp set_local_scale $s $s $s}
+         {countdown.grp set_local_pos 0 $y 8}
+      }
+   }
+}
 {func dx_track_update_countdown ($trackdir)
    {set_this $trackdir}
    {if_else {exists countdown.grp}
@@ -270,8 +350,6 @@
             }
             {do
                {feedback.grp add_object countdown.grp}
-               {countdown.grp set_local_scale 3.5 3.5 3.5}
-               {countdown.grp set_local_pos 0 0 13}
                {countdown.grp set_trans_parent feedback.grp}
                ;{countdown.grp set trans_constraint kConstraintBillboardXYZ}
                ;{countdown.grp set trans_target game.cam}
@@ -417,10 +495,14 @@
          }
          {if {exists overdrive_plane_extended.mesh}
             {overdrive.anim remove_keys overdrive_plane_extended.mesh}
+            {peakstate_fade.anim remove_keys overdrive_plane_extended.mesh}
+            {bassgroove.anim remove_keys overdrive_plane_extended.mesh}
             {delete overdrive_plane_extended.mesh}
          }
          {if {exists peakstate_plane_extended.mesh}
-            {overdrive.amim remove_keys peakstate_plane_extended.mesh}
+            {overdrive.anim remove_keys peakstate_plane_extended.mesh}
+            {peakstate_fade.anim remove_keys peakstate_plane_extended.mesh}
+            {bassgroove.anim remove_keys peakstate_plane_extended.mesh}
             {delete peakstate_plane_extended.mesh}
          }
          
@@ -531,6 +613,16 @@
       {if {== $kf_target $basetarget}
          {dx_log_writer insane {sprint "Transplanting key (" $kf_prop ": " $kf_value ") into " $newtarget}}
          {$anim set_key_val $newtarget $kf_prop $kf_frame $kf_value}
+      }
+   }
+}
+
+; Sends solo start/end events to the loaded world dir
+{func dx_solo_prefab ($on)
+   {if {world_panel loaded_dir}
+      {if_else $on
+         {{world_panel loaded_dir} dx_solo_start}
+         {{world_panel loaded_dir} dx_solo_end}
       }
    }
 }

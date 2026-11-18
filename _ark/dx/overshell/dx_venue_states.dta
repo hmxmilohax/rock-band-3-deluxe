@@ -154,6 +154,15 @@
          #endif
          {if_else $dx_fps_counter os_fps_counter_on os_fps_counter_off}
          {if_else $dx_camera_shake os_camera_shake_on os_camera_shake_off}
+         {switch $dx_crowd_density 
+            (2 os_crowd_density_default)
+            (1.0 os_crowd_density_packed)
+            (0.70 os_crowd_density_theatre)
+            (0.35 os_crowd_density_bar)
+            (0.15 os_crowd_density_garage)
+            (0.0 os_crowd_density_empty)
+            os_crowd_density_unknown
+         }
          #ifndef HX_WII
          os_postprocessing
          #endif
@@ -163,12 +172,34 @@
          }
       )
       (select
+         #define CROWD_CYCLE_MSG
+         (
+            {switch $dx_crowd_density
+               (2 {set $dx_crowd_density 0.0})
+               (1.0 {set $dx_crowd_density 2}) ;2 means default
+               (0.70 {set $dx_crowd_density 1.0})
+               (0.35 {set $dx_crowd_density 0.70})
+               (0.15 {set $dx_crowd_density 0.35})
+               (0.0 {set $dx_crowd_density 0.15})
+               {set $dx_crowd_density 2}
+            }
+            {if {! $gfx_warn_once}
+               {set $gfx_warn_once TRUE}
+               {dx_state dxState_GraphicsWarn}
+            }
+         )
+         (os_crowd_density_default CROWD_CYCLE_MSG)
+         (os_crowd_density_packed CROWD_CYCLE_MSG)
+         (os_crowd_density_theatre CROWD_CYCLE_MSG)
+         (os_crowd_density_bar CROWD_CYCLE_MSG)
+         (os_crowd_density_garage CROWD_CYCLE_MSG)
+         (os_crowd_density_empty CROWD_CYCLE_MSG)
+         (os_crowd_density_unknown CROWD_CYCLE_MSG)
          (os_venuefps
             {set $dx_60fps {! $dx_60fps}}
             {if $dx_60fps
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
             {if_else $dx_60fps
                {set $emulatefps 60}
                {set $emulatefps 30}
@@ -191,7 +222,6 @@
             {if $dx_camera_shake
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
             {if {! $gfx_warn_once}
                {set $gfx_warn_once TRUE}
                {dx_state dxState_GraphicsWarn}
@@ -227,7 +257,6 @@
             {if $dx_hd_characters
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
          )
          (os_cycleaspect
             {dx_cycle_aspect}
@@ -244,11 +273,11 @@
          {if_else $dx_postfx {if_else $dx_motion_blur os_motion_blur_on os_motion_blur_off} 0}
          {if_else $dx_postfx {if_else $dx_camera_blur os_camera_blur_on os_camera_blur_off} 0}
          {if_else $dx_postfx {if_else $dx_noise_enabled os_noise_enabled_on os_noise_enabled_off} 0}
+         {if_else $dx_postfx {if_else $dx_slowmo os_slowmo_on os_slowmo_off} 0}
       )
       (select
          (os_postfx
             {dx_set_postfx {! $dx_postfx}}
-            {dx_postfx_setter}
             {if {! $gfx_warn_once}
                {set $gfx_warn_once TRUE}
                {dx_state dxState_GraphicsWarn}
@@ -259,7 +288,6 @@
             {if $dx_camera_blur
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
             {if {! $gfx_warn_once}
                {set $gfx_warn_once TRUE}
                {dx_state dxState_GraphicsWarn}
@@ -270,7 +298,6 @@
             {if $dx_motion_blur
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
             {if {! $gfx_warn_once}
                {set $gfx_warn_once TRUE}
                {dx_state dxState_GraphicsWarn}
@@ -281,7 +308,14 @@
             {if $dx_noise_enabled
                {set $post_proc_needs_reset TRUE}
             }
-            {dx_postfx_setter}
+            {if {! $gfx_warn_once}
+               {set $gfx_warn_once TRUE}
+               {dx_state dxState_GraphicsWarn}
+            }
+         )
+         (os_slowmo
+            {set $dx_slowmo {! $dx_slowmo}}
+            {set $post_proc_needs_reset TRUE}
             {if {! $gfx_warn_once}
                {set $gfx_warn_once TRUE}
                {dx_state dxState_GraphicsWarn}

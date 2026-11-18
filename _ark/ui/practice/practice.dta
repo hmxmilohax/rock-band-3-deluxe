@@ -2,6 +2,8 @@
 (
    (dx_practice_enter
       {dx_presence_manager}
+      {speed_percent.lbl set_token_fmt eg_percent_format {int {* {elem [speed_modifier] {gamecfg get practice_speed}} 100.0}}}
+      {practice_panel set_pitch_shift_ratio 1.0}
       {speed_control.grp set_local_pos $speed_controlpos_0 $speed_controlpos_1 $speed_controlpos_2}
       {score.grp set_local_pos $scorepos_0 $scorepos_1 $scorepos_2}
       {section.lbl set_local_pos $sectionpos_0 $sectionpos_1 $sectionpos_2}
@@ -495,10 +497,21 @@
       {do
          ($modifier {elem [speed_modifier] $p_speed})
          ($old_speed {gamecfg get practice_speed})
-         {beatmatch set_music_speed $modifier}
-         {'*=' $modifier 100.0}
-         {practice_panel set_speed_percent $modifier}
-         {gamecfg set practice_speed $p_speed}
+         {if {|| {!= $old_speed $p_speed} {> {abs {- {beatmatch music_speed} $modifier}} 0.01}}
+            {beatmatch set_music_speed $modifier}
+            {if {>= $modifier 0.5} ; only apply pitch shift above at or above 50% speed or it sounds like hell
+               {do
+                  {'*=' $modifier 100.0}
+                  {practice_panel set_play_all_tracks TRUE} ; play backing track with pitch shift (no clicks)
+                  {practice_panel set_speed_percent $modifier}
+                  {practice_panel set_play_all_tracks FALSE} ; give me back my clicks
+               }
+            }
+            {if {< $modifier 0.5}
+               {speed_percent.lbl set_token_fmt eg_percent_format {int {* $modifier 100.0}}}
+            }
+            {gamecfg set practice_speed $p_speed}
+         }
       }
    )
    (update

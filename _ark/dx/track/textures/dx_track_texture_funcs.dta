@@ -55,39 +55,6 @@
 (
    {sprint "dx/custom_textures/" $category "/" $path "/gen/" $customtex #ifdef HX_PS3 ".png_ps3" #endif #ifdef HX_WII ".png_wii" #endif #ifdef HX_XBOX ".png_xbox" #endif}
 )
-{func
-   color_me_milo
-   {beatmatch foreach_active_player $player ;dx - add our custom fc checking callbacks to the currently loaded player
-      {set_this {find_obj DX_GEMTRACKDIR}}
-      {set $this_streak_tex {sprint "dx_overdrive" {$player instrument} ".tex"}}
-      {new Tex $this_streak_tex}
-      ;color-me-milo
-      ;this fixes bass and guitar not using correct unique streak textures
-      ;needs to be properly implemented TODOs
-      {switch {$player instrument}
-         (real_keys
-            {peakstate_plane_prokeys.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
-            {peakstate_plane_prokeys.mat set diffuse_tex $this_streak_tex}
-            {$this_streak_tex set_bitmap "dx/custom_textures/streaks/fnfestival (prokeys).png"}
-         )
-         (bass
-            {bassgroove_plane.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
-            {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
-            {$this_streak_tex set_bitmap "dx/custom_textures/streaks/rb4alt_white.png"}
-         )
-         ((drum real_drum)
-            {peakstate_plane.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
-            {peakstate_plane.mat set diffuse_tex $this_streak_tex}
-            {$this_streak_tex set_bitmap "dx/custom_textures/streaks/yarg white.png"}
-         )
-         (guitar
-            {peakstate_plane.mat set color {pack_color $dx_overdrive_r $dx_overdrive_g $dx_overdrive_b}}
-            {peakstate_plane.mat set diffuse_tex $this_streak_tex}
-            {$this_streak_tex set_bitmap "dx/custom_textures/streaks/rb3_keys_white.png"}
-         )
-      }
-   }
-}
 
 {func
    dx_custom_texture_setter
@@ -138,6 +105,17 @@
          }
    ;   }
    ;}
+}
+{func
+   dx_slot_texture_setter
+   ($category $path $sourcetex $customtex)
+   {do
+      ($key {sprint $category "/" $path "/" $customtex})
+      {unless {&& {$sourcetex has (dx_loaded_tex)} {== {$sourcetex get dx_loaded_tex} $key}}
+         {dx_custom_texture_setter $category $path $sourcetex $customtex}
+         {$sourcetex set dx_loaded_tex $key}
+      }
+   }
 }
 {func
    color_me_milo_lite
@@ -196,24 +174,19 @@
             {set_this {find_obj DX_GEMTRACKDIR}}
             
             {set $this_highway_tex {sprint "dx_highway" {{$player get_user} get_slot_num} ".tex"}}
-            {if {exists $this_highway_tex} {delete $this_highway_tex}}
-            {new Tex $this_highway_tex}
+            {unless {exists $this_highway_tex} {new Tex $this_highway_tex}}
             
             {set $this_streak_tex {sprint "dx_streak" {{$player get_user} get_slot_num} ".tex"}}
-            {if {exists $this_streak_tex} {delete $this_streak_tex}}
-            {new Tex $this_streak_tex}
+            {unless {exists $this_streak_tex} {new Tex $this_streak_tex}}
    
             {set $this_overdrive_tex {sprint "dx_overdrive" {{$player get_user} get_slot_num} ".tex"}}
-            {if {exists $this_overdrive_tex} {delete $this_overdrive_tex}}
-            {new Tex $this_overdrive_tex}
+            {unless {exists $this_overdrive_tex} {new Tex $this_overdrive_tex}}
             
             {set $this_rails_tex {sprint "dx_rails" {{$player get_user} get_slot_num} ".tex"}}
-            {if {exists $this_rails_tex} {delete $this_rails_tex}}
-            {new Tex $this_rails_tex}
+            {unless {exists $this_rails_tex} {new Tex $this_rails_tex}}
             
             {set $this_rails_bracket_tex {sprint "dx_rails_bracket" {{$player get_user} get_slot_num} ".tex"}}
-            {if {exists $this_rails_bracket_tex} {delete $this_rails_bracket_tex}}
-            {new Tex $this_rails_bracket_tex}
+            {unless {exists $this_rails_bracket_tex} {new Tex $this_rails_bracket_tex}}
 
             {set $white_tex dx_white_shading.tex}
             {unless {exists $white_tex}
@@ -298,8 +271,8 @@
             {smasher_plate_bracket.mat set diffuse_tex $this_rails_bracket_tex}
             
             {unless {== $current_rails none}
-               {dx_custom_texture_setter rails rails_track $this_rails_tex $current_rails}
-               {dx_custom_texture_setter rails rails_bracket $this_rails_bracket_tex $current_rails}
+               {dx_slot_texture_setter rails rails_track $this_rails_tex $current_rails}
+               {dx_slot_texture_setter rails rails_bracket $this_rails_bracket_tex $current_rails}
                {$this_rails_bracket_tex iterate_refs $ref {$ref set alpha_cut TRUE}}
             }
 
@@ -342,22 +315,23 @@
                         }
                         ; sets keyboard lanes depending on key of song
                         {$this_highway_tex set_bitmap {sprint "dx/custom_textures/_additional_textures/pk_song_key/" $key_map ".png"}}
+                        {$this_highway_tex set dx_loaded_tex ""}
                      }
                      {do
                         {if {== $current_highway none} {set $current_highway "rock band 3"}}
-                        {dx_custom_texture_setter keyboard keyboard_lanes $this_highway_tex $current_highway}
+                        {dx_slot_texture_setter keyboard keyboard_lanes $this_highway_tex $current_highway}
                         {dx_custom_texture_setter keyboard keyboard_press track_lanes_keyboard_press.tex $current_highway}
                         {dx_custom_texture_setter keyboard keyboard_smasher gem_smasher_sharp_diffuse_nomip.tex $current_highway}
                         {dx_custom_texture_setter keyboard keyboard_mash_ems gem_mash_prokeys_ems.tex $current_highway}
                         {dx_custom_texture_setter keyboard keyboard_mash gem_mash_prokeys.tex $current_highway}
                      }
                   }
-                  {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}
-                  {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
+                  {dx_slot_texture_setter FALSE streaks $this_streak_tex $current_streak}
+                  {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
                }
                ;set textures on guitar/bass/keys/drum
                {do
-                  {unless {== $current_highway none} {dx_custom_texture_setter FALSE highways $this_highway_tex $current_highway}}
+                  {unless {== $current_highway none} {dx_slot_texture_setter FALSE highways $this_highway_tex $current_highway}}
                   ;shading fixer
                   {do
                      ($inst {$player instrument})
@@ -392,10 +366,27 @@
                      #endif
                      
                      {if_else {|| {== $inst bass} {== $inst real_bass}}
-                        {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
+                        {do
+                           ($blue {== $current_streak none})
+                           {foreach $entry
+                              (
+                                 "rock band 3" "_1_rb3_guitarbass" "_rb3_drums" "_rb3_keys"
+                                 "_rb3_unused" "rb3_1guitarbass_blue" "rb3_drums_blue"
+                                 "rb3_keys_blue" "rb3_unused_blue" "_srb2" "_srlrb" "_vrb4alt"
+                                 "rb4 beta bass" "rb4 beta drum" "rb4 beta guitar" "rb4alt_darkblue" "tbrb blue"
+                              )
+                              {if {== $current_streak $entry} {set $blue TRUE}}
+                           }
+                           {bassgroove_plane.mat set diffuse_tex $this_streak_tex}
+                           {bassgroove_plane.mat set intensify TRUE}
+                           {if_else $blue
+                              {bassgroove_plane.mat set color {pack_color 0.0 0.518 0.831}}
+                              {bassgroove_plane.mat set color {pack_color 0.518 0.518 0.518}}
+                           }
+                        }
                         {peakstate_plane.mat set diffuse_tex $this_streak_tex}
                      }
-                     {unless {== $current_streak none} {dx_custom_texture_setter FALSE streaks $this_streak_tex $current_streak}}
+                     {unless {== $current_streak none} {dx_slot_texture_setter FALSE streaks $this_streak_tex $current_streak}}
                   }
 
                   ;overdrive shading fixer
@@ -434,15 +425,15 @@
                      {$surf set diffuse_tex $this_overdrive_tex}
                      {if {== $current_overdrive "rock band 3"}
                         {switch $inst
-                           ((bass real_bass) {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_bass"})
-                           ((guitar real_guitar) {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex "_1_rb3_guitar"})
-                           (keys {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_keys"})
-                           (real_keys {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_prokeys"})
-                           ((drum real_drum) {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_drums"})
+                           ((bass real_bass) {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_bass"})
+                           ((guitar real_guitar) {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex "_1_rb3_guitar"})
+                           (keys {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_keys"})
+                           (real_keys {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_prokeys"})
+                           ((drum real_drum) {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex "_rb3_drums"})
                         }
                      }
                      {if {!= $current_overdrive "rock band 3"}
-                        {dx_custom_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
+                        {dx_slot_texture_setter FALSE overdrive $this_overdrive_tex $current_overdrive}
                      }
                      {$surf set diffuse_tex $this_overdrive_tex}
                      #ifndef HX_WII
@@ -496,6 +487,33 @@
                kNetReliable
             }
          }
+      }
+   }
+}
+{func dx_fc_ring_textures
+   ($slot $fc_on)
+   {do
+      ($path "dx/custom_textures/multiplier_ring/multiplier_ring_plate")
+      ($fc fcframe.tex)
+      ($mult multframe.tex)
+      ($mat streak_meter_plate.mat)
+      ($disabled {== $dx_multiplier_ring none})
+      {with {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} streak_meter}
+         {if {! {exists $fc}} {new Tex $fc}} ;generate a new texture to hold the fc and non fc tex
+         {if {! {exists $mult}} {new Tex $mult}}
+         {cond
+            ($disabled
+               {$fc set_bitmap {sprint $path "_fc/rock band 3.png"}}
+               {$mult set_bitmap {sprint $path "/rock band 3.png"}}
+            )
+            {do
+               ($temp $dx_multiplier_ring)
+               {search_replace $temp "'" "" $temp}
+               {$fc set_bitmap {sprint $path "_fc/" $temp ".png"}}
+               {$mult set_bitmap {sprint $path "/" $temp ".png"}}
+            }
+         }
+         {$mat set diffuse_tex {if_else $fc_on $fc $mult}}
       }
    }
 }

@@ -3,6 +3,7 @@
 #define DX_TRACK_PANEL_HANDLES
 (
    (dx_track_panel_exit ;this is really stupid but debug found out that the textures need to be put back to origin, deleted, and remade per enter
+      {set $dx_player_check_ready FALSE}
       {if {exists gold_star_handler}
          {gold_star_handler hide_stars}
       }
@@ -82,31 +83,31 @@
             {if_else {!= {$player instrument} vocals}
                {do
                   {dx_track_update_countdown {find_obj DX_GEMTRACKDIR}}
-                  {dx_track_label dx_track_label_username $dx_track_username_size $dx_track_username_font $dx_track_username_alignment $dx_track_username_kerning {{$player get_user} get_slot_num} $dx_track_username_x $dx_track_username_y $dx_track_username_r $dx_track_username_g $dx_track_username_b TRUE}
-                  {dx_perfect_label $dx_track_perfect_size $dx_track_perfect_font $dx_track_perfect_alignment $dx_track_perfect_kerning {{$player get_user} get_slot_num} $dx_track_perfect_x $dx_track_perfect_y $dx_track_perfect_r $dx_track_perfect_g $dx_track_perfect_b TRUE}
-                  {dx_track_label_streak dx_track_label_perfect_ctr $dx_track_perfect_ctr_size $dx_track_perfect_ctr_font $dx_track_perfect_ctr_alignment $dx_track_perfect_ctr_kerning {{$player get_user} get_slot_num} $dx_track_perfect_ctr_x $dx_track_perfect_ctr_y $dx_gold_ui_r $dx_gold_ui_g $dx_gold_ui_b TRUE}
-                  {dx_track_label_streak dx_track_label_streak $dx_track_streak_size $dx_track_streak_font $dx_track_streak_alignment $dx_track_streak_kerning {{$player get_user} get_slot_num} $dx_track_streak_x $dx_track_streak_y $dx_track_streak_r $dx_track_streak_g $dx_track_streak_b TRUE}
-                  {dx_track_label_overdrive dx_track_label_overdrive $dx_track_overdrive_size $dx_track_overdrive_font $dx_track_overdrive_alignment $dx_track_overdrive_kerning {{$player get_user} get_slot_num} $dx_track_overdrive_x $dx_track_overdrive_y $dx_track_overdrive_r $dx_track_overdrive_g $dx_track_overdrive_b TRUE}
+                  {dx_create_track_labels $player}
                }
                {do
                   {dx_track_update_countdown {find_obj DX_VOCALDIR}}
                   {$this dx_force_remote_vox $player}
+                  {if $dx_vocal_phrase_pct
+                     {dx_vocal_phrase_label $dx_vocal_phrase_pct_size $dx_vocal_phrase_pct_font $dx_vocal_phrase_pct_alignment $dx_vocal_phrase_pct_kerning $dx_vocal_phrase_pct_x $dx_vocal_phrase_pct_y $dx_vocal_phrase_pct_r $dx_vocal_phrase_pct_g $dx_vocal_phrase_pct_b TRUE}
+                     {dx_vocal_phrase_task_start}
+                  }
                }
             }
          }
       }
 
       {dx_fix_kick_anim}
+      {dx_mash_lane_colors}
       {dx_track_update_lengths}
       {dx_update_synth}
 
-      {dx_add_player_sinks} ;add in fc/streak tracking callbacks to players
+      {dx_add_player_sinks TRUE} ;add in fc/streak tracking callbacks to players
       {$this track_texture_reset_handler} ;set up all custom textures
       {color_me_milo_lite} ;apply track textures and set any remote player's highways
       #ifndef HX_WII
       {dx_apply_remote_track_speeds} ;sync track speeds with remote players
       #endif
-      {$this track_texture_reset_handler} ;set up all custom textures
       {dx_update_model_themes $this}
       {if {! {gamemode in_mode trainer}}
          {dx_track_bre_reset}
@@ -157,6 +158,13 @@
          }
          {dx_set_song_speed}
          {dx_track_configurer}
+         {if {&& {exists beatmatch} {! {modifier_mgr is_modifier_active mod_brutalmode}}} ;brutal mode relies on crowd meter accuracy
+            {if {== $dx_crowd_meter_hud dx_disabled}
+               {game foreach_local_player $p
+                  {$p set_crowd_rating 1} ;max out crowd meter when it's disabled for crowd audio
+               }
+            }
+         }
          {if $dx_mtvup
             {do
                ($mtv {{gamemode get track_panel} find mtv_overlay})
@@ -224,6 +232,7 @@
    )
    (on_extend
       {$this play_intro}
+      {set $dx_countdown_hold_ms {+ {system_ms} 1500}}
       {$this dx_track_panel_on_extend}
       {if {&& {exists gamemode} {gamemode get play_track_intro_sfx}}
          {$this play_seq track_beg.cue}

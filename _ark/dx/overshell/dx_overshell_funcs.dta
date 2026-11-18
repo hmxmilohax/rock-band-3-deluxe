@@ -7,6 +7,9 @@
    {set $dx_msg_opened TRUE}
    {chars.sbd set_showing FALSE}
    {chars.sbd set scrollbar_list chars.lst}
+   {set $this_state FALSE}
+   {set $current_list FALSE}
+   {set $dx_last_view FALSE}
    {handle ($this init)}
    {overshell update_all}
 }
@@ -241,9 +244,9 @@
          }
       )
       ($last_tracked_num {if_else $current_list {$current_list get display_num} 1})
-      ($prev_group $dx_picked_view)
+      ($prev_group {if_else $dx_last_view $dx_last_view choose_char})
       ($num 0)
-      {if $this_state
+      {if {&& $this_state $current_list}
          {dx_state_pos_tracker $this_state {$current_list selected_sym}}
       }
       {set $this_state $state}
@@ -323,6 +326,7 @@
          }
          {confirm_question.lbl set alpha 0}
       }
+      {set $dx_last_view $dx_picked_view}
       ;(enter) in overshell state needs a slight delay to not be overwritten by vanilla state setup
       {script_task kTaskUISeconds
          (delay 0.01)
@@ -332,7 +336,7 @@
                ($trigger {sprint "view_" $dx_picked_view ".trg"})
                ($initial_focus $current_list)
                ($in_track_mode {&& {$this in_game} {!= {ui current_screen} coop_endgame_screen}})
-               {if {!= $last_tracked_state $state}
+               {if {|| {!= $last_tracked_state $state} {!= $prev_group $dx_picked_view}}
                   ;#ifdef HX_WII {view_default_wii.trg trigger} #endif
                   ;{view_default.trg trigger}
                   {view_default.trg set_view_pos $this $in_track_mode}
@@ -364,7 +368,7 @@
                   {script_task kTaskUISeconds
                      (delay 0.025)
                      (script
-                        {fire_lasers $this_list_content $dx_picked_view $this_state}
+                        {fire_lasers $this_list_content $dx_picked_view $this_state $current_list}
                         {if {== $last_tracked_state $this_state}
                            {$current_list set_selected $last_selected}
                         }
@@ -375,10 +379,10 @@
                {if_else {> {size $this_list_content} 0}
                   {do
                      {$current_list set_data $this_list_content}
-                     {fire_lasers $this_list_content $dx_picked_view $this_state}
                      {if {== $last_tracked_state $this_state}
                         {$current_list set_selected $last_selected}
                      }
+                     {fire_lasers $this_list_content $dx_picked_view $this_state $current_list}
                   }
                   {$current_list set_data (no list data found)}
                }
@@ -388,7 +392,7 @@
    }
 }
 {func fire_lasers
-   ($list $view $state)
+   ($list $view $state $lst)
    {do
       ($show {>= {size $list} 8})
       ;clean up and attach the scroll bar to this list (or not)
@@ -397,12 +401,12 @@
       ;{modifiers.lbl set_showing {! $show}}
       {chars.sbd set_showing $show}
       {if_else $show
-         {chars.sbd set scrollbar_list $current_list}
+         {chars.sbd set scrollbar_list $lst}
          {chars.sbd set scrollbar_list chars.lst}
       }
    }
    {if {! {find_exists $dx_state_tracker $state}}
-      {$current_list set_selected 0}
+      {$lst set_selected 0}
    }
    {if {find_exists $dx_state_tracker $state}
       {do
@@ -414,7 +418,7 @@
          }
          {foreach $entry $list
             {if {has_substr $entry $data}
-               {$current_list set_selected $entry}
+               {$lst set_selected $entry}
             }
          }
       }
@@ -422,7 +426,7 @@
    ;close the message if going to a confirm screen, open otherwise
    {if_else {== $view confirm_action}
       {dx_close_msg}
-      {dx_open_msg {sprint {$current_list selected_sym} "_desc"}}
+      {dx_open_msg {sprint {$lst selected_sym} "_desc"}}
    }
    {if {find_exists $syscfg dx_settings $state enter}
       {foreach $entry {find $syscfg dx_settings $state enter}
@@ -545,6 +549,40 @@
             $dx_aspectratio}}}
    {do
       {rnd set_aspect $dx_aspectratio}
+   }
+}
+{func dx_show_testpattern ($pattern)
+   {with overshell
+      {if_else {exists testpattern.mesh}
+         {do
+            {if $dx_need_revert_ar
+               {rnd set_aspect kLetterboxAspect}
+            }
+            {delete testpattern.mesh}
+            {delete testpattern.mat}
+            {delete testpattern.tex}
+         }
+         {do
+            {if {== {rnd aspect} kLetterboxAspect}
+               {rnd set_aspect kWidescreenAspect}
+               {set $dx_need_revert_ar TRUE}
+            }
+
+            {new Tex testpattern.tex}
+            {testpattern.tex set_bitmap {sprint "dx/custom_textures/test_patterns/" $pattern ".png"}}
+
+            {new Mat testpattern.mat}
+            {testpattern.mat set diffuse_tex testpattern.tex}
+            {testpattern.mat set blend kBlendSrcAlpha}
+
+            {new Mesh testpattern.mesh}
+            {testpattern.mesh set mat testpattern.mat}
+            {dx_generate_quad_mesh testpattern.mesh 1 1}
+            {testpattern.mesh set_trans_parent slots.grp}
+            {slots.grp add_object testpattern.mesh}
+            {testpattern.mesh set_local_scale 849 0 478}
+         }
+      }
    }
 }
 {func dx_modify_tracklength ($item_id $mod)

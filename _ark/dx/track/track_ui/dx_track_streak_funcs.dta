@@ -52,10 +52,10 @@
    ($enabled $instrument $player $slot $diag $timing $level)
    {if $enabled
       {do
-         ($label dx_track_label_perfect.lbl)
-         ($color dx_track_label_perfect.color)
-         ($perfanim dx_track_label_perfect_perfect.anim)
-         ($alphaanim dx_track_label_perfect_alpha.anim)
+         ($label {sprint "dx_track_label_perfect_" $slot ".lbl"})
+         ($color {sprint "dx_track_label_perfect_" $slot ".color"})
+         ($perfanim {sprint "dx_track_label_perfect_perfect_" $slot ".anim"})
+         ($alphaanim {sprint "dx_track_label_perfect_alpha_" $slot ".anim"})
          {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
          {$label set italics 0.03} ;this one is special with italics, ooooooohhhhh
          {cond
@@ -113,9 +113,9 @@
    ($player $perfect $level)
    {set_this {find_obj DX_GEMTRACKDIR band_power_meter}}
    {do
-      ($label dx_track_label_perfect.lbl)
-      ($perfanim dx_track_label_perfect_perfect.anim)
-      ($alphaanim dx_track_label_perfect_alpha.anim)
+      ($label {sprint "dx_track_label_perfect_" {{$player get_user} get_slot_num} ".lbl"})
+      ($perfanim {sprint "dx_track_label_perfect_perfect_" {{$player get_user} get_slot_num} ".anim"})
+      ($alphaanim {sprint "dx_track_label_perfect_alpha_" {{$player get_user} get_slot_num} ".anim"})
       ($time {if_else $perfect 0.29 0.28})
       {$perfanim set_frame 0}
       {if $perfect
@@ -129,10 +129,10 @@
 {func dx_perfect_label
    ($size $font $alignment $kerning $slot $x $y $r $g $b $reset)
    {do
-      ($label dx_track_label_perfect.lbl)
-      ($color dx_track_label_perfect.color)
-      ($perfanim dx_track_label_perfect_perfect.anim)
-      ($alphaanim dx_track_label_perfect_alpha.anim)
+      ($label {sprint "dx_track_label_perfect_" $slot ".lbl"})
+      ($color {sprint "dx_track_label_perfect_" $slot ".color"})
+      ($perfanim {sprint "dx_track_label_perfect_perfect_" $slot ".anim"})
+      ($alphaanim {sprint "dx_track_label_perfect_alpha_" $slot ".anim"})
       {set_this {find_obj {{get_track_panel} loaded_dir} {sprint "track_" $slot} band_power_meter}} ;change context to the current checked player overdrive meter dir
       {if $reset ;if we need to destroy and rebuild this label
          {if {exists $label}
@@ -214,5 +214,69 @@
       {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
       ;force hide/show on selection
       {$label set_showing $dx_track_streak}
+   }
+}
+
+{func
+   dx_vocal_phrase_label
+   ($size $font $alignment $kerning $x $y $r $g $b $reset)
+   {do
+      ($label dx_vocal_phrase_pct.lbl)
+      ($color dx_vocal_phrase_pct.color)
+      ;slightly lower pos if vocal hud is online player
+      ($y {if_else {{{find_obj {{get_track_panel} loaded_dir} vocals} get vox_configuration} get remote} {- $y 0.5} $y})
+      {set_this {find_obj {{get_track_panel} loaded_dir} vocals streak_meter_vox_bot}}
+      {if $reset ;if we need to destroy and rebuild this label
+         {if {exists $label}
+            {delete $label} {delete $color} ;destroy label
+         }
+         {new BandLabel $label} {new UIColor $color} ;rebuild label
+         ;set up default properties
+         {$label set resource_name $font}
+         {$label set color_override $color}
+         {$label set_showing TRUE}
+         {$label set_local_scale 1 1 1}
+         {$label set_local_rot 0 0 0}
+         {$label set width 500}
+         {$label set height 500}
+         {$label set_token_fmt os_blnk}
+         {draw.grp add_object $label} 
+         {$label set_trans_parent $this}
+         {set $dx_vocal_phrase_pct_last -1}
+      }
+      ;these properties are user controllable via overshell
+      ;when configured in-game they do not destroy the label
+      ;so we should run these when the func is called always
+      {$label set alignment $alignment}
+      {$label set text_size $size}
+      {$label set kerning $kerning}
+      {$color set color {pack_color $r $g $b}}
+      {$label set_local_pos $x -5 $y} ;don't allow user configuration of Z space because it sucks
+      ;force hide/show on selection
+      {$label set_showing $dx_vocal_phrase_pct}
+   }
+}
+
+{func
+   dx_vocal_phrase_task_start
+   {set $dx_vocal_phrase_pct_last -1}
+   {set_this {find_obj {{get_track_panel} loaded_dir} vocals streak_meter_vox_bot}}
+   {if {exists dx_vocal_phrase_task}
+      {delete dx_vocal_phrase_task} 
+   }
+   {script_task kTaskSeconds
+      (name "dx_vocal_phrase_task")
+      (once FALSE) ;run every frame, it's probably okay on hw right?
+      (script
+         {do
+            ($label dx_vocal_phrase_pct.lbl)
+            ($current_percent {* 100.0 {meter_wipe.anim frame}})
+            {if {!= $current_percent $dx_vocal_phrase_pct_last}
+               {$label set_token_fmt dx_vox_phrase_pct $current_percent}
+               {set $dx_vocal_phrase_pct_last $current_percent}
+            }
+            $dx_vocal_phrase_pct ;keep the task alive
+         }
+      )
    }
 }

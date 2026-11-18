@@ -819,7 +819,7 @@ def main():
     client_id = "1125571051607298190"
     idle_timeout = 900  # 15 minutes
 
-    config_path = Path.cwd() / 'dx_config.ini'
+    config_path = Path(__file__).parent / 'dx_config.ini'
     rpcs3_path, xbox_console_ip, ps3_console_ip, never_setup_rpcs3, never_setup_xbox, never_setup_ps3, lastfm_config, never_setup_lastfm = load_config(config_path)
 
     # Initial setup prompts based on existing configurations and "never" flags
