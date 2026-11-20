@@ -254,8 +254,8 @@
             {if [offset]
                ;TODO make this a setting
                {set [timing] perfect}
-               {if {>= [offset] $dx_window_offset} {set [timing] late}}
-               {if {<= [offset] $dx_window_offset} {set [timing] early}}
+               {if {>= [offset]} {set [timing] late}}
+               {if {<= [offset]} {set [timing] early}}
                ; autoplay is weird and dumb, always show perfects
                {if_else {modifier_enabled mod_auto_play}
                   {do
@@ -264,19 +264,38 @@
                      {++ [perfects]} ;increment local counter
                      {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
                   }
-                  {cond
-                     ({&& {< [offset] {+ 25 $dx_window_offset}} {> [offset] {+ -25 $dx_window_offset}}}
-                        {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
-                        {++ [perfects]} ;increment local counter
-                        {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
-                     )
-                     ({&& {< [offset] {+ 40 $dx_window_offset}} {> [offset] {+ -40 $dx_window_offset}}}
-                        {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
-                     )
-                     ({&& {< [offset] {+ 55 $dx_window_offset}} {> [offset] {+ -55 $dx_window_offset}}}
-                        {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] good}
-                     )
-                     {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] bad}
+                  {do
+                     {switch $dx_judgment_leniency
+                        (strict
+                           {set $hit_perfect 25}
+                           {set $hit_great 40}
+                           {set $hit_good 55}
+                        )
+                        (normal
+                           {set $hit_perfect 37.5}
+                           {set $hit_great 60}
+                           {set $hit_good 80}
+                        )
+                        (loose ; we aren't using this, keep functionality because Hi
+                           {set $hit_perfect 50}
+                           {set $hit_great 66.6}
+                           {set $hit_good 80}
+                        )
+                     }
+                     {cond
+                        ({&& {< [offset] $hit_perfect} {> [offset] {* $hit_perfect -1}}}
+                           {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] perfect}
+                           {++ [perfects]} ;increment local counter
+                           {dx_perfect_hit_ctr $dx_perfects_ctr [player] [slot] $dx_detailed_hit_stats [perfects]} ;fire on screen
+                        )
+                        ({&& {< [offset] $hit_great} {> [offset] {* $hit_great -1}}}
+                           {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] great}
+                        )
+                        ({&& {< [offset] $hit_good} {> [offset] {* $hit_good -1}}}
+                           {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] good}
+                        )
+                        {dx_perfect_hit $dx_perfects_indicator [track_instrument] [player] [slot] $dx_detailed_hit_stats [timing] bad}
+                     }
                   }
                }
                ;poc, show extra hit effects, needs a lot of work
@@ -297,8 +316,8 @@
                ;debug, show values
                {if {|| $dx_judgment_dbg $linoscal}
                   {do
-                     ($avg {- {/ [total_offset] [num_gems_hit]} $dx_window_offset})
-                     ($offset {- [offset] $dx_window_offset})
+                     ($avg {/ [total_offset] [num_gems_hit]})
+                     ($offset [offset])
                      ($print {sprint {localize os_dx_bot_skill} ": " $offset "\nAvg: " $avg})
                      ($dbg {sprint "Note time (ms): " [note_time] "\nHit time: " [curr_ms]})
                      {with {coop_track_panel find tracker_broadcast_display}
